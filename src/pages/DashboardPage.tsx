@@ -3,14 +3,33 @@ import { Link } from 'react-router-dom';
 import { 
   DollarSign, Star, 
   Shield, MessageCircle, Plus, TrendingUp,
-  BarChart3, Award, Package, Settings,
+  BarChart3, Package, Settings,
   Calendar, Heart,
   Car, Wallet, BookOpen, ArrowUpRight,
-  Bell, Search, ChevronDown, Eye,
+  Bell, Search, Eye,
   Edit3, MoreHorizontal
 } from 'lucide-react';
 import { Button } from '../components/ui/DesignSystem';
 import VerificationBanner from '../components/verification/VerificationBanner';
+
+// TypeScript interfaces for component props
+interface StatCardProps {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  trend?: boolean;
+  color: string;
+  bgColor: string;
+}
+
+interface NavigationItemProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  hasNotification?: boolean;
+}
 
 const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'wishlist' | 'reviews'>('overview');
@@ -114,7 +133,7 @@ const DashboardPage: React.FC = () => {
     }
   ];
 
-  const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor }) => (
+  const StatCard: React.FC<StatCardProps> = ({ icon: Icon, title, value, subtitle, trend, color, bgColor }) => (
     <div className="group relative bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl"></div>
       <div className="relative">
@@ -138,7 +157,7 @@ const DashboardPage: React.FC = () => {
     </div>
   );
 
-  const NavigationItem = ({ icon: Icon, label, active, onClick, hasNotification }) => (
+  const NavigationItem: React.FC<NavigationItemProps> = ({ icon: Icon, label, active, onClick, hasNotification = false }) => (
     <button
       onClick={onClick}
       className={`group relative w-full flex items-center px-4 py-3.5 rounded-2xl font-medium transition-all duration-300 ${
@@ -324,6 +343,7 @@ const DashboardPage: React.FC = () => {
                     title="Wishlist Items"
                     value={user.wishlistItems}
                     subtitle="Cars saved"
+                    trend={false}
                     color="text-pink-600"
                     bgColor="bg-pink-50"
                   />
