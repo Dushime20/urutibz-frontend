@@ -1,0 +1,105 @@
+@import './styles/fonts.css';
+@import './styles/design-system.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-outfit bg-white text-platform-dark-grey;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    margin: 0;
+    line-height: 1.5;
+  }
+  
+  * {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-platform text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-active focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-active text-white hover:bg-active-dark h-10 px-4 py-2;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-platform text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-platform-grey focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-platform-light-grey text-platform-dark-grey hover:bg-platform-grey h-10 px-4 py-2;
+  }
+  
+  .card {
+    @apply rounded-platform border bg-white text-platform-dark-grey shadow-platform;
+  }
+  
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Enhanced interactive elements */
+  .interactive-element {
+    @apply transform transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+  
+  /* AI-specific styling */
+  .ai-element {
+    @apply bg-gradient-to-r from-active to-active-dark;
+  }
+  
+  .ai-glow {
+    @apply shadow-lg;
+    box-shadow: 0 0 20px rgba(0, 170, 169, 0.3);
+  }
+}
+
+/* Custom styles for popovers, modals, toast notifications, and backgrounds */
+#react-tiny-popover-container {
+  z-index: 15;
+}
+
+.ReactModal__Overlay {
+  background: rgb(var(--foreground-rgb), 0.5) !important;
+  z-index: 100;
+}
+
+.ReactModal__Content {
+  position: absolute;
+  border: 1px solid rgb(204, 204, 204);
+  background: rgb(255, 255, 255);
+  overflow: auto;
+  border-radius: 0.25rem;
+  outline: none;
+  padding: 1.25rem;
+  max-width: 100%;
+  width: min(100% - 2rem, 60rem);
+  min-width: min(100% - 2rem, 13rem);
+  min-height: min(100% - 2rem, 23rem);
+  height: fit-content;
+  max-height: min(100% - 2rem);
+  inset: 1rem;
+  margin: auto;
+}
+
+.Toastify__toast-container {
+  width: 320px;
+}
+.Toastify__toast--default {
+  background: #fff;
+  color: #aaa;
+}
+.Toastify__toast--info {
+  background: #3498db;
+}
+.Toastify__toast--success {
+  background: #07bc0c;
+}
+.Toastify__toast--warning {
+  background: #f1c40f;
+}
+.Toastify__toast--error {
+  background: #e74c3c;
+}
+
+.back-current {
+  background-color: color-mix(in oklab, currentColor 15%, #0000 85%);
+  filter: saturate(2.5) brightness(0.9);
+}
