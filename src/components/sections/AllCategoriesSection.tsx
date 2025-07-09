@@ -214,13 +214,13 @@ const AllCategoriesSection: React.FC = () => {
               </p>
               <div className="space-y-3">
                 <Link
-                  to="/browse"
+                  to="/items"
                   className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   Browse All Items
                 </Link>
                 <Link
-                  to="/list-item"
+                  to="/create-listing"
                   className="block w-full border-2 border-slate-300 bg-white/80 backdrop-blur-sm text-slate-700 hover:bg-white hover:border-slate-400 font-semibold py-3 px-6 rounded-xl transition-all duration-200"
                 >
                   List Your Items

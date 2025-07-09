@@ -104,13 +104,91 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // In a real app, you would call your API
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       
-      // Simple validation
-      if (email === 'user@example.com' && password === 'password') {
+      // Multiple mock users with different verification statuses
+      if (email === 'verified@example.com' && password === 'password') {
+        // Fully verified user
         const mockUser: User = {
           id: '1',
+          name: 'John Doe',
+          email: 'verified@example.com',
+          avatar: '/assets/img/profiles/avatar-01.jpg',
+          phone: '+256 712 345 678',
+          dateOfBirth: '1990-05-15',
+          address: {
+            street: '123 Main Street',
+            city: 'Kampala',
+            state: 'Central Region',
+            country: 'Uganda',
+            zipCode: '00000'
+          },
+          verification: {
+            isProfileComplete: true,
+            isEmailVerified: true,
+            isPhoneVerified: true,
+            isIdVerified: true,
+            isAddressVerified: true,
+            isFullyVerified: true,
+            verificationStep: 'complete'
+          },
+          joinedDate: '2023-01-15'
+        };
+        
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return true;
+      } else if (email === 'partial@example.com' && password === 'password') {
+        // Partially verified user
+        const mockUser: User = {
+          id: '2',
+          name: 'Robert Chen',
+          email: 'partial@example.com',
+          avatar: '/assets/img/profiles/avatar-02.jpg',
+          phone: '+256 712 345 679',
+          dateOfBirth: '1992-08-22',
+          verification: {
+            isProfileComplete: true,
+            isEmailVerified: true,
+            isPhoneVerified: true,
+            isIdVerified: false,
+            isAddressVerified: false,
+            isFullyVerified: false,
+            verificationStep: 'id'
+          },
+          joinedDate: '2023-05-20'
+        };
+        
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return true;
+      } else if (email === 'unverified@example.com' && password === 'password') {
+        // Completely unverified user
+        const mockUser: User = {
+          id: '3',
+          name: 'Jane Smith',
+          email: 'unverified@example.com',
+          avatar: '/assets/img/profiles/avatar-03.jpg',
+          verification: {
+            isProfileComplete: false,
+            isEmailVerified: false,
+            isPhoneVerified: false,
+            isIdVerified: false,
+            isAddressVerified: false,
+            isFullyVerified: false,
+            verificationStep: 'profile'
+          },
+          joinedDate: '2023-06-30'
+        };
+        
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return true;
+      } else if (email === 'user@example.com' && password === 'password') {
+        // Original user (keeping for backward compatibility)
+        const mockUser: User = {
+          id: '4',
           name: 'John Smith',
           email: 'user@example.com',
-          avatar: '/assets/img/profiles/avatar-01.jpg',
+          avatar: '/assets/img/profiles/avatar-04.jpg',
           verification: {
             isProfileComplete: false,
             isEmailVerified: false,

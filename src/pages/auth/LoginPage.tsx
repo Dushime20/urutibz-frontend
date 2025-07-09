@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, Eye, EyeOff, Bot, Sparkles, ArrowLeft } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -29,7 +32,7 @@ const LoginPage: React.FC = () => {
 
     try {
       await login(formData.email, formData.password);
-      navigate('/dashboard');
+      navigate(redirectUrl);
     } catch (err) {
       setError('Invalid email or password. Please try again.');
     } finally {
@@ -166,7 +169,10 @@ const LoginPage: React.FC = () => {
         <div className="text-center">
           <p className="text-platform-grey font-inter">
             Don't have an account?{' '}
-            <Link to="/register" className="text-active hover:text-active-dark font-medium">
+            <Link 
+              to={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} 
+              className="text-active hover:text-active-dark font-medium"
+            >
               Sign up now
             </Link>
           </p>

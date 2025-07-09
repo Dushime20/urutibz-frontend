@@ -1,6 +1,6 @@
-# Uruti eRental - Car Rental Website
+# Uruti eRental - Universal Rental Platform
 
-A modern, component-based car rental website built with React, TypeScript, Vite, and Tailwind CSS.
+A modern, component-based peer-to-peer rental platform built with React, TypeScript, Vite, and Tailwind CSS. Rent anything from cameras and tools to vehicles and electronics across Africa.
 
 ## 📋 Project Documentation
 
@@ -12,13 +12,16 @@ A modern, component-based car rental website built with React, TypeScript, Vite,
 ## Features
 
 - Modern UI with Tailwind CSS
-- Responsive design
-- Car listing and filtering
-- Car details with specifications
-- Booking system
-- User authentication
-- User dashboard
-- Protected routes
+- Responsive design  
+- Universal item search and filtering across all categories
+- Detailed item pages with specifications and owner information
+- Smart booking system with authentication and verification gates
+- AI-powered recommendations and matching
+- User authentication and profile management
+- Comprehensive user dashboard
+- Admin panel for platform management
+- Protected routes and secure transactions
+- Multi-category support (Electronics, Tools, Vehicles, Outdoor Gear, etc.)
 
 ## Tech Stack
 
@@ -113,6 +116,21 @@ The application uses a context-based authentication system with mock implementat
 
 1. Create a new component in the appropriate directory under `/components`
 2. Import and use it in your pages or other components
+
+## 🎯 Interactive Demo
+
+Experience our booking flow across three user scenarios:
+
+### 🚀 Quick Demo Access
+Visit `/demo` to experience the interactive booking flow demonstration.
+
+### Demo Scenarios
+- **🔴 User Without Account**: See how we handle unauthenticated visitors
+- **🟠 Unverified User**: Experience the start of verification flow  
+- **🟡 Partially Verified User**: See progressive verification with some steps completed
+- **🟢 Fully Verified User**: Enjoy seamless, frictionless booking
+
+**[📖 Full Demo Guide](./DEMO_README.md)** - Complete demo documentation
 
 ## License
 

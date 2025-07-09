@@ -43,10 +43,10 @@ const Header: React.FC = () => {
             {/* Main Navigation - Desktop */}
             <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
               <Link 
-                to="/browse" 
+                to="/items" 
                 className="nav-link text-sm xl:text-base"
               >
-                Browse
+                Browse Items
               </Link>
               <Link 
                 to="/create-listing" 

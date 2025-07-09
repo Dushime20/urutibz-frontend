@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { ArrowRight, Bot, MapPin, Star, Shield, Heart, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const FeaturedRentalsSection: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('trending');
+  const navigate = useNavigate();
 
   const filters = [
     { id: 'trending', label: 'AI Trending', icon: TrendingUp },
@@ -145,7 +146,11 @@ const FeaturedRentalsSection: React.FC = () => {
         {/* Featured Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8 lg:mb-12">
           {featuredItems.map((item) => (
-            <div key={item.id} className="card group cursor-pointer overflow-hidden hover:shadow-active transition-all duration-300 hover:-translate-y-1">
+            <div 
+              key={item.id} 
+              className="card group cursor-pointer overflow-hidden hover:shadow-active transition-all duration-300 hover:-translate-y-1"
+              onClick={() => navigate(`/item/${item.id}`)}
+            >
               {/* Image */}
               <div className="relative">
                 <img 
@@ -223,7 +228,13 @@ const FeaturedRentalsSection: React.FC = () => {
                       <span className="text-xs text-platform-grey line-through ml-1 lg:ml-2 font-inter">${item.originalPrice}</span>
                     )}
                   </div>
-                  <button className="btn-primary text-xs lg:text-sm px-3 lg:px-4 py-2 font-outfit">
+                  <button 
+                    className="btn-primary text-xs lg:text-sm px-3 lg:px-4 py-2 font-outfit"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/item/${item.id}`);
+                    }}
+                  >
                     Book Now
                   </button>
                 </div>
@@ -240,10 +251,10 @@ const FeaturedRentalsSection: React.FC = () => {
         {/* Bottom CTA */}
         <div className="text-center">
           <Link 
-            to="/rentals" 
+            to="/items" 
             className="btn-secondary inline-flex items-center space-x-2 font-outfit"
           >
-            <span>View All Rentals</span>
+            <span>View All Items</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

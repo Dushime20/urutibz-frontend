@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
 import { Search, MapPin, Bot, Globe, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection: React.FC = () => {
   const [searchCategory, setSearchCategory] = useState('all');
+  const navigate = useNavigate();
+  
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchCategory !== 'all') {
+      params.set('category', searchCategory);
+    }
+    navigate(`/items/search?${params.toString()}`);
+  };
+  
+  const handleFindRentals = () => {
+    navigate('/items/search');
+  };
   
   const categories = [
     { id: 'all', label: 'All Items', icon: '🏠' },
@@ -86,7 +100,10 @@ const HeroSection: React.FC = () => {
             
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
-              <button className="btn-primary flex items-center justify-center space-x-2 font-outfit text-sm lg:text-base py-3 lg:py-4 px-6 lg:px-8">
+              <button 
+                onClick={handleFindRentals}
+                className="btn-primary flex items-center justify-center space-x-2 font-outfit text-sm lg:text-base py-3 lg:py-4 px-6 lg:px-8"
+              >
                 <Search className="w-4 h-4 lg:w-5 lg:h-5" />
                 <span>Find Rentals</span>
               </button>
@@ -207,7 +224,10 @@ const HeroSection: React.FC = () => {
                 </div>
                 
                 <div className="sm:col-span-2 lg:col-span-1 xl:col-span-1 flex items-end">
-                  <button className="btn-primary w-full flex items-center justify-center space-x-2 font-outfit text-sm lg:text-base py-2.5 lg:py-3 px-4 lg:px-6">
+                  <button 
+                    onClick={handleSearch}
+                    className="btn-primary w-full flex items-center justify-center space-x-2 font-outfit text-sm lg:text-base py-2.5 lg:py-3 px-4 lg:px-6"
+                  >
                     <Bot className="w-4 h-4 lg:w-5 lg:h-5" />
                     <span>AI Search</span>
                   </button>
@@ -217,12 +237,18 @@ const HeroSection: React.FC = () => {
               {/* Quick AI Suggestions */}
               <div className="mt-4 lg:mt-6 flex flex-wrap gap-2">
                 <span className="text-sm text-platform-grey font-inter">AI Suggestions:</span>
-                {['📷 Camera gear nearby', '🔧 Power tools today', '⛺ Camping equipment', '🎸 Musical instruments'].map((suggestion, index) => (
+                {[
+                  { text: '📷 Camera gear nearby', category: 'electronics' },
+                  { text: '🔧 Power tools today', category: 'tools' },
+                  { text: '⛺ Camping equipment', category: 'outdoor' },
+                  { text: '🎸 Musical instruments', category: 'entertainment' }
+                ].map((suggestion, index) => (
                   <button
                     key={index}
+                    onClick={() => navigate(`/items/search?category=${suggestion.category}`)}
                     className="px-2 lg:px-3 py-1 bg-active/10 text-active rounded-full text-xs lg:text-sm hover:bg-active/20 transition-colors duration-200 font-inter"
                   >
-                    {suggestion}
+                    {suggestion.text}
                   </button>
                 ))}
               </div>

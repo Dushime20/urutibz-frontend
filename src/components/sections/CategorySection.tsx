@@ -1,7 +1,10 @@
 import React from 'react';
 import { Car, Wrench, Camera, Tent, Music, Gamepad2, Bot, Sparkles, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const CategorySection: React.FC = () => {
+  const navigate = useNavigate();
+  
   const categories = [
     {
       icon: Car,
@@ -10,7 +13,8 @@ const CategorySection: React.FC = () => {
       description: 'Cars, bikes, scooters and more for every journey',
       gradient: 'from-blue-100 to-blue-200',
       iconColor: 'text-blue-600',
-      trending: '+15% this week'
+      trending: '+15% this week',
+      categoryId: 'vehicles'
     },
     {
       icon: Wrench,
@@ -19,7 +23,8 @@ const CategorySection: React.FC = () => {
       description: 'Power tools, machinery, and professional equipment',
       gradient: 'from-green-100 to-green-200',
       iconColor: 'text-green-600',
-      trending: '+23% this week'
+      trending: '+23% this week',
+      categoryId: 'tools'
     },
     {
       icon: Camera,
@@ -28,7 +33,8 @@ const CategorySection: React.FC = () => {
       description: 'Cameras, drones, audio gear, and tech devices',
       gradient: 'from-purple-100 to-purple-200',
       iconColor: 'text-purple-600',
-      trending: '+18% this week'
+      trending: '+18% this week',
+      categoryId: 'electronics'
     },
     {
       icon: Tent,
@@ -37,7 +43,8 @@ const CategorySection: React.FC = () => {
       description: 'Camping gear, sports equipment, and adventure tools',
       gradient: 'from-emerald-100 to-emerald-200',
       iconColor: 'text-emerald-600',
-      trending: '+31% this week'
+      trending: '+31% this week',
+      categoryId: 'outdoor'
     },
     {
       icon: Music,
@@ -46,7 +53,8 @@ const CategorySection: React.FC = () => {
       description: 'Sound systems, decorations, and celebration essentials',
       gradient: 'from-pink-100 to-pink-200',
       iconColor: 'text-pink-600',
-      trending: '+27% this week'
+      trending: '+27% this week',
+      categoryId: 'events'
     },
     {
       icon: Gamepad2,
@@ -55,7 +63,8 @@ const CategorySection: React.FC = () => {
       description: 'Gaming consoles, projectors, and fun activities',
       gradient: 'from-orange-100 to-orange-200',
       iconColor: 'text-orange-600',
-      trending: '+12% this week'
+      trending: '+12% this week',
+      categoryId: 'entertainment'
     }
   ];
   return (
@@ -84,6 +93,7 @@ const CategorySection: React.FC = () => {
             return (
               <div
                 key={index}
+                onClick={() => navigate(`/items/search?category=${category.categoryId}`)}
                 className="card p-4 sm:p-6 lg:p-8 text-center hover:shadow-active transition-all duration-300 cursor-pointer group hover:-translate-y-2 relative overflow-hidden"
               >
                 {/* Trending Badge */}

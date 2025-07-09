@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, User, Eye, EyeOff, Bot, Sparkles, ArrowLeft } from 'lucide-react';
 
 const RegisterPage: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -56,7 +59,7 @@ const RegisterPage: React.FC = () => {
         formData.email,
         formData.password
       );
-      navigate('/dashboard');
+      navigate(redirectUrl);
     } catch (err) {
       setError('Registration failed. Please try again.');
     } finally {
@@ -267,7 +270,10 @@ const RegisterPage: React.FC = () => {
         <div className="text-center">
           <p className="text-platform-grey font-inter">
             Already have an account?{' '}
-            <Link to="/login" className="text-active hover:text-active-dark font-medium">
+            <Link 
+              to={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} 
+              className="text-active hover:text-active-dark font-medium"
+            >
               Sign in
             </Link>
           </p>

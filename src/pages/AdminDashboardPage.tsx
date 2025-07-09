@@ -10,6 +10,7 @@ import {
   Bot, AlertTriangle, Clock, Smartphone, Mail
 } from 'lucide-react';
 import { Button } from '../components/ui/DesignSystem';
+import { mockRentalItems, itemCategories } from '../data/mockRentalData';
 
 // TypeScript interfaces for admin components
 interface AdminStatCardProps {
@@ -32,7 +33,7 @@ interface AdminNavigationItemProps {
 
 const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
@@ -105,104 +106,56 @@ const AdminDashboardPage: React.FC = () => {
     {
       id: 3,
       bookingId: 'BK-2024-003',
-      itemName: 'BMW X5 2019',
-      itemImage: '/assets/img/cars/car-04.jpg',
+      itemName: 'PlayStation 5',
+      itemImage: '/assets/img/items/gaming-01.jpg',
       customerName: 'Sarah Mukisa',
-      amount: 450,
+      amount: 45,
       status: 'Active',
       startDate: '2024-07-12',
       endDate: '2024-07-18',
-      category: 'Vehicles',
-      icon: Car
+      category: 'Gaming',
+      icon: Gamepad2
     }
   ];
 
-  const itemListings = [
-    {
-      id: 1,
-      name: 'Canon EOS R5 Camera',
-      image: '/assets/img/items/camera-01.jpg',
-      owner: 'John Mukama',
-      price: 85,
-      status: 'Active',
-      bookings: 12,
-      rating: 4.8,
-      location: 'Kigali',
-      category: 'Photography',
-      icon: Camera,
-      description: 'Professional mirrorless camera with 45MP sensor'
-    },
-    {
-      id: 2,
-      name: 'MacBook Pro 16" M2',
-      image: '/assets/img/items/laptop-01.jpg',
-      owner: 'Sarah Uwimana',
-      price: 120,
-      status: 'Active',
-      bookings: 8,
-      rating: 4.9,
-      location: 'Butare',
-      category: 'Electronics',
-      icon: Laptop,
-      description: 'High-performance laptop for creative work'
-    },
-    {
-      id: 3,
-      name: 'Sony WH-1000XM5',
-      image: '/assets/img/items/headphones-01.jpg',
-      owner: 'Paul Niyonshuti',
-      price: 25,
-      status: 'Under Review',
-      bookings: 15,
-      rating: 4.7,
-      location: 'Kigali',
-      category: 'Audio',
-      icon: Headphones,
-      description: 'Premium noise-canceling headphones'
-    },
-    {
-      id: 4,
-      name: 'PlayStation 5',
-      image: '/assets/img/items/gaming-01.jpg',
-      owner: 'Marie Ishimwe',
-      price: 45,
-      status: 'Active',
-      bookings: 22,
-      rating: 4.6,
-      location: 'Gisenyi',
-      category: 'Gaming',
-      icon: Gamepad2,
-      description: 'Latest gaming console with 4K gaming'
-    },
-    {
-      id: 5,
-      name: 'BMW X5 2019',
-      image: '/assets/img/cars/car-04.jpg',
-      owner: 'David Uwamahoro',
-      price: 450,
-      status: 'Active',
-      bookings: 6,
-      rating: 4.8,
-      location: 'Kigali',
-      category: 'Vehicles',
-      icon: Car,
-      description: 'Luxury SUV perfect for family trips'
-    },
-    {
-      id: 6,
-      name: 'Apple Watch Ultra',
-      image: '/assets/img/items/watch-01.jpg',
-      owner: 'Grace Mukamana',
-      price: 35,
-      status: 'Active',
-      bookings: 9,
-      rating: 4.5,
-      location: 'Musanze',
-      category: 'Wearables',
-      icon: Watch,
-      description: 'Adventure-ready smartwatch with GPS'
-    }
-  ];
+  // Use real rental items data
+  const itemListings = mockRentalItems.map(item => ({
+    id: item.id,
+    name: item.name,
+    image: item.images[0],
+    owner: item.ownerName,
+    price: item.price,
+    status: item.status === 'active' ? 'Active' : 'Inactive',
+    bookings: item.totalBookings,
+    rating: item.rating,
+    location: item.location.city,
+    category: item.category,
+    icon: getCategoryIcon(item.category),
+    description: item.description
+  }));
+
+  // Helper function to get category icon
+  function getCategoryIcon(category: string) {
+    const iconMap: { [key: string]: any } = {
+      photography: Camera,
+      electronics: Laptop,
+      vehicles: Car,
+      gaming: Gamepad2,
+      music: Headphones,
+      tools: Watch,
+      outdoor: Watch,
+      events: Watch,
+      sports: Watch,
+      home: Watch,
+      fashion: Watch,
+      fitness: Watch,
+      travel: Watch,
+      books: Watch,
+      art: Watch,
+      other: Package
+    };
+    return iconMap[category] || Package;
+  }
 
   // Multi-location and Multi-language data
   const locations = [
@@ -853,12 +806,11 @@ const AdminDashboardPage: React.FC = () => {
                       className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="all">All Categories</option>
-                      <option value="Photography">Photography</option>
-                      <option value="Electronics">Electronics</option>
-                      <option value="Vehicles">Vehicles</option>
-                      <option value="Audio">Audio</option>
-                      <option value="Gaming">Gaming</option>
-                      <option value="Wearables">Wearables</option>
+                      {itemCategories.map(category => (
+                        <option key={category.id} value={category.id}>
+                          {category.icon} {category.name}
+                        </option>
+                      ))}
                     </select>
                     <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
                       <Filter className="w-4 h-4 mr-2" />
@@ -877,37 +829,14 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 {/* Items Categories Overview */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-                  <div className="bg-blue-50 rounded-2xl p-4 text-center">
-                    <Camera className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-blue-700">Photography</p>
-                    <p className="text-xs text-blue-600">124 items</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-2xl p-4 text-center">
-                    <Laptop className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-purple-700">Electronics</p>
-                    <p className="text-xs text-purple-600">89 items</p>
-                  </div>
-                  <div className="bg-green-50 rounded-2xl p-4 text-center">
-                    <Car className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-green-700">Vehicles</p>
-                    <p className="text-xs text-green-600">156 items</p>
-                  </div>
-                  <div className="bg-orange-50 rounded-2xl p-4 text-center">
-                    <Headphones className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-orange-700">Audio</p>
-                    <p className="text-xs text-orange-600">67 items</p>
-                  </div>
-                  <div className="bg-red-50 rounded-2xl p-4 text-center">
-                    <Gamepad2 className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-red-700">Gaming</p>
-                    <p className="text-xs text-red-600">45 items</p>
-                  </div>
-                  <div className="bg-yellow-50 rounded-2xl p-4 text-center">
-                    <Watch className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-yellow-700">Wearables</p>
-                    <p className="text-xs text-yellow-600">31 items</p>
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+                  {itemCategories.slice(0, 10).map((category) => (
+                    <div key={category.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 text-center hover:shadow-md transition-shadow cursor-pointer">
+                      <div className="text-2xl mb-2">{category.icon}</div>
+                      <p className="text-sm font-medium text-gray-700">{category.name}</p>
+                      <p className="text-xs text-gray-600">{category.count} items</p>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-4">

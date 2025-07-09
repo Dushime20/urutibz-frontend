@@ -1,5 +1,6 @@
 import React from 'react';
 import HeroSection from '../components/sections/HeroSection';
+import DemoNavigationSection from '../components/sections/DemoNavigationSection';
 import CategorySection from '../components/sections/CategorySection';
 import FeatureSection from '../components/sections/FeatureSection';
 import FeaturedRentalsSection from '../components/sections/FeaturedRentalsSection';
@@ -15,6 +16,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="space-y-0">
       <HeroSection />
+      <DemoNavigationSection />
       <CategorySection />
       <FeaturedRentalsSection />
       <HowItWorksSection />

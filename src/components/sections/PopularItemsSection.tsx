@@ -3,7 +3,7 @@ import { ArrowRight, Bot, MapPin, Star, Shield, Heart, TrendingUp } from 'lucide
 import { Link } from 'react-router-dom';
 import { Button, AIBadge } from '../ui/DesignSystem';
 
-const FeaturedRentalsSection: React.FC = () => {
+const PopularItemsSection: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('trending');
 
   const filters = [
@@ -370,4 +370,4 @@ const FeaturedRentalsSection: React.FC = () => {
   );
 };
 
-export default FeaturedRentalsSection;
+export default PopularItemsSection;

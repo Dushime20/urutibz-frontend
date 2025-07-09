@@ -9,16 +9,17 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
-import CarsPage from './pages/CarsPage';
-import CarDetailsPage from './pages/CarDetailsPage';
 import BookingPage from './pages/BookingPage';
 import FaqPage from './pages/FaqPage';
 import CreateListingPage from './pages/CreateListingPage';
+import ItemSearchPage from './pages/ItemSearchPage';
+import ItemDetailsPage from './pages/ItemDetailsPage';
 import ProfileVerificationPage from './pages/verification/ProfileVerificationPage';
 import EmailVerificationPage from './pages/verification/EmailVerificationPage';
 import PhoneVerificationPage from './pages/verification/PhoneVerificationPage';
 import IdVerificationPage from './pages/verification/IdVerificationPage';
 import AddressVerificationPage from './pages/verification/AddressVerificationPage';
+import DemoPage from './pages/DemoPage';
 
 function App() {
   return (
@@ -34,8 +35,12 @@ function App() {
           {/* Main app routes with layout */}
           <Route path="/" element={<Layout />}>
             <Route index element={<HomePage />} />
-            <Route path="cars" element={<CarsPage />} />
-            <Route path="cars/:id" element={<CarDetailsPage />} />
+            <Route path="cars" element={<ItemSearchPage />} />
+            <Route path="items" element={<ItemSearchPage />} />
+            <Route path="browse" element={<ItemSearchPage />} />
+            <Route path="cars/:id" element={<ItemDetailsPage />} />
+            <Route path="items/:id" element={<ItemDetailsPage />} />
+            <Route path="demo" element={<DemoPage />} />
             <Route path="faq" element={<FaqPage />} />
             
             {/* Protected routes */}
@@ -54,7 +59,15 @@ function App() {
                 <AdminDashboardPage />
               </ProtectedRoute>
             } />
+            <Route path="booking" element={
+              <BookingPage />
+            } />
             <Route path="booking/:carId" element={
+              <ProtectedRoute>
+                <BookingPage />
+              </ProtectedRoute>
+            } />
+            <Route path="booking/item/:itemId" element={
               <ProtectedRoute>
                 <BookingPage />
               </ProtectedRoute>
