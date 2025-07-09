@@ -8,6 +8,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import CarsPage from './pages/CarsPage';
 import CarDetailsPage from './pages/CarDetailsPage';
 import BookingPage from './pages/BookingPage';
@@ -46,6 +47,11 @@ function App() {
             <Route path="dashboard" element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="admin" element={
+              <ProtectedRoute>
+                <AdminDashboardPage />
               </ProtectedRoute>
             } />
             <Route path="booking/:carId" element={
