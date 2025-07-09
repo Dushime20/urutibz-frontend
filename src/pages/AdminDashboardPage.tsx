@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  BarChart3, Users, Car, Calendar, DollarSign, TrendingUp,
+  BarChart3, Users, Package, Calendar, DollarSign, TrendingUp,
   Shield, Settings, Bell, Search, Plus, Eye, Edit3, 
   MoreHorizontal, CheckCircle, FileText, Filter, ArrowUpRight,
-  Star
+  Star, Camera, Laptop, Headphones, Gamepad2, Car,
+  Watch, Globe, MapPin, Languages, Building2, Flag
 } from 'lucide-react';
 import { Button } from '../components/ui/DesignSystem';
 
@@ -28,17 +29,21 @@ interface AdminNavigationItemProps {
 }
 
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'cars' | 'users' | 'bookings' | 'finances' | 'reports' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'reports' | 'settings' | 'locations' | 'languages'>('overview');
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [itemFilter, setItemFilter] = useState<string>('all');
+  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
 
   // Mock admin data
   const adminStats = {
     totalUsers: 2847,
-    totalCars: 156,
+    totalItems: 1256,
     activeBookings: 89,
     totalRevenue: 125400,
     monthlyGrowth: {
       users: 12.5,
-      cars: 8.3,
+      items: 8.3,
       bookings: 15.7,
       revenue: 22.1
     }
@@ -72,49 +77,231 @@ const AdminDashboardPage: React.FC = () => {
     {
       id: 1,
       bookingId: 'BK-2024-001',
-      carName: 'BMW X5 2019',
-      carImage: '/assets/img/cars/car-04.jpg',
+      itemName: 'Canon EOS R5 Camera',
+      itemImage: '/assets/img/items/camera-01.jpg',
       customerName: 'Alice Uwimana',
-      amount: 450,
+      amount: 85,
       status: 'Active',
       startDate: '2024-07-10',
-      endDate: '2024-07-15'
+      endDate: '2024-07-15',
+      category: 'Photography',
+      icon: Camera
     },
     {
       id: 2,
       bookingId: 'BK-2024-002',
-      carName: 'Mercedes C-Class',
-      carImage: '/assets/img/cars/car-05.jpg',
+      itemName: 'MacBook Pro 16"',
+      itemImage: '/assets/img/items/laptop-01.jpg',
       customerName: 'David Nkusi',
-      amount: 320,
+      amount: 120,
       status: 'Completed',
       startDate: '2024-07-05',
-      endDate: '2024-07-08'
+      endDate: '2024-07-08',
+      category: 'Electronics',
+      icon: Laptop
+    },
+    {
+      id: 3,
+      bookingId: 'BK-2024-003',
+      itemName: 'BMW X5 2019',
+      itemImage: '/assets/img/cars/car-04.jpg',
+      customerName: 'Sarah Mukisa',
+      amount: 450,
+      status: 'Active',
+      startDate: '2024-07-12',
+      endDate: '2024-07-18',
+      category: 'Vehicles',
+      icon: Car
     }
   ];
 
-  const carListings = [
+  const itemListings = [
     {
       id: 1,
-      name: 'BMW X5 2019',
-      image: '/assets/img/cars/car-04.jpg',
+      name: 'Canon EOS R5 Camera',
+      image: '/assets/img/items/camera-01.jpg',
       owner: 'John Mukama',
-      price: 120,
+      price: 85,
       status: 'Active',
       bookings: 12,
       rating: 4.8,
-      location: 'Kigali'
+      location: 'Kigali',
+      category: 'Photography',
+      icon: Camera,
+      description: 'Professional mirrorless camera with 45MP sensor'
     },
     {
       id: 2,
-      name: 'Mercedes C-Class',
-      image: '/assets/img/cars/car-05.jpg',
+      name: 'MacBook Pro 16" M2',
+      image: '/assets/img/items/laptop-01.jpg',
       owner: 'Sarah Uwimana',
-      price: 95,
-      status: 'Under Review',
+      price: 120,
+      status: 'Active',
       bookings: 8,
+      rating: 4.9,
+      location: 'Butare',
+      category: 'Electronics',
+      icon: Laptop,
+      description: 'High-performance laptop for creative work'
+    },
+    {
+      id: 3,
+      name: 'Sony WH-1000XM5',
+      image: '/assets/img/items/headphones-01.jpg',
+      owner: 'Paul Niyonshuti',
+      price: 25,
+      status: 'Under Review',
+      bookings: 15,
+      rating: 4.7,
+      location: 'Kigali',
+      category: 'Audio',
+      icon: Headphones,
+      description: 'Premium noise-canceling headphones'
+    },
+    {
+      id: 4,
+      name: 'PlayStation 5',
+      image: '/assets/img/items/gaming-01.jpg',
+      owner: 'Marie Ishimwe',
+      price: 45,
+      status: 'Active',
+      bookings: 22,
       rating: 4.6,
-      location: 'Butare'
+      location: 'Gisenyi',
+      category: 'Gaming',
+      icon: Gamepad2,
+      description: 'Latest gaming console with 4K gaming'
+    },
+    {
+      id: 5,
+      name: 'BMW X5 2019',
+      image: '/assets/img/cars/car-04.jpg',
+      owner: 'David Uwamahoro',
+      price: 450,
+      status: 'Active',
+      bookings: 6,
+      rating: 4.8,
+      location: 'Kigali',
+      category: 'Vehicles',
+      icon: Car,
+      description: 'Luxury SUV perfect for family trips'
+    },
+    {
+      id: 6,
+      name: 'Apple Watch Ultra',
+      image: '/assets/img/items/watch-01.jpg',
+      owner: 'Grace Mukamana',
+      price: 35,
+      status: 'Active',
+      bookings: 9,
+      rating: 4.5,
+      location: 'Musanze',
+      category: 'Wearables',
+      icon: Watch,
+      description: 'Adventure-ready smartwatch with GPS'
+    }
+  ];
+
+  // Multi-location and Multi-language data
+  const locations = [
+    {
+      id: 1,
+      name: 'Kigali',
+      country: 'Rwanda',
+      timezone: 'Africa/Kigali',
+      currency: 'RWF',
+      activeUsers: 1247,
+      activeItems: 456,
+      monthlyBookings: 234,
+      revenue: 45600,
+      status: 'Active',
+      coordinates: { lat: -1.9441, lng: 30.0619 }
+    },
+    {
+      id: 2,
+      name: 'Butare',
+      country: 'Rwanda',
+      timezone: 'Africa/Kigali',
+      currency: 'RWF',
+      activeUsers: 524,
+      activeItems: 189,
+      monthlyBookings: 89,
+      revenue: 12400,
+      status: 'Active',
+      coordinates: { lat: -2.5959, lng: 29.7407 }
+    },
+    {
+      id: 3,
+      name: 'Kampala',
+      country: 'Uganda',
+      timezone: 'Africa/Kampala',
+      currency: 'UGX',
+      activeUsers: 892,
+      activeItems: 312,
+      monthlyBookings: 156,
+      revenue: 28900,
+      status: 'Active',
+      coordinates: { lat: 0.3476, lng: 32.5825 }
+    },
+    {
+      id: 4,
+      name: 'Nairobi',
+      country: 'Kenya',
+      timezone: 'Africa/Nairobi',
+      currency: 'KES',
+      activeUsers: 1567,
+      activeItems: 423,
+      monthlyBookings: 298,
+      revenue: 67800,
+      status: 'Active',
+      coordinates: { lat: -1.2921, lng: 36.8219 }
+    }
+  ];
+
+  const languages = [
+    {
+      id: 1,
+      code: 'en',
+      name: 'English',
+      nativeName: 'English',
+      flag: '🇺🇸',
+      status: 'Active',
+      completeness: 100,
+      lastUpdated: '2024-07-08',
+      isDefault: true
+    },
+    {
+      id: 2,
+      code: 'rw',
+      name: 'Kinyarwanda',
+      nativeName: 'Ikinyarwanda',
+      flag: '🇷🇼',
+      status: 'Active',
+      completeness: 95,
+      lastUpdated: '2024-07-06',
+      isDefault: false
+    },
+    {
+      id: 3,
+      code: 'fr',
+      name: 'French',
+      nativeName: 'Français',
+      flag: '🇫🇷',
+      status: 'Active',
+      completeness: 88,
+      lastUpdated: '2024-07-04',
+      isDefault: false
+    },
+    {
+      id: 4,
+      code: 'sw',
+      name: 'Swahili',
+      nativeName: 'Kiswahili',
+      flag: '🇹🇿',
+      status: 'In Progress',
+      completeness: 65,
+      lastUpdated: '2024-07-02',
+      isDefault: false
     }
   ];
 
@@ -185,11 +372,34 @@ const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <select 
+                  value={selectedLocation} 
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Locations</option>
+                  <option value="Kigali">🇷🇼 Kigali</option>
+                  <option value="Butare">🇷🇼 Butare</option>
+                  <option value="Kampala">🇺🇬 Kampala</option>
+                  <option value="Nairobi">🇰🇪 Nairobi</option>
+                </select>
+                <select 
+                  value={selectedLanguage} 
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="en">🇺🇸 English</option>
+                  <option value="rw">🇷🇼 Kinyarwanda</option>
+                  <option value="fr">🇫🇷 Français</option>
+                  <option value="sw">🇹🇿 Kiswahili</option>
+                </select>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search users, cars, bookings..."
+                  placeholder="Search users, items, bookings..."
                   className="pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200 w-80"
                 />
               </div>
@@ -225,8 +435,8 @@ const AdminDashboardPage: React.FC = () => {
                     <span className="font-semibold">{adminStats.totalUsers.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Active Cars</span>
-                    <span className="font-semibold">{adminStats.totalCars}</span>
+                    <span className="text-gray-600">Active Items</span>
+                    <span className="font-semibold">{adminStats.totalItems}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Live Bookings</span>
@@ -244,10 +454,10 @@ const AdminDashboardPage: React.FC = () => {
                   onClick={() => setActiveTab('overview')}
                 />
                 <AdminNavigationItem
-                  icon={Car}
-                  label="Car Management"
-                  active={activeTab === 'cars'}
-                  onClick={() => setActiveTab('cars')}
+                  icon={Package}
+                  label="Items Management"
+                  active={activeTab === 'items'}
+                  onClick={() => setActiveTab('items')}
                 />
                 <AdminNavigationItem
                   icon={Users}
@@ -273,6 +483,18 @@ const AdminDashboardPage: React.FC = () => {
                   label="Reports"
                   active={activeTab === 'reports'}
                   onClick={() => setActiveTab('reports')}
+                />
+                <AdminNavigationItem
+                  icon={Globe}
+                  label="Locations"
+                  active={activeTab === 'locations'}
+                  onClick={() => setActiveTab('locations')}
+                />
+                <AdminNavigationItem
+                  icon={Languages}
+                  label="Languages"
+                  active={activeTab === 'languages'}
+                  onClick={() => setActiveTab('languages')}
                 />
                 
                 <div className="border-t border-gray-100 pt-4 mt-6">
@@ -303,11 +525,11 @@ const AdminDashboardPage: React.FC = () => {
                     bgColor="bg-blue-50"
                   />
                   <AdminStatCard
-                    icon={Car}
-                    title="Total Cars"
-                    value={adminStats.totalCars}
-                    subtitle="Manage fleet"
-                    trend={{ value: `+${adminStats.monthlyGrowth.cars}%`, positive: true }}
+                    icon={Package}
+                    title="Total Items"
+                    value={adminStats.totalItems}
+                    subtitle="Manage inventory"
+                    trend={{ value: `+${adminStats.monthlyGrowth.items}%`, positive: true }}
                     color="text-emerald-600"
                     bgColor="bg-emerald-50"
                   />
@@ -399,18 +621,28 @@ const AdminDashboardPage: React.FC = () => {
                     <div className="space-y-4">
                       {recentBookings.map((booking) => (
                         <div key={booking.id} className="flex items-center space-x-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors">
-                          <img 
-                            src={booking.carImage} 
-                            alt={booking.carName} 
-                            className="w-12 h-12 rounded-xl object-cover" 
-                          />
+                          <div className="relative">
+                            <img 
+                              src={booking.itemImage} 
+                              alt={booking.itemName} 
+                              className="w-12 h-12 rounded-xl object-cover" 
+                            />
+                            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-sm">
+                              <booking.icon className="w-3 h-3 text-gray-600" />
+                            </div>
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 text-sm">{booking.carName}</h4>
+                            <h4 className="font-semibold text-gray-900 text-sm">{booking.itemName}</h4>
                             <p className="text-sm text-gray-500">{booking.customerName}</p>
-                            <p className="text-xs text-gray-400">{booking.bookingId}</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
+                                {booking.category}
+                              </span>
+                              <span className="text-xs text-gray-400">{booking.bookingId}</span>
+                            </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-gray-900">${booking.amount}</p>
+                            <p className="font-bold text-gray-900">${booking.amount}/day</p>
                             <span className={`text-xs px-2 py-1 rounded-lg ${
                               booking.status === 'Active' 
                                 ? 'bg-green-100 text-green-700' 
@@ -428,47 +660,126 @@ const AdminDashboardPage: React.FC = () => {
             )}
 
             {/* Additional tabs content will be added here */}
-            {activeTab === 'cars' && (
+            {activeTab === 'items' && (
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Car Management</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Items Management</h3>
                   <div className="flex items-center space-x-3">
+                    <select 
+                      value={itemFilter} 
+                      onChange={(e) => setItemFilter(e.target.value)}
+                      className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">All Categories</option>
+                      <option value="Photography">Photography</option>
+                      <option value="Electronics">Electronics</option>
+                      <option value="Vehicles">Vehicles</option>
+                      <option value="Audio">Audio</option>
+                      <option value="Gaming">Gaming</option>
+                      <option value="Wearables">Wearables</option>
+                    </select>
                     <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
                       <Filter className="w-4 h-4 mr-2" />
                       Filter
                     </Button>
+                    {selectedItems.length > 0 && (
+                      <Button className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl transition-colors">
+                        Bulk Actions ({selectedItems.length})
+                      </Button>
+                    )}
                     <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Car
+                      Add Item
                     </Button>
                   </div>
                 </div>
+
+                {/* Items Categories Overview */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                  <div className="bg-blue-50 rounded-2xl p-4 text-center">
+                    <Camera className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-blue-700">Photography</p>
+                    <p className="text-xs text-blue-600">124 items</p>
+                  </div>
+                  <div className="bg-purple-50 rounded-2xl p-4 text-center">
+                    <Laptop className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-purple-700">Electronics</p>
+                    <p className="text-xs text-purple-600">89 items</p>
+                  </div>
+                  <div className="bg-green-50 rounded-2xl p-4 text-center">
+                    <Car className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-green-700">Vehicles</p>
+                    <p className="text-xs text-green-600">156 items</p>
+                  </div>
+                  <div className="bg-orange-50 rounded-2xl p-4 text-center">
+                    <Headphones className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-orange-700">Audio</p>
+                    <p className="text-xs text-orange-600">67 items</p>
+                  </div>
+                  <div className="bg-red-50 rounded-2xl p-4 text-center">
+                    <Gamepad2 className="w-8 h-8 text-red-600 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-red-700">Gaming</p>
+                    <p className="text-xs text-red-600">45 items</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-2xl p-4 text-center">
+                    <Watch className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-yellow-700">Wearables</p>
+                    <p className="text-xs text-yellow-600">31 items</p>
+                  </div>
+                </div>
+
                 <div className="space-y-4">
-                  {carListings.map((car) => (
-                    <div key={car.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                      <img 
-                        src={car.image} 
-                        alt={car.name} 
-                        className="w-20 h-16 rounded-xl object-cover" 
-                      />
+                  {itemListings
+                    .filter(item => itemFilter === 'all' || item.category === itemFilter)
+                    .filter(item => selectedLocation === 'all' || item.location === selectedLocation)
+                    .map((item) => (
+                    <div key={item.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex items-center">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedItems.includes(item.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedItems([...selectedItems, item.id]);
+                            } else {
+                              setSelectedItems(selectedItems.filter(id => id !== item.id));
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mr-4"
+                        />
+                        <div className="relative">
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-20 h-16 rounded-xl object-cover" 
+                          />
+                          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-sm">
+                            <item.icon className="w-4 h-4 text-gray-600" />
+                          </div>
+                        </div>
+                      </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h4 className="font-semibold text-gray-900">{car.name}</h4>
+                          <h4 className="font-semibold text-gray-900">{item.name}</h4>
                           <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                            car.status === 'Active' 
+                            item.status === 'Active' 
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
-                            {car.status}
+                            {item.status}
+                          </span>
+                          <span className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700">
+                            {item.category}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-500 mb-2">Owner: {car.owner} • {car.location}</p>
+                        <p className="text-sm text-gray-500 mb-2">Owner: {item.owner} • {item.location}</p>
+                        <p className="text-xs text-gray-400 mb-2">{item.description}</p>
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <span>${car.price}/day</span>
-                          <span>{car.bookings} bookings</span>
+                          <span className="font-semibold">${item.price}/day</span>
+                          <span>{item.bookings} bookings</span>
                           <div className="flex items-center">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
-                            <span>{car.rating}</span>
+                            <span>{item.rating}</span>
                           </div>
                         </div>
                       </div>
@@ -540,7 +851,7 @@ const AdminDashboardPage: React.FC = () => {
                         <p className="text-sm text-purple-600 font-medium">Hosts</p>
                         <p className="text-2xl font-bold text-purple-700">203</p>
                       </div>
-                      <Car className="w-8 h-8 text-purple-600" />
+                      <Package className="w-8 h-8 text-purple-600" />
                     </div>
                   </div>
                 </div>
@@ -609,14 +920,19 @@ const AdminDashboardPage: React.FC = () => {
                 <div className="space-y-4">
                   {recentBookings.map((booking) => (
                     <div key={booking.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                      <img 
-                        src={booking.carImage} 
-                        alt={booking.carName} 
-                        className="w-20 h-16 rounded-xl object-cover" 
-                      />
+                      <div className="relative">
+                        <img 
+                          src={booking.itemImage} 
+                          alt={booking.itemName} 
+                          className="w-20 h-16 rounded-xl object-cover" 
+                        />
+                        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-sm">
+                          <booking.icon className="w-4 h-4 text-gray-600" />
+                        </div>
+                      </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h4 className="font-semibold text-gray-900">{booking.carName}</h4>
+                          <h4 className="font-semibold text-gray-900">{booking.itemName}</h4>
                           <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
                             booking.status === 'Active' 
                               ? 'bg-green-100 text-green-700' 
@@ -624,13 +940,16 @@ const AdminDashboardPage: React.FC = () => {
                           }`}>
                             {booking.status}
                           </span>
+                          <span className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700">
+                            {booking.category}
+                          </span>
                         </div>
                         <p className="text-sm text-gray-600 mb-1">Customer: {booking.customerName}</p>
                         <p className="text-sm text-gray-500">{booking.startDate} - {booking.endDate}</p>
                         <p className="text-xs text-gray-400">Booking ID: {booking.bookingId}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-gray-900">${booking.amount}</p>
+                        <p className="text-xl font-bold text-gray-900">${booking.amount}/day</p>
                         <div className="flex items-center space-x-2 mt-2">
                           <button className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
                             <Eye className="w-4 h-4" />
@@ -649,13 +968,255 @@ const AdminDashboardPage: React.FC = () => {
               </div>
             )}
 
+            {activeTab === 'locations' && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Location Management</h3>
+                  <div className="flex items-center space-x-3">
+                    <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filter
+                    </Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Location
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Location Stats Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-blue-600 font-medium">Active Locations</p>
+                        <p className="text-2xl font-bold text-blue-700">{locations.filter(l => l.status === 'Active').length}</p>
+                      </div>
+                      <MapPin className="w-8 h-8 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="bg-green-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-600 font-medium">Total Users</p>
+                        <p className="text-2xl font-bold text-green-700">{locations.reduce((sum, l) => sum + l.activeUsers, 0).toLocaleString()}</p>
+                      </div>
+                      <Users className="w-8 h-8 text-green-600" />
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-purple-600 font-medium">Total Items</p>
+                        <p className="text-2xl font-bold text-purple-700">{locations.reduce((sum, l) => sum + l.activeItems, 0).toLocaleString()}</p>
+                      </div>
+                      <Package className="w-8 h-8 text-purple-600" />
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-orange-600 font-medium">Total Revenue</p>
+                        <p className="text-2xl font-bold text-orange-700">${locations.reduce((sum, l) => sum + l.revenue, 0).toLocaleString()}</p>
+                      </div>
+                      <DollarSign className="w-8 h-8 text-orange-600" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Locations List */}
+                <div className="space-y-4">
+                  {locations.map((location) => (
+                    <div key={location.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                          <Building2 className="w-8 h-8 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h4 className="font-semibold text-gray-900 text-lg">{location.name}</h4>
+                            <span className="text-sm text-gray-500">{location.country}</span>
+                            <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
+                              location.status === 'Active' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {location.status}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-500">Users</p>
+                              <p className="font-semibold text-gray-900">{location.activeUsers.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Items</p>
+                              <p className="font-semibold text-gray-900">{location.activeItems.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Bookings</p>
+                              <p className="font-semibold text-gray-900">{location.monthlyBookings}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Revenue</p>
+                              <p className="font-semibold text-gray-900">${location.revenue.toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                            <span>Timezone: {location.timezone}</span>
+                            <span>Currency: {location.currency}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'languages' && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Language Management</h3>
+                  <div className="flex items-center space-x-3">
+                    <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filter
+                    </Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Language
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Language Stats Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-blue-600 font-medium">Active Languages</p>
+                        <p className="text-2xl font-bold text-blue-700">{languages.filter(l => l.status === 'Active').length}</p>
+                      </div>
+                      <Flag className="w-8 h-8 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="bg-green-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-600 font-medium">Avg Completion</p>
+                        <p className="text-2xl font-bold text-green-700">{Math.round(languages.reduce((sum, l) => sum + l.completeness, 0) / languages.length)}%</p>
+                      </div>
+                      <CheckCircle className="w-8 h-8 text-green-600" />
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-purple-600 font-medium">In Progress</p>
+                        <p className="text-2xl font-bold text-purple-700">{languages.filter(l => l.status === 'In Progress').length}</p>
+                      </div>
+                      <Edit3 className="w-8 h-8 text-purple-600" />
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 rounded-2xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-orange-600 font-medium">Default Language</p>
+                        <p className="text-lg font-bold text-orange-700">{languages.find(l => l.isDefault)?.flag} {languages.find(l => l.isDefault)?.name}</p>
+                      </div>
+                      <Star className="w-8 h-8 text-orange-600" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Languages List */}
+                <div className="space-y-4">
+                  {languages.map((language) => (
+                    <div key={language.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-xl flex items-center justify-center">
+                          <span className="text-2xl">{language.flag}</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h4 className="font-semibold text-gray-900 text-lg">{language.name}</h4>
+                            <span className="text-sm text-gray-500">({language.nativeName})</span>
+                            <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
+                              language.status === 'Active' 
+                                ? 'bg-green-100 text-green-700' 
+                                : language.status === 'In Progress'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {language.status}
+                            </span>
+                            {language.isDefault && (
+                              <span className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-6 mb-3">
+                            <div>
+                              <p className="text-xs text-gray-500">Completion</p>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className={`h-2 rounded-full ${
+                                      language.completeness >= 90 ? 'bg-green-500' :
+                                      language.completeness >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${language.completeness}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-700">{language.completeness}%</span>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Last Updated</p>
+                              <p className="text-sm font-medium text-gray-700">{language.lastUpdated}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Language Code</p>
+                              <p className="text-sm font-mono font-medium text-gray-700">{language.code}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Placeholder for other tabs */}
             {(activeTab === 'finances' || activeTab === 'reports' || activeTab === 'settings') && (
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                 <div className="text-center py-16">
                   <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    {activeTab === 'users' && <Users className="w-10 h-10 text-gray-400" />}
-                    {activeTab === 'bookings' && <Calendar className="w-10 h-10 text-gray-400" />}
                     {activeTab === 'finances' && <DollarSign className="w-10 h-10 text-gray-400" />}
                     {activeTab === 'reports' && <FileText className="w-10 h-10 text-gray-400" />}
                     {activeTab === 'settings' && <Settings className="w-10 h-10 text-gray-400" />}
