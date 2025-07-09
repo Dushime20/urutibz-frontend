@@ -5,7 +5,9 @@ import {
   Shield, Settings, Bell, Search, Plus, Eye, Edit3, 
   MoreHorizontal, CheckCircle, FileText, Filter, ArrowUpRight,
   Star, Camera, Laptop, Headphones, Gamepad2, Car,
-  Watch, Globe, MapPin, Languages, Building2, Flag
+  Watch, Globe, MapPin, Languages, Building2, Flag,
+  MessageSquare, Send, Phone, Video, Mic, Paperclip,
+  Bot, AlertTriangle, Clock, Smartphone, Mail
 } from 'lucide-react';
 import { Button } from '../components/ui/DesignSystem';
 
@@ -29,7 +31,7 @@ interface AdminNavigationItemProps {
 }
 
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'reports' | 'settings' | 'locations' | 'languages'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -305,6 +307,174 @@ const AdminDashboardPage: React.FC = () => {
     }
   ];
 
+  // Messaging and Communication data
+  const messagingStats = {
+    totalMessages: 12847,
+    activeChats: 156,
+    responseTime: '2.3m',
+    satisfactionRate: 4.6,
+    aiAssistance: 78,
+    templates: 24,
+    notifications: 2340
+  };
+
+  const messageTemplates = [
+    {
+      id: 1,
+      category: 'Booking Inquiries',
+      title: 'Initial Booking Request',
+      template: 'Hi! I\'m interested in renting your {itemName}. Is it available from {startDate} to {endDate}?',
+      usage: 145,
+      lastUpdated: '2024-07-08',
+      language: 'en'
+    },
+    {
+      id: 2,
+      category: 'Pickup/Delivery',
+      title: 'Pickup Confirmation',
+      template: 'Your rental is ready for pickup! Location: {address}. Time: {time}. Please bring your ID.',
+      usage: 98,
+      lastUpdated: '2024-07-06',
+      language: 'en'
+    },
+    {
+      id: 3,
+      category: 'Usage Instructions',
+      title: 'Equipment Guidelines',
+      template: 'Here are the usage instructions for {itemName}: {instructions}. Please handle with care.',
+      usage: 76,
+      lastUpdated: '2024-07-05',
+      language: 'en'
+    },
+    {
+      id: 4,
+      category: 'Damage Reporting',
+      title: 'Damage Report',
+      template: 'I need to report an issue with the rented item. Description: {description}. Photos attached.',
+      usage: 23,
+      lastUpdated: '2024-07-04',
+      language: 'en'
+    },
+    {
+      id: 5,
+      category: 'Extension Requests',
+      title: 'Rental Extension',
+      template: 'I would like to extend my rental period until {newEndDate}. Is this possible?',
+      usage: 67,
+      lastUpdated: '2024-07-03',
+      language: 'en'
+    }
+  ];
+
+  const recentMessages = [
+    {
+      id: 1,
+      chatId: 'CHT-2024-001',
+      participants: ['Alice Uwimana', 'John Mukama'],
+      lastMessage: 'Thank you! The camera works perfectly.',
+      timestamp: '2 minutes ago',
+      status: 'unread',
+      itemName: 'Canon EOS R5 Camera',
+      messageType: 'text',
+      hasAI: false,
+      priority: 'normal'
+    },
+    {
+      id: 2,
+      chatId: 'CHT-2024-002',
+      participants: ['David Nkusi', 'Sarah Uwimana'],
+      lastMessage: 'AI: Suggested response available',
+      timestamp: '5 minutes ago',
+      status: 'ai-pending',
+      itemName: 'MacBook Pro 16"',
+      messageType: 'ai-suggestion',
+      hasAI: true,
+      priority: 'high'
+    },
+    {
+      id: 3,
+      chatId: 'CHT-2024-003',
+      participants: ['Marie Ishimwe', 'Paul Niyonshuti'],
+      lastMessage: 'Voice message (0:45)',
+      timestamp: '8 minutes ago',
+      status: 'read',
+      itemName: 'PlayStation 5',
+      messageType: 'voice',
+      hasAI: false,
+      priority: 'normal'
+    }
+  ];
+
+  const notificationSettings = [
+    {
+      id: 1,
+      type: 'Push Notifications',
+      description: 'Real-time mobile notifications',
+      enabled: true,
+      users: 2340,
+      deliveryRate: 98.5
+    },
+    {
+      id: 2,
+      type: 'Email Notifications',
+      description: 'Email alerts and summaries',
+      enabled: true,
+      users: 2847,
+      deliveryRate: 94.2
+    },
+    {
+      id: 3,
+      type: 'SMS Alerts',
+      description: 'Critical SMS notifications',
+      enabled: true,
+      users: 1567,
+      deliveryRate: 99.1
+    },
+    {
+      id: 4,
+      type: 'In-App Notifications',
+      description: 'Application-based alerts',
+      enabled: true,
+      users: 2847,
+      deliveryRate: 100
+    }
+  ];
+
+  const aiFeatures = [
+    {
+      id: 1,
+      name: 'Auto-Response Suggestions',
+      description: 'AI-powered message suggestions',
+      accuracy: 87,
+      usage: 245,
+      enabled: true
+    },
+    {
+      id: 2,
+      name: 'Language Translation',
+      description: 'Real-time message translation',
+      accuracy: 92,
+      usage: 189,
+      enabled: true
+    },
+    {
+      id: 3,
+      name: 'Sentiment Analysis',
+      description: 'Emotional tone detection',
+      accuracy: 84,
+      usage: 156,
+      enabled: true
+    },
+    {
+      id: 4,
+      name: 'Conflict Resolution',
+      description: 'Automated dispute assistance',
+      accuracy: 78,
+      usage: 34,
+      enabled: true
+    }
+  ];
+
   const AdminStatCard: React.FC<AdminStatCardProps> = ({ icon: Icon, title, value, subtitle, trend, color, bgColor }) => (
     <div className="group relative bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl"></div>
@@ -495,6 +665,18 @@ const AdminDashboardPage: React.FC = () => {
                   label="Languages"
                   active={activeTab === 'languages'}
                   onClick={() => setActiveTab('languages')}
+                />
+                <AdminNavigationItem
+                  icon={MessageSquare}
+                  label="Messaging"
+                  active={activeTab === 'messaging'}
+                  onClick={() => setActiveTab('messaging')}
+                />
+                <AdminNavigationItem
+                  icon={Bell}
+                  label="Notifications"
+                  active={activeTab === 'notifications'}
+                  onClick={() => setActiveTab('notifications')}
                 />
                 
                 <div className="border-t border-gray-100 pt-4 mt-6">
@@ -1208,6 +1390,409 @@ const AdminDashboardPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'messaging' && (
+              <div className="space-y-8">
+                {/* Messaging Overview Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-2xl bg-blue-50">
+                        <MessageSquare className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{messagingStats.totalMessages.toLocaleString()}</div>
+                        <div className="text-sm text-gray-500">Total Messages</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-2xl bg-green-50">
+                        <Users className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{messagingStats.activeChats}</div>
+                        <div className="text-sm text-gray-500">Active Chats</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-2xl bg-purple-50">
+                        <Clock className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{messagingStats.responseTime}</div>
+                        <div className="text-sm text-gray-500">Avg Response</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-2xl bg-orange-50">
+                        <Star className="w-6 h-6 text-orange-600" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{messagingStats.satisfactionRate}</div>
+                        <div className="text-sm text-gray-500">Satisfaction</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Recent Messages */}
+                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold text-gray-900">Recent Messages</h3>
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition-colors flex items-center">
+                        <Plus className="w-4 h-4 mr-2" />
+                        New Chat
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {recentMessages.map((message) => (
+                        <div key={message.id} className="flex items-center space-x-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors">
+                          <div className="relative">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                              {message.messageType === 'voice' && <Mic className="w-5 h-5 text-blue-600" />}
+                              {message.messageType === 'ai-suggestion' && <Bot className="w-5 h-5 text-blue-600" />}
+                              {message.messageType === 'text' && <MessageSquare className="w-5 h-5 text-blue-600" />}
+                            </div>
+                            {message.status === 'unread' && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+                            )}
+                            {message.hasAI && (
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                                <Bot className="w-2 h-2 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h4 className="font-semibold text-gray-900 text-sm">{message.participants.join(' ↔ ')}</h4>
+                              <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                                message.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                              }`}>
+                                {message.priority}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 truncate">{message.lastMessage}</p>
+                            <p className="text-xs text-gray-400">{message.itemName} • {message.timestamp}</p>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <button className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            {message.hasAI && (
+                              <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-colors">
+                                <Bot className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Message Templates */}
+                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold text-gray-900">Message Templates</h3>
+                      <Button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-colors flex items-center">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Template
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {messageTemplates.map((template) => (
+                        <div key={template.id} className="p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-gray-900 text-sm">{template.title}</h4>
+                            <span className="px-2 py-1 rounded-lg text-xs font-medium bg-purple-100 text-purple-700">
+                              {template.category}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{template.template}</p>
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>Used {template.usage} times</span>
+                            <span>Updated {template.lastUpdated}</span>
+                          </div>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <button className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors">
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button className="p-1 text-gray-400 hover:text-green-600 rounded transition-colors">
+                              <Send className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Features */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">AI Communication Features</h3>
+                    <Button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+                      <Bot className="w-4 h-4 mr-2" />
+                      AI Settings
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {aiFeatures.map((feature) => (
+                      <div key={feature.id} className="p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="p-3 rounded-2xl bg-purple-50">
+                            <Bot className="w-6 h-6 text-purple-600" />
+                          </div>
+                          <div className={`w-3 h-3 rounded-full ${feature.enabled ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                        </div>
+                        <h4 className="font-semibold text-gray-900 mb-2">{feature.name}</h4>
+                        <p className="text-sm text-gray-600 mb-4">{feature.description}</p>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Accuracy</span>
+                            <span className="font-semibold text-gray-900">{feature.accuracy}%</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Usage</span>
+                            <span className="font-semibold text-gray-900">{feature.usage}</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-purple-500 h-2 rounded-full" 
+                              style={{ width: `${feature.accuracy}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Communication Features */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6">Communication Features</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100">
+                      <div className="flex items-center mb-4">
+                        <MessageSquare className="w-8 h-8 text-blue-600 mr-3" />
+                        <h4 className="font-semibold text-gray-900">Real-time Chat</h4>
+                      </div>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• Instant messaging</li>
+                        <li>• Read receipts</li>
+                        <li>• Typing indicators</li>
+                        <li>• Message encryption</li>
+                      </ul>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-green-50 to-green-100">
+                      <div className="flex items-center mb-4">
+                        <Paperclip className="w-8 h-8 text-green-600 mr-3" />
+                        <h4 className="font-semibold text-gray-900">Media Sharing</h4>
+                      </div>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• Photo sharing</li>
+                        <li>• Document uploads</li>
+                        <li>• File compression</li>
+                        <li>• Preview generation</li>
+                      </ul>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100">
+                      <div className="flex items-center mb-4">
+                        <Video className="w-8 h-8 text-purple-600 mr-3" />
+                        <h4 className="font-semibold text-gray-900">Video Calls</h4>
+                      </div>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• HD video calling</li>
+                        <li>• Screen sharing</li>
+                        <li>• Call recording</li>
+                        <li>• Multi-participant</li>
+                      </ul>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100">
+                      <div className="flex items-center mb-4">
+                        <Mic className="w-8 h-8 text-orange-600 mr-3" />
+                        <h4 className="font-semibold text-gray-900">Voice Messages</h4>
+                      </div>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• Voice recording</li>
+                        <li>• Audio compression</li>
+                        <li>• Playback speed</li>
+                        <li>• Transcription</li>
+                      </ul>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-red-50 to-red-100">
+                      <div className="flex items-center mb-4">
+                        <Globe className="w-8 h-8 text-red-600 mr-3" />
+                        <h4 className="font-semibold text-gray-900">Translation</h4>
+                      </div>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• Real-time translation</li>
+                        <li>• 50+ languages</li>
+                        <li>• Context awareness</li>
+                        <li>• Cultural adaptation</li>
+                      </ul>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-yellow-50 to-yellow-100">
+                      <div className="flex items-center mb-4">
+                        <AlertTriangle className="w-8 h-8 text-yellow-600 mr-3" />
+                        <h4 className="font-semibold text-gray-900">Conflict Resolution</h4>
+                      </div>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• Dispute detection</li>
+                        <li>• Mediation assistance</li>
+                        <li>• Evidence collection</li>
+                        <li>• Resolution tracking</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'notifications' && (
+              <div className="space-y-8">
+                {/* Notification Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-2xl bg-blue-50">
+                        <Bell className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{messagingStats.notifications}</div>
+                        <div className="text-sm text-gray-500">Total Sent</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-2xl bg-green-50">
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">97.8%</div>
+                        <div className="text-sm text-gray-500">Delivery Rate</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-2xl bg-purple-50">
+                        <Eye className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">84.5%</div>
+                        <div className="text-sm text-gray-500">Open Rate</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 rounded-2xl bg-orange-50">
+                        <Users className="w-6 h-6 text-orange-600" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">2,847</div>
+                        <div className="text-sm text-gray-500">Subscribers</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notification Settings */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">Notification Channels</h3>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Channel
+                    </Button>
+                  </div>
+                  <div className="space-y-6">
+                    {notificationSettings.map((setting) => (
+                      <div key={setting.id} className="flex items-center justify-between p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                            {setting.type === 'Push Notifications' && <Smartphone className="w-8 h-8 text-blue-600" />}
+                            {setting.type === 'Email Notifications' && <Mail className="w-8 h-8 text-blue-600" />}
+                            {setting.type === 'SMS Alerts' && <Phone className="w-8 h-8 text-blue-600" />}
+                            {setting.type === 'In-App Notifications' && <Bell className="w-8 h-8 text-blue-600" />}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900 text-lg">{setting.type}</h4>
+                            <p className="text-sm text-gray-600 mb-2">{setting.description}</p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <span>{setting.users.toLocaleString()} users</span>
+                              <span>{setting.deliveryRate}% delivery rate</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-12 h-6 rounded-full transition-colors ${setting.enabled ? 'bg-green-500' : 'bg-gray-300'} relative`}>
+                            <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${setting.enabled ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+                          </div>
+                          <button className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                            <Settings className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notification Templates */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">Notification Templates</h3>
+                    <Button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Template
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold text-gray-900">Booking Confirmation</h4>
+                        <span className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700">Auto</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">Your booking for [Item Name] has been confirmed. Pickup details will follow.</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Sent 234 times</span>
+                        <button className="text-blue-600 hover:text-blue-700">Edit</button>
+                      </div>
+                    </div>
+                    <div className="p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold text-gray-900">Payment Reminder</h4>
+                        <span className="px-2 py-1 rounded-lg text-xs font-medium bg-yellow-100 text-yellow-700">Scheduled</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">Payment for your rental is due in 24 hours. Please complete your payment.</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Sent 89 times</span>
+                        <button className="text-blue-600 hover:text-blue-700">Edit</button>
+                      </div>
+                    </div>
+                    <div className="p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold text-gray-900">Return Reminder</h4>
+                        <span className="px-2 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-700">Active</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">Your rental period ends tomorrow. Please prepare for return or extend.</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Sent 156 times</span>
+                        <button className="text-blue-600 hover:text-blue-700">Edit</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
