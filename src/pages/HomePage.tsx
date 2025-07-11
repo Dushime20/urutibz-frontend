@@ -10,7 +10,7 @@ import PricingSection from '../components/sections/PricingSection';
 import BlogSection from '../components/sections/BlogSection';
 import FaqSection from '../components/sections/FaqSection';
 import AllCategoriesSection from '../components/sections/AllCategoriesSection';
-import CTASection from '../components/sections/CTASection';
+// import CTASection from '../components/sections/CTASection';
 
 const HomePage: React.FC = () => {
   return (
@@ -26,7 +26,7 @@ const HomePage: React.FC = () => {
       <PricingSection />
       <BlogSection />
       <FaqSection />
-      <CTASection />
+      {/* <CTASection /> */}
     </div>
   );
 };

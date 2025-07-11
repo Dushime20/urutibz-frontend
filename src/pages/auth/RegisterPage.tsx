@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, User, Eye, EyeOff, Bot, Sparkles, ArrowLeft } from 'lucide-react';
+import { registerUser } from './service/api';
+
+// Simple custom toast component
+function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
+  const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+  return (
+    <div className={`fixed top-6 right-6 z-50 ${bgColor} text-white px-6 py-3 rounded shadow-lg flex items-center space-x-4 animate-fadeIn`}>
+      <span>{message}</span>
+      <button onClick={onClose} className="ml-4 text-white font-bold">&times;</button>
+    </div>
+  );
+}
 
 const RegisterPage: React.FC = () => {
-  const { register } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
@@ -21,6 +31,8 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'error' | 'success'>('error');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, type, checked, value } = e.target;
@@ -47,21 +59,31 @@ const RegisterPage: React.FC = () => {
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
+      setToast(validationError);
+      setToastType('error');
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    setError("");
+    setToast(null);
 
     try {
-      await register(
-        `${formData.firstName} ${formData.lastName}`,
-        formData.email,
-        formData.password
-      );
-      navigate(redirectUrl);
-    } catch (err) {
-      setError('Registration failed. Please try again.');
+      await registerUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+      });
+      setToast('Registration successful');
+      setToastType('success');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
+      // setToast(err.message || 'Registration failed. Please try again.');
+      setToastType('error');
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +91,7 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {toast && <Toast message={toast} onClose={() => setToast(null)} type={toastType} />}
       <div className="max-w-md w-full space-y-8">
         {/* Back Button */}
         <div className="flex items-center">

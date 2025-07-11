@@ -1,13 +1,26 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, Eye, EyeOff, Bot, Sparkles, ArrowLeft } from 'lucide-react';
+import logo from '.././../../public/assets/img/logo-2.svg';
+import { loginUser } from './service/api';
+import { useAuth } from '../../contexts/AuthContext';
+
+// Simple custom toast component
+function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
+  const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+  return (
+    <div className={`fixed top-6 right-6 z-50 ${bgColor} text-white px-6 py-3 rounded shadow-lg flex items-center space-x-4 animate-fadeIn`}>
+      <span>{message}</span>
+      <button onClick={onClose} className="ml-4 text-white font-bold">&times;</button>
+    </div>
+  );
+}
 
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const { setAuthenticatedUser } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -16,6 +29,8 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'error' | 'success'>('error');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -29,19 +44,33 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setToast(null);
 
     try {
-      await login(formData.email, formData.password);
-      navigate(redirectUrl);
-    } catch (err) {
-      setError('Invalid email or password. Please try again.');
+      const data = await loginUser(formData.email, formData.password);
+      if (data && data.token) {
+        localStorage.setItem('token', data.token);
+        if (data.user) {
+          setAuthenticatedUser(data.user);
+        }
+      }
+      setToast('Login successfully');
+      setToastType('success');
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password. Please try again.');
+      setToast(err.message || 'Invalid email or password. Please try again.');
+      setToastType('error');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {toast && <Toast message={toast} onClose={() => setToast(null)} type={toastType} />}
       <div className="max-w-md w-full space-y-8">
         {/* Back Button */}
         <div className="flex items-center">
@@ -58,7 +87,7 @@ const LoginPage: React.FC = () => {
         <div className="text-center">
           <div className="flex justify-center items-center space-x-2 mb-6">
             <img 
-              src="/assets/img/urutibz-logo.svg" 
+              src={logo} 
               alt="UrutiBz" 
               className="h-8 w-8" 
             />

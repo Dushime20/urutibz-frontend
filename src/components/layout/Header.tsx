@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChevronDown, Globe, Menu, X, Bot } from 'lucide-react';
@@ -16,6 +16,21 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    }
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-platform-light-grey shadow-platform">
@@ -129,7 +144,7 @@ const Header: React.FC = () => {
                   </button>
                   
                   {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-platform shadow-platform-lg border border-platform-light-grey py-2 z-20">
+                    <div ref={profileRef} className="absolute right-0 mt-2 w-56 bg-white rounded-platform shadow-platform-lg border border-platform-light-grey py-2 z-20">
                       <div className="px-4 py-2 border-b border-platform-light-grey">
                         <p className="text-sm font-medium text-platform-dark-grey">{user?.name}</p>
                         <p className="text-xs text-platform-grey">{user?.email}</p>

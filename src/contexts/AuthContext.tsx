@@ -43,6 +43,7 @@ interface AuthContextType {
   canListItems: () => boolean;
   canRentItems: () => boolean;
   error: string | null;
+  setAuthenticatedUser: (user: User) => void;
 }
 
 // Create the auth context with default values
@@ -58,6 +59,7 @@ const AuthContext = createContext<AuthContextType>({
   canListItems: () => false,
   canRentItems: () => false,
   error: null,
+  setAuthenticatedUser: () => {},
 });
 
 // Custom hook to use the auth context
@@ -320,6 +322,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return user.verification.isProfileComplete && user.verification.isEmailVerified;
   };
 
+  const setAuthenticatedUser = (user: User) => {
+    setUser(user);
+    localStorage.setItem('user', JSON.stringify(user));
+  };
+
   const value = {
     user,
     isAuthenticated: !!user,
@@ -332,6 +339,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     canListItems,
     canRentItems,
     error,
+    setAuthenticatedUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
