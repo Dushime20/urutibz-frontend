@@ -14,11 +14,11 @@ import FaqPage from './pages/FaqPage';
 import CreateListingPage from './pages/CreateListingPage';
 import ItemSearchPage from './pages/ItemSearchPage';
 import ItemDetailsPage from './pages/ItemDetailsPage';
-import ProfileVerificationPage from './pages/verification/ProfileVerificationPage';
-import EmailVerificationPage from './pages/verification/EmailVerificationPage';
-import PhoneVerificationPage from './pages/verification/PhoneVerificationPage';
-import IdVerificationPage from './pages/verification/IdVerificationPage';
-import AddressVerificationPage from './pages/verification/AddressVerificationPage';
+// import ProfileVerificationPage from './pages/verification/ProfileVerificationPage';
+// import EmailVerificationPage from './pages/verification/EmailVerificationPage';
+// import PhoneVerificationPage from './pages/verification/PhoneVerificationPage';
+import UrutiBzVerification from './pages/verification2/urutibiziVerification';
+// import AddressVerificationPage from './pages/verification/AddressVerificationPage';
 import DemoPage from './pages/DemoPage';
 
 function App() {
@@ -74,31 +74,31 @@ function App() {
             } />
             
             {/* Verification routes - protected */}
-            <Route path="verify/profile" element={
+            {/* <Route path="verify/profile" element={
               <ProtectedRoute>
                 <ProfileVerificationPage />
               </ProtectedRoute>
-            } />
-            <Route path="verify/email" element={
+            } /> */}
+            {/* <Route path="verify/email" element={
               <ProtectedRoute>
                 <EmailVerificationPage />
               </ProtectedRoute>
-            } />
-            <Route path="verify/phone" element={
+            } /> */}
+            {/* <Route path="verify/phone" element={
               <ProtectedRoute>
                 <PhoneVerificationPage />
               </ProtectedRoute>
-            } />
+            } /> */}
             <Route path="verify/id" element={
               <ProtectedRoute>
-                <IdVerificationPage />
+                <UrutiBzVerification />
               </ProtectedRoute>
             } />
-            <Route path="verify/address" element={
+            {/* <Route path="verify/address" element={
               <ProtectedRoute>
                 <AddressVerificationPage />
               </ProtectedRoute>
-            } />
+            } /> */}
           </Route>
         </Routes>
       </Router>

@@ -21,6 +21,8 @@ const VerificationBanner: React.FC = () => {
 
   const { verification } = user;
 
+  if (!verification) return null;
+
   // If fully verified, show success banner
   if (verification.isFullyVerified) {
     return (

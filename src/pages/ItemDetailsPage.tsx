@@ -52,7 +52,7 @@ const ItemDetailsPage: React.FC = () => {
     }
 
     // Check verification status
-    if (!user?.verification.isFullyVerified) {
+    if (!user?.verification || !user.verification.isFullyVerified) {
       setShowVerificationModal(true);
       return;
     }
@@ -337,7 +337,7 @@ const ItemDetailsPage: React.FC = () => {
                   </div>
                 )}
 
-                {isAuthenticated && !user?.verification.isFullyVerified && (
+                {isAuthenticated && (!user?.verification || !user.verification.isFullyVerified) && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center gap-2 text-blue-700">
                       <AlertCircle className="w-4 h-4" />
@@ -448,35 +448,27 @@ const ItemDetailsPage: React.FC = () => {
 
       {/* Verification Modal */}
       {showVerificationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="text-center">
-              <AlertCircle className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Account Verification Required</h3>
-              <p className="text-gray-600 mb-6">
-                To book items on our platform, please complete your account verification process. This helps keep our community safe and secure.
-              </p>
-              
-              <div className="space-y-3 mb-6">
-                <Button 
-                  onClick={handleVerificationRedirect}
-                  className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700"
-                >
-                  Continue Verification
-                </Button>
-                <Button 
-                  onClick={() => setShowVerificationModal(false)}
-                  variant="outline"
-                  className="w-full py-3"
-                >
-                  Cancel
-                </Button>
-              </div>
-              
-              <p className="text-xs text-gray-500">
-                You can continue verification in your account dashboard at any time.
-              </p>
-            </div>
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
+          <div className="bg-white rounded-xl p-8 shadow-lg max-w-md w-full text-center">
+            <h2 className="text-xl font-bold mb-4 text-blue-700">Verification Required</h2>
+            <p className="mb-6 text-gray-700">
+              You must complete your account verification (including document upload) before booking this item.
+            </p>
+            <Button
+              className="w-full bg-blue-600 text-white"
+              onClick={() => {
+                setShowVerificationModal(false);
+                navigate('/verify/id');
+              }}
+            >
+              Go to Verification
+            </Button>
+            <button
+              className="mt-4 text-sm text-gray-500 underline"
+              onClick={() => setShowVerificationModal(false)}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

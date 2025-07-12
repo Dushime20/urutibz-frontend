@@ -48,6 +48,15 @@ const DashboardPage: React.FC = () => {
     totalTransactions: 15210,
     wishlistItems: 24,
     activeBookings: 3,
+    verification: {
+      isProfileComplete: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      isIdVerified: true,
+      isAddressVerified: true,
+      isFullyVerified: true,
+      verificationStep: 'complete',
+    },
   };
 
   // Mock data for dashboard sections

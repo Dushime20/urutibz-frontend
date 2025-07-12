@@ -26,32 +26,14 @@ const VerificationLayout: React.FC<VerificationLayoutProps> = ({
     return null;
   }
 
+  const verification = user.verification || {};
+
   const steps = [
-    { 
-      key: 'profile' as const, 
-      label: 'Profile', 
-      completed: user.verification.isProfileComplete 
-    },
-    { 
-      key: 'email' as const, 
-      label: 'Email', 
-      completed: user.verification.isEmailVerified 
-    },
-    { 
-      key: 'phone' as const, 
-      label: 'Phone', 
-      completed: user.verification.isPhoneVerified 
-    },
-    { 
-      key: 'id' as const, 
-      label: 'ID', 
-      completed: user.verification.isIdVerified 
-    },
-    { 
-      key: 'address' as const, 
-      label: 'Address', 
-      completed: user.verification.isAddressVerified 
-    },
+    { key: 'profile' as const, label: 'Profile', completed: !!verification.isProfileComplete },
+    { key: 'email' as const, label: 'Email', completed: !!verification.isEmailVerified },
+    { key: 'phone' as const, label: 'Phone', completed: !!verification.isPhoneVerified },
+    { key: 'id' as const, label: 'ID', completed: !!verification.isIdVerified },
+    { key: 'address' as const, label: 'Address', completed: !!verification.isAddressVerified },
   ];
 
   const currentStepIndex = steps.findIndex(step => step.key === currentStep);

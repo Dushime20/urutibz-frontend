@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Bot, Sparkles, ArrowLeft } from 'lucide-react';
 import logo from '.././../../public/assets/img/logo-2.svg';
-import { loginUser } from './service/api';
+import { loginUser, fetchUserProfile } from './service/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Simple custom toast component
@@ -52,6 +52,10 @@ const LoginPage: React.FC = () => {
         localStorage.setItem('token', data.token);
         if (data.user) {
           setAuthenticatedUser(data.user);
+        } else {
+          // Fetch user profile using the token if not returned by login
+          const userProfile = await fetchUserProfile(data.token);
+          setAuthenticatedUser(userProfile);
         }
       }
       setToast('Login successfully');
