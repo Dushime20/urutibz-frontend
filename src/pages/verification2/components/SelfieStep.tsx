@@ -1,42 +1,33 @@
 import React, { useRef, useEffect, useState } from 'react';
 
 interface SelfieStepProps {
-  verificationData: any;
   showCamera: boolean;
+  setShowCamera: (show: boolean) => void;
   setCameraMode: (mode: 'document' | 'selfie' | null) => void;
   startCamera: () => void;
   capturedSelfie: string | null;
-  handleRetakeSelfie: () => void;
-  nextStep: () => void;
-  errors: Record<string, string>;
   setCapturedSelfie: (imageData: string | null) => void;
+  handleRetakeSelfie: () => void;
+  errors: Record<string, string>;
   onConfirmSelfie: (imageData: string) => void;
-  onSubmitSelfie: () => void;
-  showSubmitSelfie: boolean;
-  isProcessing: boolean;
 }
 
 const SelfieStep: React.FC<SelfieStepProps> = ({
-  verificationData,
   showCamera,
+  setShowCamera,
   setCameraMode,
   startCamera,
   capturedSelfie,
-  handleRetakeSelfie,
-  nextStep,
-  errors,
   setCapturedSelfie,
-  onConfirmSelfie,
-  onSubmitSelfie,
-  showSubmitSelfie,
-  isProcessing
+  handleRetakeSelfie,
+  errors,
+  onConfirmSelfie
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
-  // Start camera when showCamera is true
   useEffect(() => {
     if (showCamera) {
       startCameraPreview();
@@ -49,14 +40,9 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
   const startCameraPreview = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user', // Front camera for selfie
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false
       });
-      
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -75,27 +61,21 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
-
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
-
     if (!context) return;
-
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-
-    // Draw current video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Convert canvas to blob/base64
     canvas.toBlob((blob) => {
       if (blob) {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64String = reader.result as string;
           setCapturedSelfie(base64String);
+          onConfirmSelfie(base64String);
+          setShowCamera(false); // Hide camera preview after capture
           setIsCapturing(false);
           stopCamera();
           setCameraMode(null);
@@ -106,12 +86,16 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
   };
 
   const handleRetake = () => {
+    setCapturedSelfie(null);
     handleRetakeSelfie();
+    setShowCamera(true);
+    setCameraMode('selfie');
   };
 
   const handleCloseCamera = () => {
     stopCamera();
     setCameraMode(null);
+    setShowCamera(false);
   };
 
   return (
@@ -120,7 +104,6 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Selfie Verification</h2>
         <p className="text-gray-600">Take a selfie to verify your identity</p>
       </div>
-
       {/* Camera Preview */}
       {showCamera && !capturedSelfie && (
         <div className="relative bg-black rounded-2xl overflow-hidden">
@@ -131,7 +114,6 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
             muted
             className="w-full h-auto max-h-96 object-cover"
           />
-          {/* Camera Controls */}
           <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-4">
             <button
               onClick={capturePhoto}
@@ -149,17 +131,15 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
           </div>
         </div>
       )}
-
-      {/* Hidden canvas for image capture */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
-
       {/* Initial Camera Button */}
-      {!verificationData.selfieImage && !capturedSelfie && !showCamera && (
+      {!capturedSelfie && !showCamera && (
         <div className="text-center">
           <button
             onClick={() => {
               setCameraMode('selfie');
               startCamera();
+              setShowCamera(true);
             }}
             className="bg-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg"
           >
@@ -170,8 +150,7 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
           )}
         </div>
       )}
-
-      {/* Captured Selfie Preview */}
+      {/* Show captured selfie image after capture, with only Retake button */}
       {capturedSelfie && (
         <div className="text-center space-y-4">
           <div className="inline-block rounded-2xl overflow-hidden shadow-lg">
@@ -189,19 +168,6 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
               Retake
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Show Submit button after selfie is confirmed and uploaded */}
-      {showSubmitSelfie && verificationData.selfieImage && !capturedSelfie && (
-        <div className="text-center mt-6">
-          <button
-            onClick={onSubmitSelfie}
-            className="bg-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg"
-            disabled={isProcessing}
-          >
-            {isProcessing ? 'Submitting...' : 'Submit'}
-          </button>
         </div>
       )}
     </div>

@@ -1,24 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Camera, 
   Upload, 
   CheckCircle, 
-  AlertCircle, 
-  Eye, 
   Shield, 
   Smartphone, 
   User, 
   FileText, 
   Zap, 
-  X, 
-  RefreshCw,
   ArrowRight,
   ArrowLeft,
-  Info,
-  Award,
-  Globe,
-  Clock
-} from 'lucide-react';
+  Award} from 'lucide-react';
 import WelcomeStep from './components/WelcomeStep';
 import DocumentTypeStep from './components/DocumentTypeStep';
 import DocumentUploadStep from './components/DocumentUploadStep';
@@ -335,8 +326,6 @@ const UrutiBzVerification = () => {
   // Handler for confirming the selfie (no API call)
   const handleConfirmSelfie = (base64Image: string) => {
     setVerificationData(prev => ({ ...prev, selfieImage: base64Image }));
-    setCapturedSelfie(null);
-    setShowSubmitSelfie(true);
   };
 
   // Handler for submitting the selfie to the backend (API call)
@@ -429,7 +418,7 @@ const UrutiBzVerification = () => {
   // Add selfie step handler to PATCH selfie image
   const handleSelfieStepNext = async () => {
     if (currentStep !== 3) return;
-    if (!selfieFile) {
+    if (!verificationData.selfieImage) {
       setErrors({ selfie: 'Please capture a selfie image.' });
       return;
     }
@@ -438,6 +427,9 @@ const UrutiBzVerification = () => {
     try {
       const verificationId = localStorage.getItem('verificationId');
       if (!verificationId) throw new Error('Verification ID not found. Please restart the process.');
+      // Convert base64 to File
+      const blob = await (await fetch(verificationData.selfieImage)).blob();
+      const selfieFile = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
       const formData = new FormData();
       formData.append('selfieImage', selfieFile);
       const token = localStorage.getItem('token');
@@ -470,12 +462,7 @@ const UrutiBzVerification = () => {
       await handleSelfieStepNext();
       return;
     }
-    if (currentStep === 3 && documentFile && selfieFile) {
-      await processDocumentOCR(documentFile, selfieFile);
-      setCurrentStep(currentStep + 1);
-    } else {
-      setCurrentStep(currentStep + 1);
-    }
+    setCurrentStep(currentStep + 1);
   };
 
   // Start camera
