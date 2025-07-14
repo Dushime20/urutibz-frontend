@@ -825,19 +825,15 @@ const UrutiBzVerification = () => {
           )}
           {currentStep === 3 && (
             <SelfieStep
-              verificationData={verificationData}
               showCamera={showCamera}
+              setShowCamera={setShowCamera}
               setCameraMode={setCameraMode}
               startCamera={startCamera}
               capturedSelfie={capturedSelfie}
-              handleRetakeSelfie={handleRetakeSelfie}
-              nextStep={nextStep}
-              errors={errors}
               setCapturedSelfie={setCapturedSelfie}
+              handleRetakeSelfie={handleRetakeSelfie}
+              errors={errors}
               onConfirmSelfie={handleConfirmSelfie}
-              onSubmitSelfie={handleSubmitSelfie}
-              showSubmitSelfie={showSubmitSelfie}
-              isProcessing={isProcessing}
             />
           )}
           {currentStep === 4 && (
