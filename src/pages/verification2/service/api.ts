@@ -123,4 +123,43 @@ export async function submitFinalVerification({
     throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
   }
   return response.json();
+}
+
+export async function requestPhoneOtp(
+  phoneNumber: string,
+  token: string | null
+): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/user-verification/request-phone-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ phoneNumber }),
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to request OTP');
+  }
+  return result;
+}
+
+export async function verifyPhoneOtp(
+  phoneNumber: string,
+  otp: string,
+  token: string | null
+): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/user-verification/verify-phone-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ phoneNumber, otp }),
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to verify OTP');
+  }
+  return result;
 } 

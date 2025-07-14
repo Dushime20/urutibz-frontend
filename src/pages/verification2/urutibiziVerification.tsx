@@ -18,7 +18,7 @@ import PhoneStep from './components/PhoneStep';
 import CompletionStep from './components/CompletionStep';
 import ReviewAndSubmitStep from './components/ReviewAndSubmitStep';
 import Tesseract from 'tesseract.js';
-import { submitDocumentOCR, submitDocumentStep, submitSelfieStep, submitFinalVerification } from './service/api';
+import { submitDocumentOCR, submitDocumentStep, submitSelfieStep, submitFinalVerification, requestPhoneOtp, verifyPhoneOtp } from './service/api';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -441,15 +441,37 @@ const UrutiBzVerification = () => {
     }
   };
 
-  // Verify phone number
-  const verifyPhone = () => {
-    if (verificationData.phoneNumber.length >= 10) {
-      simulateAIProcessing(2000);
-      setTimeout(() => {
-        setCurrentStep(5);
-      }, 2000);
-    } else {
-      setErrors({ phone: 'Please enter a valid phone number' });
+  // Add OTP state
+  const [otp, setOtp] = useState('');
+  const [showOtpInput, setShowOtpInput] = useState(false);
+
+  const handleRequestOtp = async () => {
+    setIsProcessing(true);
+    setErrors({});
+    try {
+      const token = localStorage.getItem('token');
+      await requestPhoneOtp(verificationData.phoneNumber, token);
+      setShowOtpInput(true);
+      setToast('OTP sent to your phone!');
+    } catch (error: any) {
+      setErrors({ phone: error.message || 'Failed to request OTP' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setIsProcessing(true);
+    setErrors({});
+    try {
+      const token = localStorage.getItem('token');
+      await verifyPhoneOtp(verificationData.phoneNumber, otp, token);
+      setToast('Phone verified!');
+      setCurrentStep(currentStep + 1);
+    } catch (error: any) {
+      setErrors({ otp: error.message || 'Failed to verify OTP' });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -767,7 +789,12 @@ const UrutiBzVerification = () => {
             <PhoneStep
               verificationData={verificationData}
               setVerificationData={setVerificationData}
-              verifyPhone={verifyPhone}
+              otp={otp}
+              setOtp={setOtp}
+              onRequestOtp={handleRequestOtp}
+              onVerifyOtp={handleVerifyOtp}
+              showOtpInput={showOtpInput}
+              isProcessing={isProcessing}
               errors={errors}
             />
           )}
