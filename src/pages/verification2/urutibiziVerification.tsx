@@ -18,6 +18,7 @@ import PhoneStep from './components/PhoneStep';
 import CompletionStep from './components/CompletionStep';
 import ReviewAndSubmitStep from './components/ReviewAndSubmitStep';
 import Tesseract from 'tesseract.js';
+import { submitDocumentOCR, submitDocumentStep, submitSelfieStep, submitFinalVerification } from './service/api';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -225,27 +226,13 @@ const UrutiBzVerification = () => {
     }, 200);
   };
 
-  // Remove old processDocumentOCR and replace with real API integration
+  // Replace processDocumentOCR
   const processDocumentOCR = async (documentFile: File, selfieFile: File) => {
     setIsProcessing(true);
     setAiProgress(0);
     try {
-      // Prepare FormData for backend
-      const formData = new FormData();
-      formData.append('documentImage', documentFile);
-      formData.append('selfieImage', selfieFile);
-      formData.append('verificationType', verificationData.documentType);
-
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/user-verification/submit-documents`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      if (!response.ok) throw new Error('Verification failed');
-      const data = await response.json();
+      const data = await submitDocumentOCR(documentFile, selfieFile, verificationData.documentType, token);
       setVerificationData(prev => ({
         ...prev,
         ocrResults: data.ocrResults || null,
@@ -371,7 +358,7 @@ const UrutiBzVerification = () => {
     setShowSubmitSelfie(false);
   };
 
-  // Update handleDocumentStepNext to store verification id
+  // Replace handleDocumentStepNext
   const handleDocumentStepNext = async () => {
     if (currentStep !== 2) return;
     if (!documentFile) {
@@ -381,27 +368,9 @@ const UrutiBzVerification = () => {
     setIsProcessing(true);
     setErrors({});
     try {
-      const formData = new FormData();
-      formData.append('verificationType', verificationData.documentType);
-      const extracted = verificationData.ocrResults?.extractedData || {};
-      if (extracted.documentNumber) formData.append('documentNumber', extracted.documentNumber);
-      if (extracted.addressLine) formData.append('addressLine', extracted.addressLine);
-      if (extracted.city) formData.append('city', extracted.city);
-      if (extracted.country) formData.append('country', extracted.country);
-      if (extracted.district) formData.append('district', extracted.district);
-      formData.append('documentImage', documentFile);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/v1/user-verification/submit-documents', {
-        method: 'POST',
-        body: formData,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        const errorData = result;
-        throw new Error(errorData.message || 'Failed to submit document');
-      }
-      // Store verification id in localStorage
+      const extracted = verificationData.ocrResults?.extractedData || {};
+      const result = await submitDocumentStep(documentFile, verificationData.documentType, extracted, token);
       if (result?.data?.verification?.id) {
         localStorage.setItem('verificationId', result.data.verification.id);
       }
@@ -415,7 +384,7 @@ const UrutiBzVerification = () => {
     }
   };
 
-  // Add selfie step handler to PATCH selfie image
+  // Replace handleSelfieStepNext
   const handleSelfieStepNext = async () => {
     if (currentStep !== 3) return;
     if (!verificationData.selfieImage) {
@@ -426,22 +395,8 @@ const UrutiBzVerification = () => {
     setErrors({});
     try {
       const verificationId = localStorage.getItem('verificationId');
-      if (!verificationId) throw new Error('Verification ID not found. Please restart the process.');
-      // Convert base64 to File
-      const blob = await (await fetch(verificationData.selfieImage)).blob();
-      const selfieFile = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
-      const formData = new FormData();
-      formData.append('selfieImage', selfieFile);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/v1/user-verification/${verificationId}`, {
-        method: 'PUT',
-        body: formData,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to update verification with selfie');
-      }
+      await submitSelfieStep(verificationData.selfieImage, verificationId, token);
       setToast('Selfie uploaded successfully!');
       setTimeout(() => setToast(null), 2000);
       setCurrentStep(currentStep + 1);
@@ -605,8 +560,7 @@ const UrutiBzVerification = () => {
     return typeMap[docType] || docType.toLowerCase().replace(/\s+/g, '_');
   };
 
-  // Handler for final submit
-  // console.log(localStorage.getItem('document_image'),'document_image')
+  // Replace handleFinalSubmit
   const handleFinalSubmit = async () => {
     try {
       setIsProcessing(true);
@@ -614,26 +568,13 @@ const UrutiBzVerification = () => {
       const validationErrors = validateVerificationData();
       if (Object.keys(validationErrors).length > 0) {
         setErrors(validationErrors);
-        return;
-      }
-      let docFileToSend: File | null = null;
-      const documentImageBase64 = localStorage.getItem('document_image');
-      if (documentImageBase64) {
-        const blob = await (await fetch(documentImageBase64)).blob();
-        docFileToSend = new File([blob], 'document.jpg', { type: 'image/jpeg' });
-      }
-      let selfieFileToSend: File | null = null;
-      if (verificationData.selfieImage) {
-        const blob = await (await fetch(verificationData.selfieImage)).blob();
-        selfieFileToSend = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
-      }
-      if (!docFileToSend || docFileToSend.size === 0) {
-        setErrors({ api: 'Document image is missing or invalid.' });
         setIsProcessing(false);
         return;
       }
-      if (!selfieFileToSend || selfieFileToSend.size === 0) {
-        setErrors({ api: 'Selfie image is missing or invalid.' });
+      const documentImageBase64 = localStorage.getItem('document_image');
+      const selfieImageBase64 = verificationData.selfieImage;
+      if (!documentImageBase64 || !selfieImageBase64) {
+        setErrors({ api: 'Document or selfie image is missing.' });
         setIsProcessing(false);
         return;
       }
@@ -642,28 +583,14 @@ const UrutiBzVerification = () => {
         verificationType = 'national_id';
       }
       verificationType = normalizeDocumentType(verificationType);
-      const formData = new FormData();
-      formData.append('verificationType', verificationType);
-      formData.append('documentNumber', reviewData.documentNumber || '');
-      formData.append('addressLine', reviewData.addressLine || '');
-      formData.append('city', reviewData.city || '');
-      formData.append('country', reviewData.country || '');
-      formData.append('district', reviewData.district || '');
-      formData.append('selfieImage', selfieFileToSend);
-      formData.append('documentImage', docFileToSend);
-      console.log(formData,'form data')
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/user-verification/submit-documents`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      await submitFinalVerification({
+        documentImageBase64,
+        selfieImageBase64,
+        verificationType,
+        reviewData,
+        token
       });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-      const result = await response.json();
-      // Remove from localStorage after successful submission
       localStorage.removeItem('document_image');
       setCurrentStep(currentStep + 1);
     } catch (error: any) {
