@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff, Bot, Sparkles, ArrowLeft } from 'lucide-react'
 import logo from '.././../../public/assets/img/logo-2.svg';
 import { loginUser, fetchUserProfile } from './service/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 // Simple custom toast component
 function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
@@ -21,6 +22,7 @@ const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
   const { setAuthenticatedUser } = useAuth();
+  const { showToast } = useToast();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -57,16 +59,16 @@ const LoginPage: React.FC = () => {
           const userProfile = await fetchUserProfile(data.token);
           setAuthenticatedUser(userProfile);
         }
+        showToast('Login successful!', 'success');
       }
-      setToast('Login successfully');
-      setToastType('success');
       setTimeout(() => {
         navigate("/dashboard");
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Invalid email or password. Please try again.');
-      setToast(err.message || 'Invalid email or password. Please try again.');
-      setToastType('error');
+      // setToast(err.message || 'Invalid email or password. Please try again.');
+      // setToastType('error');
+      showToast('Login failed. Please check your credentials.', 'error');
     } finally {
       setIsLoading(false);
     }

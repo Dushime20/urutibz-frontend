@@ -9,8 +9,10 @@ import {
   Bell, Search, Eye,
   Edit3, MoreHorizontal
 } from 'lucide-react';
-import { Button } from '../components/ui/DesignSystem';
-import VerificationBanner from '../components/verification/VerificationBanner';
+import { Button } from '../../components/ui/DesignSystem';
+import VerificationBanner from '../../components/verification/VerificationBanner';
+import { createProduct, createProductImage } from './service/api';
+import { useToast } from '../../contexts/ToastContext';
 
 // TypeScript interfaces for component props
 interface StatCardProps {
@@ -33,6 +35,84 @@ interface NavigationItemProps {
 
 const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'wishlist' | 'reviews'>('overview');
+  const { showToast } = useToast();
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({
+    title: '',
+    slug: '',
+    description: '',
+    category_id: '',
+    condition: 'new',
+    base_price_per_day: '',
+    base_currency: 'USD',
+    pickup_methods: [] as string[],
+    country_id: '',
+    specifications: { processor: '', memory: '', storage: '' },
+    image: null as File | null,
+    alt_text: '',
+    sort_order: '1',
+    isPrimary: 'true',
+    product_id: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    if (type === 'file' && e.target instanceof HTMLInputElement) {
+      const input = e.target as HTMLInputElement;
+      setForm((prev) => ({ ...prev, image: (input.files && input.files[0]) || null }));
+    } else if (name.startsWith('specifications.')) {
+      const specKey = name.split('.')[1];
+      setForm((prev) => ({ ...prev, specifications: { ...prev.specifications, [specKey]: value } }));
+    } else if (name === 'pickup_methods') {
+      setForm((prev) => ({ ...prev, pickup_methods: Array.from((e.target as HTMLSelectElement).selectedOptions, (option) => option.value) }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      // 1. Create product
+      const productPayload = {
+        title: form.title,
+        slug: form.slug,
+        description: form.description,
+        category_id: form.category_id,
+        condition: form.condition,
+        base_price_per_day: parseFloat(form.base_price_per_day),
+        base_currency: form.base_currency,
+        pickup_methods: form.pickup_methods,
+        country_id: form.country_id,
+        specifications: form.specifications,
+      };
+      const productResponse = await createProduct(productPayload);
+      const productId = productResponse.data.id;
+      console.log('Created productId:', productId);
+      setForm((prev) => ({ ...prev, product_id: productId }));
+      // 2. Create product image
+      if (form.image && productId) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const imagePayload = {
+          image: form.image,
+          product_id: productId,
+          alt_text: form.alt_text,
+          sort_order: form.sort_order,
+          isPrimary: form.isPrimary,
+        };
+        await createProductImage(imagePayload);
+      }
+      showToast('Listing created successfully!', 'success');
+      setShowModal(false);
+      // Optionally refresh listings here
+    } catch (err) {
+      showToast('Failed to create listing. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Mock user data
   const user = {
@@ -493,7 +573,7 @@ const DashboardPage: React.FC = () => {
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-gray-900">My Listings</h3>
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors flex items-center">
+                  <Button className="bg-[#01aaa7] hover:bg-[#019c98] text-white px-6 py-2.5 rounded-xl font-medium transition-colors flex items-center" onClick={() => setShowModal(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add New Listing
                   </Button>
@@ -640,6 +720,51 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Modal for new listing */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative">
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700" onClick={() => setShowModal(false)}>&times;</button>
+            <h2 className="text-2xl font-bold mb-4 text-[#01aaa7]">Add New Listing</h2>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <input name="title" value={form.title} onChange={handleInputChange} required placeholder="Title" className="w-full border rounded-lg px-4 py-2" />
+                <input name="slug" value={form.slug} onChange={handleInputChange} required placeholder="Slug" className="w-full border rounded-lg px-4 py-2" />
+                <textarea name="description" value={form.description} onChange={handleInputChange} required placeholder="Description" className="w-full border rounded-lg px-4 py-2" />
+                <input name="category_id" value={form.category_id} onChange={handleInputChange} required placeholder="Category ID" className="w-full border rounded-lg px-4 py-2" />
+                <select name="condition" value={form.condition} onChange={handleInputChange} className="w-full border rounded-lg px-4 py-2">
+                  <option value="new">New</option>
+                  <option value="used">Used</option>
+                </select>
+                <input name="base_price_per_day" value={form.base_price_per_day} onChange={handleInputChange} required placeholder="Price per day" type="number" className="w-full border rounded-lg px-4 py-2" />
+                <input name="base_currency" value={form.base_currency} onChange={handleInputChange} required placeholder="Currency" className="w-full border rounded-lg px-4 py-2" />
+              </div>
+              <div className="space-y-4">
+                <select name="pickup_methods" multiple value={form.pickup_methods} onChange={handleInputChange} className="w-full border rounded-lg px-4 py-2">
+                  <option value="pickup">Pickup</option>
+                  <option value="delivery">Delivery</option>
+                </select>
+                <input name="country_id" value={form.country_id} onChange={handleInputChange} required placeholder="Country ID" className="w-full border rounded-lg px-4 py-2" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <input name="specifications.processor" value={form.specifications.processor} onChange={handleInputChange} required placeholder="Processor" className="border rounded-lg px-4 py-2" />
+                  <input name="specifications.memory" value={form.specifications.memory} onChange={handleInputChange} required placeholder="Memory" className="border rounded-lg px-4 py-2" />
+                  <input name="specifications.storage" value={form.specifications.storage} onChange={handleInputChange} required placeholder="Storage" className="border rounded-lg px-4 py-2" />
+                </div>
+                <input name="alt_text" value={form.alt_text} onChange={handleInputChange} required placeholder="Image Alt Text" className="w-full border rounded-lg px-4 py-2" />
+                <input name="sort_order" value={form.sort_order} onChange={handleInputChange} required placeholder="Sort Order" className="w-full border rounded-lg px-4 py-2" />
+                <input name="isPrimary" value={form.isPrimary} onChange={handleInputChange} required placeholder="Is Primary (true/false)" className="w-full border rounded-lg px-4 py-2" />
+                <input name="product_id" value={form.product_id} readOnly placeholder="Product ID (auto)" className="w-full border rounded-lg px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed" />
+                <input name="image" type="file" accept="image/*" onChange={handleInputChange} required className="w-full border rounded-lg px-4 py-2" />
+              </div>
+              <div className="col-span-1 md:col-span-2">
+                <button type="submit" disabled={isSubmitting} className="w-full bg-[#01aaa7] text-white py-3 rounded-lg font-semibold hover:bg-[#019c98] transition-colors">
+                  {isSubmitting ? 'Submitting...' : 'Create Listing'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

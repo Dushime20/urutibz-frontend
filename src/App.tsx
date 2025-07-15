@@ -7,7 +7,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import DashboardPage from './pages/DashboardPage';
+import DashboardPage from './pages/my-account/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import BookingPage from './pages/BookingPage';
 import FaqPage from './pages/FaqPage';
@@ -20,89 +20,92 @@ import ItemDetailsPage from './pages/ItemDetailsPage';
 import UrutiBzVerification from './pages/verification2/urutibiziVerification';
 // import AddressVerificationPage from './pages/verification/AddressVerificationPage';
 import DemoPage from './pages/DemoPage';
+import { ToastProvider } from './contexts/ToastContext';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Auth routes - handle their own layout */}
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
-          <Route path="forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="reset-password" element={<ResetPasswordPage />} />
-          
-          {/* Main app routes with layout */}
-          <Route path="/" element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="cars" element={<ItemSearchPage />} />
-            <Route path="items" element={<ItemSearchPage />} />
-            <Route path="browse" element={<ItemSearchPage />} />
-            <Route path="cars/:id" element={<ItemDetailsPage />} />
-            <Route path="items/:id" element={<ItemDetailsPage />} />
-            <Route path="demo" element={<DemoPage />} />
-            <Route path="faq" element={<FaqPage />} />
+    <ToastProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Auth routes - handle their own layout */}
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="reset-password" element={<ResetPasswordPage />} />
             
-            {/* Protected routes */}
-            <Route path="create-listing" element={
-              <ProtectedRoute>
-                <CreateListingPage />
-              </ProtectedRoute>
-            } />
-            <Route path="dashboard" element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } />
-            <Route path="admin" element={
-              <ProtectedRoute>
-                <AdminDashboardPage />
-              </ProtectedRoute>
-            } />
-            <Route path="booking" element={
-              <BookingPage />
-            } />
-            <Route path="booking/:carId" element={
-              <ProtectedRoute>
+            {/* Main app routes with layout */}
+            <Route path="/" element={<Layout />}>
+              <Route index element={<HomePage />} />
+              <Route path="cars" element={<ItemSearchPage />} />
+              <Route path="items" element={<ItemSearchPage />} />
+              <Route path="browse" element={<ItemSearchPage />} />
+              <Route path="cars/:id" element={<ItemDetailsPage />} />
+              <Route path="items/:id" element={<ItemDetailsPage />} />
+              <Route path="demo" element={<DemoPage />} />
+              <Route path="faq" element={<FaqPage />} />
+              
+              {/* Protected routes */}
+              <Route path="create-listing" element={
+                <ProtectedRoute>
+                  <CreateListingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="dashboard" element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="admin" element={
+                <ProtectedRoute>
+                  <AdminDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="booking" element={
                 <BookingPage />
-              </ProtectedRoute>
-            } />
-            <Route path="booking/item/:itemId" element={
-              <ProtectedRoute>
-                <BookingPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Verification routes - protected */}
-            {/* <Route path="verify/profile" element={
-              <ProtectedRoute>
-                <ProfileVerificationPage />
-              </ProtectedRoute>
-            } /> */}
-            {/* <Route path="verify/email" element={
-              <ProtectedRoute>
-                <EmailVerificationPage />
-              </ProtectedRoute>
-            } /> */}
-            {/* <Route path="verify/phone" element={
-              <ProtectedRoute>
-                <PhoneVerificationPage />
-              </ProtectedRoute>
-            } /> */}
-            <Route path="verify/id" element={
-              <ProtectedRoute>
-                <UrutiBzVerification />
-              </ProtectedRoute>
-            } />
-            {/* <Route path="verify/address" element={
-              <ProtectedRoute>
-                <AddressVerificationPage />
-              </ProtectedRoute>
-            } /> */}
-          </Route>
-        </Routes>
-      </Router>
-    </AuthProvider>
+              } />
+              <Route path="booking/:carId" element={
+                <ProtectedRoute>
+                  <BookingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="booking/item/:itemId" element={
+                <ProtectedRoute>
+                  <BookingPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Verification routes - protected */}
+              {/* <Route path="verify/profile" element={
+                <ProtectedRoute>
+                  <ProfileVerificationPage />
+                </ProtectedRoute>
+              } /> */}
+              {/* <Route path="verify/email" element={
+                <ProtectedRoute>
+                  <EmailVerificationPage />
+                </ProtectedRoute>
+              } /> */}
+              {/* <Route path="verify/phone" element={
+                <ProtectedRoute>
+                  <PhoneVerificationPage />
+                </ProtectedRoute>
+              } /> */}
+              <Route path="verify/id" element={
+                <ProtectedRoute>
+                  <UrutiBzVerification />
+                </ProtectedRoute>
+              } />
+              {/* <Route path="verify/address" element={
+                <ProtectedRoute>
+                  <AddressVerificationPage />
+                </ProtectedRoute>
+              } /> */}
+            </Route>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

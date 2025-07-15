@@ -1,26 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Upload, 
-  CheckCircle, 
-  Shield, 
-  Smartphone, 
-  User, 
-  FileText, 
-  Zap, 
+import {
+  Upload,
+  CheckCircle,
+  Shield,
+  Smartphone,
+  User,
+  FileText,
+  Zap,
   ArrowRight,
   ArrowLeft,
-  Award} from 'lucide-react';
+  Award
+} from 'lucide-react';
 import WelcomeStep from './components/WelcomeStep';
 import DocumentTypeStep from './components/DocumentTypeStep';
 import DocumentUploadStep from './components/DocumentUploadStep';
 import SelfieStep from './components/SelfieStep';
 import PhoneStep from './components/PhoneStep';
 import CompletionStep from './components/CompletionStep';
-import ReviewAndSubmitStep from './components/ReviewAndSubmitStep';
-import Tesseract from 'tesseract.js';
-import { submitDocumentOCR, submitDocumentStep, submitSelfieStep, submitFinalVerification, requestPhoneOtp, verifyPhoneOtp } from './service/api';
+import { useToast } from '../../contexts/ToastContext';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+import Tesseract from 'tesseract.js';
+import { submitDocumentStep, submitSelfieStep, requestPhoneOtp, verifyPhoneOtp } from './service/api';
+
 
 // 1. Add types for verification data
 interface AiChecks {
@@ -105,7 +106,7 @@ function extractRwandaIDFields(text: string) {
 
 const UrutiBzVerification = () => {
   const [currentStep, setCurrentStep] = useState(0);
-  // Initialize verificationData state directly with default values
+
   const [verificationData, setVerificationData] = useState<VerificationData>({
     documentType: 'national_id',
     documentImage: null,
@@ -116,52 +117,14 @@ const UrutiBzVerification = () => {
     ocrResults: null
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [aiProgress, setAiProgress] = useState(0);
+  const [aiProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Add these state hooks near the top of the component
   const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [selfieFile, setSelfieFile] = useState<File | null>(null);
 
-  // Check for existing data and recreate File objects on component mount
-  useEffect(() => {
-    const stored = localStorage.getItem('verificationData');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.documentImage || parsed.selfieImage) {
-          // setHasExistingData(true); // Removed as per edit hint
-          
-          // Recreate File objects from base64 images
-          if (parsed.documentImage) {
-            fetch(parsed.documentImage)
-              .then(res => res.blob())
-              .then(blob => {
-                const file = new File([blob], 'document.jpg', { type: 'image/jpeg' });
-                // setDocumentFile(file); // Removed as per edit hint
-              })
-              .catch(error => {
-                console.error('Error recreating document file:', error);
-              });
-          }
-          
-          if (parsed.selfieImage) {
-            fetch(parsed.selfieImage)
-              .then(res => res.blob())
-              .then(blob => {
-                const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
-                // setSelfieFile(file); // Removed as per edit hint
-              })
-              .catch(error => {
-                console.error('Error recreating selfie file:', error);
-              });
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing stored data:', error);
-      }
-    }
-  }, []);
+
+
 
 
   useEffect(() => {
@@ -171,7 +134,7 @@ const UrutiBzVerification = () => {
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
@@ -182,9 +145,9 @@ const UrutiBzVerification = () => {
   const [selectedCountry, setSelectedCountry] = useState('RW');
   const [cameraMode, setCameraMode] = useState<'document' | 'selfie' | null>(null);
   const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [showSubmitSelfie, setShowSubmitSelfie] = useState(false);
-  
+  const [, setCameraError] = useState<string | null>(null);
+  const [, setShowSubmitSelfie] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -198,8 +161,7 @@ const UrutiBzVerification = () => {
     { id: 2, title: 'Upload Document', icon: Upload, description: 'Scan your ID with AI' },
     { id: 3, title: 'Selfie Verification', icon: User, description: 'Take a verification selfie' },
     { id: 4, title: 'Phone Verification', icon: Smartphone, description: 'Verify your phone number' },
-    { id: 5, title: 'AI Analysis', icon: Zap, description: 'AI verifying your information' },
-    { id: 6, title: 'Complete', icon: Award, description: 'Verification successful' }
+    { id: 5, title: 'Complete', icon: Award, description: 'Verification successful' }
   ];
 
   const countries = [
@@ -209,44 +171,8 @@ const UrutiBzVerification = () => {
     { code: 'TZ', name: 'Tanzania', flag: '🇹🇿', documents: ['National ID', 'Passport', 'Voter ID'] }
   ];
 
-  // Simulate AI processing
-  const simulateAIProcessing = (duration = 3000) => {
-    setIsProcessing(true);
-    setAiProgress(0);
-    
-    const interval = setInterval(() => {
-      setAiProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsProcessing(false);
-          return 100;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, 200);
-  };
+  const { showToast } = useToast();
 
-  // Replace processDocumentOCR
-  const processDocumentOCR = async (documentFile: File, selfieFile: File) => {
-    setIsProcessing(true);
-    setAiProgress(0);
-    try {
-      const token = localStorage.getItem('token');
-      const data = await submitDocumentOCR(documentFile, selfieFile, verificationData.documentType, token);
-      setVerificationData(prev => ({
-        ...prev,
-        ocrResults: data.ocrResults || null,
-        aiAnalysis: data.aiAnalysis || null,
-      }));
-      setAiProgress(100);
-    } catch (error: any) {
-      setErrors({ api: error.message || 'Verification failed' });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Update handleFileUpload to run OCR and extract fields
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
@@ -259,7 +185,6 @@ const UrutiBzVerification = () => {
       // Run OCR
       try {
         const { data: { text } } = await Tesseract.recognize(imageDataUrl, 'eng');
-        console.log('OCR TEXT:', text);
         const extracted = extractRwandaIDFields(text);
         setVerificationData(prev => ({
           ...prev,
@@ -272,8 +197,10 @@ const UrutiBzVerification = () => {
             }
           }
         }));
+        showToast('Document uploaded and processed successfully!', 'success');
       } catch (err) {
         setErrors({ api: 'OCR failed. Please try again or enter details manually.' });
+        showToast('Failed to process document. Please try again.', 'error');
       } finally {
         setIsProcessing(false);
       }
@@ -310,43 +237,12 @@ const UrutiBzVerification = () => {
     tracks?.forEach((track: MediaStreamTrack) => track.stop());
   };
 
-  // Handler for confirming the selfie (no API call)
+
   const handleConfirmSelfie = (base64Image: string) => {
     setVerificationData(prev => ({ ...prev, selfieImage: base64Image }));
   };
 
-  // Handler for submitting the selfie to the backend (API call)
-  const handleSubmitSelfie = async () => {
-    try {
-      setIsProcessing(true);
-      setErrors({});
-      const base64Image = verificationData.selfieImage;
-      if (!base64Image) return;
-      const blob = await (await fetch(base64Image)).blob();
-      const selfie = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
-      setSelfieFile(selfie);
-      // saveFilesToStorage(); // Removed as per edit hint
 
-      const formData = new FormData();
-      formData.append('selfieImage', selfie);
-
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/user-verification/submit-documents`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (!response.ok) throw new Error('Failed to submit selfie');
-      setShowSubmitSelfie(false);
-      setCurrentStep(currentStep + 1);
-    } catch (error: any) {
-      setErrors({ selfie: error.message || 'Failed to submit selfie. Please try again.' });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Handler for retaking the selfie (works for both preview and confirmed)
   const handleRetakeSelfie = () => {
     setCapturedSelfie(null);
     setVerificationData(prev => ({
@@ -374,11 +270,11 @@ const UrutiBzVerification = () => {
       if (result?.data?.verification?.id) {
         localStorage.setItem('verificationId', result.data.verification.id);
       }
-      setToast('Document uploaded successfully!');
-      setTimeout(() => setToast(null), 2000);
+      showToast('Document uploaded successfully!', 'success');
       setCurrentStep(currentStep + 1);
     } catch (error: any) {
       setErrors({ api: error.message });
+      showToast('Failed to upload document. Please try again.', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -397,11 +293,11 @@ const UrutiBzVerification = () => {
       const verificationId = localStorage.getItem('verificationId');
       const token = localStorage.getItem('token');
       await submitSelfieStep(verificationData.selfieImage, verificationId, token);
-      setToast('Selfie uploaded successfully!');
-      setTimeout(() => setToast(null), 2000);
+      showToast('Selfie uploaded successfully!', 'success');
       setCurrentStep(currentStep + 1);
     } catch (error: any) {
       setErrors({ api: error.message });
+      showToast('Failed to upload selfie. Please try again.', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -423,18 +319,18 @@ const UrutiBzVerification = () => {
   // Start camera
   const startCamera = async () => {
     setCameraError(null);
-    
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user', width: 640, height: 480 } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 640, height: 480 }
       });
-      
+
       // Set the stream first
       setCameraStream(stream);
-      
+
       // Then show the camera modal
       setShowCamera(true);
-      
+
       // The video element will be assigned the stream via useEffect
     } catch (error) {
       setCameraError('Camera access denied. Please enable camera permissions and try again.');
@@ -452,9 +348,10 @@ const UrutiBzVerification = () => {
       const token = localStorage.getItem('token');
       await requestPhoneOtp(verificationData.phoneNumber, token);
       setShowOtpInput(true);
-      setToast('OTP sent to your phone!');
+      showToast('OTP sent to your phone!', 'success');
     } catch (error: any) {
       setErrors({ phone: error.message || 'Failed to request OTP' });
+      showToast('Failed to request OTP. Please try again.', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -466,10 +363,11 @@ const UrutiBzVerification = () => {
     try {
       const token = localStorage.getItem('token');
       await verifyPhoneOtp(verificationData.phoneNumber, otp, token);
-      setToast('Phone verified!');
+      showToast('Phone verified!', 'success');
       setCurrentStep(currentStep + 1);
     } catch (error: any) {
       setErrors({ otp: error.message || 'Failed to verify OTP' });
+      showToast('Failed to verify OTP. Please try again.', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -524,13 +422,13 @@ const UrutiBzVerification = () => {
 
   // Add state for editable extractedData
   const [
-  reviewData, setReviewData] = useState({
-    documentNumber: '',
-    addressLine: '',
-    city: '',
-    country: '',
-    district: '',
-  });
+    , setReviewData] = useState({
+      documentNumber: '',
+      addressLine: '',
+      city: '',
+      country: '',
+      district: '',
+    });
 
   // When ocrResults are updated, sync to reviewData
   useEffect(() => {
@@ -546,123 +444,20 @@ const UrutiBzVerification = () => {
     }
   }, [verificationData.ocrResults]);
 
-  // Handler for editing review fields
-  const handleReviewChange = (field: string, value: string) => {
-    setReviewData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Validate verification data before submission
-  const validateVerificationData = () => {
-    const errors: Record<string, string> = {};
-    
-    if (!verificationData.documentImage && !documentFile) {
-      errors.documentFile = 'Document image is missing. Please upload or take a photo of your document.';
-    }
-    
-    if (!verificationData.selfieImage && !selfieFile) {
-      errors.selfieFile = 'Selfie image is missing. Please take a selfie photo.';
-    }
-    
-    if (!verificationData.documentType) {
-      errors.documentType = 'Document type is not selected.';
-    }
-    
-    return errors;
-  };
-
-  // Normalize document type for backend
-  const normalizeDocumentType = (docType: string): string => {
-    const typeMap: Record<string, string> = {
-      'National ID': 'national_id',
-      'Passport': 'passport',
-      'Driving License': 'driving_license',
-      'Huduma Namba': 'huduma_namba',
-      'Voter ID': 'voter_id'
-    };
-    return typeMap[docType] || docType.toLowerCase().replace(/\s+/g, '_');
-  };
-
-  // Replace handleFinalSubmit
-  const handleFinalSubmit = async () => {
-    try {
-      setIsProcessing(true);
-      setErrors({});
-      const validationErrors = validateVerificationData();
-      if (Object.keys(validationErrors).length > 0) {
-        setErrors(validationErrors);
-        setIsProcessing(false);
-        return;
-      }
-      const documentImageBase64 = localStorage.getItem('document_image');
-      const selfieImageBase64 = verificationData.selfieImage;
-      if (!documentImageBase64 || !selfieImageBase64) {
-        setErrors({ api: 'Document or selfie image is missing.' });
-        setIsProcessing(false);
-        return;
-      }
-      let verificationType = verificationData.documentType || 'national_id';
-      if (!verificationType || verificationType.trim() === '') {
-        verificationType = 'national_id';
-      }
-      verificationType = normalizeDocumentType(verificationType);
-      const token = localStorage.getItem('token');
-      await submitFinalVerification({
-        documentImageBase64,
-        selfieImageBase64,
-        verificationType,
-        reviewData,
-        token
-      });
-      localStorage.removeItem('document_image');
-      setCurrentStep(currentStep + 1);
-    } catch (error: any) {
-      setErrors({ api: error.message || 'Failed to submit verification. Please try again.' });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Add toast state
-  const [toast, setToast] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">U</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">UrutiBz</h1>
-                <p className="text-sm text-gray-500">Identity Verification</p>
-              </div>
-            </div>
-            
-            <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
-              <div className="flex items-center space-x-2">
-                <Shield className="w-4 h-4" />
-                <span>Bank-level security</span>
-              </div>
-              {/* {currentStep > 0 && ( // Removed as per edit hint
-                <button
-                  onClick={resetVerification}
-                  className="text-red-600 hover:text-red-700 transition-colors"
-                  title="Start over"
-                >
-                  Reset
-                </button>
-              )} */}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-blue-50 to-purple-50">
 
-      {/* Progress Bar */}
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
+          {/* Personalized Greeting */}
+          {/* <div className="mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {verificationData.ocrResults?.extractedData?.name
+                ? `Hi, ${verificationData.ocrResults.extractedData.name}! Let's verify your identity.`
+                : 'Let’s verify your identity.'}
+            </h1>
+          </div> */}
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">
               Step {currentStep + 1} of {steps.length}
@@ -671,18 +466,23 @@ const UrutiBzVerification = () => {
               {Math.round(((currentStep + 1) / steps.length) * 100)}% Complete
             </span>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {steps.map((step, index) => {
               const StepIcon = step.icon;
+              const isCompleted = index < currentStep;
+              const isActive = index === currentStep;
               return (
-                <div key={step.id} className="flex items-center flex-1">
+                <div key={step.id} className="flex items-center flex-1 group relative">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
-                      index <= currentStep
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'border-gray-300 text-gray-400'
-                    }`}
+                    tabIndex={0}
+                    aria-label={step.title}
+                    aria-current={isActive ? 'step' : undefined}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300  focus:outline-none focus:ring-2 focus:ring-[#01aaa7]
+                      ${isCompleted ? 'bg-green-400 border-green-400 text-white' :
+                        isActive ? 'bg-[#01aaa7] border-[#01aaa7] text-white ring-4 ring-[#7de2d1]/30' :
+                        'border-gray-300 text-gray-400'}
+                    `}
                   >
                     {index < currentStep ? (
                       <CheckCircle className="w-5 h-5" />
@@ -690,54 +490,48 @@ const UrutiBzVerification = () => {
                       <StepIcon className="w-4 h-4" />
                     )}
                   </div>
+                  {/* Tooltip */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -top-10 z-10 px-3 py-1 rounded bg-gray-900 text-white text-xs opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none transition-opacity whitespace-nowrap shadow-lg">
+                    {step.description}
+                  </div>
                   {index < steps.length - 1 && (
                     <div
-                      className={`flex-1 h-1 mx-2 rounded transition-all duration-300 ${
-                        index < currentStep ? 'bg-blue-600' : 'bg-gray-200'
-                      }`}
+                      className={`flex-1 h-1 mx-2 rounded transition-all duration-300
+                        ${isCompleted ? 'bg-green-300' : isActive ? 'bg-gradient-to-r from-[#01aaa7] to-[#7de2d1]' : 'bg-gray-200'}
+                      `}
+                      style={isActive ? { background: 'linear-gradient(90deg, #01aaa7 0%, #7de2d1 100%)' } : {}}
                     />
                   )}
                 </div>
               );
             })}
           </div>
-          
+
           <div className="flex justify-between mt-2">
-            {steps.map((step, index) => (
-              <div
-                key={step.id}
-                className={`text-xs ${
-                  index <= currentStep ? 'text-blue-600 font-medium' : 'text-gray-400'
-                }`}
-                style={{ width: `${100 / steps.length}%` }}
-              >
-                {step.title}
-              </div>
-            ))}
+            {steps.map((step, index) => {
+              const isCompleted = index < currentStep;
+              const isActive = index === currentStep;
+              return (
+                <div
+                  key={step.id}
+                  className={`text-xs
+                    ${isCompleted ? 'text-[#01aaa7] font-medium' :
+                      isActive ? 'text-[#01aaa7] font-medium' :
+                      'text-gray-400'}
+                  `}
+                  style={{ width: `${100 / steps.length}%` }}
+                >
+                  {step.title}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* {hasExistingData && ( // Removed as per edit hint
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Info className="w-5 h-5 text-blue-600" />
-                <span className="text-blue-800 font-medium">
-                  Found existing verification data. You can continue where you left off or start over.
-                </span>
-              </div>
-              <button
-                onClick={resetVerification}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                Start Over
-              </button>
-            </div>
-          </div>
-        )} */}
+
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {currentStep === 0 && <WelcomeStep nextStep={nextStep} />}
           {currentStep === 1 && (
@@ -798,25 +592,11 @@ const UrutiBzVerification = () => {
               errors={errors}
             />
           )}
-          {currentStep === 5 && (
-            <ReviewAndSubmitStep
-              extractedData={reviewData}
-              documentImage={verificationData.documentImage}
-              selfieImage={verificationData.selfieImage}
-              isProcessing={isProcessing}
-              errors={{
-                ...errors,
-                ...(documentFile ? {} : { documentFile: 'Document file is missing and will not be submitted!' })
-              }}
-              onChange={handleReviewChange}
-              onSubmit={handleFinalSubmit}
-            />
-          )}
-          {currentStep === 6 && <CompletionStep verificationData={verificationData} />}
+          {currentStep === 5 && <CompletionStep verificationData={verificationData} />}
         </div>
 
         {/* Navigation */}
-        {currentStep > 0 && currentStep < 6 && (
+        {currentStep > 0 && currentStep < 5 && (
           <div className="flex justify-between mt-6">
             <button
               onClick={prevStep}
@@ -825,18 +605,25 @@ const UrutiBzVerification = () => {
               <ArrowLeft className="w-4 h-4" />
               <span>Previous</span>
             </button>
-            
-            {currentStep < 5 && (
+
+            {currentStep < 4 && (
               <button
                 onClick={handleNextStep}
                 disabled={
+                  isProcessing ||
                   (currentStep === 2 && !verificationData.documentImage) ||
                   (currentStep === 3 && !verificationData.selfieImage) ||
                   (currentStep === 4 && !verificationData.ocrResults)
                 }
-                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className={`flex items-center space-x-2 bg-[#01aaa7] text-white px-4 py-2 rounded-lg hover:bg-[#019c98] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed ${isProcessing ? 'opacity-80' : ''}`}
               >
-                <span>Next</span>
+                {isProcessing && (
+                  <svg className="animate-spin h-6 w-6 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#01aaa7" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="#01aaa7" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                )}
+                <span>{isProcessing ? 'Processing...' : 'Next'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}
@@ -844,40 +631,10 @@ const UrutiBzVerification = () => {
         )}
       </div>
 
-      {/* Footer */}
-      <div className="bg-gray-50 border-t mt-12">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span>🔒 SSL Encrypted</span>
-              <span>🛡️ GDPR Compliant</span>
-              <span>🤖 AI-Powered</span>
-            </div>
-            
-            <div className="flex items-center space-x-4 text-sm">
-              <a href="#" className="text-gray-600 hover:text-gray-800">Privacy Policy</a>
-              <a href="#" className="text-gray-600 hover:text-gray-800">Terms of Service</a>
-              <a href="#" className="text-gray-600 hover:text-gray-800">Support</a>
-            </div>
-          </div>
-        </div>
-      </div>
+
       {/* Toast notification */}
-      {toast && (
-        <div style={{ position: 'fixed', top: 20, left: 0, right: 0, zIndex: 9999, display: 'flex', justifyContent: 'center' }}>
-          <div className="bg-green-600 text-white px-6 py-3 rounded shadow-lg font-semibold animate-fade-in">
-            {toast}
-          </div>
-        </div>
-      )}
       {/* Loading message */}
-      {isProcessing && (
-        <div style={{ position: 'fixed', top: 70, left: 0, right: 0, zIndex: 9998, display: 'flex', justifyContent: 'center' }}>
-          <div className="bg-blue-600 text-white px-6 py-3 rounded shadow font-medium animate-pulse">
-            Uploading document, please wait...
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };

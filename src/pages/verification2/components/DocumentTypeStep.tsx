@@ -29,7 +29,7 @@ const DocumentTypeStep: React.FC<DocumentTypeStepProps> = ({ countries, selected
           onClick={() => setSelectedCountry(country.code)}
           className={`p-4 rounded-xl border-2 transition-all duration-300 ${
             selectedCountry === country.code
-              ? 'border-blue-500 bg-blue-50 shadow-lg scale-105'
+              ? 'border-[#01aaa7] bg-[#e0f7f6] shadow-lg scale-105'
               : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
           }`}
         >
@@ -54,9 +54,9 @@ const DocumentTypeStep: React.FC<DocumentTypeStepProps> = ({ countries, selected
                 });
                 nextStep();
               }}
-              className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 hover:scale-105"
+              className="p-6 border-2 border-gray-200 rounded-xl hover:border-[#01aaa7] hover:bg-[#e0f7f6] transition-all duration-300 hover:scale-105"
             >
-              <FileText className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+              <FileText className="w-8 h-8 text-[#01aaa7] mx-auto mb-3" />
               <div className="font-medium text-gray-900">{docType}</div>
               <div className="text-sm text-gray-500 mt-1">
                 {docType === 'National ID' && 'Government-issued ID card'}

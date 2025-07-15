@@ -34,13 +34,13 @@ const PhoneStep: React.FC<PhoneStepProps> = ({
         value={verificationData.phoneNumber}
         onChange={e => setVerificationData((prev: any) => ({ ...prev, phoneNumber: e.target.value }))}
         placeholder="Phone Number"
-        className="border border-gray-300 rounded-lg px-4 py-2 w-64 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="border border-gray-300 rounded-lg px-4 py-2 w-64 text-lg focus:outline-none focus:ring-2 focus:ring-[#01aaa7]"
         disabled={isProcessing}
       />
       {errors.phone && <div className="text-red-600 text-sm">{errors.phone}</div>}
       <button
         onClick={onRequestOtp}
-        className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg"
+        className="bg-[#01aaa7] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#019c98] transition-all duration-300 hover:scale-105 shadow-lg"
         disabled={isProcessing}
       >
         {isProcessing ? 'Sending...' : 'Send Verification Code'}

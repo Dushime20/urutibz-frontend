@@ -28,6 +28,7 @@ export interface User {
   };
   verification: VerificationStatus;
   joinedDate: string;
+  kyc_status?: string;
 }
 
 // Define context type

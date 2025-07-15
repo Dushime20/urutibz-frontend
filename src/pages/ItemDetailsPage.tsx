@@ -16,6 +16,10 @@ const ItemDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   
+  // Debug: log user and kyc_status
+  console.log('User:', user);
+  console.log('user.kyc_status:', user?.kyc_status);
+
   const [item] = useState(mockRentalItems.find(i => i.id === id));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -51,33 +55,16 @@ const ItemDetailsPage: React.FC = () => {
       return;
     }
 
-    // Check verification status
-    if (!user?.verification || !user.verification.isFullyVerified) {
+    // Check KYC status
+    if (user?.kyc_status === 'verified') {
+      // Proceed to booking
+      navigate(`/booking/item/${item.id}`);
+    } else {
+      // Not verified, show verification modal
       setShowVerificationModal(true);
-      return;
-    }
-
-    // Proceed to booking
-    navigate(`/booking/item/${item.id}`);
-  };
-
-  const handleVerificationRedirect = () => {
-    if (!user) return;
-    
-    const { verification } = user;
-    
-    if (!verification.isProfileComplete) {
-      navigate('/verify/profile');
-    } else if (!verification.isEmailVerified) {
-      navigate('/verify/email');
-    } else if (!verification.isPhoneVerified) {
-      navigate('/verify/phone');
-    } else if (!verification.isIdVerified) {
-      navigate('/verify/id');
-    } else if (!verification.isAddressVerified) {
-      navigate('/verify/address');
     }
   };
+
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => 
@@ -321,7 +308,7 @@ const ItemDetailsPage: React.FC = () => {
                 {/* Book Now Button */}
                 <Button
                   onClick={handleBookNow}
-                  className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 btn-primary text-white rounded-xl font-semibold hover:bg-[#01aaa7]  transition-colors flex items-center justify-center gap-2"
                 >
                   Book Now
                   <ArrowRight className="w-4 h-4" />
@@ -337,11 +324,11 @@ const ItemDetailsPage: React.FC = () => {
                   </div>
                 )}
 
-                {isAuthenticated && (!user?.verification || !user.verification.isFullyVerified) && (
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                {isAuthenticated && (user?.kyc_status !== 'verified') && (
+                  <div className="mt-4 p-3 b border border-blue-200 rounded-lg">
                     <div className="flex items-center gap-2 text-blue-700">
-                      <AlertCircle className="w-4 h-4" />
-                      <span className="text-sm">Account verification required</span>
+                      <AlertCircle className="w-4 h-4 text-[#01aaa7]" />
+                      <span className="text-sm text-[#01aaa7]">Account verification required</span>
                     </div>
                   </div>
                 )}
@@ -447,15 +434,15 @@ const ItemDetailsPage: React.FC = () => {
       )}
 
       {/* Verification Modal */}
-      {showVerificationModal && (
+      {showVerificationModal && user?.kyc_status !== 'verified' && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
           <div className="bg-white rounded-xl p-8 shadow-lg max-w-md w-full text-center">
-            <h2 className="text-xl font-bold mb-4 text-blue-700">Verification Required</h2>
+            <h2 className="text-xl font-bold mb-4 text-[#01aaa7]">Verification Required</h2>
             <p className="mb-6 text-gray-700">
               You must complete your account verification (including document upload) before booking this item.
             </p>
             <Button
-              className="w-full bg-blue-600 text-white"
+              className="w-full btn-primary text-white"
               onClick={() => {
                 setShowVerificationModal(false);
                 navigate('/verify/id');

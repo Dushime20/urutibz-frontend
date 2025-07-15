@@ -7,7 +7,7 @@ interface CompletionStepProps {
 
 const CompletionStep: React.FC<CompletionStepProps> = ({ verificationData }) => (
   <div className="space-y-8 text-center">
-    <div className="mx-auto w-24 h-24 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+    <div className="mx-auto w-24 h-24 bg-gradient-to-r from-green-400 to-[#01aaa7] rounded-full flex items-center justify-center">
       <Award className="w-12 h-12 text-white" />
     </div>
     <h2 className="text-3xl font-bold text-green-800">Verification Complete!</h2>

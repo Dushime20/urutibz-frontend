@@ -21,7 +21,7 @@ const AIAnalysisStep: React.FC<AIAnalysisStepProps> = ({
         <div className="bg-white rounded-lg p-6 border shadow-sm">
           <div className="flex items-center space-x-3 mb-4">
             <div className="animate-spin">
-              <span className="inline-block w-6 h-6 bg-blue-600 rounded-full"></span>
+              <span className="inline-block w-6 h-6 bg-[#01aaa7] rounded-full"></span>
             </div>
             <h3 className="text-lg font-semibold text-gray-900">AI Analyzing...</h3>
           </div>
@@ -32,7 +32,7 @@ const AIAnalysisStep: React.FC<AIAnalysisStepProps> = ({
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-[#01aaa7] to-purple-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${aiProgress}%` }}
               ></div>
             </div>

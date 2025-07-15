@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Bot, Sparkles, ArrowLeft } from 'lucide-react';
 import { registerUser } from './service/api';
+import { useToast } from '../../contexts/ToastContext';
 
 // Simple custom toast component
 function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
@@ -33,6 +34,7 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'error' | 'success'>('error');
+  const { showToast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, type, checked, value } = e.target;
@@ -75,15 +77,13 @@ const RegisterPage: React.FC = () => {
         email: formData.email,
         password: formData.password,
       });
-      setToast('Registration successful');
-      setToastType('success');
+      showToast('Registration successful! Welcome!', 'success');
       setTimeout(() => {
         navigate('/login');
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
-      // setToast(err.message || 'Registration failed. Please try again.');
-      setToastType('error');
+      showToast('Registration failed. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }

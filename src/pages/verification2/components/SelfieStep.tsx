@@ -141,7 +141,7 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
               startCamera();
               setShowCamera(true);
             }}
-            className="bg-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg"
+            className="bg-[#01aaa7] text-white px-8 py-4 rounded-xl font-semibold hover:bg-[#019c98] transition-all duration-300 hover:scale-105 shadow-lg"
           >
             Open Camera
           </button>
