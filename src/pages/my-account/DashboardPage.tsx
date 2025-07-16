@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   DollarSign, Star, 
@@ -11,8 +11,10 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui/DesignSystem';
 import VerificationBanner from '../../components/verification/VerificationBanner';
-import { createProduct, createProductImage } from './service/api';
+import { createProduct, createProductImage, getMyProducts, getProductImagesByProductId } from './service/api';
 import { useToast } from '../../contexts/ToastContext';
+import NewListingModal from './models/NewListingModal';
+import ProductDetailModal from './models/ProductDetailModal';
 
 // TypeScript interfaces for component props
 interface StatCardProps {
@@ -48,19 +50,52 @@ const DashboardPage: React.FC = () => {
     pickup_methods: [] as string[],
     country_id: '',
     specifications: { processor: '', memory: '', storage: '' },
-    image: null as File | null,
+    images: [] as File[],
     alt_text: '',
     sort_order: '1',
     isPrimary: 'true',
     product_id: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [productImages, setProductImages] = useState<{ [productId: string]: any[] }>({});
+  const [loadingListings, setLoadingListings] = useState(false);
+  const [showProductDetail, setShowProductDetail] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoadingListings(true);
+      try {
+        const res = await getMyProducts();
+        setMyListings(res || []);
+        // Fetch images for only the first 5 products, with a delay between requests
+        for (const product of (res || []).slice(0, 5)) {
+          try {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            const imgRes = await getProductImagesByProductId(product.id);
+            setProductImages(prev => ({ ...prev, [product.id]: imgRes || [] }));
+          } catch (imgErr) {
+            setProductImages(prev => ({ ...prev, [product.id]: [] }));
+          }
+        }
+      } catch (err) {
+        setMyListings([]);
+      } finally {
+        setLoadingListings(false);
+      }
+    };
+    fetchListings();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'file' && e.target instanceof HTMLInputElement) {
       const input = e.target as HTMLInputElement;
-      setForm((prev) => ({ ...prev, image: (input.files && input.files[0]) || null }));
+      if (name === 'images') {
+        setForm((prev) => ({ ...prev, images: input.files ? Array.from(input.files) : [] }));
+      }
     } else if (name.startsWith('specifications.')) {
       const specKey = name.split('.')[1];
       setForm((prev) => ({ ...prev, specifications: { ...prev.specifications, [specKey]: value } }));
@@ -90,17 +125,15 @@ const DashboardPage: React.FC = () => {
       };
       const productResponse = await createProduct(productPayload);
       const productId = productResponse.data.id;
-      console.log('Created productId:', productId);
       setForm((prev) => ({ ...prev, product_id: productId }));
-      // 2. Create product image
-      if (form.image && productId) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+      // 2. Create product images (multiple)
+      if (form.images && form.images.length > 0 && productId) {
         const imagePayload = {
-          image: form.image,
+          images: form.images, // pass the array
           product_id: productId,
           alt_text: form.alt_text,
           sort_order: form.sort_order,
-          isPrimary: form.isPrimary,
+          isPrimary: 'true', // or handle primary logic as needed
         };
         await createProductImage(imagePayload);
       }
@@ -203,24 +236,6 @@ const DashboardPage: React.FC = () => {
     }
   ];
 
-  const userListings = [
-    {
-      id: 1,
-      name: 'BMW X5 2019',
-      image: '/assets/img/cars/car-04.jpg',
-      price: 120,
-      status: 'Active',
-      bookings: 12
-    },
-    {
-      id: 2,
-      name: 'Audi Q7 2020',
-      image: '/assets/img/cars/car-05.jpg',
-      price: 95,
-      status: 'Active',
-      bookings: 8
-    }
-  ];
 
   const StatCard: React.FC<StatCardProps> = ({ icon: Icon, title, value, subtitle, trend, color, bgColor }) => (
     <div className="group relative bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -570,46 +585,60 @@ const DashboardPage: React.FC = () => {
             )}
 
             {activeTab === 'listings' && (
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">My Listings</h3>
-                  <Button className="bg-[#01aaa7] hover:bg-[#019c98] text-white px-6 py-2.5 rounded-xl font-medium transition-colors flex items-center" onClick={() => setShowModal(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add New Listing
-                  </Button>
+              loadingListings ? (
+                <div className="flex items-center justify-center py-8">
+                  <svg className="animate-spin h-6 w-6 text-[#01aaa7] mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  <span>Loading your listings...</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {userListings.map((listing) => (
-                    <div key={listing.id} className="group relative bg-gray-50 rounded-2xl p-6 hover:bg-gray-100/50 transition-all duration-300">
-                      <img 
-                        src={listing.image} 
-                        alt={listing.name} 
-                        className="w-full h-40 rounded-xl object-cover mb-4 group-hover:scale-105 transition-transform duration-300" 
-                      />
-                      <h4 className="font-semibold text-gray-900 mb-3">{listing.name}</h4>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-lg font-bold text-gray-900">${listing.price}/day</span>
-                        <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                          listing.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {listing.status}
-                        </span>
+              ) : (
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">My Listings</h3>
+                    <Button onClick={() => setShowModal(true)} className="mb-4 bg-[#01aaa7] text-white">Add New Listing</Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {myListings.map((listing) => (
+                      <div key={listing.id} className="group relative bg-gray-50 rounded-2xl p-6 hover:bg-gray-100/50 transition-all duration-300">
+                        {/* Show first image as thumbnail if available */}
+                        {productImages[listing.id] && productImages[listing.id][0] ? (
+                          <img
+                            src={productImages[listing.id][0].image_url}
+                            alt={productImages[listing.id][0].alt_text || listing.title}
+                            className="w-full h-40 rounded-xl object-cover mb-4 group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-40 rounded-xl bg-gray-200 flex items-center justify-center mb-4 text-gray-400">No Image</div>
+                        )}
+                        <h4 className="font-semibold text-gray-900 mb-3">{listing.title}</h4>
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-lg font-bold text-gray-900">${listing.base_price}/day</span>
+                          <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
+                            listing.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {listing.status || 'Draft'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mb-4">{listing.bookings ? `${listing.bookings} bookings this month` : ''}</p>
+                        <div className="relative inline-block text-left">
+                          <button onClick={() => setOpenMenuId(openMenuId === listing.id ? null : listing.id)} className="p-2 rounded-full hover:bg-gray-100">
+                            <MoreHorizontal className="w-5 h-5" />
+                          </button>
+                          {openMenuId === listing.id && (
+                            <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-50">
+                              <button onClick={() => { setSelectedProductId(listing.id); setShowProductDetail(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">View</button>
+                              <button onClick={() => { /* handleEdit(listing.id) */ setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Edit</button>
+                              <button onClick={() => { /* handleDelete(listing.id) */ setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Delete</button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-500 mb-4">{listing.bookings} bookings this month</p>
-                      <div className="flex space-x-2">
-                        <button className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </button>
-                        <button className="flex-1 flex items-center justify-center px-3 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-300 transition-colors">
-                          <Edit3 className="w-4 h-4 mr-1" />
-                          Edit
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )
             )}
 
             {activeTab === 'wallet' && (
@@ -721,50 +750,20 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
       {/* Modal for new listing */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative">
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700" onClick={() => setShowModal(false)}>&times;</button>
-            <h2 className="text-2xl font-bold mb-4 text-[#01aaa7]">Add New Listing</h2>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <input name="title" value={form.title} onChange={handleInputChange} required placeholder="Title" className="w-full border rounded-lg px-4 py-2" />
-                <input name="slug" value={form.slug} onChange={handleInputChange} required placeholder="Slug" className="w-full border rounded-lg px-4 py-2" />
-                <textarea name="description" value={form.description} onChange={handleInputChange} required placeholder="Description" className="w-full border rounded-lg px-4 py-2" />
-                <input name="category_id" value={form.category_id} onChange={handleInputChange} required placeholder="Category ID" className="w-full border rounded-lg px-4 py-2" />
-                <select name="condition" value={form.condition} onChange={handleInputChange} className="w-full border rounded-lg px-4 py-2">
-                  <option value="new">New</option>
-                  <option value="used">Used</option>
-                </select>
-                <input name="base_price_per_day" value={form.base_price_per_day} onChange={handleInputChange} required placeholder="Price per day" type="number" className="w-full border rounded-lg px-4 py-2" />
-                <input name="base_currency" value={form.base_currency} onChange={handleInputChange} required placeholder="Currency" className="w-full border rounded-lg px-4 py-2" />
-              </div>
-              <div className="space-y-4">
-                <select name="pickup_methods" multiple value={form.pickup_methods} onChange={handleInputChange} className="w-full border rounded-lg px-4 py-2">
-                  <option value="pickup">Pickup</option>
-                  <option value="delivery">Delivery</option>
-                </select>
-                <input name="country_id" value={form.country_id} onChange={handleInputChange} required placeholder="Country ID" className="w-full border rounded-lg px-4 py-2" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <input name="specifications.processor" value={form.specifications.processor} onChange={handleInputChange} required placeholder="Processor" className="border rounded-lg px-4 py-2" />
-                  <input name="specifications.memory" value={form.specifications.memory} onChange={handleInputChange} required placeholder="Memory" className="border rounded-lg px-4 py-2" />
-                  <input name="specifications.storage" value={form.specifications.storage} onChange={handleInputChange} required placeholder="Storage" className="border rounded-lg px-4 py-2" />
-                </div>
-                <input name="alt_text" value={form.alt_text} onChange={handleInputChange} required placeholder="Image Alt Text" className="w-full border rounded-lg px-4 py-2" />
-                <input name="sort_order" value={form.sort_order} onChange={handleInputChange} required placeholder="Sort Order" className="w-full border rounded-lg px-4 py-2" />
-                <input name="isPrimary" value={form.isPrimary} onChange={handleInputChange} required placeholder="Is Primary (true/false)" className="w-full border rounded-lg px-4 py-2" />
-                <input name="product_id" value={form.product_id} readOnly placeholder="Product ID (auto)" className="w-full border rounded-lg px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed" />
-                <input name="image" type="file" accept="image/*" onChange={handleInputChange} required className="w-full border rounded-lg px-4 py-2" />
-              </div>
-              <div className="col-span-1 md:col-span-2">
-                <button type="submit" disabled={isSubmitting} className="w-full bg-[#01aaa7] text-white py-3 rounded-lg font-semibold hover:bg-[#019c98] transition-colors">
-                  {isSubmitting ? 'Submitting...' : 'Create Listing'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <NewListingModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={handleSubmit}
+        form={form}
+        setForm={setForm}
+        isSubmitting={isSubmitting}
+        handleInputChange={handleInputChange}
+      />
+      <ProductDetailModal
+        open={showProductDetail}
+        onClose={() => setShowProductDetail(false)}
+        productId={selectedProductId || ''}
+      />
     </div>
   );
 };
