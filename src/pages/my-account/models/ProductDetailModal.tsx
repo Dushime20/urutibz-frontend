@@ -43,7 +43,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-4xl w-full relative min-h-[95vh] overflow-y-auto">
+        <div className="bg-white rounded-md shadow-2xl p-8 max-w-4xl w-full relative min-h-[95vh] overflow-y-auto">
           <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700" onClick={onClose}>&times;</button>
           <div className="text-2xl font-bold text-[#01aaa7] mb-4">Product Details</div>
           {loading ? (

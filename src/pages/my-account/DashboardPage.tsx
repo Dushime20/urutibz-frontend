@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  DollarSign, Star, 
+import {
+  DollarSign, Star,
   Shield, MessageCircle, Plus, TrendingUp,
   BarChart3, Package, Settings,
   Calendar, Heart,
@@ -15,6 +15,7 @@ import { createProduct, createProductImage, getMyProducts, getProductImagesByPro
 import { useToast } from '../../contexts/ToastContext';
 import NewListingModal from './models/NewListingModal';
 import ProductDetailModal from './models/ProductDetailModal';
+import EditProductModal from './models/EditProductModal';
 
 // TypeScript interfaces for component props
 interface StatCardProps {
@@ -63,6 +64,8 @@ const DashboardPage: React.FC = () => {
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editProductId, setEditProductId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -81,6 +84,24 @@ const DashboardPage: React.FC = () => {
           }
         }
       } catch (err) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'response' in err &&
+          typeof (err as any).response === 'object' &&
+          (err as any).response !== null &&
+          'status' in (err as any).response &&
+          (err as any).response.status === 429
+        ) {
+
+          alert('You are making requests too quickly. Please wait a moment and try again.');
+
+        } else {
+
+          alert('An error occurred. Please try again later.');
+        }
+        throw err;
+
         setMyListings([]);
       } finally {
         setLoadingListings(false);
@@ -264,11 +285,10 @@ const DashboardPage: React.FC = () => {
   const NavigationItem: React.FC<NavigationItemProps> = ({ icon: Icon, label, active, onClick, hasNotification = false }) => (
     <button
       onClick={onClick}
-      className={`group relative w-full flex items-center px-4 py-3.5 rounded-2xl font-medium transition-all duration-300 ${
-        active
-          ? 'text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-      }`}
+      className={`group relative w-full flex items-center px-4 py-3.5 rounded-2xl font-medium transition-all duration-300 ${active
+        ? 'text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
+        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+        }`}
       style={{
         backgroundColor: active ? 'var(--color-active)' : 'transparent',
       }}
@@ -317,7 +337,7 @@ const DashboardPage: React.FC = () => {
         <div className="mb-8">
           <VerificationBanner />
         </div>
-        
+
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
           {/* Sidebar */}
           <div className="xl:col-span-1">
@@ -325,10 +345,10 @@ const DashboardPage: React.FC = () => {
               {/* User Profile */}
               <div className="text-center mb-8">
                 <div className="relative inline-block mb-4">
-                  <img 
-                    src={user.avatar} 
-                    alt="User" 
-                    className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-lg" 
+                  <img
+                    src={user.avatar}
+                    alt="User"
+                    className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-lg"
                   />
                   {user.verified && (
                     <div className="absolute -bottom-2 -right-2 bg-blue-500 rounded-xl p-2 shadow-lg">
@@ -387,7 +407,7 @@ const DashboardPage: React.FC = () => {
                   active={activeTab === 'reviews'}
                   onClick={() => setActiveTab('reviews')}
                 />
-                
+
                 <div className="border-t border-gray-100 pt-4 mt-6">
                   <Link
                     to="/dashboard/messages"
@@ -459,8 +479,8 @@ const DashboardPage: React.FC = () => {
                   <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-bold text-gray-900">Recent Bookings</h3>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
                       >
                         View all
@@ -471,10 +491,10 @@ const DashboardPage: React.FC = () => {
                       {recentBookings.map((booking) => (
                         <div key={booking.id} className="group flex items-center space-x-4 p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-50 transition-all duration-200">
                           <div className="relative">
-                            <img 
-                              src={booking.carImage} 
-                              alt={booking.carName} 
-                              className="w-16 h-12 rounded-xl object-cover" 
+                            <img
+                              src={booking.carImage}
+                              alt={booking.carName}
+                              className="w-16 h-12 rounded-xl object-cover"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-colors duration-200"></div>
                           </div>
@@ -484,11 +504,10 @@ const DashboardPage: React.FC = () => {
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-gray-900">${booking.price}</p>
-                            <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${
-                              booking.status === 'Upcoming' 
-                                ? 'bg-blue-100 text-blue-700' 
-                                : 'bg-emerald-100 text-emerald-700'
-                            }`}>
+                            <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${booking.status === 'Upcoming'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-emerald-100 text-emerald-700'
+                              }`}>
                               {booking.status}
                             </span>
                           </div>
@@ -501,8 +520,8 @@ const DashboardPage: React.FC = () => {
                   <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-bold text-gray-900">Transactions</h3>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
                       >
                         View all
@@ -513,10 +532,10 @@ const DashboardPage: React.FC = () => {
                       {recentTransactions.map((transaction) => (
                         <div key={transaction.id} className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors duration-200">
                           <div className="w-10 h-10 rounded-xl overflow-hidden">
-                            <img 
-                              src={transaction.carImage} 
-                              alt={transaction.carName} 
-                              className="w-full h-full object-cover" 
+                            <img
+                              src={transaction.carImage}
+                              alt={transaction.carName}
+                              className="w-full h-full object-cover"
                             />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -524,9 +543,8 @@ const DashboardPage: React.FC = () => {
                             <p className="text-xs text-gray-500">{transaction.date}</p>
                           </div>
                           <div className="text-right">
-                            <p className={`font-bold text-sm ${
-                              transaction.type === 'Earning' ? 'text-emerald-600' : 'text-red-600'
-                            }`}>
+                            <p className={`font-bold text-sm ${transaction.type === 'Earning' ? 'text-emerald-600' : 'text-red-600'
+                              }`}>
                               {transaction.type === 'Earning' ? '+' : '-'}${transaction.amount}
                             </p>
                             <p className="text-xs text-gray-500">{transaction.status}</p>
@@ -558,17 +576,16 @@ const DashboardPage: React.FC = () => {
                 <div className="space-y-4">
                   {recentBookings.map((booking) => (
                     <div key={booking.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                      <img 
-                        src={booking.carImage} 
-                        alt={booking.carName} 
-                        className="w-24 h-18 rounded-xl object-cover" 
+                      <img
+                        src={booking.carImage}
+                        alt={booking.carName}
+                        className="w-24 h-18 rounded-xl object-cover"
                       />
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900 mb-1">{booking.carName}</h4>
                         <p className="text-sm text-gray-500 mb-2">{booking.startDate} - {booking.endDate}</p>
-                        <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${
-                          booking.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                        }`}>
+                        <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${booking.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
                           {booking.status}
                         </span>
                       </div>
@@ -615,21 +632,26 @@ const DashboardPage: React.FC = () => {
                         <h4 className="font-semibold text-gray-900 mb-3">{listing.title}</h4>
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-lg font-bold text-gray-900">${listing.base_price}/day</span>
-                          <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                            listing.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                          }`}>
+                          <span className={`px-3 py-1 rounded-lg text-xs font-medium ${listing.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                            }`}>
                             {listing.status || 'Draft'}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 mb-4">{listing.bookings ? `${listing.bookings} bookings this month` : ''}</p>
-                        <div className="relative inline-block text-left">
-                          <button onClick={() => setOpenMenuId(openMenuId === listing.id ? null : listing.id)} className="p-2 rounded-full hover:bg-gray-100">
-                            <MoreHorizontal className="w-5 h-5" />
-                          </button>
+                        <div className='flex  justify-between items-center'>
+                            <p>status: {listing.status || 'Draft'}</p>
+                            <button onClick={() => setOpenMenuId(openMenuId === listing.id ? null : listing.id)} className="p-2 rounded-full hover:bg-gray-100">
+                              <MoreHorizontal className="w-5 h-5" />
+                            </button>
+
+                          </div>
+                        <div className=" inline-block mt-[-20px]">
+                      
+
                           {openMenuId === listing.id && (
                             <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-50">
                               <button onClick={() => { setSelectedProductId(listing.id); setShowProductDetail(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">View</button>
-                              <button onClick={() => { /* handleEdit(listing.id) */ setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Edit</button>
+                              <button onClick={() => { setEditProductId(listing.id); setShowEditModal(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Edit</button>
                               <button onClick={() => { /* handleDelete(listing.id) */ setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Delete</button>
                             </div>
                           )}
@@ -665,25 +687,24 @@ const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                   <h4 className="text-lg font-bold text-gray-900 mb-6">Recent Transactions</h4>
                   <div className="space-y-4">
                     {recentTransactions.map((transaction) => (
                       <div key={transaction.id} className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                        <img 
-                          src={transaction.carImage} 
-                          alt={transaction.carName} 
-                          className="w-16 h-12 rounded-xl object-cover" 
+                        <img
+                          src={transaction.carImage}
+                          alt={transaction.carName}
+                          className="w-16 h-12 rounded-xl object-cover"
                         />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900">{transaction.carName}</h4>
                           <p className="text-sm text-gray-500">{transaction.date}</p>
                         </div>
                         <div className="text-right">
-                          <p className={`font-bold text-lg ${
-                            transaction.type === 'Earning' ? 'text-emerald-600' : 'text-red-600'
-                          }`}>
+                          <p className={`font-bold text-lg ${transaction.type === 'Earning' ? 'text-emerald-600' : 'text-red-600'
+                            }`}>
                             {transaction.type === 'Earning' ? '+' : '-'}${transaction.amount}
                           </p>
                           <span className="text-xs text-gray-500">{transaction.status}</span>
@@ -702,10 +723,10 @@ const DashboardPage: React.FC = () => {
                   {wishlistCars.map((car) => (
                     <div key={car.id} className="group bg-gray-50 rounded-2xl p-6 hover:bg-gray-100/50 transition-all duration-300">
                       <div className="relative mb-4">
-                        <img 
-                          src={car.image} 
-                          alt={car.name} 
-                          className="w-full h-40 rounded-xl object-cover group-hover:scale-105 transition-transform duration-300" 
+                        <img
+                          src={car.image}
+                          alt={car.name}
+                          className="w-full h-40 rounded-xl object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <button className="absolute top-3 right-3 p-2 bg-white/90 rounded-lg hover:bg-white transition-colors">
                           <Heart className="w-4 h-4 text-red-500 fill-red-500" />
@@ -737,7 +758,7 @@ const DashboardPage: React.FC = () => {
                   </div>
                   <h4 className="text-lg font-semibold text-gray-600 mb-2">No Reviews Yet</h4>
                   <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                    Start renting cars to receive reviews from hosts and renters. 
+                    Start renting cars to receive reviews from hosts and renters.
                     Your reviews will help build trust with the community.
                   </p>
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors">
@@ -763,6 +784,11 @@ const DashboardPage: React.FC = () => {
         open={showProductDetail}
         onClose={() => setShowProductDetail(false)}
         productId={selectedProductId || ''}
+      />
+      <EditProductModal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        productId={editProductId || ''}
       />
     </div>
   );

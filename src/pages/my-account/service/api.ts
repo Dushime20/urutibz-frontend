@@ -65,3 +65,35 @@ export async function getProductById(productId: string) {
   console.log(response.data.data,'data from single  product')
   return response.data.data;
 }
+
+export async function updateProduct(productId: string, productData: any) {
+  const token = localStorage.getItem('token');
+  const response = await axios.put(
+    `${API_BASE_URL}/products/${productId}`,
+    productData,
+    {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }
+  );
+  return response.data;
+}
+
+export async function updateProductImage(imageId: string, imageData: any) {
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  if (imageData.image) formData.append('image', imageData.image);
+  if (imageData.alt_text) formData.append('alt_text', imageData.alt_text);
+  if (imageData.sort_order) formData.append('sort_order', imageData.sort_order);
+  if (imageData.isPrimary) formData.append('isPrimary', imageData.isPrimary);
+  const response = await axios.put(
+    `${API_BASE_URL}/product-images/${imageId}`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    }
+  );
+  return response.data;
+}

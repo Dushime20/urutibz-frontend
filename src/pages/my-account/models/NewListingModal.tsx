@@ -14,7 +14,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({ open, onClose, onSubm
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl p-8 max-w-4xl w-full relative max-h-[95vh] overflow-y-auto">
+      <div className="bg-white rounded-md shadow-2xl p-8 max-w-4xl w-full relative max-h-[95vh] overflow-y-auto">
         <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700" onClick={onClose}>&times;</button>
         <h2 className="text-2xl font-bold mb-4 text-[#01aaa7]">Add New Listing</h2>
         <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
