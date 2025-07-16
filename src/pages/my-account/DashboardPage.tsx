@@ -36,11 +36,33 @@ interface NavigationItemProps {
   hasNotification?: boolean;
 }
 
+type FormState = {
+  title: string;
+  slug: string;
+  description: string;
+  category_id: string;
+  condition: string;
+  base_price_per_day: string;
+  base_currency: string;
+  base_price_per_week?: string;
+  base_price_per_month?: string;
+  pickup_methods: string[];
+  country_id: string;
+  specifications: { [key: string]: string };
+  features?: string[];
+  images: File[];
+  alt_text: string;
+  sort_order: string;
+  isPrimary: string;
+  product_id: string;
+  location: { latitude: string; longitude: string };
+};
+
 const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'wishlist' | 'reviews'>('overview');
   const { showToast } = useToast();
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     title: '',
     slug: '',
     description: '',
@@ -48,15 +70,37 @@ const DashboardPage: React.FC = () => {
     condition: 'new',
     base_price_per_day: '',
     base_currency: 'USD',
-    pickup_methods: [] as string[],
+    pickup_methods: [],
     country_id: '',
-    specifications: { processor: '', memory: '', storage: '' },
-    images: [] as File[],
+    specifications: { spec1: '' }, // start with one empty specification
+    images: [],
     alt_text: '',
     sort_order: '1',
     isPrimary: 'true',
     product_id: '',
+    location: { latitude: '', longitude: '' },
   });
+
+  // Prefill location with user's geolocation
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setForm((prev) => ({
+            ...prev,
+            location: {
+              latitude: position.coords.latitude.toString(),
+              longitude: position.coords.longitude.toString(),
+            },
+          }));
+        },
+        (error) => {
+          // Optionally handle error (user denied, etc.)
+        }
+      );
+    }
+  }, []);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [myListings, setMyListings] = useState<any[]>([]);
   const [productImages, setProductImages] = useState<{ [productId: string]: any[] }>({});
@@ -122,6 +166,15 @@ const DashboardPage: React.FC = () => {
       setForm((prev) => ({ ...prev, specifications: { ...prev.specifications, [specKey]: value } }));
     } else if (name === 'pickup_methods') {
       setForm((prev) => ({ ...prev, pickup_methods: Array.from((e.target as HTMLSelectElement).selectedOptions, (option) => option.value) }));
+    } else if (name === 'title') {
+      // Generate slug from title
+      const slug = value
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      setForm((prev) => ({ ...prev, title: value, slug }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -130,6 +183,12 @@ const DashboardPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    // Validate pickup_methods
+    if (!form.pickup_methods || form.pickup_methods.length === 0) {
+      showToast('Please select at least one pickup method.', 'error');
+      setIsSubmitting(false);
+      return;
+    }
     try {
       // 1. Create product
       const productPayload = {
@@ -143,6 +202,7 @@ const DashboardPage: React.FC = () => {
         pickup_methods: form.pickup_methods,
         country_id: form.country_id,
         specifications: form.specifications,
+        location: form.location, // include location in payload
       };
       const productResponse = await createProduct(productPayload);
       const productId = productResponse.data.id;
@@ -159,6 +219,24 @@ const DashboardPage: React.FC = () => {
         await createProductImage(imagePayload);
       }
       showToast('Listing created successfully!', 'success');
+      setForm({
+        title: '',
+        slug: '',
+        description: '',
+        category_id: '',
+        condition: 'new',
+        base_price_per_day: '',
+        base_currency: 'USD',
+        pickup_methods: [],
+        country_id: '',
+        specifications: { spec1: '' },
+        images: [],
+        alt_text: '',
+        sort_order: '1',
+        isPrimary: 'true',
+        product_id: '',
+        location: { latitude: '', longitude: '' },
+      });
       setShowModal(false);
       // Optionally refresh listings here
     } catch (err) {
@@ -303,6 +381,11 @@ const DashboardPage: React.FC = () => {
       )}
     </button>
   );
+
+  const handleCloseModal = () => {
+    console.log('Modal close handler called');
+    setShowModal(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
@@ -610,6 +693,20 @@ const DashboardPage: React.FC = () => {
                   </svg>
                   <span>Loading your listings...</span>
                 </div>
+              ) : myListings.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-gray-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  <div className="text-2xl font-bold text-gray-400 mb-2">No listings yet</div>
+                  <div className="text-gray-500 mb-6">You haven't created any product listings. Click below to get started!</div>
+                  <Button
+                    onClick={() => setShowModal(true)}
+                    className="bg-[#01aaa7] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#019c98] transition-colors"
+                  >
+                    Add New Listing
+                  </Button>
+                </div>
               ) : (
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-6">
@@ -618,7 +715,15 @@ const DashboardPage: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {myListings.map((listing) => (
-                      <div key={listing.id} className="group relative bg-gray-50 rounded-2xl p-6 hover:bg-gray-100/50 transition-all duration-300">
+                      <div
+                        key={listing.id}
+                        className="group relative bg-gray-50 rounded-2xl p-6 hover:bg-gray-100/50 transition-all duration-300 cursor-pointer hover:shadow-lg transition-shadow duration-150"
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('.more-menu')) return;
+                          setSelectedProductId(listing.id);
+                          setShowProductDetail(true);
+                        }}
+                      >
                         {/* Show first image as thumbnail if available */}
                         {productImages[listing.id] && productImages[listing.id][0] ? (
                           <img
@@ -640,22 +745,20 @@ const DashboardPage: React.FC = () => {
                         <p className="text-sm text-gray-500 mb-4">{listing.bookings ? `${listing.bookings} bookings this month` : ''}</p>
                         <div className='flex  justify-between items-center'>
                             <p>status: {listing.status || 'Draft'}</p>
-                            <button onClick={() => setOpenMenuId(openMenuId === listing.id ? null : listing.id)} className="p-2 rounded-full hover:bg-gray-100">
-                              <MoreHorizontal className="w-5 h-5" />
-                            </button>
+                            <div className="relative inline-block text-left more-menu">
+                              <button onClick={() => setOpenMenuId(openMenuId === listing.id ? null : listing.id)} className="p-2 rounded-full hover:bg-gray-100">
+                                <MoreHorizontal className="w-5 h-5" />
+                              </button>
 
-                          </div>
-                        <div className=" inline-block mt-[-20px]">
-                      
-
-                          {openMenuId === listing.id && (
-                            <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-50">
-                              <button onClick={() => { setSelectedProductId(listing.id); setShowProductDetail(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">View</button>
-                              <button onClick={() => { setEditProductId(listing.id); setShowEditModal(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Edit</button>
-                              <button onClick={() => { /* handleDelete(listing.id) */ setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Delete</button>
+                              {openMenuId === listing.id && (
+                                <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-50">
+                                  <button onClick={() => { setSelectedProductId(listing.id); setShowProductDetail(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">View</button>
+                                  <button onClick={() => { setEditProductId(listing.id); setShowEditModal(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Edit</button>
+                                  <button onClick={() => { /* handleDelete(listing.id) */ setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Delete</button>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
+                          </div>
                       </div>
                     ))}
                   </div>
@@ -773,7 +876,7 @@ const DashboardPage: React.FC = () => {
       {/* Modal for new listing */}
       <NewListingModal
         open={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={handleCloseModal}
         onSubmit={handleSubmit}
         form={form}
         setForm={setForm}
@@ -784,6 +887,11 @@ const DashboardPage: React.FC = () => {
         open={showProductDetail}
         onClose={() => setShowProductDetail(false)}
         productId={selectedProductId || ''}
+        onEdit={() => {
+          setEditProductId(selectedProductId);
+          setShowEditModal(true);
+          setShowProductDetail(false);
+        }}
       />
       <EditProductModal
         open={showEditModal}

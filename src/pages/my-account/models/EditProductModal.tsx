@@ -8,8 +8,30 @@ interface EditProductModalProps {
   productId: string;
 }
 
+type FormState = {
+  title: string;
+  slug: string;
+  description: string;
+  category_id: string;
+  condition: string;
+  base_price_per_day: string;
+  base_currency: string;
+  base_price_per_week?: string;
+  base_price_per_month?: string;
+  pickup_methods: string[];
+  country_id: string;
+  specifications: { [key: string]: string };
+  features?: string[];
+  images?: File[];
+  alt_text?: string;
+  sort_order?: string;
+  isPrimary?: string;
+  product_id?: string;
+  location?: { latitude: string; longitude: string };
+};
+
 const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, productId }) => {
-  const [form, setForm] = useState<any>(null);
+  const [form, setForm] = useState<Partial<FormState> | null>(null);
   const [images, setImages] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,6 +43,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
   const [imageEditLoading, setImageEditLoading] = useState(false);
   const { showToast } = useToast();
 
+  // Remove COMMON_FEATURES and COMMON_SPEC_KEYS arrays and all their usages.
+  // Only render custom features and specifications as editable inputs, with add/remove buttons.
+  // Do not render any checkboxes or suggested keys/values.
+
   useEffect(() => {
     if (!open || !productId) return;
     setLoading(true);
@@ -28,6 +54,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     getProductById(productId)
       .then(product => {
         setForm({ ...product });
+        if (product.features) setForm(f => ({ ...f!, features: product.features }));
       })
       .catch(() => setError('Failed to load product details.'));
     getProductImagesByProductId(productId)
@@ -43,11 +70,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
       setImages(input.files ? Array.from(input.files) : []);
     } else if (name.startsWith('specifications.')) {
       const specKey = name.split('.')[1];
-      setForm((prev: any) => ({ ...prev, specifications: { ...prev.specifications, [specKey]: value } }));
+      setForm((prev) => ({ ...prev!, specifications: { ...prev!.specifications, [specKey]: value } }));
     } else if (name === 'pickup_methods') {
-      setForm((prev: any) => ({ ...prev, pickup_methods: Array.from((e.target as HTMLSelectElement).selectedOptions, (option) => option.value) }));
+      setForm((prev) => ({ ...prev!, pickup_methods: Array.from((e.target as HTMLSelectElement).selectedOptions, (option) => option.value) }));
     } else {
-      setForm((prev: any) => ({ ...prev, [name]: value }));
+      setForm((prev) => ({ ...prev!, [name]: value }));
     }
   };
 
@@ -55,11 +82,15 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    if (!form) return;
     try {
-      // Update product info
-      const productPayload = { ...form };
+      // Always send features as an array
+      const productPayload = {
+        ...form,
+        features: Array.isArray(form.features) ? form.features : [],
+      };
       // Remove base_price if present, ensure base_price_per_day is used
-      delete productPayload.base_price;
+      if ('base_price' in productPayload) delete (productPayload as any).base_price;
       await updateProduct(productId, productPayload);
       // Upload new images if any
       if (images && images.length > 0) {
@@ -101,7 +132,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
               <input name="title" value={form.title} onChange={handleInputChange} required placeholder="Title" className="w-full border rounded-lg px-4 py-2" />
-              <input name="slug" value={form.slug} onChange={handleInputChange} required placeholder="Slug" className="w-full border rounded-lg px-4 py-2" />
               <textarea name="description" value={form.description} onChange={handleInputChange} required placeholder="Description" className="w-full border rounded-lg px-4 py-2" />
               <input name="category_id" value={form.category_id} onChange={handleInputChange} required placeholder="Category ID" className="w-full border rounded-lg px-4 py-2" />
               <select name="condition" value={form.condition} onChange={handleInputChange} className="w-full border rounded-lg px-4 py-2">
@@ -117,10 +147,81 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 <option value="delivery">Delivery</option>
               </select>
               <input name="country_id" value={form.country_id} onChange={handleInputChange} required placeholder="Country ID" className="w-full border rounded-lg px-4 py-2" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <input name="specifications.processor" value={form.specifications.processor} onChange={handleInputChange} required placeholder="Processor" className="border rounded-lg px-4 py-2" />
-                <input name="specifications.memory" value={form.specifications.memory} onChange={handleInputChange} required placeholder="Memory" className="border rounded-lg px-4 py-2" />
-                <input name="specifications.storage" value={form.specifications.storage} onChange={handleInputChange} required placeholder="Storage" className="border rounded-lg px-4 py-2" />
+              {/* Features UI */}
+              <div className="space-y-2 mt-4">
+                <label className="block font-semibold">Features</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {form.features?.map((feature: string, idx: number) => (
+                    <div key={idx} className="flex gap-2 mb-2">
+                      <input
+                        value={feature}
+                        onChange={e => {
+                          const features = [...form.features || []];
+                          features[idx] = e.target.value;
+                          setForm((prev) => ({ ...prev!, features }));
+                        }}
+                        placeholder="Custom feature"
+                        className="border rounded px-2 py-1"
+                      />
+                      <button type="button" onClick={() => {
+                        setForm((prev) => ({ ...prev!, features: prev!.features?.filter((_: string, i: number) => i !== idx) }));
+                      }}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev!, features: [...prev!.features || [], ''] }))}
+                  className="text-xs text-[#01aaa7] underline"
+                >
+                  Add Custom Feature
+                </button>
+              </div>
+              {/* Specifications UI */}
+              <div className="space-y-2">
+                <label className="block font-semibold">Specifications</label>
+                {Object.entries(form?.specifications || {}).map(([key, value], idx) => (
+                  <div key={key} className="flex gap-2 mb-2">
+                    <input
+                      value={key}
+                      onChange={e => {
+                        const newSpecs = { ...form?.specifications || {} };
+                        const newKey = e.target.value;
+                        delete newSpecs[key];
+                        newSpecs[newKey] = value;
+                        setForm((prev) => ({ ...prev!, specifications: newSpecs }));
+                      }}
+                      placeholder="Custom Key"
+                      className="border rounded px-2 py-1"
+                    />
+                    <input
+                      value={value}
+                      onChange={e => {
+                        setForm((prev) => ({
+                          ...prev!,
+                          specifications: { ...prev!.specifications, [key]: e.target.value }
+                        }));
+                      }}
+                      placeholder="Value"
+                      className="border rounded px-2 py-1"
+                    />
+                    <button type="button" onClick={() => {
+                      const newSpecs = { ...form?.specifications || {} };
+                      delete newSpecs[key];
+                      setForm((prev) => ({ ...prev!, specifications: newSpecs }));
+                    }}>Remove</button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({
+                    ...prev!,
+                    specifications: { ...prev!.specifications, [`spec${Object.keys(prev!.specifications || {}).length + 1}`]: '' }
+                  }))}
+                  className="text-xs text-[#01aaa7] underline"
+                >
+                  Add Custom Specification
+                </button>
               </div>
               <input name="alt_text" value={form.alt_text || ''} onChange={handleInputChange} placeholder="Image Alt Text" className="w-full border rounded-lg px-4 py-2" />
               <input name="sort_order" value={form.sort_order || '1'} onChange={handleInputChange} placeholder="Sort Order" className="w-full border rounded-lg px-4 py-2" />

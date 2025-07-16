@@ -6,9 +6,10 @@ interface ProductDetailModalProps {
   open: boolean;
   onClose: () => void;
   productId: string;
+  onEdit?: () => void;
 }
 
-const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, productId }) => {
+const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, productId, onEdit }) => {
   const [images, setImages] = useState<any[]>([]);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -43,7 +44,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-md shadow-2xl p-8 max-w-4xl w-full relative min-h-[95vh] overflow-y-auto">
+        <div className="bg-white rounded-md shadow-2xl p-8 max-w-4xl w-full relative h-[95vh] overflow-y-auto">
           <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700" onClick={onClose}>&times;</button>
           <div className="text-2xl font-bold text-[#01aaa7] mb-4">Product Details</div>
           {loading ? (
@@ -95,6 +96,14 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
                   ))
                 )}
               </div>
+              {!loading && !error && onEdit && (
+                <button
+                  className="mt-6 bg-[#01aaa7] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#019c98] transition-colors"
+                  onClick={onEdit}
+                >
+                  Edit Product
+                </button>
+              )}
             </>
           )}
         </div>
