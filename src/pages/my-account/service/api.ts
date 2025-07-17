@@ -97,3 +97,15 @@ export async function updateProductImage(imageId: string, imageData: any) {
   );
   return response.data;
 }
+
+export async function fetchCategories() {
+  const res = await fetch('http://localhost:3000/api/v1/categories');
+  if (!res.ok) throw new Error('Failed to fetch categories');
+  return res.json();
+}
+
+export async function fetchCountries() {
+  const res = await fetch('http://localhost:3000/api/v1/countries');
+  if (!res.ok) throw new Error('Failed to fetch countries');
+  return res.json();
+}

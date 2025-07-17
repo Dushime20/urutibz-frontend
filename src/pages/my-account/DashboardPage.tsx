@@ -203,6 +203,9 @@ const DashboardPage: React.FC = () => {
         country_id: form.country_id,
         specifications: form.specifications,
         location: form.location, // include location in payload
+        features: Array.isArray(form.features)
+          ? form.features.filter(f => typeof f === 'string' && f.trim() !== '')
+          : [],
       };
       const productResponse = await createProduct(productPayload);
       const productId = productResponse.data.id;
@@ -243,6 +246,23 @@ const DashboardPage: React.FC = () => {
       showToast('Failed to create listing. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenModal = () => {
+    setShowModal(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setForm((prev) => ({
+            ...prev,
+            location: {
+              latitude: position.coords.latitude.toString(),
+              longitude: position.coords.longitude.toString(),
+            },
+          }));
+        }
+      );
     }
   };
 
@@ -701,7 +721,7 @@ const DashboardPage: React.FC = () => {
                   <div className="text-2xl font-bold text-gray-400 mb-2">No listings yet</div>
                   <div className="text-gray-500 mb-6">You haven't created any product listings. Click below to get started!</div>
                   <Button
-                    onClick={() => setShowModal(true)}
+                    onClick={handleOpenModal}
                     className="bg-[#01aaa7] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#019c98] transition-colors"
                   >
                     Add New Listing
@@ -711,7 +731,7 @@ const DashboardPage: React.FC = () => {
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-gray-900">My Listings</h3>
-                    <Button onClick={() => setShowModal(true)} className="mb-4 bg-[#01aaa7] text-white">Add New Listing</Button>
+                    <Button onClick={handleOpenModal} className="mb-4 bg-[#01aaa7] text-white">Add New Listing</Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {myListings.map((listing) => (
