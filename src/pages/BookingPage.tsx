@@ -28,7 +28,7 @@ const BookingPage: React.FC = () => {
     }
   } else {
     // New item booking - find in mockRentalItems
-    bookingItem = mockRentalItems.find(item => item.id === itemId);
+    bookingItem = mockRentalItems.find(item => item.id === itemId && item.status === 'active');
   }
   
   const [formData, setFormData] = useState({

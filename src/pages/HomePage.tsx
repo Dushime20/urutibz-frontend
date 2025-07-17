@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import HeroSection from '../components/sections/HeroSection';
 import DemoNavigationSection from '../components/sections/DemoNavigationSection';
 import CategorySection from '../components/sections/CategorySection';
@@ -12,15 +12,25 @@ import FaqSection from '../components/sections/FaqSection';
 import AllCategoriesSection from '../components/sections/AllCategoriesSection';
 // import CTASection from '../components/sections/CTASection';
 import { useToast } from '../contexts/ToastContext';
+import { fetchAllProducts } from './admin/service/api'; // adjust path if needed
 
 const HomePage: React.FC = () => {
   const { showToast } = useToast();
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || undefined;
+    fetchAllProducts(token).then(result => {
+      setProducts(result.data || []);
+    });
+  }, []);
+
   return (
     <div className="space-y-0">
       <HeroSection />
       <DemoNavigationSection />
       <CategorySection />
-      <FeaturedRentalsSection />
+      <FeaturedRentalsSection products={products} />
       <HowItWorksSection />
       <TestimonialsSection />
       <AllCategoriesSection />

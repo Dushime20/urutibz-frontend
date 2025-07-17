@@ -20,7 +20,7 @@ const ItemDetailsPage: React.FC = () => {
   console.log('User:', user);
   console.log('user.kyc_status:', user?.kyc_status);
 
-  const [item] = useState(mockRentalItems.find(i => i.id === id));
+  const [item] = useState(mockRentalItems.find(i => i.id === id && i.status === 'active'));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);

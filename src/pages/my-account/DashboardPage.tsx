@@ -757,8 +757,11 @@ const DashboardPage: React.FC = () => {
                         <h4 className="font-semibold text-gray-900 mb-3">{listing.title}</h4>
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-lg font-bold text-gray-900">${listing.base_price}/day</span>
-                          <span className={`px-3 py-1 rounded-lg text-xs font-medium ${listing.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                            }`}>
+                          <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
+                            listing.status === 'active'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
                             {listing.status || 'Draft'}
                           </span>
                         </div>

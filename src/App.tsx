@@ -8,7 +8,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import DashboardPage from './pages/my-account/DashboardPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import BookingPage from './pages/BookingPage';
 import FaqPage from './pages/FaqPage';
 import CreateListingPage from './pages/CreateListingPage';

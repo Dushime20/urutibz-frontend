@@ -99,13 +99,13 @@ export async function updateProductImage(imageId: string, imageData: any) {
 }
 
 export async function fetchCategories() {
-  const res = await fetch('http://localhost:3000/api/v1/categories');
+  const res = await fetch(`${API_BASE_URL}/categories`);
   if (!res.ok) throw new Error('Failed to fetch categories');
   return res.json();
 }
 
 export async function fetchCountries() {
-  const res = await fetch('http://localhost:3000/api/v1/countries');
+  const res = await fetch(`${API_BASE_URL}/countries`);
   if (!res.ok) throw new Error('Failed to fetch countries');
   return res.json();
 }

@@ -6,9 +6,33 @@ import {
   Camera, Laptop, Car, Gamepad2, Headphones, Watch,
   Package, Zap, Truck
 } from 'lucide-react';
-import { mockRentalItems, itemCategories } from '../data/mockRentalData';
+import { itemCategories } from '../data/mockRentalData';
 import { formatPrice } from '../lib/utils';
 import Button from '../components/ui/Button';
+import { fetchAllProducts, fetchProductImages } from './admin/service/api'; // adjust path if needed
+
+// Add Product type if not already imported
+// import type { Product } from '../types';
+type Product = {
+  id: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  category_id?: string;
+  status?: string;
+  price: number;
+  priceUnit?: string;
+  rating?: number;
+  totalReviews?: number;
+  tags?: string[];
+  featured?: boolean;
+  images?: string[];
+  location?: any;
+  availability?: any;
+  deliveryAvailable?: boolean;
+  createdAt?: string;
+};
 
 const ItemSearchPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,66 +48,87 @@ const ItemSearchPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   
   // Results state
-  const [items, setItems] = useState(mockRentalItems);
+  const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
+  const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
 
   // Filter and search logic
   useEffect(() => {
     setLoading(true);
-    
-    let filteredItems = mockRentalItems;
-    
-    // Search query filter
-    if (searchQuery) {
-      filteredItems = filteredItems.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
-    
-    // Category filter
-    if (selectedCategory !== 'all') {
-      filteredItems = filteredItems.filter(item => item.category === selectedCategory);
-    }
-    
-    // Location filter
-    if (selectedLocation !== 'all') {
-      filteredItems = filteredItems.filter(item => item.location.city === selectedLocation);
-    }
-    
-    // Price range filter
-    filteredItems = filteredItems.filter(item => 
-      item.price >= priceRange.min && item.price <= priceRange.max
-    );
-    
-    // Sort items
-    switch (sortBy) {
-      case 'price-low':
-        filteredItems.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-high':
-        filteredItems.sort((a, b) => b.price - a.price);
-        break;
-      case 'rating':
-        filteredItems.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'newest':
-        filteredItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      default:
-        // Relevance sort (featured first, then by rating)
-        filteredItems.sort((a, b) => {
-          if (a.featured && !b.featured) return -1;
-          if (!a.featured && b.featured) return 1;
-          return b.rating - a.rating;
-        });
-    }
-    
-    setItems(filteredItems);
-    setTotalResults(filteredItems.length);
-    setLoading(false);
+    const token = localStorage.getItem('token') || undefined;
+    console.log(fetchAllProducts(token),'fecth all products from api')
+    fetchAllProducts(token).then(async result => {
+      console.log('API raw products:', result.data);
+      let filteredItems: Product[] = (result.data || []).filter((item: Product) => (item.status || '').toLowerCase() === 'active');
+      console.log('After status filter:', filteredItems);
+      if (searchQuery) {
+        filteredItems = filteredItems.filter((item: Product) =>
+          item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.tags && item.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+        );
+        console.log('After search filter:', filteredItems);
+      }
+      // Category filter
+      if (selectedCategory !== 'all') {
+        filteredItems = filteredItems.filter((item: Product) => item.category === selectedCategory || item.category_id === selectedCategory);
+        console.log('After category filter:', filteredItems);
+      }
+      // Location filter
+      if (selectedLocation !== 'all') {
+        filteredItems = filteredItems.filter((item: Product) => item.location?.city === selectedLocation || item.location === selectedLocation);
+        console.log('After location filter:', filteredItems);
+      }
+      // Sort items
+      switch (sortBy) {
+        case 'price-low':
+          filteredItems.sort((a: Product, b: Product) => a.price - b.price);
+          break;
+        case 'price-high':
+          filteredItems.sort((a: Product, b: Product) => b.price - a.price);
+          break;
+        case 'rating':
+          filteredItems.sort((a: Product, b: Product) => (b.rating || 0) - (a.rating || 0));
+          break;
+        case 'newest':
+          filteredItems.sort((a: Product, b: Product) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
+          break;
+        default:
+          filteredItems.sort((a: Product, b: Product) => {
+            if (a.featured && !b.featured) return -1;
+            if (!a.featured && b.featured) return 1;
+            return (b.rating || 0) - (a.rating || 0);
+          });
+      }
+      console.log('Filtered items before setItems:', filteredItems);
+      setItems(filteredItems);
+      setTotalResults(filteredItems.length);
+      setLoading(false);
+      // Robust image fetching pattern
+      const imagesMap: { [productId: string]: string[] } = {};
+      await Promise.all(filteredItems.map(async (item) => {
+        try {
+          const { data, error } = await fetchProductImages(item.id, token);
+          if (!error && data && Array.isArray(data.data)) {
+            imagesMap[item.id] = data.data.map((img: any) => img.url || img.image_url || img.path);
+          } else if (!error && data && Array.isArray(data)) {
+            imagesMap[item.id] = data.map((img: any) => img.url || img.image_url || img.path);
+          } else {
+            imagesMap[item.id] = [];
+          }
+        } catch {
+          imagesMap[item.id] = [];
+        }
+      }));
+      setProductImages(imagesMap);
+    }).catch(() => {
+      setItems([]);
+      setTotalResults(0);
+      setLoading(false);
+      setProductImages({});
+    });
   }, [searchQuery, selectedCategory, selectedLocation, priceRange, sortBy]);
 
   // Update URL params
@@ -120,6 +165,9 @@ const ItemSearchPage: React.FC = () => {
     };
     return iconMap[category] || Package;
   };
+
+  // Add debug log before rendering items
+  console.log('Rendering items:', items);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -287,18 +335,24 @@ const ItemSearchPage: React.FC = () => {
             : 'space-y-4'
           }>
             {items.map((item) => {
-              const IconComponent = getCategoryIcon(item.category);
+              if (!item.id || typeof item.id !== 'string') return null;
+              const id = item.id as string;
+              const IconComponent = getCategoryIcon(item.category || '');
               
               return viewMode === 'grid' ? (
                 // Grid View
                 <div
-                  key={item.id}
-                  onClick={() => handleItemClick(item.id)}
+                  key={id}
+                  onClick={() => handleItemClick(id)}
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
                 >
                   <div className="relative">
                     <img
-                      src={item.images[0]}
+                      src={
+                        (productImages[item.id] && productImages[item.id][0])
+                          ? productImages[item.id][0]
+                          : '/assets/img/placeholder-image.png'
+                      }
                       alt={item.name}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -373,14 +427,18 @@ const ItemSearchPage: React.FC = () => {
               ) : (
                 // List View
                 <div
-                  key={item.id}
-                  onClick={() => handleItemClick(item.id)}
+                  key={id}
+                  onClick={() => handleItemClick(id)}
                   className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex gap-4">
                     <div className="relative">
                       <img
-                        src={item.images[0]}
+                        src={
+                          (productImages[item.id] && productImages[item.id][0])
+                            ? productImages[item.id][0]
+                            : '/assets/img/placeholder-image.png'
+                        }
                         alt={item.name}
                         className="w-24 h-24 object-cover rounded-lg"
                       />

@@ -588,9 +588,9 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-md shadow-2xl max-w-5xl w-full mx-4 h-[95vh] overflow-hidden">
+      <div className="bg-white rounded-md shadow-2xl max-w-5xl w-full mx-4 h-[98vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-cyan-600 px-8 py-6 text-white">
+        <div className="bg-cyan-600 px-8 py-2 text-white">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold ">Create New Listing</h2>
             <button
@@ -633,12 +633,12 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
 
         {/* Content */}
         <form onSubmit={onSubmit} className="flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto px-8 py-6 max-h-[60vh]">
+          <div className="flex-1 overflow-y-auto px-8 py-6 max-h-[73vh]">
             {renderStepContent()}
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 px-4 sm:px-8 py-4 bg-gray-50 flex-shrink-0">
+          <div className="border-t border-gray-200 px-4 sm:px-8 py-2 bg-gray-50 flex-shrink-0">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
               <button
                 type="button"

@@ -20,7 +20,6 @@ function Toast({ message, onClose, type = 'error' }: { message: string; onClose:
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
   const { setAuthenticatedUser } = useAuth();
   const { showToast } = useToast();
   
@@ -62,7 +61,12 @@ const LoginPage: React.FC = () => {
         showToast('Login successful!', 'success');
       }
       setTimeout(() => {
+      if (data.user.role==="admin"){
+        navigate("/admin");
+      }
+      else{
         navigate("/dashboard");
+      }
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Invalid email or password. Please try again.');

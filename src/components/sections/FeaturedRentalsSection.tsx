@@ -1,10 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, Bot, MapPin, Star, Shield, Heart, TrendingUp } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { fetchProductImages } from '../../pages/admin/service/api'; // adjust path if needed
 
-const FeaturedRentalsSection: React.FC = () => {
+// Add Product type if not already present
+// type Product = { ... } // (keep your existing type)
+
+interface FeaturedRentalsSectionProps {
+  products?: Product[];
+}
+
+const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ products = [] }) => {
   const [activeFilter, setActiveFilter] = useState('trending');
   const navigate = useNavigate();
+  const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const token = localStorage.getItem('token') || undefined;
+    const fetchImages = async () => {
+      const imagesMap: { [productId: string]: string[] } = {};
+      await Promise.all(products.map(async (item) => {
+        try {
+          const { data, error } = await fetchProductImages(item.id, token);
+          if (!error && data && Array.isArray(data.data)) {
+            imagesMap[item.id] = data.data.map((img: any) => img.url || img.image_url || img.path);
+          } else if (!error && data && Array.isArray(data)) {
+            imagesMap[item.id] = data.map((img: any) => img.url || img.image_url || img.path);
+          } else {
+            imagesMap[item.id] = [];
+          }
+        } catch {
+          imagesMap[item.id] = [];
+        }
+      }));
+      if (isMounted) setProductImages(imagesMap);
+    };
+    if (products.length > 0) fetchImages();
+    return () => { isMounted = false; };
+  }, [products]);
 
   const filters = [
     { id: 'trending', label: 'AI Trending', icon: TrendingUp },
@@ -13,96 +47,8 @@ const FeaturedRentalsSection: React.FC = () => {
     { id: 'verified', label: 'AI Verified', icon: Shield }
   ];
 
-  const featuredItems = [
-    {
-      id: 1,
-      title: 'Professional Camera Kit',
-      description: 'Canon EOS R5 with multiple lenses, perfect for events',
-      price: 45,
-      period: 'day',
-      originalPrice: 65,
-      location: 'Kigali, Rwanda',
-      distance: '1.2 km',
-      owner: {
-        name: 'Amara N.',
-        avatar: '/assets/img/profiles/avatar-01.jpg',
-        rating: 4.9,
-        verified: true
-      },
-      image: '/assets/img/car-list-1.jpg',
-      category: 'Electronics',
-      aiMatch: 98,
-      trending: true,
-      features: ['Professional grade', 'Multiple lenses', 'Full accessories'],
-      booked: 23
-    },
-    {
-      id: 2,
-      title: 'Electric Drill Set',
-      description: 'Complete power tool set for construction and DIY projects',
-      price: 15,
-      period: 'day',
-      originalPrice: 25,
-      location: 'Nairobi, Kenya',
-      distance: '2.1 km',
-      owner: {
-        name: 'James M.',
-        avatar: '/assets/img/profiles/avatar-02.jpg',
-        rating: 4.8,
-        verified: true
-      },
-      image: '/assets/img/car-list-2.jpg',
-      category: 'Tools & Equipment',
-      aiMatch: 95,
-      trending: true,
-      features: ['Professional grade', 'Multiple bits', 'Fast charging'],
-      booked: 18
-    },
-    {
-      id: 3,
-      title: '4-Person Camping Tent',
-      description: 'Waterproof tent perfect for weekend getaways',
-      price: 25,
-      period: 'day',
-      originalPrice: 35,
-      location: 'Cape Town, SA',
-      distance: '3.5 km',
-      owner: {
-        name: 'Sarah K.',
-        avatar: '/assets/img/profiles/avatar-03.jpg',
-        rating: 4.9,
-        verified: true
-      },
-      image: '/assets/img/car-list-3.jpg',
-      category: 'Outdoor Gear',
-      aiMatch: 92,
-      trending: false,
-      features: ['Waterproof', 'Easy setup', 'Spacious'],
-      booked: 31
-    },
-    {
-      id: 4,
-      title: 'Gaming Console Setup',
-      description: 'PS5 with controllers and popular games included',
-      price: 35,
-      period: 'day',
-      originalPrice: 50,
-      location: 'Lagos, Nigeria',
-      distance: '1.8 km',
-      owner: {
-        name: 'David O.',
-        avatar: '/assets/img/profiles/avatar-04.jpg',
-        rating: 4.7,
-        verified: true
-      },
-      image: '/assets/img/car-list-4.jpg',
-      category: 'Entertainment',
-      aiMatch: 89,
-      trending: true,
-      features: ['Latest games', '2 controllers', 'HDMI included'],
-      booked: 15
-    }
-  ];
+  // Only show items with status 'active' if status exists
+  const activeFeaturedItems = products.filter(item => !item.status || item.status === 'active');
 
   return (
     <section className="py-12 sm:py-16 lg:py-20 xl:py-24" style={{ backgroundColor: 'var(--background-color)' }}>
@@ -145,7 +91,7 @@ const FeaturedRentalsSection: React.FC = () => {
 
         {/* Featured Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8 lg:mb-12">
-          {featuredItems.map((item) => (
+          {activeFeaturedItems.map((item) => (
             <div 
               key={item.id} 
               className="card group cursor-pointer overflow-hidden hover:shadow-active transition-all duration-300 hover:-translate-y-1"
@@ -154,7 +100,7 @@ const FeaturedRentalsSection: React.FC = () => {
               {/* Image */}
               <div className="relative">
                 <img 
-                  src={item.image} 
+                  src={productImages[item.id]?.[0] || '/assets/img/placeholder-image.png'} 
                   alt={item.title}
                   className="w-full h-36 sm:h-40 lg:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -205,17 +151,17 @@ const FeaturedRentalsSection: React.FC = () => {
                 {/* Owner */}
                 <div className="flex items-center space-x-2 mb-2 lg:mb-3">
                   <img 
-                    src={item.owner.avatar} 
-                    alt={item.owner.name}
+                    src={item.owner?.avatar || '/assets/img/profiles/default-avatar.jpg'} 
+                    alt={item.owner?.name || 'Unknown'}
                     className="w-5 h-5 lg:w-6 lg:h-6 rounded-full"
                   />
-                  <span className="text-xs lg:text-sm font-medium font-inter truncate" style={{ color: 'var(--foreground-color)' }}>{item.owner.name}</span>
-                  {item.owner.verified && (
+                  <span className="text-xs lg:text-sm font-medium font-inter truncate" style={{ color: 'var(--foreground-color)' }}>{item.owner?.name || 'Unknown'}</span>
+                  {item.owner?.verified && (
                     <Shield className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-active flex-shrink-0" />
                   )}
                   <div className="flex items-center space-x-1 ml-auto">
                     <Star className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-yellow-500 fill-current" />
-                    <span className="text-xs text-platform-grey font-inter">{item.owner.rating}</span>
+                    <span className="text-xs text-platform-grey font-inter">{item.owner?.rating ?? 'N/A'}</span>
                   </div>
                 </div>
                 
