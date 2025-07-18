@@ -9,7 +9,7 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import DashboardPage from './pages/my-account/DashboardPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import BookingPage from './pages/BookingPage';
+import BookingPage from './pages/booking-page/BookingPage';
 import FaqPage from './pages/FaqPage';
 import CreateListingPage from './pages/CreateListingPage';
 import ItemSearchPage from './pages/ItemSearchPage';
@@ -21,6 +21,7 @@ import UrutiBzVerification from './pages/verification2/urutibiziVerification';
 // import AddressVerificationPage from './pages/verification/AddressVerificationPage';
 import DemoPage from './pages/DemoPage';
 import { ToastProvider } from './contexts/ToastContext';
+
 
 function App() {
   return (
@@ -40,8 +41,11 @@ function App() {
               <Route path="cars" element={<ItemSearchPage />} />
               <Route path="items" element={<ItemSearchPage />} />
               <Route path="browse" element={<ItemSearchPage />} />
-              <Route path="cars/:id" element={<ItemDetailsPage />} />
-              <Route path="items/:id" element={<ItemDetailsPage />} />
+              {/* <Route path="cars/:id" element={<ItemDetailsPage />} /> */}
+              {/* <Route path="items/:id" element={<ItemDetailsPage />} /> */}
+              <Route path="it/:id" element={<ItemDetailsPage />} />
+
+
               <Route path="demo" element={<DemoPage />} />
               <Route path="faq" element={<FaqPage />} />
               
@@ -103,6 +107,7 @@ function App() {
               } /> */}
             </Route>
           </Routes>
+          
         </Router>
       </AuthProvider>
     </ToastProvider>

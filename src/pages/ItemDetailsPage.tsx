@@ -1,37 +1,99 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
+import {
   Star, Heart, Share2, MapPin, Clock, Shield, Zap, Truck,
   User, MessageCircle, Phone,
   ChevronLeft, ChevronRight, CheckCircle, AlertCircle,
   Package, Info, ArrowRight
 } from 'lucide-react';
-import { mockRentalItems } from '../data/mockRentalData';
 import { useAuth } from '../contexts/AuthContext';
 import { formatPrice } from '../lib/utils';
 import Button from '../components/ui/Button';
+import { getProductById, fetchProductImages } from './admin/service/api'; // adjust path as needed
+import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 
 const ItemDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  
+
   // Debug: log user and kyc_status
   console.log('User:', user);
   console.log('user.kyc_status:', user?.kyc_status);
 
-  const [item] = useState(mockRentalItems.find(i => i.id === id && i.status === 'active'));
+  const [item, setItem] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [images, setImages] = useState<any[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [itemLocation, setItemLocation] = useState<{ city: string | null, country: string | null }>({ city: null, country: null });
 
   useEffect(() => {
-    if (!item) {
-      navigate('/items');
-    }
-  }, [item, navigate]);
+    console.log(id, 'id from params')
+    if (!id) return;
+    setLoading(true);
+    const token = localStorage.getItem('token') || undefined;
+    getProductById(id, token).then(result => {
+     
+      setItem(result);
+      setLoading(false);
+      if (result && result.id) {
+        fetchProductImages(result.id, token).then(({ data, error }) => {
+          let imgs: any[] = [];
+          if (!error && data && Array.isArray(data.data)) {
+            imgs = data.data;
+          } else if (!error && data && Array.isArray(data)) {
+            imgs = data;
+          }
+          setImages(Array.isArray(imgs) ? imgs : []);
+        });
+      } else {
+        setImages([]);
+        navigate('/items');
+      }
+      // Fetch city/country for location
+      if (result && result.location) {
+        let lat, lng;
+        if (typeof result.location === 'string') {
+          const coords = wkbHexToLatLng(result.location);
+          if (coords) {
+            lat = coords.lat;
+            lng = coords.lng;
+          }
+        } else if (
+          result.location &&
+          typeof result.location === 'object' &&
+          ('lat' in result.location || 'latitude' in result.location) &&
+          ('lng' in result.location || 'longitude' in result.location)
+        ) {
+          lat = (result.location as any).lat ?? (result.location as any).latitude;
+          lng = (result.location as any).lng ?? (result.location as any).longitude;
+        }
+        if (lat !== undefined && lng !== undefined) {
+          getCityFromCoordinates(lat, lng).then(({ city, country }) => {
+            setItemLocation({ city, country });
+          });
+        } else if (
+          result.location &&
+          typeof result.location === 'object' &&
+          'city' in result.location
+        ) {
+          setItemLocation({ city: (result.location as any).city, country: null });
+        } else {
+          setItemLocation({ city: null, country: null });
+        }
+      } else {
+        setItemLocation({ city: null, country: null });
+      }
+    });
+  }, [id, navigate]);
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  console.log(images,'iamges from out side the state')
   if (!item) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -67,14 +129,14 @@ const ItemDetailsPage: React.FC = () => {
 
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === item.images.length - 1 ? 0 : prev + 1
+    setCurrentImageIndex((prev) =>
+      prev === images.length - 1 ? 0 : prev + 1
     );
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === 0 ? item.images.length - 1 : prev - 1
+    setCurrentImageIndex((prev) =>
+      prev === 0 ? images.length - 1 : prev - 1
     );
   };
 
@@ -103,13 +165,13 @@ const ItemDetailsPage: React.FC = () => {
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
               <div className="relative">
                 <img
-                  src={item.images[currentImageIndex]}
+                  src={images[currentImageIndex]?.url || images[currentImageIndex]?.image_url || images[currentImageIndex]?.path || '/assets/img/placeholder-image.png'}
                   alt={item.name}
                   className="w-full h-96 object-cover"
                 />
-                
+
                 {/* Image Navigation */}
-                {item.images.length > 1 && (
+                {Array.isArray(images) && images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
@@ -125,22 +187,21 @@ const ItemDetailsPage: React.FC = () => {
                     </button>
                   </>
                 )}
-                
+
                 {/* Image Indicators */}
-                {item.images.length > 1 && (
+                {Array.isArray(images) && images.length > 1 && (
                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                    {item.images.map((_, index) => (
+                    {images.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                        }`}
+                        className={`w-2 h-2 rounded-full transition-colors ${index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
                       />
                     ))}
                   </div>
                 )}
-                
+
                 {/* Action Buttons */}
                 <div className="absolute top-4 right-4 flex space-x-2">
                   <button
@@ -153,7 +214,7 @@ const ItemDetailsPage: React.FC = () => {
                     <Share2 className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
-                
+
                 {/* Status Badges */}
                 <div className="absolute top-4 left-4 flex flex-col space-y-2">
                   {item.featured && (
@@ -169,19 +230,18 @@ const ItemDetailsPage: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
               {/* Thumbnail Strip */}
-              {item.images.length > 1 && (
+              {Array.isArray(images) && images.length > 1 && (
                 <div className="p-4 flex space-x-2 overflow-x-auto">
-                  {item.images.map((image, index) => (
+                  {images.map((image: any, index: number) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
-                        index === currentImageIndex ? 'border-blue-500' : 'border-gray-200'
-                      }`}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-200'
+                        }`}
                     >
-                      <img src={image} alt="" className="w-full h-full object-cover" />
+                      <img src={image.url || image.image_url || image.path || '/assets/img/placeholder-image.png'} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -197,7 +257,7 @@ const ItemDetailsPage: React.FC = () => {
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
-                        {item.location.city}, {item.location.country}
+                        {itemLocation.city || 'Unknown'}{itemLocation.country ? `, ${itemLocation.country}` : ''}
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -207,8 +267,8 @@ const ItemDetailsPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-gray-900">
-                      {formatPrice(item.price)}
-                      <span className="text-lg font-normal text-gray-600">/{item.priceUnit}</span>
+                      {formatPrice(item.base_price_per_day)}
+                      <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
                     </div>
                   </div>
                 </div>
@@ -250,7 +310,7 @@ const ItemDetailsPage: React.FC = () => {
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Features</h3>
                   <div className="grid grid-cols-2 gap-2">
-                    {item.features.map((feature, index) => (
+                    {item.features.map((feature: string, index: number) => (
                       <div key={index} className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-500" />
                         <span className="text-gray-700">{feature}</span>
@@ -268,7 +328,7 @@ const ItemDetailsPage: React.FC = () => {
                     {Object.entries(item.specifications).map(([key, value]) => (
                       <div key={key} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
                         <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                        <span className="font-medium text-gray-900">{value}</span>
+                        <span className="font-medium text-gray-900">{String(value)}</span>
                       </div>
                     ))}
                   </div>
@@ -276,11 +336,11 @@ const ItemDetailsPage: React.FC = () => {
               )}
 
               {/* Included Items */}
-              {item.includedItems.length > 0 && (
+              {item.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">What's Included</h3>
                   <div className="space-y-2">
-                    {item.includedItems.map((includedItem, index) => (
+                    {item.includedItems.map((includedItem: string, index: number) => (
                       <div key={index} className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-blue-500" />
                         <span className="text-gray-700">{includedItem}</span>
@@ -299,10 +359,10 @@ const ItemDetailsPage: React.FC = () => {
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
                 <div className="text-center mb-6">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
-                    {formatPrice(item.price)}
-                    <span className="text-lg font-normal text-gray-600">/{item.priceUnit}</span>
+                    {item.base_price_per_day}
+                    <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
                   </div>
-                  <p className="text-sm text-gray-600">Min {item.minRentalPeriod} {item.priceUnit}(s)</p>
+                  <p className="text-sm text-gray-600">Item min rental period loading...</p>
                 </div>
 
                 {/* Book Now Button */}
@@ -337,7 +397,7 @@ const ItemDetailsPage: React.FC = () => {
                   <p className="text-sm text-gray-600 text-center mb-4">
                     You won't be charged yet
                   </p>
-                  
+
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Security Deposit</span>
@@ -374,7 +434,7 @@ const ItemDetailsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 flex items-center justify-center gap-2">
                     <MessageCircle className="w-4 h-4" />
@@ -401,22 +461,22 @@ const ItemDetailsPage: React.FC = () => {
               <p className="text-gray-600 mb-6">
                 Please log in or create an account to book items on our platform.
               </p>
-              
+
               <div className="space-y-3 mb-6">
-                <Button 
+                <Button
                   onClick={() => navigate(`/login?redirect=/items/${item.id}&action=book`)}
                   className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700"
                 >
                   Log In
                 </Button>
-                <Button 
+                <Button
                   onClick={() => navigate(`/register?redirect=/items/${item.id}&action=book`)}
                   variant="outline"
                   className="w-full py-3 border-blue-600 text-blue-600 hover:bg-blue-50"
                 >
                   Create Account
                 </Button>
-                <Button 
+                <Button
                   onClick={() => setShowAuthModal(false)}
                   variant="outline"
                   className="w-full py-3"
@@ -424,7 +484,7 @@ const ItemDetailsPage: React.FC = () => {
                   Cancel
                 </Button>
               </div>
-              
+
               <p className="text-xs text-gray-500">
                 Join thousands of users renting safely on our platform.
               </p>

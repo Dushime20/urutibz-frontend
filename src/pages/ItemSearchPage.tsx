@@ -22,7 +22,8 @@ type Product = {
   category_id?: string;
   status?: string;
   price: number;
-  priceUnit?: string;
+  base_price_per_day?: string;
+  base_currency?:string
   rating?: number;
   totalReviews?: number;
   tags?: string[];
@@ -33,6 +34,37 @@ type Product = {
   deliveryAvailable?: boolean;
   createdAt?: string;
 };
+
+// Add this utility function at the top (or import from utils)
+function wkbHexToLatLng(wkbHex: string) {
+  // Works for 2D POINT with SRID (hex string, 50 chars)
+  if (!wkbHex || wkbHex.length < 50) return null;
+  function hexToDouble(hex: string) {
+    const buffer = new ArrayBuffer(8);
+    const view = new DataView(buffer);
+    for (let i = 0; i < 8; i++) {
+      view.setUint8(i, parseInt(hex.substr(i * 2, 2), 16));
+    }
+    return view.getFloat64(0, true); // little endian
+  }
+  // X (lng): hex 18-33 (16 chars), Y (lat): hex 34-49 (16 chars)
+  const lng = hexToDouble(wkbHex.substr(18, 16));
+  const lat = hexToDouble(wkbHex.substr(34, 16));
+  return { lat, lng };
+}
+
+// Update getCityFromCoordinates to return both city and country
+async function getCityFromCoordinates(lat: number, lng: number): Promise<{ city: string | null, country: string | null }> {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+  );
+  const data = await response.json();
+  if (!data.address) return { city: null, country: null };
+  return {
+    city: data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.county || null,
+    country: data.address.country || null
+  };
+}
 
 const ItemSearchPage: React.FC = () => {
   const navigate = useNavigate();
@@ -52,6 +84,9 @@ const ItemSearchPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
   const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
+  // Change itemCities to itemLocations to store both city and country
+  const [itemLocations, setItemLocations] = useState<{ [id: string]: { city: string | null, country: string | null } }>({});
+  console.log(itemLocations,'items cities')
 
   // Filter and search logic
   useEffect(() => {
@@ -123,6 +158,38 @@ const ItemSearchPage: React.FC = () => {
         }
       }));
       setProductImages(imagesMap);
+
+      // Fetch city names for items with geometry
+      const locationsMap: { [id: string]: { city: string | null, country: string | null } } = {};
+      await Promise.all(filteredItems.map(async (item) => {
+        let lat, lng;
+        if (typeof item.location === 'string') {
+          // WKB hex string
+          const coords = wkbHexToLatLng(item.location);
+          console.log('WKB parse:', item.location, coords);
+          if (coords) {
+            lat = coords.lat;
+            lng = coords.lng;
+          }
+        } else if (item.location && (item.location.lat || item.location.latitude) && (item.location.lng || item.location.longitude)) {
+          lat = item.location.lat ?? item.location.latitude;
+          lng = item.location.lng ?? item.location.longitude;
+        }
+        if (lat && lng) {
+          try {
+            const { city, country } = await getCityFromCoordinates(lat, lng);
+            console.log('Reverse geocode:', { lat, lng, city, country });
+            locationsMap[item.id] = { city, country };
+          } catch (e) {
+            console.error('Reverse geocode error:', e);
+          }
+        } else if (item.location && item.location.city) {
+          locationsMap[item.id] = { city: item.location.city, country: null };
+        } else {
+          console.log('No valid location for item:', item.id, item.location);
+        }
+      }));
+      setItemLocations(locationsMap);
     }).catch(() => {
       setItems([]);
       setTotalResults(0);
@@ -141,7 +208,7 @@ const ItemSearchPage: React.FC = () => {
   }, [searchQuery, selectedCategory, selectedLocation, setSearchParams]);
 
   const handleItemClick = (itemId: string) => {
-    navigate(`/items/${itemId}`);
+    navigate(`/it/${itemId}`);
   };
 
   const getCategoryIcon = (category: string) => {
@@ -392,13 +459,13 @@ const ItemSearchPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="text-lg font-bold text-gray-900">
-                          {formatPrice(item.price)}
+                          {item.base_price_per_day}
                         </span>
-                        <span className="text-sm text-gray-600">/{item.priceUnit}</span>
+                        <span className="text-sm text-gray-600">/{item.base_currency}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <MapPin className="w-3 h-3" />
-                        {item.location.city}
+                        {itemLocations[item.id]?.city || 'Unknown'}, {itemLocations[item.id]?.country || ''}
                       </div>
                     </div>
                     
@@ -468,7 +535,7 @@ const ItemSearchPage: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <MapPin className="w-3 h-3" />
-                          {item.location.city}
+                          {itemLocations[item.id]?.city || 'Unknown'}, {itemLocations[item.id]?.country || ''}
                         </div>
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Clock className="w-3 h-3" />
@@ -479,7 +546,7 @@ const ItemSearchPage: React.FC = () => {
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-3">
                           <span className="text-lg font-bold text-gray-900">
-                            {formatPrice(item.price)}/{item.priceUnit}
+                            {formatPrice(item.price)}/{item.base_currency}
                           </span>
                           {item.availability.instantBook && (
                             <div className="flex items-center gap-1">

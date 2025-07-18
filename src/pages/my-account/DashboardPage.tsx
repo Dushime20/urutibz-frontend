@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DollarSign, Star,
-  Shield, MessageCircle, Plus, TrendingUp,
+  Shield, MessageCircle, TrendingUp,
   BarChart3, Package, Settings,
   Calendar, Heart,
   Car, Wallet, BookOpen, ArrowUpRight,
-  Bell, Search, Eye,
-  Edit3, MoreHorizontal
+  Bell, Search, 
+  MoreHorizontal
 } from 'lucide-react';
 import { Button } from '../../components/ui/DesignSystem';
 import VerificationBanner from '../../components/verification/VerificationBanner';
@@ -57,6 +57,15 @@ type FormState = {
   product_id: string;
   location: { latitude: string; longitude: string };
 };
+
+// Add this utility function at the top or in a utils file
+async function getCityFromCoordinates(lat: number, lng: number) {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+  );
+  const data = await response.json();
+  return data.address.city || data.address.town || data.address.village || null;
+}
 
 const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'wishlist' | 'reviews'>('overview');
@@ -206,6 +215,8 @@ const DashboardPage: React.FC = () => {
         features: Array.isArray(form.features)
           ? form.features.filter(f => typeof f === 'string' && f.trim() !== '')
           : [],
+        ...(form.base_price_per_week && !isNaN(parseFloat(form.base_price_per_week)) && { base_price_per_week: parseFloat(form.base_price_per_week) }),
+        ...(form.base_price_per_month && !isNaN(parseFloat(form.base_price_per_month)) && { base_price_per_month: parseFloat(form.base_price_per_month) }),
       };
       const productResponse = await createProduct(productPayload);
       const productId = productResponse.data.id;
@@ -756,7 +767,7 @@ const DashboardPage: React.FC = () => {
                         )}
                         <h4 className="font-semibold text-gray-900 mb-3">{listing.title}</h4>
                         <div className="flex justify-between items-center mb-3">
-                          <span className="text-lg font-bold text-gray-900">${listing.base_price}/day</span>
+                          <span className="text-lg font-bold text-gray-900">{listing.base_price_per_day}/{listing.base_currency}</span>
                           <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
                             listing.status === 'active'
                               ? 'bg-green-100 text-green-700'

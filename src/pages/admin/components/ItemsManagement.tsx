@@ -30,7 +30,7 @@ const AdminProductDetailModal: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [, setSelectedImage] = useState<string | null>(null);
   const { showToast } = useToast();
   console.log(product,'product in detail model')
   useEffect(() => {

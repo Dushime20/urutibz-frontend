@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Fetch all products
 export async function fetchAllProducts(token?: string) {
-  const url = 'http://localhost:3000/api/v1/products';
+  const url = `${API_BASE_URL}/products`;
   try {
     const headers: Record<string, string> = {};
     if (token) {
@@ -21,7 +21,7 @@ export async function fetchAllProducts(token?: string) {
 
 // Fetch a user by owner_id
 export async function fetchUserById(owner_id: string, token?: string) {
-  const url = `http://localhost:3000/api/v1/users/${owner_id}`;
+  const url = `${API_BASE_URL}/users/${owner_id}`;
   console.log('fetchUserById called for owner_id:', owner_id, 'URL:', url);
   try {
     const headers: Record<string, string> = {};
