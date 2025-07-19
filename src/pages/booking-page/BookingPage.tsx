@@ -5,8 +5,10 @@ import Button from '../../components/ui/Button';
 import { formatPrice } from '../../lib/utils';
 import { getProductById, fetchProductImages } from '../admin/service/api'; // adjust path as needed
 import { wkbHexToLatLng, getCityFromCoordinates } from '../../lib/utils';
-import { createBooking } from './service/api'; // Assuming createBooking is in this file
+import { createBooking, fetchPaymentMethods, processPaymentTransaction } from './service/api'; // Assuming createBooking is in this file
 import { useToast } from '../../contexts/ToastContext';
+import AddPaymentMethod from '../../components/sections/AddPaymentMethod';
+import PaymentStepper from '../../components/sections/PaymentStepper';
 
 const BookingPage: React.FC = () => {
   const { carId, itemId } = useParams<{ carId?: string; itemId?: string }>();
@@ -87,21 +89,37 @@ const BookingPage: React.FC = () => {
     });
   }, [itemId]);
   
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     startDate: '',
     endDate: '',
     startTime: '10:00',
     endTime: '10:00',
-    pickupMethod: 'pickup', // Added pickupMethod
-    renterNotes: '', // Added renterNotes
-    agreeTerms: false
+    pickupMethod: 'pickup',
+    renterNotes: '',
+    agreeTerms: false,
+    paymentMethod: '',
   });
 
   const [currentStep, setCurrentStep] = useState<'details' | 'payment' | 'confirmation'>('details');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   
   const { showToast } = useToast();
+
+  const fetchAndSetPaymentMethods = () => {
+    const token = localStorage.getItem('token') || undefined;
+    fetchPaymentMethods(token)
+      .then((res) => {
+        setPaymentMethods(res.data?.data || res.data || []);
+      })
+      .catch(() => setPaymentMethods([]));
+  };
+
+  useEffect(() => {
+    fetchAndSetPaymentMethods();
+  }, []);
 
   // Handle case when item/car is not found
   if (loading) {
@@ -196,11 +214,10 @@ const BookingPage: React.FC = () => {
     if (rentalDays === 0) rentalDays = 1; // Minimum 1 day
   }
   
-  // Get pricing info - handle both car and item formats
-  const itemPrice = bookingItem.price;
-  const rentalCost = itemPrice * rentalDays;
-  const serviceFee = rentalCost * 0.1;
-  const totalCost = rentalCost + serviceFee;
+  const itemPrice = bookingItem.base_price_per_day;
+  const amount = itemPrice * rentalDays;
+  const serviceFee = amount * 0.1;
+  const totalCost = amount + serviceFee;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
@@ -496,446 +513,12 @@ const BookingPage: React.FC = () => {
             )}
 
             {currentStep === 'payment' && (
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
-                {/* Header */}
-                <div className="p-8 border-b border-gray-100">
-                  <h2 className="text-3xl font-bold text-gray-900">Payment Information</h2>
-                  <p className="text-gray-600 mt-2">Choose your preferred payment method</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-8">
-                  <div className="space-y-8">
-                    {/* Payment Method Selection */}
-                    <div>
-                      <label className="block text-lg font-bold text-gray-900 mb-6">
-                        Select Payment Method
-                      </label>
-                      
-                      {/* Card Payment Options */}
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-6">
-                        <div className="flex items-center mb-4">
-                          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
-                            <CreditCard className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <h4 className="text-lg font-semibold text-gray-900">Card Payment</h4>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          {[
-                            { value: 'credit-card', label: 'Credit/Debit Card', icon: CreditCard },
-                            { value: 'stripe', label: 'Stripe', icon: CreditCard },
-                            { value: 'paypal', label: 'PayPal', icon: Wallet }
-                          ].map((option) => (
-                            <label key={option.value} className={`border-2 rounded-xl p-4 flex items-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                              formData.paymentMethod === option.value 
-                                ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100' 
-                                : 'border-gray-200 bg-white hover:border-gray-300'
-                            }`}>
-                              <input
-                                type="radio"
-                                name="paymentMethod"
-                                value={option.value}
-                                checked={formData.paymentMethod === option.value}
-                                onChange={handleChange}
-                                className="sr-only"
-                              />
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
-                                formData.paymentMethod === option.value ? 'bg-primary-100' : 'bg-gray-100'
-                              }`}>
-                                <option.icon className={`w-4 h-4 ${
-                                  formData.paymentMethod === option.value ? 'text-primary-600' : 'text-gray-600'
-                                }`} />
-                              </div>
-                              <span className={`text-sm font-medium ${
-                                formData.paymentMethod === option.value ? 'text-primary-900' : 'text-gray-700'
-                              }`}>
-                                {option.label}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      {/* Mobile Money Options */}
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 mb-6">
-                        <div className="flex items-center mb-4">
-                          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
-                            <Smartphone className="w-5 h-5 text-green-600" />
-                          </div>
-                          <h4 className="text-lg font-semibold text-gray-900">Mobile Money</h4>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {[
-                            { value: 'mtn', label: 'MTN MoMo', color: 'bg-yellow-400', textColor: 'text-black' },
-                            { value: 'airtel', label: 'Airtel Money', color: 'bg-red-500', textColor: 'text-white' },
-                            { value: 'mpesa', label: 'M-Pesa', color: 'bg-green-600', textColor: 'text-white' },
-                            { value: 'orange', label: 'Orange Money', color: 'bg-orange-500', textColor: 'text-white' },
-                            { value: 'wave', label: 'Wave', color: 'bg-blue-500', textColor: 'text-white' },
-                            { value: 'other-mobile', label: 'Other Mobile', color: 'bg-purple-600', textColor: 'text-white' }
-                          ].map((option) => (
-                            <label key={option.value} className={`border-2 rounded-xl p-4 flex flex-col items-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                              formData.paymentMethod === option.value 
-                                ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100' 
-                                : 'border-gray-200 bg-white hover:border-gray-300'
-                            }`}>
-                              <input
-                                type="radio"
-                                name="paymentMethod"
-                                value={option.value}
-                                checked={formData.paymentMethod === option.value}
-                                onChange={handleChange}
-                                className="sr-only"
-                              />
-                              <div className={`w-10 h-10 ${option.color} rounded-full flex items-center justify-center mb-2 ${option.textColor}`}>
-                                {option.value === 'other-mobile' ? (
-                                  <Wallet className="w-5 h-5" />
-                                ) : (
-                                  <Smartphone className="w-5 h-5" />
-                                )}
-                              </div>
-                              <span className={`text-xs font-medium text-center ${
-                                formData.paymentMethod === option.value ? 'text-primary-900' : 'text-gray-700'
-                              }`}>
-                                {option.label}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      {/* Cash Payment */}
-                      <label className={`border-2 rounded-xl p-6 flex items-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        formData.paymentMethod === 'cash' 
-                          ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100' 
-                          : 'border-gray-200 bg-white hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="cash"
-                          checked={formData.paymentMethod === 'cash'}
-                          onChange={handleChange}
-                          className="sr-only"
-                        />
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mr-4 ${
-                          formData.paymentMethod === 'cash' ? 'bg-primary-100' : 'bg-gray-100'
-                        }`}>
-                          <Banknote className={`w-6 h-6 ${
-                            formData.paymentMethod === 'cash' ? 'text-primary-600' : 'text-gray-600'
-                          }`} />
-                        </div>
-                        <div>
-                          <div className={`font-semibold ${
-                            formData.paymentMethod === 'cash' ? 'text-primary-900' : 'text-gray-900'
-                          }`}>
-                            Cash on Pickup
-                          </div>
-                          <div className="text-sm text-gray-600">Pay when you collect the item</div>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Credit Card Fields */}
-                    {formData.paymentMethod === 'credit-card' && (
-                      <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Card Details</h4>
-                        
-                        <div>
-                          <label htmlFor="cardNumber" className="block text-sm font-semibold text-gray-900 mb-3">
-                            Card Number <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            id="cardNumber"
-                            name="cardNumber"
-                            type="text"
-                            value={formData.cardNumber}
-                            onChange={(e) => {
-                              handleChange(e);
-                              if (validationErrors.cardNumber) {
-                                setValidationErrors(prev => ({
-                                  ...prev,
-                                  cardNumber: ''
-                                }));
-                              }
-                            }}
-                            placeholder="1234 5678 9012 3456"
-                            required
-                            className={`block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200 ${
-                              validationErrors.cardNumber ? 'border-red-500' : 'border-gray-200 focus:border-primary-500'
-                            }`}
-                          />
-                          {validationErrors.cardNumber && (
-                            <p className="mt-2 text-sm text-red-600">{validationErrors.cardNumber}</p>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                          <div>
-                            <label htmlFor="expiryDate" className="block text-sm font-semibold text-gray-900 mb-3">
-                              Expiry Date <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              id="expiryDate"
-                              name="expiryDate"
-                              type="text"
-                              value={formData.expiryDate}
-                              onChange={(e) => {
-                                handleChange(e);
-                                if (validationErrors.expiryDate) {
-                                  setValidationErrors(prev => ({
-                                    ...prev,
-                                    expiryDate: ''
-                                  }));
-                                }
-                              }}
-                              placeholder="MM/YY"
-                              required
-                              className={`block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200 ${
-                                validationErrors.expiryDate ? 'border-red-500' : 'border-gray-200 focus:border-primary-500'
-                              }`}
-                            />
-                            {validationErrors.expiryDate && (
-                              <p className="mt-2 text-sm text-red-600">{validationErrors.expiryDate}</p>
-                            )}
-                          </div>
-
-                          <div>
-                            <label htmlFor="cvv" className="block text-sm font-semibold text-gray-900 mb-3">
-                              CVV <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              id="cvv"
-                              name="cvv"
-                              type="text"
-                              value={formData.cvv}
-                              onChange={(e) => {
-                                handleChange(e);
-                                if (validationErrors.cvv) {
-                                  setValidationErrors(prev => ({
-                                    ...prev,
-                                    cvv: ''
-                                  }));
-                                }
-                              }}
-                              placeholder="123"
-                              required
-                              className={`block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200 ${
-                                validationErrors.cvv ? 'border-red-500' : 'border-gray-200 focus:border-primary-500'
-                              }`}
-                            />
-                            {validationErrors.cvv && (
-                              <p className="mt-2 text-sm text-red-600">{validationErrors.cvv}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label htmlFor="nameOnCard" className="block text-sm font-semibold text-gray-900 mb-3">
-                            Name on Card <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            id="nameOnCard"
-                            name="nameOnCard"
-                            type="text"
-                            value={formData.nameOnCard}
-                            onChange={(e) => {
-                              handleChange(e);
-                              if (validationErrors.nameOnCard) {
-                                setValidationErrors(prev => ({
-                                  ...prev,
-                                  nameOnCard: ''
-                                }));
-                              }
-                            }}
-                            placeholder="Enter name as on card"
-                            required
-                            className={`block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200 ${
-                              validationErrors.nameOnCard ? 'border-red-500' : 'border-gray-200 focus:border-primary-500'
-                            }`}
-                          />
-                          {validationErrors.nameOnCard && (
-                            <p className="mt-2 text-sm text-red-600">{validationErrors.nameOnCard}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Mobile Money Fields */}
-                    {['mtn', 'airtel', 'mpesa', 'orange', 'wave', 'other-mobile'].includes(formData.paymentMethod) && (
-                      <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Mobile Money Details</h4>
-                        
-                        {formData.paymentMethod === 'other-mobile' && (
-                          <div>
-                            <label htmlFor="mobileMoneyProvider" className="block text-sm font-semibold text-gray-900 mb-3">
-                              Mobile Money Provider <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              id="mobileMoneyProvider"
-                              name="mobileMoneyProvider"
-                              value={formData.mobileMoneyProvider}
-                              onChange={handleChange}
-                              required
-                              className="block w-full border-2 border-gray-200 rounded-xl p-4 text-gray-900 focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200"
-                            >
-                              <option value="mtn">MTN Mobile Money</option>
-                              <option value="airtel">Airtel Money</option>
-                              <option value="mpesa">M-Pesa</option>
-                              <option value="orange">Orange Money</option>
-                              <option value="wave">Wave</option>
-                              <option value="other">Other</option>
-                            </select>
-                          </div>
-                        )}
-
-                        <div>
-                          <label htmlFor="mobileMoneyNumber" className="block text-sm font-semibold text-gray-900 mb-3">
-                            Mobile Money Number <span className="text-red-500">*</span>
-                          </label>
-                          <div className={`flex items-center border-2 rounded-xl p-4 transition-all duration-200 ${
-                            validationErrors.mobileMoneyNumber ? 'border-red-500' : 'border-gray-200 focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-100'
-                          }`}>
-                            <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mr-3">
-                              <Smartphone className="w-4 h-4 text-green-600" />
-                            </div>
-                            <input
-                              id="mobileMoneyNumber"
-                              name="mobileMoneyNumber"
-                              type="tel"
-                              value={formData.mobileMoneyNumber}
-                              onChange={(e) => {
-                                handleChange(e);
-                                if (validationErrors.mobileMoneyNumber) {
-                                  setValidationErrors(prev => ({
-                                    ...prev,
-                                    mobileMoneyNumber: ''
-                                  }));
-                                }
-                              }}
-                              placeholder={`Enter your ${
-                                formData.paymentMethod === 'mtn' ? 'MTN' : 
-                                formData.paymentMethod === 'airtel' ? 'Airtel' : 
-                                formData.paymentMethod === 'mpesa' ? 'M-Pesa' : 
-                                formData.paymentMethod === 'orange' ? 'Orange' : 
-                                formData.paymentMethod === 'wave' ? 'Wave' : 
-                                'Mobile Money'
-                              } number`}
-                              required
-                              className="block w-full border-0 p-0 text-gray-900 placeholder-gray-500 focus:ring-0 text-sm bg-transparent"
-                            />
-                          </div>
-                          {validationErrors.mobileMoneyNumber ? (
-                            <p className="mt-2 text-sm text-red-600">{validationErrors.mobileMoneyNumber}</p>
-                          ) : (
-                            <p className="mt-2 text-sm text-gray-600">
-                              Enter your {
-                                formData.paymentMethod === 'mtn' ? 'MTN' : 
-                                formData.paymentMethod === 'airtel' ? 'Airtel Money' :
-                                formData.paymentMethod === 'mpesa' ? 'M-Pesa' :
-                                formData.paymentMethod === 'orange' ? 'Orange Money' :
-                                formData.paymentMethod === 'wave' ? 'Wave' :
-                                'mobile money'
-                              } number including country code.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                          <div className="flex items-start">
-                            <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center mr-3 mt-0.5">
-                              <AlertCircle className="w-4 h-4 text-blue-600" />
-                            </div>
-                            <div>
-                              <h5 className="font-semibold text-blue-900 mb-2">Payment Instructions</h5>
-                              <p className="text-sm text-blue-800 mb-2">
-                                After submitting, you will receive a {
-                                  formData.paymentMethod === 'mtn' ? 'MTN Mobile Money' : 
-                                  formData.paymentMethod === 'airtel' ? 'Airtel Money' :
-                                  formData.paymentMethod === 'mpesa' ? 'M-Pesa' :
-                                  formData.paymentMethod === 'orange' ? 'Orange Money' :
-                                  formData.paymentMethod === 'wave' ? 'Wave' :
-                                  'mobile money'
-                                } prompt on your phone.
-                              </p>
-                              <p className="text-sm font-medium text-blue-900">
-                                Note: Please ensure your mobile money account is active and has sufficient funds.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Terms Agreement */}
-                    <div className="bg-gray-50 rounded-2xl p-6">
-                      <div className="flex items-start">
-                        <input
-                          id="agreeTerms"
-                          name="agreeTerms"
-                          type="checkbox"
-                          checked={formData.agreeTerms}
-                          onChange={handleChange}
-                          required
-                          className="mt-1 w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        <label htmlFor="agreeTerms" className="ml-3 text-sm text-gray-700">
-                          I agree to the{' '}
-                          <Link to="/terms" className="text-primary-600 hover:text-primary-700 font-medium underline">
-                            terms and conditions
-                          </Link>
-                          {' '}and{' '}
-                          <Link to="/privacy" className="text-primary-600 hover:text-primary-700 font-medium underline">
-                            privacy policy
-                          </Link>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Form Errors */}
-                  {Object.keys(validationErrors).length > 0 && (
-                    <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                      <div className="flex items-start">
-                        <div className="w-6 h-6 bg-red-100 rounded-lg flex items-center justify-center mr-3">
-                          <AlertCircle className="w-4 h-4 text-red-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-red-800 mb-2">Please correct the following errors:</p>
-                          <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
-                            {Object.values(validationErrors).map((error, index) => (
-                              <li key={index}>{error}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="mt-10 pt-8 border-t border-gray-100 flex flex-col sm:flex-row gap-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentStep('details')}
-                      className="px-8 py-4 text-lg font-semibold rounded-xl border-2"
-                    >
-                      Back to Details
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="px-12 py-4 text-lg font-semibold rounded-xl"
-                      disabled={!formData.agreeTerms || isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <div className="flex items-center">
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                          Processing...
-                        </div>
-                      ) : (
-                        'Complete Booking'
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </div>
+              <PaymentStepper
+                bookingId={bookingItem.id}
+                amount={amount}
+                currency={paymentMethods[0]?.currency || 'RWF'}
+                onSuccess={() => setCurrentStep('confirmation')}
+              />
             )}
 
             {currentStep === 'confirmation' && (
@@ -948,7 +531,6 @@ const BookingPage: React.FC = () => {
                   <p className="text-lg text-gray-600 mb-8">
                     Your booking has been confirmed. You will receive a confirmation email shortly.
                   </p>
-                  
                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-8 mb-8 text-left">
                     <div className="flex items-center mb-6">
                       <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
@@ -956,12 +538,11 @@ const BookingPage: React.FC = () => {
                       </div>
                       <h3 className="text-xl font-bold text-gray-900">Booking Details</h3>
                     </div>
-                    
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm font-medium text-gray-600 mb-1">Booking ID</p>
-                          <p className="text-lg font-bold text-gray-900">ECAR-{Math.floor(Math.random() * 10000)}</p>
+                          <p className="text-lg font-bold text-gray-900">{bookingItem?.booking_id || bookingItem?.id || 'N/A'}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-600 mb-1">{bookingItem.type === 'car' ? 'Car' : 'Item'}</p>
@@ -980,39 +561,26 @@ const BookingPage: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm font-medium text-gray-600 mb-1">Payment Method</p>
                           <p className="text-lg font-semibold text-gray-900">
-                            {formData.paymentMethod === 'credit-card' ? 'Credit/Debit Card' :
-                             formData.paymentMethod === 'stripe' ? 'Stripe' :
-                             formData.paymentMethod === 'paypal' ? 'PayPal' :
-                             formData.paymentMethod === 'mtn' ? 'MTN Mobile Money' :
-                             formData.paymentMethod === 'airtel' ? 'Airtel Money' :
-                             formData.paymentMethod === 'mpesa' ? 'M-Pesa' :
-                             formData.paymentMethod === 'orange' ? 'Orange Money' :
-                             formData.paymentMethod === 'wave' ? 'Wave' :
-                             formData.paymentMethod === 'other-mobile' ? 'Other Mobile Money' :
-                             formData.paymentMethod === 'cash' ? 'Cash on Pickup' : 'Unknown'}
+                            {bookingItem?.payment_method || 'Unknown'}
                           </p>
                         </div>
-
-                        {['mtn', 'airtel', 'mpesa', 'orange', 'wave', 'other-mobile'].includes(formData.paymentMethod) && (
+                        {bookingItem?.mobile_money_number && (
                           <div>
                             <p className="text-sm font-medium text-gray-600 mb-1">Mobile Money Number</p>
-                            <p className="text-lg font-semibold text-gray-900">{formData.mobileMoneyNumber}</p>
+                            <p className="text-lg font-semibold text-gray-900">{bookingItem.phone_number}</p>
                           </div>
                         )}
-                        
                         <div>
                           <p className="text-sm font-medium text-gray-600 mb-1">Total Amount</p>
-                          <p className="text-2xl font-bold text-primary-600">{formatPrice(totalCost)}</p>
+                          <p className="text-2xl font-bold text-primary-600">{bookingItem.base_price_per_day}</p>
                         </div>
                       </div>
                     </div>
-                    
-                    {['mtn', 'airtel', 'mpesa', 'orange', 'wave', 'other-mobile'].includes(formData.paymentMethod) && (
+                    {['mtn', 'airtel', 'mpesa', 'orange', 'wave', 'other-mobile'].includes(bookingItem?.payment_method || '') && (
                       <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                         <div className="flex items-start">
                           <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
@@ -1029,7 +597,6 @@ const BookingPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  
                   <Button 
                     onClick={() => navigate('/dashboard')} 
                     className="px-12 py-4 text-lg font-semibold rounded-xl"
@@ -1094,7 +661,7 @@ const BookingPage: React.FC = () => {
                     <p className="font-semibold text-gray-900">Rental Cost</p>
                     <p className="text-xs text-gray-500">{rentalDays || 0} {rentalDays === 1 ? 'day' : 'days'} × {formatPrice(itemPrice)}</p>
                   </div>
-                  <span className="font-bold text-gray-900">{formatPrice(rentalCost)}</span>
+                  <span className="font-bold text-gray-900">{formatPrice(amount)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center">
@@ -1170,6 +737,24 @@ const BookingPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {showAddPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowAddPaymentModal(false)}
+            >
+              &times;
+            </button>
+            <AddPaymentMethod
+              onSuccess={() => {
+                setShowAddPaymentModal(false);
+                fetchAndSetPaymentMethods();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
