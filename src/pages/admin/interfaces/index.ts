@@ -200,4 +200,10 @@ export interface PaymentMethod {
   currency: string;
   updated_at: string;
   metadata: Record<string, any>;
+}
+
+export interface ProductAvailability {
+  id: string;
+  date: string;
+  notes: string;
 } 

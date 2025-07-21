@@ -3,6 +3,11 @@ import { Plus, Filter, Eye, Edit3, MoreHorizontal, Star, X, Package } from 'luci
 import type { Product, Owner, ItemCategory } from '../types';
 import { fetchProductImages, getProductById, updateProduct } from '../service/api';
 import { useToast } from '../../../contexts/ToastContext';
+import { fetchProductAvailability } from '../service/api';
+import type { ProductAvailability } from '../interfaces';
+import { fetchCategoryById } from '../service/api';
+import { fetchCategories } from '../service/api';
+import type { Category } from '../interfaces';
 
 interface ItemsManagementProps {
   products: Product[];
@@ -208,6 +213,9 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   const [productImages, setProductImages] = useState<{ [productId: string]: any[] }>({});
   const [imagesLoading, setImagesLoading] = useState(false);
   const [viewProductId, setViewProductId] = useState<string | null>(null);
+  const [productAvailability, setProductAvailability] = useState<{ [productId: string]: ProductAvailability[] }>({});
+  const [categoryNames, setCategoryNames] = useState<{ [id: string]: string }>({});
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     async function loadImages() {
@@ -234,6 +242,53 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
     }
   }, [products]);
 
+  useEffect(() => {
+    async function loadAvailability() {
+      const token = localStorage.getItem('token') || undefined;
+      const availabilityMap: { [productId: string]: ProductAvailability[] } = {};
+      await Promise.all(products.map(async (product) => {
+        try {
+          const data = await fetchProductAvailability(product.id, token);
+          availabilityMap[product.id] = data;
+        } catch {
+          availabilityMap[product.id] = [];
+        }
+      }));
+      setProductAvailability(availabilityMap);
+    }
+    if (products.length) {
+      loadAvailability();
+    } else {
+      setProductAvailability({});
+    }
+  }, [products]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      const token = localStorage.getItem('token') || undefined;
+      const map: { [id: string]: string } = {};
+      await Promise.all(products.map(async (product) => {
+        if (product.category_id && !map[product.category_id]) {
+          try {
+            const res = await fetchCategoryById(product.category_id, token);
+            map[product.category_id] = res.name;
+          } catch {
+            map[product.category_id] = 'Unknown';
+          }
+        }
+      }));
+      setCategoryNames(map);
+    }
+    if (products.length) loadCategories();
+  }, [products]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || undefined;
+    fetchCategories(token)
+      .then(setCategories)
+      .catch(() => setCategories([]));
+  }, []);
+
   // Optionally, you can manage error state here if not passed as prop
   // const [error, setError] = useState<string | null>(null);
 
@@ -248,9 +303,9 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Categories</option>
-            {itemCategories.map((category: ItemCategory) => (
+            {categories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.icon} {category.name}
+                {category.name}
               </option>
             ))}
           </select>
@@ -271,11 +326,11 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
       </div>
       {/* Items Categories Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
-        {itemCategories.slice(0, 10).map((category: ItemCategory) => (
+        {categories.slice(0, 10).map((category) => (
           <div key={category.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 text-center hover:shadow-md transition-shadow cursor-pointer">
-            <div className="text-2xl mb-2">{category.icon}</div>
+            <div className="text-2xl mb-2">{category.iconName || ''}</div>
             <p className="text-sm font-medium text-gray-700">{category.name}</p>
-            <p className="text-xs text-gray-600">{category.count} items</p>
+            <p className="text-xs text-gray-600">{category.description}</p>
           </div>
         ))}
       </div>
@@ -334,15 +389,16 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     <h4 className="font-semibold text-gray-900">{item.title || item.name}</h4>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                      item.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {item.status}
-                    </span>
+                    <span className={`px-3 py-1 rounded-lg text-xs font-medium ${item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{item.status}</span>
                     <span className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700">
-                      {item.category}
+                      {categoryNames[item.category_id] || 'Loading...'}
+                    </span>
+                    <span className="px-2 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-700">
+                      {productAvailability[item.id]?.length
+                        ? productAvailability[item.id].some(a => a.notes === 'Booked')
+                          ? 'Booked'
+                          : 'Available'
+                        : 'Available'}
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 mb-2">

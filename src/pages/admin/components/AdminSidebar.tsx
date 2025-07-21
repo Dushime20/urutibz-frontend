@@ -35,97 +35,22 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ adminStats, activeTab, setA
 
     {/* Navigation */}
     <nav className="space-y-2">
-      <AdminNavigationItem
-        icon={BarChart3}
-        label="Overview"
-        active={activeTab === 'overview'}
-        onClick={() => setActiveTab('overview')}
-      />
-      <AdminNavigationItem
-        icon={Package}
-        label="Items"
-        active={activeTab === 'items'}
-        onClick={() => setActiveTab('items')}
-      />
-      <AdminNavigationItem
-        icon={Users}
-        label="Users"
-        active={activeTab === 'users'}
-        onClick={() => setActiveTab('users')}
-      />
-      <AdminNavigationItem
-        icon={Calendar}
-        label="Bookings"
-        active={activeTab === 'bookings'}
-        onClick={() => setActiveTab('bookings')}
-      />
-      <AdminNavigationItem
-        icon={CreditCard}
-        label="Transactions"
-        active={activeTab === 'transactions'}
-        onClick={() => setActiveTab('transactions')}
-      />
-      <AdminNavigationItem
-        icon={DollarSign}
-        label="Finances"
-        active={activeTab === 'finances'}
-        onClick={() => setActiveTab('finances')}
-      />
-      <AdminNavigationItem
-        icon={FolderTree}
-        label="Categories"
-        active={activeTab === 'categories'}
-        onClick={() => setActiveTab('categories')}
-      />
-      <AdminNavigationItem
-        icon={FileText}
-        label="Reports"
-        active={activeTab === 'reports'}
-        onClick={() => setActiveTab('reports')}
-      />
-      <AdminNavigationItem
-        icon={Globe}
-        label="Locations"
-        active={activeTab === 'locations'}
-        onClick={() => setActiveTab('locations')}
-      />
-      <AdminNavigationItem
-        icon={Languages}
-        label="Languages"
-        active={activeTab === 'languages'}
-        onClick={() => setActiveTab('languages')}
-      />
-      <AdminNavigationItem
-        icon={MessageSquare}
-        label="Messaging"
-        active={activeTab === 'messaging'}
-        onClick={() => setActiveTab('messaging')}
-      />
-      <AdminNavigationItem
-        icon={Bell}
-        label="Notifications"
-        active={activeTab === 'notifications'}
-        onClick={() => setActiveTab('notifications')}
-      />
-      <AdminNavigationItem
-        icon={Globe2}
-        label="Countries"
-        active={activeTab === 'countries'}
-        onClick={() => setActiveTab('countries')}
-      />
-      <AdminNavigationItem
-        icon={CreditCard}
-        label="Payment Methods"
-        active={activeTab === 'paymentMethods'}
-        onClick={() => setActiveTab('paymentMethods')}
-      />
+      <AdminNavigationItem icon={BarChart3} label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+      <AdminNavigationItem icon={Package} label="Items" active={activeTab === 'items'} onClick={() => setActiveTab('items')} />
+      <AdminNavigationItem icon={Users} label="Users" active={activeTab === 'users'} onClick={() => setActiveTab('users')} />
+      <AdminNavigationItem icon={Calendar} label="Bookings" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} />
+      <AdminNavigationItem icon={CreditCard} label="Transactions" active={activeTab === 'transactions'} onClick={() => setActiveTab('transactions')} />
+      <AdminNavigationItem icon={FolderTree} label="Categories" active={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
+      <AdminNavigationItem icon={Globe2} label="Countries" active={activeTab === 'countries'} onClick={() => setActiveTab('countries')} />
+      <AdminNavigationItem icon={CreditCard} label="Payment Methods" active={activeTab === 'paymentMethods'} onClick={() => setActiveTab('paymentMethods')} />
       <div className="border-t border-gray-100 pt-4 mt-6">
-        <AdminNavigationItem
-          icon={Settings}
-          label="Settings"
-          active={activeTab === 'settings'}
-          onClick={() => setActiveTab('settings')}
-        />
+        <AdminNavigationItem icon={DollarSign} label="Finances" active={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
+        <AdminNavigationItem icon={FileText} label="Reports" active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
+        <AdminNavigationItem icon={Globe} label="Locations" active={activeTab === 'locations'} onClick={() => setActiveTab('locations')} />
+        <AdminNavigationItem icon={Languages} label="Languages" active={activeTab === 'languages'} onClick={() => setActiveTab('languages')} />
+        <AdminNavigationItem icon={MessageSquare} label="Messaging" active={activeTab === 'messaging'} onClick={() => setActiveTab('messaging')} />
+        <AdminNavigationItem icon={Bell} label="Notifications" active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} />
+        <AdminNavigationItem icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
       </div>
     </nav>
   </div>

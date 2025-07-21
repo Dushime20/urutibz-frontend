@@ -12,7 +12,8 @@ import type {
   PaginationResponse,
   Country,
   CreateCountryInput,
-  PaymentMethod
+  PaymentMethod,
+  ProductAvailability
 } from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
@@ -352,6 +353,13 @@ export async function createCategory(data: CreateCategoryInput, token?: string):
   }
 }
 
+export async function fetchCategoryById(categoryId: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/categories/${categoryId}`, { headers });
+  return response.data;
+}
+
 export async function fetchCountries(): Promise<Country[]> {
   const response = await axios.get(`${API_BASE_URL}/countries`);
   return response.data.data;
@@ -369,4 +377,11 @@ export async function fetchPaymentMethods(token?: string): Promise<PaymentMethod
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const response = await axios.get(`${API_BASE_URL}/payment-methods`, { headers });
   return response.data.data.data;
+}
+
+export async function fetchProductAvailability(productId: string, token?: string): Promise<ProductAvailability[]> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/product-availability/product/${productId}`, { headers });
+  return response.data.data;
 }
