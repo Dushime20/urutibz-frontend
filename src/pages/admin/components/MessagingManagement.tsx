@@ -14,7 +14,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = (props) => (
           <Filter className="w-4 h-4 mr-2" />
           Filter
         </button>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+        <button className="bg-my-primary hover:bg-my-primary/80 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
           <Plus className="w-4 h-4 mr-2" />
           New Message
         </button>
@@ -22,7 +22,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = (props) => (
     </div>
     {/* Messaging content goes here. Add your chat list, templates, or summary here. */}
     <div className="text-gray-500 text-center py-12">
-      <MessageSquare className="mx-auto w-12 h-12 text-blue-400 mb-4" />
+      <MessageSquare className="mx-auto w-12 h-12 text-my-primary mb-4" />
       <p className="text-lg">Messaging features coming soon!</p>
     </div>
   </div>

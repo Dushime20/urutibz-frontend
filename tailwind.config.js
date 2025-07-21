@@ -83,7 +83,8 @@ module.exports = {
           700: '#b45309',
           800: '#92400e',
           900: '#78350f',
-        }
+        },
+        'my-primary': '#00aaa9',
       },
       fontFamily: {
         'outfit': ['Outfit', 'Inter', 'sans-serif'],

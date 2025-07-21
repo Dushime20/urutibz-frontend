@@ -11,6 +11,7 @@ interface RecentUser {
   status: string;
   joinDate: string;
   verified: boolean;
+  initials: string;
 }
 
 interface RecentUsersListProps {
@@ -24,7 +25,7 @@ const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }
       <h3 className="text-lg font-bold text-gray-900">Recent Users</h3>
       <Link 
         to="#" 
-        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
+        className="text-sm text-my-primary hover:text-my-primary/80 font-medium flex items-center group"
       >
         View all
         <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -34,11 +35,23 @@ const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }
       {recentUsers.map((user) => (
         <div key={user.id} className="flex items-center space-x-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors">
           <div className="relative">
-            <img 
-              src={user.avatar} 
-              alt={user.name} 
-              className="w-12 h-12 rounded-xl object-cover" 
-            />
+            {user.avatar ? (
+              <img 
+                src={user.avatar} 
+                alt={user.name} 
+                className="w-12 h-12 rounded-xl object-cover" 
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div 
+              className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-semibold text-white bg-my-primary ${user.avatar ? 'hidden' : ''}`}
+            >
+              {user.initials}
+            </div>
             {user.verified && (
               <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
                 <CheckCircle className="w-3 h-3 text-white" />
@@ -49,7 +62,7 @@ const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }
             <h4 className="font-semibold text-gray-900">{user.name}</h4>
             <p className="text-sm text-gray-500">{user.email}</p>
             <div className="flex items-center space-x-2 mt-1">
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
+              <span className="text-xs px-2 py-1 bg-my-primary text-white rounded-lg">
                 {user.role}
               </span>
               <span className={`text-xs px-2 py-1 rounded-lg ${

@@ -1,24 +1,21 @@
 import React from 'react';
-import { BarChart3, Package, Users, Calendar, DollarSign, FileText, Globe, Languages, MessageSquare, Bell, Settings } from 'lucide-react';
+import { BarChart3, Package, Users, Calendar, DollarSign, FileText, Globe, Languages, MessageSquare, Bell, Settings, CreditCard } from 'lucide-react';
+import type { AdminStats } from '../service/api';
 
 // Define the TabType union to match AdminDashboardPage
-export type TabType = "overview" | "items" | "users" | "bookings" | "finances" | "reports" | "settings" | "locations" | "languages" | "messaging" | "notifications";
+export type TabType = "overview" | "items" | "users" | "bookings" | "finances" | "transactions" | "reports" | "settings" | "locations" | "languages" | "messaging" | "notifications";
 
 interface AdminSidebarProps {
-  adminStats: {
-    totalUsers: number;
-    totalItems: number;
-    activeBookings: number;
-  };
+  adminStats: AdminStats;
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
   AdminNavigationItem: React.FC<any>;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ adminStats, activeTab, setActiveTab, AdminNavigationItem }) => (
-  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24">
+  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24 overflow-y-auto max-h-[80vh]">
     {/* Quick Stats */}
-    <div className="mb-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl">
+    <div className="mb-8 p-4 bg-gradient-to-r from-my-primary/10 to-indigo-50 rounded-2xl">
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Overview</h3>
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
@@ -35,6 +32,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ adminStats, activeTab, setA
         </div>
       </div>
     </div>
+
     {/* Navigation */}
     <nav className="space-y-2">
       <AdminNavigationItem
@@ -45,22 +43,27 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ adminStats, activeTab, setA
       />
       <AdminNavigationItem
         icon={Package}
-        label="Items Management"
+        label="Items"
         active={activeTab === 'items'}
         onClick={() => setActiveTab('items')}
       />
       <AdminNavigationItem
         icon={Users}
-        label="User Management"
+        label="Users"
         active={activeTab === 'users'}
         onClick={() => setActiveTab('users')}
-        hasNotification={true}
       />
       <AdminNavigationItem
         icon={Calendar}
         label="Bookings"
         active={activeTab === 'bookings'}
         onClick={() => setActiveTab('bookings')}
+      />
+      <AdminNavigationItem
+        icon={CreditCard}
+        label="Transactions"
+        active={activeTab === 'transactions'}
+        onClick={() => setActiveTab('transactions')}
       />
       <AdminNavigationItem
         icon={DollarSign}

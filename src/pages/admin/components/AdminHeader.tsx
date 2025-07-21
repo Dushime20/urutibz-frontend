@@ -10,11 +10,11 @@ interface AdminHeaderProps {
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelectedLocation, selectedLanguage, setSelectedLanguage }) => (
   <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between h-16">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <Shield className="w-6 h-6 text-blue-600" />
+            <Shield className="w-6 h-6 text-my-primary" />
             <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
           </div>
         </div>
@@ -23,7 +23,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
             <select 
               value={selectedLocation} 
               onChange={(e) => setSelectedLocation(e.target.value)}
-              className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
             >
               <option value="all">All Locations</option>
               <option value="Kigali">🇷🇼 Kigali</option>
@@ -34,7 +34,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
             <select 
               value={selectedLanguage} 
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              className="bg-gray-100 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
             >
               <option value="en">🇺🇸 English</option>
               <option value="rw">🇷🇼 Kinyarwanda</option>
@@ -47,7 +47,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
             <input
               type="text"
               placeholder="Search users, items, bookings..."
-              className="pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200 w-80"
+              className="pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-xl focus:ring-2 focus:ring-my-primary focus:bg-white transition-all duration-200 w-80"
             />
           </div>
           <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">

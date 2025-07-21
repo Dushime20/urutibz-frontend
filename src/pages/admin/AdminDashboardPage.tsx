@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 
 import { Button } from '../../components/ui/DesignSystem';
 import { itemCategories } from '../../data/mockRentalData';
-import { fetchAllProducts, fetchUserById } from './service/api';
+import { 
+  fetchAllProducts, 
+  fetchUserById, 
+  fetchAdminStats, 
+  fetchRecentUsers, 
+  fetchRecentBookings,
+  fetchAdminUsers, // <-- add this import
+  type AdminStats,
+  type RecentUser,
+  type RecentBooking,
+  type AdminUser // <-- add this import
+} from './service/api';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
 import AdminStatCards from './components/AdminStatCards';
@@ -18,8 +29,8 @@ import LanguagesManagement from './components/LanguagesManagement';
 import MessagingManagement from './components/MessagingManagement';
 import NotificationsManagement from './components/NotificationsManagement';
 import SettingsManagement from './components/SettingsManagement';
-import { Camera, Gamepad2, Laptop } from 'lucide-react';
-
+import RecentTransactionsList from './components/RecentTransactionsList';
+import TransactionsManagement from './components/TransactionsManagement';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -47,10 +58,8 @@ interface Owner {
   [key: string]: any;
 }
 
-
-
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -59,86 +68,59 @@ const AdminDashboardPage: React.FC = () => {
   const [owners, setOwners] = useState<Record<string, Owner>>({});
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
+  const [verifiedUsersCount, setVerifiedUsersCount] = useState(0);
 
-  // Mock admin data
-  const adminStats = {
-    totalUsers: 2847,
-    totalItems: 1256,
-    activeBookings: 89,
-    totalRevenue: 125400,
+  // Overview data state
+  const [adminStats, setAdminStats] = useState<AdminStats>({
+    totalUsers: 0,
+    totalItems: 0,
+    activeBookings: 0,
+    totalRevenue: 0,
     monthlyGrowth: {
-      users: 12.5,
-      items: 8.3,
-      bookings: 15.7,
-      revenue: 22.1
+      users: 0,
+      items: 0,
+      bookings: 0,
+      revenue: 0
     }
-  };
+  });
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [loadingOverview, setLoadingOverview] = useState(true);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
 
-  // Mock data for admin sections
-  const recentUsers = [
-    {
-      id: 1,
-      name: 'John Mukama',
-      email: 'john@example.com',
-      avatar: '/assets/img/profiles/avatar-01.jpg',
-      role: 'Host',
-      status: 'Active',
-      joinDate: '2024-07-05',
-      verified: true
-    },
-    {
-      id: 2,
-      name: 'Sarah Uwimana',
-      email: 'sarah@example.com',
-      avatar: '/assets/img/profiles/avatar-02.jpg',
-      role: 'Renter',
-      status: 'Pending',
-      joinDate: '2024-07-08',
-      verified: false
-    }
-  ];
+  // Fetch overview data
+  useEffect(() => {
+    const fetchOverviewData = async () => {
+      try {
+        setLoadingOverview(true);
+        setOverviewError(null);
+        const token = localStorage.getItem('token');
 
-  const recentBookings = [
-    {
-      id: 1,
-      bookingId: 'BK-2024-001',
-      itemName: 'Canon EOS R5 Camera',
-      itemImage: '/assets/img/items/camera-01.jpg',
-      customerName: 'Alice Uwimana',
-      amount: 85,
-      status: 'Active',
-      startDate: '2024-07-10',
-      endDate: '2024-07-15',
-      category: 'Photography',
-      icon: Camera
-    },
-    {
-      id: 2,
-      bookingId: 'BK-2024-002',
-      itemName: 'MacBook Pro 16"',
-      itemImage: '/assets/img/items/laptop-01.jpg',
-      customerName: 'David Nkusi',
-      amount: 120,
-      status: 'Completed',
-      startDate: '2024-07-05',
-      endDate: '2024-07-08',
-      category: 'Electronics',
-      icon: Laptop
-    },
-    {
-      id: 3,
-      bookingId: 'BK-2024-003',
-      itemName: 'PlayStation 5',
-      itemImage: '/assets/img/items/gaming-01.jpg',
-      customerName: 'Sarah Mukisa',
-      amount: 45,
-      status: 'Active',
-      startDate: '2024-07-12',
-      endDate: '2024-07-18',
-      category: 'Gaming',
-      icon: Gamepad2
-    }
-  ];
+        // Fetch all overview data in parallel
+        const [stats, users, bookings, allUsers] = await Promise.all([
+          fetchAdminStats(token || undefined),
+          fetchRecentUsers(5, token || undefined),
+          fetchRecentBookings(5, token || undefined),
+          fetchAdminUsers(1, 1000, token || undefined) // Fetch all users (up to 1000)
+        ]);
+
+        setAdminStats(stats);
+        setRecentUsers(users);
+        setRecentBookings(bookings);
+
+        // Count verified users
+        const verifiedCount = allUsers.items.filter((u: AdminUser) => u.kyc_status?.toLowerCase() === 'verified').length;
+        setVerifiedUsersCount(verifiedCount);
+      } catch (err) {
+        console.error('Error fetching overview data:', err);
+        setOverviewError('Failed to load overview data');
+      } finally {
+        setLoadingOverview(false);
+      }
+    };
+
+    fetchOverviewData();
+  }, []);
 
   // Use real rental items data
 
@@ -159,7 +141,7 @@ const AdminDashboardPage: React.FC = () => {
       onClick={onClick}
       className={`group relative w-full flex items-center px-4 py-3.5 rounded-2xl font-medium transition-all duration-300 ${
         active
-          ? 'text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
+          ? 'text-white shadow-lg shadow-my-primary/25 scale-[1.02]'
           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
       }`}
       style={{
@@ -230,7 +212,7 @@ const AdminDashboardPage: React.FC = () => {
         selectedLanguage={selectedLanguage}
         setSelectedLanguage={setSelectedLanguage}
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="py-8">
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
           <div className="xl:col-span-1">
             <AdminSidebar
@@ -243,11 +225,26 @@ const AdminDashboardPage: React.FC = () => {
           <div className="xl:col-span-4">
             {activeTab === 'overview' && (
               <>
-                <AdminStatCards adminStats={adminStats} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <RecentUsersList recentUsers={recentUsers} Button={Button} />
-                  <RecentBookingsList recentBookings={recentBookings} />
-                </div>
+                {loadingOverview ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-gray-500">Loading overview data...</div>
+                  </div>
+                ) : overviewError ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-red-500">Error: {overviewError}</div>
+                  </div>
+                ) : (
+                  <>
+                    <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      <RecentUsersList recentUsers={recentUsers} Button={Button} />
+                      <RecentBookingsList recentBookings={recentBookings} />
+                    </div>
+                    <div className="mt-8">
+                      <RecentTransactionsList limit={5} />
+                    </div>
+                  </>
+                )}
               </>
             )}
             {activeTab === 'items' && (
@@ -267,17 +264,17 @@ const AdminDashboardPage: React.FC = () => {
             )}
             {activeTab === 'users' && (
               <UserManagement
-                recentUsers={recentUsers}
                 Button={Button}
               />
             )}
             {activeTab === 'bookings' && (
-              <BookingsManagement
-                recentBookings={recentBookings}
-              />
+              <BookingsManagement />
             )}
             {activeTab === 'finances' && (
               <FinancesManagement />
+            )}
+            {activeTab === 'transactions' && (
+              <TransactionsManagement />
             )}
             {activeTab === 'reports' && (
               <ReportsManagement />

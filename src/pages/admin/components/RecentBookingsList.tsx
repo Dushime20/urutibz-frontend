@@ -26,7 +26,7 @@ const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings 
       <h3 className="text-lg font-bold text-gray-900">Recent Bookings</h3>
       <Link 
         to="#" 
-        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
+        className="text-sm text-my-primary hover:text-my-primary/80 font-medium flex items-center group"
       >
         View all
         <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -49,7 +49,7 @@ const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings 
             <h4 className="font-semibold text-gray-900 text-sm">{booking.itemName}</h4>
             <p className="text-sm text-gray-500">{booking.customerName}</p>
             <div className="flex items-center space-x-2 mt-1">
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
+              <span className="text-xs px-2 py-1 bg-my-primary/10 text-my-primary rounded-lg">
                 {booking.category}
               </span>
               <span className="text-xs text-gray-400">{booking.bookingId}</span>
