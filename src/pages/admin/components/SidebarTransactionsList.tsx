@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { fetchRecentPaymentTransactions } from '../service/api';
-import type { PaymentTransaction } from '../service/api';
+
 import { Loader, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import type { PaymentTransaction } from '../interfaces';
 
 interface SidebarTransactionsListProps {
   limit?: number;

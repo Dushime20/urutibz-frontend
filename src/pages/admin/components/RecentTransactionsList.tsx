@@ -1,6 +1,6 @@
+import type { PaymentTransaction } from '../interfaces';
 import React, { useEffect, useState } from 'react';
 import { fetchRecentPaymentTransactions } from '../service/api';
-import type { PaymentTransaction } from '../service/api';
 import { Loader } from 'lucide-react';
 
 interface RecentTransactionsListProps {

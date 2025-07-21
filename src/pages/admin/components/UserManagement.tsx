@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, CheckCircle, Calendar, Package, Filter, Plus } from 'lucide-react';
+import type { AdminUser } from '../interfaces';
 import { fetchAdminUsers } from '../service/api';
-import type { AdminUser } from '../service/api';
 
 interface UserManagementProps {
   Button: React.FC<any>;

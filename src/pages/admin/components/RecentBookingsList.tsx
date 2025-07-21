@@ -21,7 +21,7 @@ interface RecentBookingsListProps {
 }
 
 const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings }) => (
-  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mt-4">
     <div className="flex items-center justify-between mb-6">
       <h3 className="text-lg font-bold text-gray-900">Recent Bookings</h3>
       <Link 

@@ -1,67 +1,21 @@
 import axios from 'axios';
-import React from 'react';
 import { Package } from 'lucide-react';
+import type {
+  Category,
+  CreateCategoryInput,
+  PaymentTransactionResponse,
+  AdminStats,
+  RecentUser,
+  RecentBooking,
+  AdminUser,
+  AdminBooking,
+  PaginationResponse,
+  Country,
+  CreateCountryInput,
+  PaymentMethod
+} from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
-export interface PaginationResponse<T> {
-  items: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-export interface AdminUser {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone?: string;
-  role: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  profile_image?: string;
-  kyc_status: string;
-  last_login?: string;
-}
-
-export interface AdminBooking {
-  id: string;
-  booking_number: string;
-  renter_id: string;
-  owner_id: string;
-  product_id: string;
-  start_date: string;
-  end_date: string;
-  total_days: number;
-  status: string;
-  payment_status: string;
-  pickup_method: string;
-  renter_notes: string;
-  pickup_time: string;
-  return_time: string;
-  pricing: {
-    currency: string;
-    subtotal: number | null;
-    totalDays: number;
-    platformFee: number | null;
-    totalAmount: number | null;
-  };
-  renter_email: string;
-  renter_first_name: string;
-  renter_last_name: string;
-  owner_email: string;
-  owner_first_name: string;
-  owner_last_name: string;
-  product_title: string;
-  product_description: string;
-  created_at: string;
-}
-
-// Fetch all products
 export async function fetchAllProducts(token?: string) {
   const url = `${API_BASE_URL}/products`;
   try {
@@ -173,44 +127,6 @@ export async function fetchAdminUsers(
 }
 
 // Admin Overview APIs
-export interface AdminStats {
-  totalUsers: number;
-  totalItems: number;
-  activeBookings: number;
-  totalRevenue: number;
-  monthlyGrowth: {
-    users: number;
-    items: number;
-    bookings: number;
-    revenue: number;
-  };
-}
-
-export interface RecentUser {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  role: string;
-  status: string;
-  joinDate: string;
-  verified: boolean;
-}
-
-export interface RecentBooking {
-  id: string;
-  bookingId: string;
-  itemName: string;
-  itemImage: string;
-  customerName: string;
-  amount: number;
-  status: string;
-  startDate: string;
-  endDate: string;
-  category: string;
-  icon: React.ElementType;
-}
-
 export async function fetchAdminStats(token?: string): Promise<AdminStats> {
   try {
     const response = await axios.get(`${API_BASE_URL}/admin/dashboard`, {
@@ -384,42 +300,6 @@ export async function updateBooking(bookingId: string, data: any, token?: string
   }
 }
 
-export interface PaymentTransaction {
-  id: string;
-  booking_id?: string;
-  user_id: string;
-  payment_method_id?: string;
-  transaction_type: string;
-  amount: number;
-  currency: string;
-  provider: string;
-  provider_transaction_id?: string;
-  provider_fee: number;
-  status: string;
-  processed_at?: string;
-  created_at: string;
-  created_by: string;
-  metadata?: Record<string, any>;
-  original_currency?: string;
-  original_amount?: number;
-  exchange_rate?: number;
-  exchange_rate_date?: string;
-  expires_at?: string;
-}
-
-export interface PaymentTransactionResponse {
-  success: boolean;
-  data: PaymentTransaction[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-export type { PaymentTransaction, PaymentTransactionResponse };
-
 export async function fetchRecentPaymentTransactions(
   limit: number = 10,
   token?: string,
@@ -444,4 +324,49 @@ export async function fetchRecentPaymentTransactions(
     console.error('Error fetching payment transactions:', errorMsg);
     throw new Error(errorMsg);
   }
+}
+
+export async function fetchCategories(): Promise<Category[]> {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/categories`);
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching categories:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch categories');
+  }
+}
+
+export async function createCategory(data: CreateCategoryInput, token?: string): Promise<Category> {
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await axios.post(`${API_BASE_URL}/categories`, data, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error creating category:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to create category');
+  }
+}
+
+export async function fetchCountries(): Promise<Country[]> {
+  const response = await axios.get(`${API_BASE_URL}/countries`);
+  return response.data.data;
+}
+
+export async function createCountry(data: CreateCountryInput, token?: string): Promise<Country> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/countries`, data, { headers });
+  return response.data.data;
+}
+
+export async function fetchPaymentMethods(token?: string): Promise<PaymentMethod[]> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/payment-methods`, { headers });
+  return response.data.data.data;
 }

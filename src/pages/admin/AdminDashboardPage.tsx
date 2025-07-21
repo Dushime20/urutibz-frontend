@@ -2,17 +2,14 @@ import React, { useState, useEffect } from 'react';
 
 import { Button } from '../../components/ui/DesignSystem';
 import { itemCategories } from '../../data/mockRentalData';
-import { 
-  fetchAllProducts, 
-  fetchUserById, 
-  fetchAdminStats, 
-  fetchRecentUsers, 
+import type { AdminStats, RecentUser, RecentBooking, AdminUser } from './interfaces';
+import {
+  fetchAllProducts,
+  fetchUserById,
+  fetchAdminStats,
+  fetchRecentUsers,
   fetchRecentBookings,
-  fetchAdminUsers, // <-- add this import
-  type AdminStats,
-  type RecentUser,
-  type RecentBooking,
-  type AdminUser // <-- add this import
+  fetchAdminUsers
 } from './service/api';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
@@ -31,6 +28,9 @@ import NotificationsManagement from './components/NotificationsManagement';
 import SettingsManagement from './components/SettingsManagement';
 import RecentTransactionsList from './components/RecentTransactionsList';
 import TransactionsManagement from './components/TransactionsManagement';
+import CategoriesManagement from './components/CategoriesManagement';
+import CountriesManagement from './components/CountriesManagement';
+import PaymentMethodsManagement from './components/PaymentMethodsManagement';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -59,7 +59,7 @@ interface Owner {
 }
 
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -270,11 +270,18 @@ const AdminDashboardPage: React.FC = () => {
             {activeTab === 'bookings' && (
               <BookingsManagement />
             )}
-            {activeTab === 'finances' && (
-              <FinancesManagement />
-            )}
+            
             {activeTab === 'transactions' && (
               <TransactionsManagement />
+            )}
+            {activeTab === 'categories' && (
+              <CategoriesManagement />
+            )}
+            {activeTab === 'countries' && (
+              <CountriesManagement />
+            )}
+            {activeTab === 'paymentMethods' && (
+              <PaymentMethodsManagement />
             )}
             {activeTab === 'reports' && (
               <ReportsManagement />
@@ -284,6 +291,9 @@ const AdminDashboardPage: React.FC = () => {
             )}
             {activeTab === 'languages' && (
               <LanguagesManagement />
+            )}
+            {activeTab === 'finances' && (
+              <FinancesManagement />
             )}
             {activeTab === 'messaging' && (
               <MessagingManagement />

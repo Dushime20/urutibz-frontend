@@ -1,9 +1,9 @@
 import React from 'react';
-import { BarChart3, Package, Users, Calendar, DollarSign, FileText, Globe, Languages, MessageSquare, Bell, Settings, CreditCard } from 'lucide-react';
+import { BarChart3, Package, Users, Calendar, DollarSign, FileText, Globe, Languages, MessageSquare, Bell, Settings, CreditCard, FolderTree, Globe2 } from 'lucide-react';
 import type { AdminStats } from '../service/api';
 
-// Define the TabType union to match AdminDashboardPage
-export type TabType = "overview" | "items" | "users" | "bookings" | "finances" | "transactions" | "reports" | "settings" | "locations" | "languages" | "messaging" | "notifications";
+// Update TabType to include categories
+export type TabType = "overview" | "items" | "users" | "bookings" | "finances" | "transactions" | "categories" | "countries" | "paymentMethods" | "reports" | "settings" | "locations" | "languages" | "messaging" | "notifications";
 
 interface AdminSidebarProps {
   adminStats: AdminStats;
@@ -72,6 +72,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ adminStats, activeTab, setA
         onClick={() => setActiveTab('finances')}
       />
       <AdminNavigationItem
+        icon={FolderTree}
+        label="Categories"
+        active={activeTab === 'categories'}
+        onClick={() => setActiveTab('categories')}
+      />
+      <AdminNavigationItem
         icon={FileText}
         label="Reports"
         active={activeTab === 'reports'}
@@ -100,6 +106,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ adminStats, activeTab, setA
         label="Notifications"
         active={activeTab === 'notifications'}
         onClick={() => setActiveTab('notifications')}
+      />
+      <AdminNavigationItem
+        icon={Globe2}
+        label="Countries"
+        active={activeTab === 'countries'}
+        onClick={() => setActiveTab('countries')}
+      />
+      <AdminNavigationItem
+        icon={CreditCard}
+        label="Payment Methods"
+        active={activeTab === 'paymentMethods'}
+        onClick={() => setActiveTab('paymentMethods')}
       />
       <div className="border-t border-gray-100 pt-4 mt-6">
         <AdminNavigationItem
