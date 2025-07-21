@@ -1,5 +1,53 @@
 import axios from 'axios';
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+
+// Add new functions for dashboard overview
+export async function fetchDashboardStats(token: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/dashboard/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data?.data || {
+      activeBookings: 0,
+      totalEarnings: 0,
+      totalTransactions: 0,
+      wishlistItems: 0
+    };
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return {
+      activeBookings: 0,
+      totalEarnings: 0,
+      totalTransactions: 0,
+      wishlistItems: 0
+    };
+  }
+}
+
+export async function fetchRecentBookings(token: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/bookings?limit=5&sort=-created_at`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data?.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching recent bookings:', error);
+    return [];
+  }
+}
+
+export async function fetchRecentTransactions(token: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/payment-transactions?limit=5&sort=-created_at`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data?.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching recent transactions:', error);
+    return [];
+  }
+}
+
 export async function createProduct(productData: any) {
   const token = localStorage.getItem('token');
   const response = await axios.post(`${API_BASE_URL}/products`, productData, {
@@ -108,4 +156,32 @@ export async function fetchCountries() {
   const res = await fetch(`${API_BASE_URL}/countries`);
   if (!res.ok) throw new Error('Failed to fetch countries');
   return res.json();
+}
+
+export async function fetchUserBookings(token: string | null) {
+  const response = await axios.get(`${API_BASE_URL}/bookings`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  // Return bookings array and pagination info
+  return response.data?.data || { data: [], page: 1, limit: 20, total: 0, totalPages: 1, hasNext: false, hasPrev: false };
+}
+
+// Existing product and image fetchers (if not present, add them)
+// export async function getProductById(productId: string, token: string | null | undefined) {
+//   const response = await axios.get(`${API_BASE_URL}/products/${productId}`, {
+//     headers: token ? { Authorization: `Bearer ${token}` } : {},
+//   });
+//   return response.data?.data || response.data;
+// }
+
+export async function fetchProductImages(productId: string, token?: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/product-images/product/${productId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return { data: response.data?.data || response.data || [], error: null };
+  } catch (error) {
+    console.error('Error fetching product images:', error);
+    return { data: [], error };
+  }
 }

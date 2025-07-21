@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Button from '../ui/Button';
-import axios from 'axios';
+import Button from '../../../components/ui/Button';
+import { processPaymentTransaction, fetchPaymentMethods } from '../service/api';
 
 interface PaymentStepperProps {
   bookingId: string;
@@ -37,7 +37,6 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     e.preventDefault();
     setLoading(true);
     setError(null);
-    // Remove try/catch/finally for debugging
     const token = localStorage.getItem('token');
     let payload: any = { ...form, type, is_default: true, currency, metadata: { description: form.description || '' } };
     if (type === 'card') {
@@ -59,34 +58,21 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
         metadata: { description: form.description || '' }
       };
     }
-    const response = await axios.post('http://localhost:3000/api/v1/payment-methods', payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log(response, 'response');
-    // Fetch updated payment methods
-    const res = await axios.get('http://localhost:3000/api/v1/payment-methods', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    let methods = [];
-    if (Array.isArray(res.data?.data?.data)) {
-      methods = res.data.data.data;
-    } else if (Array.isArray(res.data?.data)) {
-      methods = res.data.data;
-    } else if (res.data?.data && typeof res.data.data === 'object') {
-      methods = [res.data.data];
-    } else if (Array.isArray(res.data)) {
-      methods = res.data;
-    } else if (res.data && typeof res.data === 'object') {
-      methods = [res.data];
-    } else {
-      methods = [];
+    
+    try {
+      // Fetch updated payment methods
+      const methods = await fetchPaymentMethods(token || undefined);
+      setPaymentMethods(methods);
+      const newMethod = methods.length > 0 ? methods[methods.length - 1] : null;
+      setSelectedMethod(newMethod);
+      setError(null);
+      setStep(3);
+    } catch (err: any) {
+      console.error('Error fetching payment methods:', err);
+      setError('Failed to fetch payment methods');
+    } finally {
+      setLoading(false);
     }
-    setPaymentMethods(methods);
-    const newMethod = methods.length > 0 ? methods[methods.length - 1] : null;
-    setSelectedMethod(newMethod);
-    setError(null);
-    setStep(3);
-    setLoading(false);
   };
 
   const handleConfirm = async () => {
@@ -111,10 +97,7 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
         },
       };
       console.log('Sending transaction payload:', paymentPayload);
-      const response = await axios.post('http://localhost:3000/api/v1/payment-transactions/process', paymentPayload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log('Transaction response:', response);
+      await processPaymentTransaction(paymentPayload, token || undefined);
       setSuccess(true);
       onSuccess();
     } catch (err: any) {

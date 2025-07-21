@@ -5,10 +5,10 @@ import Button from '../../components/ui/Button';
 import { formatPrice } from '../../lib/utils';
 import { getProductById, fetchProductImages } from '../admin/service/api'; // adjust path as needed
 import { wkbHexToLatLng, getCityFromCoordinates } from '../../lib/utils';
+import AddPaymentMethod from './components/AddPaymentMethod';
+import PaymentStepper from './components/PaymentStepper';
 import { createBooking, fetchPaymentMethods, processPaymentTransaction } from './service/api'; // Assuming createBooking is in this file
 import { useToast } from '../../contexts/ToastContext';
-import AddPaymentMethod from '../../components/sections/AddPaymentMethod';
-import PaymentStepper from '../../components/sections/PaymentStepper';
 
 const BookingPage: React.FC = () => {
   const { carId, itemId } = useParams<{ carId?: string; itemId?: string }>();

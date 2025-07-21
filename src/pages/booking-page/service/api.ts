@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+const API_BASE_URL = 'http://localhost:3000/api/v1';
+
 export async function createBooking(bookingData: any, token: string) {
   return axios.post(
-    'http://localhost:3000/api/v1/bookings',
+    `${API_BASE_URL}/bookings`,
     bookingData,
     {
       headers: {
@@ -14,14 +16,29 @@ export async function createBooking(bookingData: any, token: string) {
 }
 
 export async function fetchPaymentMethods(token?: string) {
-  return axios.get('http://localhost:3000/api/v1/payment-methods', {
+  const response = await axios.get(`${API_BASE_URL}/payment-methods`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
+  return response.data?.data || response.data || [];
+}
+
+export async function addPaymentMethod(paymentData: any, token: string) {
+  const response = await axios.post(
+    `${API_BASE_URL}/payment-methods`,
+    paymentData,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  return response.data;
 }
 
 export async function processPaymentTransaction(paymentData: any, token?: string) {
-  return axios.post(
-    'http://localhost:3000/api/v1/payment-transactions/process',
+  const response = await axios.post(
+    `${API_BASE_URL}/payment-transactions/process`,
     paymentData,
     {
       headers: {
@@ -30,4 +47,5 @@ export async function processPaymentTransaction(paymentData: any, token?: string
       },
     }
   );
+  return response.data;
 }

@@ -11,7 +11,18 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui/DesignSystem';
 import VerificationBanner from '../../components/verification/VerificationBanner';
-import { createProduct, createProductImage, getMyProducts, getProductImagesByProductId } from './service/api';
+import { 
+  createProduct, 
+  createProductImage, 
+  getMyProducts, 
+  getProductImagesByProductId, 
+  fetchUserBookings, 
+  getProductById, 
+  fetchProductImages,
+  fetchDashboardStats,
+  fetchRecentBookings,
+  fetchRecentTransactions
+} from './service/api';
 import { useToast } from '../../contexts/ToastContext';
 import NewListingModal from './models/NewListingModal';
 import ProductDetailModal from './models/ProductDetailModal';
@@ -119,6 +130,61 @@ const DashboardPage: React.FC = () => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editProductId, setEditProductId] = useState<string | null>(null);
+  const [userBookings, setUserBookings] = useState<any[]>([]);
+  const [bookingProducts, setBookingProducts] = useState<{ [bookingId: string]: any }>({});
+  const [bookingImages, setBookingImages] = useState<{ [bookingId: string]: any[] }>({});
+  const [loadingBookings, setLoadingBookings] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState({
+    activeBookings: 0,
+    totalEarnings: 0,
+    totalTransactions: 0,
+    wishlistItems: 0
+  });
+  const [recentDashboardBookings, setRecentDashboardBookings] = useState<any[]>([]);
+  const [recentDashboardTransactions, setRecentDashboardTransactions] = useState<any[]>([]);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
+
+  // Add new useEffect for dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (activeTab !== 'overview') return;
+      
+      setLoadingDashboard(true);
+      try {
+        const token = localStorage.getItem('token') || '';
+        
+        // Fetch dashboard stats
+        const stats = await fetchDashboardStats(token);
+        setDashboardStats(stats);
+
+        // Fetch recent bookings
+        const bookings = await fetchRecentBookings(token);
+        const bookingsWithDetails = await Promise.all(
+          bookings.map(async (booking: any) => {
+            const product = await getProductById(booking.product_id);
+            const images = await fetchProductImages(booking.product_id, token);
+            return {
+              ...booking,
+              product,
+              images: images.data
+            };
+          })
+        );
+        setRecentDashboardBookings(bookingsWithDetails);
+
+        // Fetch recent transactions
+        const transactions = await fetchRecentTransactions(token);
+        setRecentDashboardTransactions(transactions);
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoadingDashboard(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [activeTab]);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -161,6 +227,29 @@ const DashboardPage: React.FC = () => {
       }
     };
     fetchListings();
+  }, []);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setLoadingBookings(true);
+      try {
+        const token = localStorage.getItem('token');
+        const bookingsRes = await fetchUserBookings(token);
+        const bookings = bookingsRes.data || [];
+        setUserBookings(bookings);
+        for (const booking of bookings) {
+          const product = await getProductById(booking.product_id, token);
+          setBookingProducts(prev => ({ ...prev, [booking.id]: product }));
+          const imagesRes = await fetchProductImages(booking.product_id, token);
+          setBookingImages(prev => ({ ...prev, [booking.id]: imagesRes.data || [] }));
+        }
+      } catch (err) {
+        setUserBookings([]);
+      } finally {
+        setLoadingBookings(false);
+      }
+    };
+    fetchBookings();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -547,127 +636,128 @@ const DashboardPage: React.FC = () => {
           <div className="xl:col-span-4">
             {activeTab === 'overview' && (
               <div className="space-y-8">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <StatCard
-                    icon={Package}
-                    title="Active Bookings"
-                    value={user.activeBookings}
-                    subtitle="View all →"
-                    trend={true}
-                    color="text-blue-600"
-                    bgColor="bg-blue-50"
-                  />
-                  <StatCard
-                    icon={Wallet}
-                    title="Wallet Balance"
-                    value={`$${user.walletBalance.toLocaleString()}`}
-                    subtitle="Available"
-                    trend={true}
-                    color="text-emerald-600"
-                    bgColor="bg-emerald-50"
-                  />
-                  <StatCard
-                    icon={DollarSign}
-                    title="Total Transactions"
-                    value={`$${user.totalTransactions.toLocaleString()}`}
-                    subtitle="+12% this month"
-                    trend={true}
-                    color="text-purple-600"
-                    bgColor="bg-purple-50"
-                  />
-                  <StatCard
-                    icon={Heart}
-                    title="Wishlist Items"
-                    value={user.wishlistItems}
-                    subtitle="Cars saved"
-                    trend={false}
-                    color="text-pink-600"
-                    bgColor="bg-pink-50"
-                  />
-                </div>
-
-                {/* Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Recent Bookings */}
-                  <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-bold text-gray-900">Recent Bookings</h3>
-                      <Link
-                        to="#"
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
-                      >
-                        View all
-                        <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                      </Link>
-                    </div>
-                    <div className="space-y-4">
-                      {recentBookings.map((booking) => (
-                        <div key={booking.id} className="group flex items-center space-x-4 p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-50 transition-all duration-200">
-                          <div className="relative">
-                            <img
-                              src={booking.carImage}
-                              alt={booking.carName}
-                              className="w-16 h-12 rounded-xl object-cover"
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-colors duration-200"></div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 truncate">{booking.carName}</h4>
-                            <p className="text-sm text-gray-500">{booking.startDate}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-gray-900">${booking.price}</p>
-                            <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${booking.status === 'Upcoming'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-emerald-100 text-emerald-700'
-                              }`}>
-                              {booking.status}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                {loadingDashboard ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                   </div>
+                ) : (
+                  <>
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <StatCard
+                        icon={Package}
+                        title="Active Bookings"
+                        value={dashboardStats.activeBookings}
+                        subtitle="View all →"
+                        trend={true}
+                        color="text-blue-600"
+                        bgColor="bg-blue-50"
+                      />
+                      <StatCard
+                        icon={Wallet}
+                        title="Total Earnings"
+                        value={`$${dashboardStats.totalEarnings.toLocaleString()}`}
+                        subtitle="Available"
+                        trend={true}
+                        color="text-emerald-600"
+                        bgColor="bg-emerald-50"
+                      />
+                      <StatCard
+                        icon={DollarSign}
+                        title="Total Transactions"
+                        value={`$${dashboardStats.totalTransactions.toLocaleString()}`}
+                        subtitle="+12% this month"
+                        trend={true}
+                        color="text-purple-600"
+                        bgColor="bg-purple-50"
+                      />
+                      <StatCard
+                        icon={Heart}
+                        title="Wishlist Items"
+                        value={dashboardStats.wishlistItems}
+                        subtitle="Items saved"
+                        trend={false}
+                        color="text-pink-600"
+                        bgColor="bg-pink-50"
+                      />
+                    </div>
 
-                  {/* Recent Transactions */}
-                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-bold text-gray-900">Transactions</h3>
-                      <Link
-                        to="#"
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
-                      >
-                        View all
-                        <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                      </Link>
-                    </div>
-                    <div className="space-y-4">
-                      {recentTransactions.map((transaction) => (
-                        <div key={transaction.id} className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-                          <div className="w-10 h-10 rounded-xl overflow-hidden">
-                            <img
-                              src={transaction.carImage}
-                              alt={transaction.carName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">{transaction.type}</p>
-                            <p className="text-xs text-gray-500">{transaction.date}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className={`font-bold text-sm ${transaction.type === 'Earning' ? 'text-emerald-600' : 'text-red-600'
-                              }`}>
-                              {transaction.type === 'Earning' ? '+' : '-'}${transaction.amount}
-                            </p>
-                            <p className="text-xs text-gray-500">{transaction.status}</p>
-                          </div>
+                    {/* Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      {/* Recent Bookings */}
+                      <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between mb-6">
+                          <h3 className="text-lg font-bold text-gray-900">Recent Bookings</h3>
+                          <Link
+                            to="#"
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
+                          >
+                            View all
+                            <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                          </Link>
                         </div>
-                      ))}
+                        <div className="space-y-4">
+                          {recentDashboardBookings.map((booking) => (
+                            <div key={booking.id} className="group flex items-center space-x-4 p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-50 transition-all duration-200">
+                              <div className="relative">
+                                <img
+                                  src={booking.images?.[0]?.image_url || '/assets/img/placeholder-image.png'}
+                                  alt={booking.product?.title || 'Product'}
+                                  className="w-16 h-12 rounded-xl object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-colors duration-200"></div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 truncate">{booking.product?.title || 'Product'}</h4>
+                                <p className="text-sm text-gray-500">{new Date(booking.start_date).toLocaleDateString()}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-gray-900">${booking.product?.base_price_per_day || 0}</p>
+                                <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${
+                                  booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                                }`}>
+                                  {booking.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Recent Transactions */}
+                      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between mb-6">
+                          <h3 className="text-lg font-bold text-gray-900">Transactions</h3>
+                          <Link
+                            to="#"
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
+                          >
+                            View all
+                            <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                          </Link>
+                        </div>
+                        <div className="space-y-4">
+                          {recentDashboardTransactions.map((transaction) => (
+                            <div key={transaction.id} className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900">{transaction.transaction_type}</p>
+                                <p className="text-xs text-gray-500">{new Date(transaction.created_at).toLocaleDateString()}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className={`font-bold text-sm ${
+                                  transaction.transaction_type === 'booking_payment' ? 'text-emerald-600' : 'text-red-600'
+                                }`}>
+                                  {transaction.transaction_type === 'booking_payment' ? '+' : '-'}${transaction.amount}
+                                </p>
+                                <p className="text-xs text-gray-500">{transaction.status}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -688,29 +778,41 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  {recentBookings.map((booking) => (
-                    <div key={booking.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                      <img
-                        src={booking.carImage}
-                        alt={booking.carName}
-                        className="w-24 h-18 rounded-xl object-cover"
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-1">{booking.carName}</h4>
-                        <p className="text-sm text-gray-500 mb-2">{booking.startDate} - {booking.endDate}</p>
-                        <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${booking.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                          }`}>
-                          {booking.status}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-xl text-gray-900">${booking.price}</p>
-                        <button className="mt-2 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                  {loadingBookings ? (
+                    <div>Loading bookings...</div>
+                  ) : userBookings.length === 0 ? (
+                    <div>No bookings found.</div>
+                  ) : (
+                    userBookings.map((booking) => {
+                      const product = bookingProducts[booking.id];
+                      const images = bookingImages[booking.id] || [];
+                      return (
+                        <div key={booking.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                          <img
+                            src={images[0]?.image_url || '/assets/img/placeholder-image.png'}
+                            alt={product?.title || 'Product'}
+                            className="w-24 h-18 rounded-xl object-cover"
+                          />
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">{product?.title || 'Product'}</h4>
+                            <p className="text-sm text-gray-500 mb-2">
+                              {new Date(booking.start_date).toLocaleString()} - {new Date(booking.end_date).toLocaleString()}
+                            </p>
+                            <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${
+                              booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                            }`}>
+                              {booking.status}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-xl text-gray-900">
+                              {product?.base_price_per_day ? `$${product.base_price_per_day}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             )}

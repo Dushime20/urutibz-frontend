@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Button from '../ui/Button';
-import axios from 'axios';
+import Button from '../../../components/ui/Button';
+import { addPaymentMethod } from '../service/api';
 
 interface AddPaymentMethodProps {
   onSuccess: () => void;
@@ -33,7 +33,6 @@ const AddPaymentMethod: React.FC<AddPaymentMethodProps> = ({ onSuccess }) => {
       if (type === 'card') {
         payload = {
           ...payload,
-          // provider: form.provider,
           last_four: form.last_four,
           card_brand: form.card_brand,
           exp_month: Number(form.exp_month),
@@ -46,10 +45,7 @@ const AddPaymentMethod: React.FC<AddPaymentMethodProps> = ({ onSuccess }) => {
           phone_number: form.phone_number,
         };
       }
-      const res=await axios.post('http://localhost:3000/api/v1/payment-methods', payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log(res,'response')
+      await addPaymentMethod(payload, token || '');
       setError(null);
       setSuccess(true);
       onSuccess();
