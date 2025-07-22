@@ -15,6 +15,8 @@ import type {
   PaymentMethod,
   ProductAvailability
 } from '../interfaces';
+
+export type { AdminBooking } from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
 export async function fetchAllProducts(token?: string) {
@@ -43,7 +45,16 @@ export async function fetchUserById(owner_id: string, token?: string) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     const response = await axios.get(url, { headers });
-    console.log(response.data.data,'data from user')
+    
+    // Log full response details
+    console.group('User Fetch Details');
+    console.log('Raw Response:', JSON.stringify(response.data, null, 2));
+    console.log('User ID:', response.data.data?.id);
+    console.log('User Email:', response.data.data?.email);
+    console.log('User First Name:', response.data.data?.first_name);
+    console.log('User Last Name:', response.data.data?.last_name);
+    console.groupEnd();
+
     return { data: response.data.data, error: null };
   } catch (err: any) {
     const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch user';
@@ -54,18 +65,60 @@ export async function fetchUserById(owner_id: string, token?: string) {
 
 // Fetch product images by productId
 export async function fetchProductImages(productId: string, token?: string) {
-  const url = `${API_BASE_URL}/product-images/product/${productId}`;
   try {
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    console.group(`Fetching Product Images for Product ${productId}`);
+    console.log('Request URL:', `${API_BASE_URL}/product-images/product/${productId}`);
+    console.log('Request Headers:', headers);
+
+    const response = await axios.get(`${API_BASE_URL}/product-images/product/${productId}`, { headers });
+    
+    console.log('Full Raw Response:', JSON.stringify(response.data, null, 2));
+    console.log('Response Status:', response.status);
+    console.log('Response Headers:', response.headers);
+
+    // Comprehensive image data extraction
+    let images: any[] = [];
+    
+    if (response.data && response.data.data) {
+      console.log('Data exists in response.data.data');
+      if (Array.isArray(response.data.data)) {
+        images = response.data.data;
+      } else if (response.data.data.data && Array.isArray(response.data.data.data)) {
+        images = response.data.data.data;
+      }
+    } else if (response.data && Array.isArray(response.data)) {
+      console.log('Data is direct array in response.data');
+      images = response.data;
     }
-    const response = await axios.get(url, { headers });
-    return { data: response.data, error: null };
+
+    console.log('Extracted Images:', images);
+    console.log('Image Count:', images.length);
+    
+    // Log image details
+    images.forEach((img, index) => {
+      console.log(`Image ${index + 1}:`, {
+        url: img?.url || img?.image_url || img?.src,
+        type: typeof img
+      });
+    });
+
+    console.groupEnd();
+
+    return images;
   } catch (err: any) {
-    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch product images';
-    console.error('Error fetching product images:', errorMsg);
-    return { data: null, error: errorMsg };
+    console.group(`Error Fetching Product Images for Product ${productId}`);
+    console.error('Error Details:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status,
+      url: `${API_BASE_URL}/product-images/product/${productId}`
+    });
+    console.groupEnd();
+
+    return []; // Return empty array on error
   }
 }
 
@@ -77,6 +130,7 @@ export async function getProductById(productId: string, token?: string) {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }
   );
+  console.log('Product details for ID:', productId, response.data);
   return response.data.data;
 }
 
@@ -380,8 +434,109 @@ export async function fetchPaymentMethods(token?: string): Promise<PaymentMethod
 }
 
 export async function fetchProductAvailability(productId: string, token?: string): Promise<ProductAvailability[]> {
-  const headers: Record<string, string> = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  const response = await axios.get(`${API_BASE_URL}/product-availability/product/${productId}`, { headers });
-  return response.data.data;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    console.group(`Fetching Product Availability for Product ${productId}`);
+    console.log('Request URL:', `${API_BASE_URL}/product-availability/product/${productId}`);
+    console.log('Request Headers:', headers);
+
+    const response = await axios.get(`${API_BASE_URL}/product-availability/product/${productId}`, { headers });
+    
+    console.log('Raw Response:', response.data);
+    
+    // Normalize response to ensure we always return an array
+    const availabilityData = response.data?.data || response.data || [];
+    
+    console.log('Processed Availability Data:', availabilityData);
+    console.log('Availability Count:', availabilityData.length);
+    console.groupEnd();
+
+    return availabilityData;
+  } catch (err: any) {
+    console.group(`Error Fetching Product Availability for Product ${productId}`);
+    console.error('Error Details:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status,
+      url: `${API_BASE_URL}/product-availability/product/${productId}`
+    });
+    console.groupEnd();
+
+    return []; // Return empty array on error
+  }
+}
+
+export async function fetchAdminAnalytics(token?: string) {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(`${API_BASE_URL}/admin/analytics`, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching admin analytics:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch admin analytics');
+  }
+}
+
+export async function fetchAdminRealtimeMetrics(token?: string) {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(`${API_BASE_URL}/admin/metrics/realtime`, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching admin realtime metrics:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch admin realtime metrics');
+  }
+}
+
+export async function fetchAdminUserById(userId: string, token?: string) {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(`${API_BASE_URL}/admin/users/${userId}`, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching admin user by ID:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch admin user');
+  }
+}
+
+export async function moderateAdminUser(userId: string, data: { action: 'ban' | 'suspend' | 'activate' | 'warn'; reason?: string; duration?: number }, token?: string) {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.post(`${API_BASE_URL}/admin/users/${userId}/moderate`, data, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error moderating admin user:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to moderate admin user');
+  }
+}
+
+export async function moderateAdminProduct(productId: string, data: { action: 'approve' | 'reject' | 'flag' | 'quarantine'; reason?: string }, token?: string) {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.post(`${API_BASE_URL}/admin/products/${productId}/moderate`, data, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error moderating admin product:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to moderate admin product');
+  }
+}
+
+export async function fetchAdminBookingById(bookingId: string, token?: string) {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await axios.get(`${API_BASE_URL}/admin/bookings/${bookingId}`, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching admin booking details:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch booking details');
+  }
 }

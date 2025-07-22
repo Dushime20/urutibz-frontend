@@ -204,6 +204,10 @@ export interface PaymentMethod {
 
 export interface ProductAvailability {
   id: string;
+  product_id: string;
   date: string;
-  notes: string;
+  availability_type: 'available' | 'unavailable';
+  price_override: number | null;
+  notes?: string;
+  created_at: string;
 } 

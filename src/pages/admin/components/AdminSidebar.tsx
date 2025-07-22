@@ -1,59 +1,229 @@
-import React from 'react';
-import { BarChart3, Package, Users, Calendar, DollarSign, FileText, Globe, Languages, MessageSquare, Bell, Settings, CreditCard, FolderTree, Globe2 } from 'lucide-react';
-import type { AdminStats } from '../service/api';
+import React, { useState, useEffect, useContext } from 'react';
+import { 
+  LayoutGrid, 
+  Users, 
+  Package, 
+  ShoppingCart, 
+  Settings, 
+  HelpCircle, 
+  LogOut, 
+  Moon,
+  Sun,
+  Globe,
+  CreditCard,
+  FileText,
+  Bell,
+  MessageSquare,
+  Languages
+} from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AuthContext } from '../../../context/AuthContext';
+import type { AuthContextType } from '../../../context/AuthContext';
+import { ToastContext } from '../../../contexts/ToastContext';
+import type { ToastContextType } from '../../../contexts/ToastContext';
 
-// Update TabType to include categories
-export type TabType = "overview" | "items" | "users" | "bookings" | "finances" | "transactions" | "categories" | "countries" | "paymentMethods" | "reports" | "settings" | "locations" | "languages" | "messaging" | "notifications";
-
-interface AdminSidebarProps {
-  adminStats: AdminStats;
-  activeTab: TabType;
-  setActiveTab: (tab: TabType) => void;
-  AdminNavigationItem: React.FC<any>;
+interface AdminNavigationItemProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  hasNotification?: boolean;
 }
 
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ adminStats, activeTab, setActiveTab, AdminNavigationItem }) => (
-  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24 overflow-y-auto max-h-[80vh]">
-    {/* Quick Stats */}
-    <div className="mb-8 p-4 bg-gradient-to-r from-my-primary/10 to-indigo-50 rounded-2xl">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Overview</h3>
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Total Users</span>
-          <span className="font-semibold">{adminStats.totalUsers.toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Active Items</span>
-          <span className="font-semibold">{adminStats.totalItems}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Live Bookings</span>
-          <span className="font-semibold">{adminStats.activeBookings}</span>
-        </div>
+interface AdminSidebarProps {
+  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications';
+  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications') => void;
+  AdminNavigationItem: React.FC<AdminNavigationItemProps>;
+}
+
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ 
+  activeTab, 
+  setActiveTab, 
+  AdminNavigationItem 
+}) => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useContext<AuthContextType>(AuthContext);
+  const { showToast } = useContext<ToastContextType>(ToastContext);
+
+  useEffect(() => {
+    // Check and apply dark mode from local storage
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    setIsDarkMode(savedDarkMode);
+    
+    // Apply dark mode to document
+    if (savedDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    
+    // Apply to document
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
+    // Save to local storage
+    localStorage.setItem('darkMode', newMode.toString());
+
+    // Show toast notification
+    showToast(`Switched to ${newMode ? 'dark' : 'light'} mode`, 'info');
+  };
+
+  const handleLogout = () => {
+    logout();
+    showToast('Logged out successfully', 'success');
+    navigate('/login');
+  };
+
+  const navigationItems = [
+    { 
+      icon: LayoutGrid, 
+      label: 'Overview', 
+      tab: 'overview' as const,
+      hasNotification: false
+    },
+    { 
+      icon: Package, 
+      label: 'Items', 
+      tab: 'items' as const,
+      hasNotification: false
+    },
+    { 
+      icon: Users, 
+      label: 'Users', 
+      tab: 'users' as const,
+      hasNotification: false
+    },
+    { 
+      icon: ShoppingCart, 
+      label: 'Bookings', 
+      tab: 'bookings' as const,
+      hasNotification: false
+    },
+    { 
+      icon: CreditCard, 
+      label: 'Transactions', 
+      tab: 'transactions' as const,
+      hasNotification: false
+    },
+    { 
+      icon: FileText, 
+      label: 'Categories', 
+      tab: 'categories' as const,
+      hasNotification: false
+    },
+    { 
+      icon: Globe, 
+      label: 'Countries', 
+      tab: 'countries' as const,
+      hasNotification: false
+    },
+    { 
+      icon: CreditCard, 
+      label: 'Payment Methods', 
+      tab: 'paymentMethods' as const,
+      hasNotification: false
+    },
+    { 
+      icon: FileText, 
+      label: 'Reports', 
+      tab: 'reports' as const,
+      hasNotification: false
+    },
+    { 
+      icon: Settings, 
+      label: 'Settings', 
+      tab: 'settings' as const,
+      hasNotification: false
+    },
+    { 
+      icon: Globe, 
+      label: 'Locations', 
+      tab: 'locations' as const,
+      hasNotification: false
+    },
+    { 
+      icon: Languages, 
+      label: 'Languages', 
+      tab: 'languages' as const,
+      hasNotification: false
+    },
+    { 
+      icon: MessageSquare, 
+      label: 'Messaging', 
+      tab: 'messaging' as const,
+      hasNotification: false
+    },
+    { 
+      icon: Bell, 
+      label: 'Notifications', 
+      tab: 'notifications' as const,
+      hasNotification: false
+    }
+  ];
+
+  return (
+    <div 
+      className="fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-900 
+        shadow-sm border-r border-gray-100 dark:border-gray-800 
+        z-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 
+        dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 
+        dark:scrollbar-track-gray-800 scrollbar-thumb-rounded-full
+        scrollbar-track-rounded-full pt-16"
+    >
+      {/* Navigation */}
+      <nav className="space-y-2 px-4 pt-4">
+        {navigationItems.map((item) => (
+          <AdminNavigationItem 
+            key={item.tab}
+            icon={item.icon}
+            label={item.label}
+            active={activeTab === item.tab}
+            onClick={() => setActiveTab(item.tab)}
+            hasNotification={item.hasNotification}
+          />
+        ))}
+      </nav>
+
+      {/* Bottom Section */}
+      <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-6 px-4">
+        {/* Dark Mode Toggle */}
+        <button 
+          onClick={toggleDarkMode}
+          className="w-full flex items-center px-4 py-2 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        >
+          {isDarkMode ? (
+            <Sun className="w-5 h-5 mr-3 text-yellow-400" />
+          ) : (
+            <Moon className="w-5 h-5 mr-3 text-gray-600" />
+          )}
+          <span className="flex-1">
+            {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+          </span>
+        </button>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center px-4 py-2 rounded-lg text-left text-red-600 hover:bg-red-50 transition-colors mt-2"
+        >
+          <LogOut className="w-5 h-5 mr-3 text-red-500" />
+          <span className="flex-1">Logout</span>
+        </button>
       </div>
     </div>
-
-    {/* Navigation */}
-    <nav className="space-y-2">
-      <AdminNavigationItem icon={BarChart3} label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-      <AdminNavigationItem icon={Package} label="Items" active={activeTab === 'items'} onClick={() => setActiveTab('items')} />
-      <AdminNavigationItem icon={Users} label="Users" active={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-      <AdminNavigationItem icon={Calendar} label="Bookings" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} />
-      <AdminNavigationItem icon={CreditCard} label="Transactions" active={activeTab === 'transactions'} onClick={() => setActiveTab('transactions')} />
-      <AdminNavigationItem icon={FolderTree} label="Categories" active={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
-      <AdminNavigationItem icon={Globe2} label="Countries" active={activeTab === 'countries'} onClick={() => setActiveTab('countries')} />
-      <AdminNavigationItem icon={CreditCard} label="Payment Methods" active={activeTab === 'paymentMethods'} onClick={() => setActiveTab('paymentMethods')} />
-      <div className="border-t border-gray-100 pt-4 mt-6">
-        <AdminNavigationItem icon={DollarSign} label="Finances" active={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
-        <AdminNavigationItem icon={FileText} label="Reports" active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
-        <AdminNavigationItem icon={Globe} label="Locations" active={activeTab === 'locations'} onClick={() => setActiveTab('locations')} />
-        <AdminNavigationItem icon={Languages} label="Languages" active={activeTab === 'languages'} onClick={() => setActiveTab('languages')} />
-        <AdminNavigationItem icon={MessageSquare} label="Messaging" active={activeTab === 'messaging'} onClick={() => setActiveTab('messaging')} />
-        <AdminNavigationItem icon={Bell} label="Notifications" active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} />
-        <AdminNavigationItem icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-      </div>
-    </nav>
-  </div>
-);
+  );
+};
 
 export default AdminSidebar; 

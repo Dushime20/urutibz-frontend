@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
 
 import { Button } from '../../components/ui/DesignSystem';
 import { itemCategories } from '../../data/mockRentalData';
@@ -9,7 +10,9 @@ import {
   fetchAdminStats,
   fetchRecentUsers,
   fetchRecentBookings,
-  fetchAdminUsers
+  fetchAdminUsers,
+  fetchAdminAnalytics,
+  fetchAdminRealtimeMetrics
 } from './service/api';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
@@ -31,6 +34,11 @@ import TransactionsManagement from './components/TransactionsManagement';
 import CategoriesManagement from './components/CategoriesManagement';
 import CountriesManagement from './components/CountriesManagement';
 import PaymentMethodsManagement from './components/PaymentMethodsManagement';
+import ProductCategoriesChart from './components/ProductCategoriesChart';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
+} from 'recharts';
+import { Users, Calendar, Cpu, Clock, CheckCircle, Activity } from 'lucide-react';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -87,6 +95,20 @@ const AdminDashboardPage: React.FC = () => {
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [loadingOverview, setLoadingOverview] = useState(true);
   const [overviewError, setOverviewError] = useState<string | null>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [realtimeMetrics, setRealtimeMetrics] = useState<any>(null);
+  const [loadingRealtime, setLoadingRealtime] = useState(false);
+  const [realtimeError, setRealtimeError] = useState<string | null>(null);
+
+  // Add state for pagination and modals
+  const [userPage, setUserPage] = useState(1);
+  const [bookingPage, setBookingPage] = useState(1);
+  const [usersPerPage] = useState(5);
+  const [bookingsPerPage] = useState(5);
+  const [selectedUser, setSelectedUser] = useState<RecentUser | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<RecentBooking | null>(null);
 
   // Fetch overview data
   useEffect(() => {
@@ -94,31 +116,39 @@ const AdminDashboardPage: React.FC = () => {
       try {
         setLoadingOverview(true);
         setOverviewError(null);
+        setLoadingRealtime(true);
+        setRealtimeError(null);
         const token = localStorage.getItem('token');
-
         // Fetch all overview data in parallel
-        const [stats, users, bookings, allUsers] = await Promise.all([
+        const [stats, users, bookings, allUsers, analyticsData, realtimeData] = await Promise.all([
           fetchAdminStats(token || undefined),
           fetchRecentUsers(5, token || undefined),
           fetchRecentBookings(5, token || undefined),
-          fetchAdminUsers(1, 1000, token || undefined) // Fetch all users (up to 1000)
+          fetchAdminUsers(1, 1000, token || undefined),
+          fetchAdminAnalytics(token || undefined),
+          fetchAdminRealtimeMetrics(token || undefined)
         ]);
-
         setAdminStats(stats);
         setRecentUsers(users);
         setRecentBookings(bookings);
-
+        setAnalytics(analyticsData?.data || null);
+        setAnalyticsError(null);
+        setRealtimeMetrics(realtimeData?.data || null);
+        setRealtimeError(null);
         // Count verified users
         const verifiedCount = allUsers.items.filter((u: AdminUser) => u.kyc_status?.toLowerCase() === 'verified').length;
         setVerifiedUsersCount(verifiedCount);
       } catch (err) {
         console.error('Error fetching overview data:', err);
         setOverviewError('Failed to load overview data');
+        setAnalyticsError('Failed to load analytics data');
+        setRealtimeError('Failed to load real-time metrics');
       } finally {
         setLoadingOverview(false);
+        setLoadingAnalytics(false);
+        setLoadingRealtime(false);
       }
     };
-
     fetchOverviewData();
   }, []);
 
@@ -136,25 +166,40 @@ const AdminDashboardPage: React.FC = () => {
 
 
 
-  const AdminNavigationItem: React.FC<AdminNavigationItemProps> = ({ icon: Icon, label, active, onClick, hasNotification = false }) => (
+  const AdminNavigationItem: React.FC<AdminNavigationItemProps> = ({ 
+    icon: Icon, 
+    label, 
+    active, 
+    onClick, 
+    hasNotification = false 
+  }) => (
     <button
       onClick={onClick}
-      className={`group relative w-full flex items-center px-4 py-3.5 rounded-2xl font-medium transition-all duration-300 ${
-        active
-          ? 'text-white shadow-lg shadow-my-primary/25 scale-[1.02]'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-      }`}
-      style={{
-        backgroundColor: active ? 'var(--color-active)' : 'transparent',
-      }}
+      className={`
+        group relative w-full flex items-center px-4 py-3 rounded-lg 
+        transition-all duration-300 
+        ${active 
+          ? 'bg-my-primary/10 text-my-primary font-semibold shadow-sm' 
+          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}
+      `}
     >
-      <Icon className={`w-5 h-5 mr-3 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-105'}`} />
+      <Icon 
+        className={`
+          w-5 h-5 mr-3 
+          ${active 
+            ? 'text-my-primary scale-110' 
+            : 'text-gray-500 group-hover:text-gray-700'}
+        `} 
+      />
       <span className="flex-1 text-left">{label}</span>
+      
       {hasNotification && (
         <div className="w-2 h-2 bg-red-500 rounded-full ml-auto animate-pulse"></div>
       )}
+      
       {active && (
-        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-white rounded-l-full"></div>
+        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 
+          w-1.5 h-7 bg-my-primary rounded-l-full"></div>
       )}
     </button>
   );
@@ -204,6 +249,23 @@ const AdminDashboardPage: React.FC = () => {
       .finally(() => setLoadingProducts(false));
   }, []);
 
+  // Normalized analytics data for charts
+  const normalizedBookingTrends = (analytics?.bookingTrends || []).map((trend: any) => ({
+    ...trend,
+    count: Number(trend.count),
+    dateLabel: new Date(trend.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }));
+  const normalizedUserGrowth = (analytics?.userGrowth || []).map((growth: any) => ({
+    ...growth,
+    count: Number(growth.count),
+    dateLabel: new Date(growth.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }));
+  const normalizedTopProducts = (analytics?.topProducts || []).map((prod: any) => ({
+    ...prod,
+    booking_count: Number(prod.booking_count),
+    // Optionally handle total_revenue if it's numeric
+  }));
+
   return (
     <>
       <AdminHeader
@@ -212,98 +274,362 @@ const AdminDashboardPage: React.FC = () => {
         selectedLanguage={selectedLanguage}
         setSelectedLanguage={setSelectedLanguage}
       />
-      <div className="py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
+      <div className="py-10 px-4 sm:px-8 bg-gray-50 min-h-screen">
+        <div className="grid grid-cols-1 xl:grid-cols-6 gap-2">
           <div className="xl:col-span-1">
             <AdminSidebar
-              adminStats={adminStats}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               AdminNavigationItem={AdminNavigationItem}
             />
           </div>
-          <div className="xl:col-span-4">
-            {activeTab === 'overview' && (
-              <>
-                {loadingOverview ? (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="text-gray-500">Loading overview data...</div>
-                  </div>
-                ) : overviewError ? (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="text-red-500">Error: {overviewError}</div>
-                  </div>
-                ) : (
-                  <>
-                    <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <RecentUsersList recentUsers={recentUsers} Button={Button} />
-                      <RecentBookingsList recentBookings={recentBookings} />
-                    </div>
-                    <div className="mt-8">
-                      <RecentTransactionsList limit={5} />
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-            {activeTab === 'items' && (
-              <ItemsManagement
-                products={products}
-                owners={owners}
-                loading={loadingProducts}
-                itemCategories={itemCategories}
-                itemFilter={itemFilter}
-                setItemFilter={setItemFilter}
-                selectedLocation={selectedLocation}
-                selectedItems={selectedItems}
-                setSelectedItems={setSelectedItems}
-                Button={Button}
-                error={productsError || undefined}
-              />
-            )}
-            {activeTab === 'users' && (
-              <UserManagement
-                Button={Button}
-              />
-            )}
-            {activeTab === 'bookings' && (
-              <BookingsManagement />
-            )}
-            
-            {activeTab === 'transactions' && (
-              <TransactionsManagement />
-            )}
-            {activeTab === 'categories' && (
-              <CategoriesManagement />
-            )}
-            {activeTab === 'countries' && (
-              <CountriesManagement />
-            )}
-            {activeTab === 'paymentMethods' && (
-              <PaymentMethodsManagement />
-            )}
-            {activeTab === 'reports' && (
-              <ReportsManagement />
-            )}
-            {activeTab === 'locations' && (
-              <LocationsManagement />
-            )}
-            {activeTab === 'languages' && (
-              <LanguagesManagement />
-            )}
-            {activeTab === 'finances' && (
-              <FinancesManagement />
-            )}
-            {activeTab === 'messaging' && (
-              <MessagingManagement />
-            )}
-            {activeTab === 'notifications' && (
-              <NotificationsManagement />
-            )}
-            {activeTab === 'settings' && (
-              <SettingsManagement />
-            )}
+          <div className="xl:col-span-5 ">
+            <div className="space-y-10">
+              {(() => {
+                switch (activeTab) {
+                  case 'overview':
+                    return (
+                      <>
+                        {/* Real-time Metrics Card */}
+                        <section className="mb-8">
+                          <h2 className="text-2xl font-bold text-gray-900 mb-4">Real-Time Metrics</h2>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                            {loadingRealtime ? (
+                              <div className="col-span-6 flex items-center justify-center h-20 text-gray-500">Loading real-time metrics...</div>
+                            ) : realtimeError ? (
+                              <div className="col-span-6 flex items-center justify-center h-20 text-red-500">{realtimeError}</div>
+                            ) : realtimeMetrics ? (
+                              <>
+                                {/* Active Users */}
+                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-my-primary/10 mb-2"><Users className="w-6 h-6 text-my-primary" aria-label="Active Users" /></div>
+                                  <div className="text-2xl font-bold text-gray-900">{realtimeMetrics.activeUsers}</div>
+                                  <div className="text-xs text-gray-500 mt-1">Active Users</div>
+                                </div>
+                                {/* Current Bookings */}
+                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-purple-50 mb-2"><Calendar className="w-6 h-6 text-purple-600" aria-label="Current Bookings" /></div>
+                                  <div className="text-2xl font-bold text-gray-900">{realtimeMetrics.currentBookings}</div>
+                                  <div className="text-xs text-gray-500 mt-1">Current Bookings</div>
+                                </div>
+                                {/* System Load */}
+                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-orange-50 mb-2"><Cpu className="w-6 h-6 text-orange-600" aria-label="System Load" /></div>
+                                  <div className="text-2xl font-bold text-gray-900">{(realtimeMetrics.systemLoad * 100).toFixed(1)}<span className="text-base font-normal text-gray-400">%</span></div>
+                                  <div className="text-xs text-gray-500 mt-1">System Load</div>
+                                </div>
+                                {/* Response Time */}
+                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-blue-50 mb-2"><Clock className="w-6 h-6 text-blue-600" aria-label="Response Time" /></div>
+                                  <div className="text-2xl font-bold text-gray-900">{Math.round(realtimeMetrics.responseTime)}<span className="text-base font-normal text-gray-400"> ms</span></div>
+                                  <div className="text-xs text-gray-500 mt-1">Response Time</div>
+                                </div>
+                                {/* Uptime */}
+                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-green-50 mb-2"><CheckCircle className="w-6 h-6 text-green-600" aria-label="Uptime" /></div>
+                                  <div className="text-2xl font-bold text-gray-900">{realtimeMetrics.uptime}</div>
+                                  <div className="text-xs text-gray-500 mt-1">Uptime</div>
+                                </div>
+                                {/* Timestamp */}
+                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-gray-100 mb-2"><Activity className="w-6 h-6 text-gray-500" aria-label="Timestamp" /></div>
+                                  <div className="text-xs text-gray-500">Timestamp</div>
+                                  <div className="text-sm text-gray-700 mt-1">{new Date(realtimeMetrics.timestamp).toLocaleString()}</div>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="col-span-6 flex items-center justify-center h-20 text-gray-500">No real-time metrics available.</div>
+                            )}
+                          </div>
+                        </section>
+                        {/* End Real-time Metrics Card */}
+                        <section className="mb-8">
+                          <h2 className="text-2xl font-bold text-gray-900 mb-4">Statistics</h2>
+                          <div className="mb-6">
+                            <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
+                          </div>
+                        </section>
+                        {/* Analytics Section */}
+                        <section className="mb-8">
+                          <h2 className="text-2xl font-bold text-gray-900 mb-4">Analytics Overview</h2>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="bg-white rounded-xl shadow p-6 mb-8">
+                              <h3 className="text-lg font-bold mb-4">Booking Trends</h3>
+                              <ResponsiveContainer width="100%" height={320}>
+                                <AreaChart data={normalizedBookingTrends} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
+                                  <defs>
+                                    <linearGradient id="colorBooking" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#00aaa9" stopOpacity={0.7}/>
+                                      <stop offset="95%" stopColor="#00aaa9" stopOpacity={0.1}/>
+                                    </linearGradient>
+                                  </defs>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                  <XAxis dataKey="dateLabel" stroke="#6b7280" fontSize={14} fontWeight={600} />
+                                  <YAxis allowDecimals={false} stroke="#6b7280" fontSize={14} fontWeight={600} />
+                                  <Tooltip
+                                    contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                                    labelStyle={{ color: '#00aaa9', fontWeight: 700 }}
+                                    itemStyle={{ color: '#374151' }}
+                                  />
+                                  <Area
+                                    type="monotone"
+                                    dataKey="count"
+                                    stroke="#00aaa9"
+                                    strokeWidth={3}
+                                    fill="url(#colorBooking)"
+                                    activeDot={{ r: 7, fill: '#fff', stroke: '#00aaa9', strokeWidth: 3 }}
+                                  />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="bg-white rounded-xl shadow p-6 mb-8">
+                              <h3 className="text-lg font-bold mb-4">User Growth</h3>
+                              <ResponsiveContainer width="100%" height={320}>
+                                <AreaChart data={normalizedUserGrowth} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
+                                  <defs>
+                                    <linearGradient id="colorUser" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.7}/>
+                                      <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.1}/>
+                                    </linearGradient>
+                                  </defs>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                  <XAxis dataKey="dateLabel" stroke="#6b7280" fontSize={14} fontWeight={600} />
+                                  <YAxis allowDecimals={false} stroke="#6b7280" fontSize={14} fontWeight={600} />
+                                  <Tooltip
+                                    contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                                    labelStyle={{ color: '#82ca9d', fontWeight: 700 }}
+                                    itemStyle={{ color: '#374151' }}
+                                  />
+                                  <Area
+                                    type="monotone"
+                                    dataKey="count"
+                                    stroke="#82ca9d"
+                                    strokeWidth={3}
+                                    fill="url(#colorUser)"
+                                    activeDot={{ r: 7, fill: '#fff', stroke: '#82ca9d', strokeWidth: 3 }}
+                                  />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                            <div className="bg-white rounded-xl shadow p-6 mb-8">
+                              <h3 className="text-lg font-bold mb-4">Top Products</h3>
+                              <ResponsiveContainer width="100%" height={320}>
+                                <BarChart data={normalizedTopProducts} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                  <XAxis dataKey="title" stroke="#6b7280" fontSize={14} fontWeight={600} />
+                                  <YAxis allowDecimals={false} stroke="#6b7280" fontSize={14} fontWeight={600} />
+                                  <Tooltip
+                                    contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                                    labelStyle={{ color: '#00aaa9', fontWeight: 700 }}
+                                    itemStyle={{ color: '#374151' }}
+                                  />
+                                  <Legend />
+                                  <Bar dataKey="booking_count" fill="#00aaa9" name="Bookings" barSize={32} radius={[8, 8, 0, 0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div>
+                              {analytics && <ProductCategoriesChart topProducts={normalizedTopProducts} />}
+                            </div>
+                          </div>
+                        </section>
+                        {/* Recent Activity */}
+                        <section>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h2>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Recent Users Card */}
+                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 mb-8">
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold dark:text-gray-100">Recent Users</h3>
+                                <a href="/admin/users" className="text-my-primary text-sm font-medium hover:underline">View All</a>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                  <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">User</th>
+                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Email</th>
+                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                                    </tr>
+                                  </thead>
+                                  <TransitionGroup component="tbody">
+                                    {recentUsers.slice((userPage-1)*usersPerPage, userPage*usersPerPage).map(user => (
+                                      <CSSTransition key={user.id} timeout={300} classNames="fade">
+                                        <tr
+                                          className="hover:bg-gray-50 dark:hover:bg-gray-800 even:bg-gray-50 dark:even:bg-gray-800 transition cursor-pointer"
+                                          onClick={() => setSelectedUser(user)}
+                                        >
+                                          <td className="px-4 py-2 flex items-center gap-2">
+                                            <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
+                                            <span className="font-medium">{user.name}</span>
+                                          </td>
+                                          <td className="px-4 py-2 truncate max-w-xs" title={user.email}>{user.email}</td>
+                                          <td className="px-4 py-2">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${user.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{user.verified ? 'Verified' : 'Pending'}</span>
+                                          </td>
+                                        </tr>
+                                      </CSSTransition>
+                                    ))}
+                                  </TransitionGroup>
+                                </table>
+                                {/* Pagination */}
+                                <div className="flex justify-end mt-2 gap-2">
+                                  <button onClick={() => setUserPage(p => Math.max(1, p-1))} disabled={userPage === 1} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Prev</button>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">Page {userPage}</span>
+                                  <button onClick={() => setUserPage(p => p+1)} disabled={userPage*usersPerPage >= recentUsers.length} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Next</button>
+                                </div>
+                              </div>
+                              {/* User Detail Modal */}
+                              {selectedUser && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                  <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 max-w-md w-full">
+                                    <div className="flex justify-between items-center mb-4">
+                                      <h4 className="text-lg font-bold">User Details</h4>
+                                      <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
+                                    </div>
+                                    <div className="flex items-center gap-4 mb-4">
+                                      <img src={selectedUser.avatar || '/assets/img/profiles/avatar-01.jpg'} alt={selectedUser.name || ''} className="w-16 h-16 rounded-full" />
+                                      <div>
+                                        <div className="font-bold text-lg">{selectedUser.name || ''}</div>
+                                        <div className="text-gray-500">{selectedUser.email || ''}</div>
+                                        <div className="text-xs mt-1"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${selectedUser.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedUser.verified ? 'Verified' : 'Pending'}</span></div>
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500">Joined: {selectedUser.joinDate || ''}</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            {/* Recent Bookings Card */}
+                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 mb-8">
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold dark:text-gray-100">Recent Bookings</h3>
+                                <a href="/admin/bookings" className="text-my-primary text-sm font-medium hover:underline">View All</a>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                  <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Item</th>
+                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Customer</th>
+                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Dates</th>
+                                    </tr>
+                                  </thead>
+                                  <TransitionGroup component="tbody">
+                                    {recentBookings.slice((bookingPage-1)*bookingsPerPage, bookingPage*bookingsPerPage).map(booking => (
+                                      <CSSTransition key={booking.id} timeout={300} classNames="fade">
+                                        <tr
+                                          className="hover:bg-gray-50 dark:hover:bg-gray-800 even:bg-gray-50 dark:even:bg-gray-800 transition cursor-pointer"
+                                          onClick={() => setSelectedBooking(booking)}
+                                        >
+                                          <td className="px-4 py-2 flex items-center gap-2">
+                                            <img src={booking.itemImage} alt={booking.itemName} className="w-8 h-8 rounded" />
+                                            <span className="font-medium">{booking.itemName}</span>
+                                          </td>
+                                          <td className="px-4 py-2 truncate max-w-xs" title={booking.customerName}>{booking.customerName}</td>
+                                          <td className="px-4 py-2">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{booking.status}</span>
+                                          </td>
+                                          <td className="px-4 py-2 text-xs text-gray-500">
+                                            {booking.startDate} - {booking.endDate}
+                                          </td>
+                                        </tr>
+                                      </CSSTransition>
+                                    ))}
+                                  </TransitionGroup>
+                                </table>
+                                {/* Pagination */}
+                                <div className="flex justify-end mt-2 gap-2">
+                                  <button onClick={() => setBookingPage(p => Math.max(1, p-1))} disabled={bookingPage === 1} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Prev</button>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">Page {bookingPage}</span>
+                                  <button onClick={() => setBookingPage(p => p+1)} disabled={bookingPage*bookingsPerPage >= recentBookings.length} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Next</button>
+                                </div>
+                              </div>
+                              {/* Booking Detail Modal */}
+                              {selectedBooking && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                  <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 max-w-md w-full">
+                                    <div className="flex justify-between items-center mb-4">
+                                      <h4 className="text-lg font-bold">Booking Details</h4>
+                                      <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
+                                    </div>
+                                    <div className="flex items-center gap-4 mb-4">
+                                      <img src={selectedBooking.itemImage || ''} alt={selectedBooking.itemName || ''} className="w-16 h-16 rounded" />
+                                      <div>
+                                        <div className="font-bold text-lg">{selectedBooking.itemName || ''}</div>
+                                        <div className="text-gray-500">{selectedBooking.customerName || ''}</div>
+                                        <div className="text-xs mt-1"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${selectedBooking.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedBooking.status}</span></div>
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500">Dates: {selectedBooking.startDate || ''} - {selectedBooking.endDate || ''}</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {/* Recent Transactions Card */}
+                          <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 mb-8 mt-8">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-lg font-bold dark:text-gray-100">Recent Transactions</h3>
+                              <a href="/admin/transactions" className="text-my-primary text-sm font-medium hover:underline">View All</a>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <RecentTransactionsList limit={5} />
+                            </div>
+                          </div>
+                        </section>
+                      </>
+                    );
+                  case 'items':
+                    return (
+                      <ItemsManagement
+                        products={products}
+                        owners={owners}
+                        loading={loadingProducts}
+                        itemCategories={itemCategories}
+                        itemFilter={itemFilter}
+                        setItemFilter={setItemFilter}
+                        selectedLocation={selectedLocation}
+                        selectedItems={selectedItems}
+                        setSelectedItems={setSelectedItems}
+                        Button={Button}
+                        error={productsError || undefined}
+                      />
+                    );
+                  case 'users':
+                    return <UserManagement Button={Button} />;
+                  case 'bookings':
+                    return <BookingsManagement />;
+                  case 'transactions':
+                    return <TransactionsManagement />;
+                  case 'categories':
+                    return <CategoriesManagement />;
+                  case 'countries':
+                    return <CountriesManagement />;
+                  case 'paymentMethods':
+                    return <PaymentMethodsManagement />;
+                  case 'reports':
+                    return <ReportsManagement />;
+                  case 'locations':
+                    return <LocationsManagement />;
+                  case 'languages':
+                    return <LanguagesManagement />;
+                  case 'finances':
+                    return <FinancesManagement />;
+                  case 'messaging':
+                    return <MessagingManagement />;
+                  case 'notifications':
+                    return <NotificationsManagement />;
+                  case 'settings':
+                    return <SettingsManagement />;
+                  default:
+                    return null;
+                }
+              })()}
+            </div>
           </div>
         </div>
       </div>

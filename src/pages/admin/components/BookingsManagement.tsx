@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { fetchAdminBookings, type AdminBooking } from '../service/api';
+import { type AdminBooking, fetchAdminBookings } from '../service/api';
 import BookingEditModal from './BookingEditModal';
+import { Eye } from 'lucide-react';
+import BookingDetailsModal from './BookingDetailsModal';
 
 interface BookingsManagementProps {
   // ... keep any existing props ...
@@ -16,6 +18,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
   const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'view' | 'edit'>('view');
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadBookings = async () => {
@@ -66,6 +69,13 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
   const handleSave = (updated: any) => {
     // Refresh bookings after edit
     setCurrentPage(1); // Optionally reload first page
+  };
+
+  const handleViewBooking = (bookingId: string) => {
+    setSelectedBookingId(bookingId);
+    // Close any open edit modal
+    setEditModalOpen(false);
+    setSelectedBooking(null);
   };
 
   return (
@@ -153,10 +163,16 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => handleView(booking)}>
+                    <button 
+                      className="text-primary-600 hover:text-primary-900 mr-4" 
+                      onClick={() => handleViewBooking(booking.id)}
+                    >
                       View
                     </button>
-                    <button className="text-primary-600 hover:text-primary-900" onClick={() => handleEdit(booking)}>
+                    <button 
+                      className="text-primary-600 hover:text-primary-900" 
+                      onClick={() => handleEdit(booking)}
+                    >
                       Edit
                     </button>
                   </td>
@@ -188,15 +204,12 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
           </button>
         </div>
       )}
-      {/* Edit/View Modal */}
-      {editModalOpen && selectedBooking && (
-        <BookingEditModal
-          open={editModalOpen}
-          onClose={() => setEditModalOpen(false)}
-          booking={selectedBooking}
-          onSave={handleSave}
-        />
-      )}
+      {/* Booking Details Modal */}
+      <BookingDetailsModal 
+        bookingId={selectedBookingId}
+        onClose={() => setSelectedBookingId(null)}
+        token={localStorage.getItem('token') || undefined}
+      />
     </div>
   );
 };

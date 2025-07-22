@@ -53,6 +53,26 @@ export function getCarTypeIcon(type: string): string {
   return icons[type as keyof typeof icons] || '🚗';
 }
 
+/**
+ * Formats a number as currency with optional locale and currency
+ * @param amount The monetary amount to format
+ * @param locale The locale to use for formatting (default: 'en-US')
+ * @param currency The currency code (default: 'USD')
+ * @returns Formatted currency string
+ */
+export const formatCurrency = (
+  amount: number, 
+  locale: string = 'en-US', 
+  currency: string = 'USD'
+): string => {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount);
+};
+
 // Shared location/geocoding utilities
 export function wkbHexToLatLng(wkbHex: string) {
   if (!wkbHex || wkbHex.length < 50) return null;
