@@ -3,7 +3,7 @@ import { Plus, Filter, MoreHorizontal, X, Package } from 'lucide-react';
 import type { Product, Owner, ItemCategory } from '../types';
 import { fetchProductImages, getProductById, fetchUserById } from '../service/api';
 import { fetchProductAvailability } from '../service/api';
-import type { ProductAvailability } from '../interfaces';
+import { type ProductAvailability } from '../interfaces';
 import { fetchCategoryById } from '../service/api';
 import { fetchCategories } from '../service/api';
 import type { Category } from '../interfaces';
@@ -30,7 +30,7 @@ const AdminProductDetailModal: React.FC<{
   onClose: () => void;
   productId: string;
   onApproved?: () => void;
-}> = ({ open, onClose, productId, onApproved }) => {
+}> = ({ open, onClose, productId }) => {
   const [product, setProduct] = useState<any>(null);
   const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,14 +66,26 @@ const AdminProductDetailModal: React.FC<{
       setProduct(productData);
       
       // Normalize image data
-      let productImages = [];
+      let productImages: any[] = [];
       if (Array.isArray(imagesData)) {
         productImages = imagesData;
-      } else if (imagesData.data && Array.isArray(imagesData.data)) {
-        productImages = imagesData.data;
-      } else if (imagesData.data && imagesData.data.data && Array.isArray(imagesData.data.data)) {
-        productImages = imagesData.data.data;
+      } else if (imagesData && typeof imagesData === 'object') {
+        // Check for nested data structures
+        productImages = 
+          (imagesData as any).data?.data || 
+          (imagesData as any).data || 
+          imagesData;
       }
+
+      // Ensure productImages is an array
+      if (!Array.isArray(productImages)) {
+        productImages = [];
+      }
+
+      // Normalize image URLs
+      productImages = productImages.map((img: any) => 
+        img?.url || img?.image_url || img?.src || img
+      ).filter(Boolean);
       
       console.log('Normalized Product Images:', JSON.stringify(productImages, null, 2));
       setImages(productImages);
@@ -295,7 +307,7 @@ const AdminProductDetailModal: React.FC<{
 };
 
 const ItemsManagement: React.FC<ItemsManagementProps> = ({
-  products, owners, loading, itemCategories, itemFilter, setItemFilter,
+  products, owners, loading, itemFilter, setItemFilter,
   selectedLocation, selectedItems, setSelectedItems, Button, error
 }) => {
   // State to hold images for each product

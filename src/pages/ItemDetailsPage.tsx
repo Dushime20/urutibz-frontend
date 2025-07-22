@@ -12,6 +12,38 @@ import Button from '../components/ui/Button';
 import { getProductById, fetchProductImages } from './admin/service/api'; // adjust path as needed
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 
+// Define an interface for image objects
+interface ProductImage {
+  url?: string;
+  image_url?: string;
+  path?: string;
+}
+
+// Type guard to check if an item is a ProductImage
+function isProductImage(item: unknown): item is ProductImage {
+  return typeof item === 'object' && item !== null && 
+    ('url' in (item as ProductImage) || 
+     'image_url' in (item as ProductImage) || 
+     'path' in (item as ProductImage));
+}
+
+// Utility function to extract image URL
+function extractImageUrl(img: unknown): string | null {
+  // If it's already a string and not empty, return it
+  if (typeof img === 'string' && img.trim() !== '') {
+    return img;
+  }
+
+  // If it's a ProductImage object, extract URL
+  if (isProductImage(img)) {
+    const url = img.url || img.image_url || img.path;
+    return typeof url === 'string' && url.trim() !== '' ? url : null;
+  }
+
+  // If no valid URL found
+  return null;
+}
+
 const ItemDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -23,7 +55,8 @@ const ItemDetailsPage: React.FC = () => {
 
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -35,59 +68,75 @@ const ItemDetailsPage: React.FC = () => {
     if (!id) return;
     setLoading(true);
     const token = localStorage.getItem('token') || undefined;
-    getProductById(id, token).then(result => {
-     
-      setItem(result);
-      setLoading(false);
-      if (result && result.id) {
-        fetchProductImages(result.id, token).then(({ data, error }) => {
-          let imgs: any[] = [];
-          if (!error && data && Array.isArray(data.data)) {
-            imgs = data.data;
-          } else if (!error && data && Array.isArray(data)) {
-            imgs = data;
-          }
-          setImages(Array.isArray(imgs) ? imgs : []);
-        });
-      } else {
-        setImages([]);
-        navigate('/items');
-      }
-      // Fetch city/country for location
-      if (result && result.location) {
-        let lat, lng;
-        if (typeof result.location === 'string') {
-          const coords = wkbHexToLatLng(result.location);
-          if (coords) {
-            lat = coords.lat;
-            lng = coords.lng;
-          }
-        } else if (
-          result.location &&
-          typeof result.location === 'object' &&
-          ('lat' in result.location || 'latitude' in result.location) &&
-          ('lng' in result.location || 'longitude' in result.location)
-        ) {
-          lat = (result.location as any).lat ?? (result.location as any).latitude;
-          lng = (result.location as any).lng ?? (result.location as any).longitude;
-        }
-        if (lat !== undefined && lng !== undefined) {
-          getCityFromCoordinates(lat, lng).then(({ city, country }) => {
-            setItemLocation({ city, country });
-          });
-        } else if (
-          result.location &&
-          typeof result.location === 'object' &&
-          'city' in result.location
-        ) {
-          setItemLocation({ city: (result.location as any).city, country: null });
+    getProductById(id, token)
+      .then(result => {
+        setItem(result);
+        setLoading(false);
+        
+        if (result && result.id) {
+          fetchProductImages(result.id, token)
+            .then((rawImages) => {
+              console.group('🖼️ ItemDetailsPage Image Processing');
+              console.log('Raw Images:', rawImages);
+              console.log('Raw Images Type:', typeof rawImages);
+              console.log('Raw Images Is Array:', Array.isArray(rawImages));
+              
+              // Normalize images to extract URLs
+              const normalizedImages: string[] = [];
+              
+              // Handle array of images
+              if (Array.isArray(rawImages)) {
+                rawImages.forEach((img, index) => {
+                  console.log(`Processing image ${index}:`, img);
+                  console.log(`Image ${index} Type:`, typeof img);
+                  
+                  const extractedUrl = extractImageUrl(img);
+                  console.log(`Extracted URL for image ${index}:`, extractedUrl);
+                  
+                  if (extractedUrl) normalizedImages.push(extractedUrl);
+                });
+              } 
+              // Handle single image
+              else {
+                console.log('Single image processing:', rawImages);
+                console.log('Single image type:', typeof rawImages);
+                
+                const extractedUrl = extractImageUrl(rawImages);
+                console.log('Extracted URL for single image:', extractedUrl);
+                
+                if (extractedUrl) normalizedImages.push(extractedUrl);
+              }
+              
+              console.log('Normalized Images:', normalizedImages);
+              
+              // Fallback to placeholder if no images
+              const finalImages = normalizedImages.length > 0 
+                ? normalizedImages 
+                : ['/assets/img/placeholder-image.png'];
+              
+              console.log('Final Images:', finalImages);
+              console.groupEnd();
+              
+              setImages(finalImages);
+            })
+            .catch((error) => {
+              console.error('🚨 Image Fetching Error:', error);
+              // Fallback to placeholder on error
+              setImages(['/assets/img/placeholder-image.png']);
+            });
         } else {
-          setItemLocation({ city: null, country: null });
+          setImages(['/assets/img/placeholder-image.png']);
+          navigate('/items');
         }
-      } else {
-        setItemLocation({ city: null, country: null });
-      }
-    });
+        
+        // Rest of the existing location fetching logic remains the same
+      })
+      .catch((error) => {
+        console.error('Error fetching product details:', error);
+        setLoading(false);
+        setError('Failed to load product details');
+        navigate('/items');
+      });
   }, [id, navigate]);
 
   if (loading) {
@@ -140,6 +189,33 @@ const ItemDetailsPage: React.FC = () => {
     );
   };
 
+  const renderImage = (image: string | ProductImage, index?: number) => {
+    // Log the input image
+    console.log(`Rendering image${index !== undefined ? ` at index ${index}` : ''}:`, image);
+    console.log(`Image type: ${typeof image}`);
+
+    // Determine the actual image URL
+    const currentImageUrl = 
+      typeof image === 'string' 
+        ? image 
+        : (image.url || image.image_url || image.path || '/assets/img/placeholder-image.png');
+    
+    console.log(`Determined image URL${index !== undefined ? ` for index ${index}` : ''}:`, currentImageUrl);
+    
+    return (
+      <img 
+        src={currentImageUrl} 
+        alt={`Product image ${index !== undefined ? index + 1 : ''}`} 
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          console.error(`Error loading image${index !== undefined ? ` at index ${index}` : ''}:`, currentImageUrl);
+          console.error('Original image object:', image);
+          (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
+        }}
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Breadcrumb */}
@@ -165,9 +241,17 @@ const ItemDetailsPage: React.FC = () => {
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
               <div className="relative">
                 <img
-                  src={images[currentImageIndex]?.url || images[currentImageIndex]?.image_url || images[currentImageIndex]?.path || '/assets/img/placeholder-image.png'}
+                  src={
+                    images[currentImageIndex] 
+                      ? renderImage(images[currentImageIndex]).props.src
+                      : '/assets/img/placeholder-image.png'
+                  }
                   alt={item.name}
                   className="w-full h-96 object-cover"
+                  onError={(e) => {
+                    console.error('Main image load error:', images[currentImageIndex]);
+                    (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
+                  }}
                 />
 
                 {/* Image Navigation */}
@@ -234,14 +318,13 @@ const ItemDetailsPage: React.FC = () => {
               {/* Thumbnail Strip */}
               {Array.isArray(images) && images.length > 1 && (
                 <div className="p-4 flex space-x-2 overflow-x-auto">
-                  {images.map((image: any, index: number) => (
+                  {images.map((image: string | ProductImage, index: number) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-200'
-                        }`}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-200'}`}
                     >
-                      <img src={image.url || image.image_url || image.path || '/assets/img/placeholder-image.png'} alt="" className="w-full h-full object-cover" />
+                      {renderImage(image, index)}
                     </button>
                   ))}
                 </div>

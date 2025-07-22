@@ -1,4 +1,35 @@
-// Category interfaces
+// Booking Status Type
+export type BookingStatus = 
+  | 'pending'
+  | 'confirmed'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled';
+
+// Booking Override Payload Interface
+export interface BookingOverridePayload {
+  status: BookingStatus;
+  reason?: string;
+}
+
+// Product Interfaces
+export interface Product {
+  id: string;
+  title: string;
+  description?: string;
+  owner_id: string;
+  category_id?: string;
+  location?: string;
+  status?: string;
+  image?: string;
+  images?: string[];
+  bookings?: number;
+  rating?: number;
+  price?: number;
+  icon?: any;
+  [key: string]: any;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -19,81 +50,7 @@ export interface CreateCategoryInput {
   slug: string;
 }
 
-// Payment Transaction interfaces
-export interface PaymentTransaction {
-  id: string;
-  booking_id?: string;
-  user_id: string;
-  payment_method_id?: string;
-  transaction_type: string;
-  amount: number;
-  currency: string;
-  provider: string;
-  provider_transaction_id?: string;
-  provider_fee: number;
-  status: string;
-  processed_at?: string;
-  created_at: string;
-  created_by: string;
-  metadata?: Record<string, any>;
-  original_currency?: string;
-  original_amount?: number;
-  exchange_rate?: number;
-  exchange_rate_date?: string;
-  expires_at?: string;
-}
-
-export interface PaymentTransactionResponse {
-  success: boolean;
-  data: PaymentTransaction[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-// Admin Stats and related interfaces
-export interface AdminStats {
-  totalUsers: number;
-  totalItems: number;
-  activeBookings: number;
-  totalRevenue: number;
-  monthlyGrowth: {
-    users: number;
-    items: number;
-    bookings: number;
-    revenue: number;
-  };
-}
-
-export interface RecentUser {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  role: string;
-  status: string;
-  joinDate: string;
-  verified: boolean;
-  initials: string;
-}
-
-export interface RecentBooking {
-  id: string;
-  bookingId: string;
-  itemName: string;
-  itemImage: string;
-  customerName: string;
-  amount: number;
-  status: string;
-  startDate: string;
-  endDate: string;
-  category: string;
-  icon: React.ElementType;
-}
-
+// User Interfaces
 export interface AdminUser {
   id: string;
   email: string;
@@ -109,6 +66,36 @@ export interface AdminUser {
   last_login?: string;
 }
 
+export interface RecentUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role: string;
+  status: string;
+  joinDate: string;
+  verified: boolean;
+  initials: string;
+}
+
+export interface Country {
+  id: string;
+  code: string;
+  code_alpha3: string;
+  name: string;
+  local_name: string;
+  currency_code: string;
+  currency_symbol: string;
+  phone_prefix: string;
+  timezone: string;
+  languages: string[];
+  is_active: boolean;
+  launch_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Booking Interfaces
 export interface AdminBooking {
   id: string;
   booking_number: string;
@@ -142,6 +129,21 @@ export interface AdminBooking {
   created_at: string;
 }
 
+export interface RecentBooking {
+  id: string;
+  bookingId: string;
+  itemName: string;
+  itemImage: string;
+  customerName: string;
+  amount: number;
+  status: string;
+  startDate: string;
+  endDate: string;
+  category: string;
+  icon?: any;
+}
+
+// Utility Interfaces
 export interface PaginationResponse<T> {
   items: T[];
   pagination: {
@@ -152,62 +154,57 @@ export interface PaginationResponse<T> {
   };
 }
 
-export interface Country {
-  id: string;
-  code: string;
-  code_alpha3: string;
-  name: string;
-  local_name: string;
-  currency_code: string;
-  currency_symbol: string;
-  phone_prefix: string;
-  timezone: string;
-  languages: string[];
-  is_active: boolean;
-  launch_date: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateCountryInput {
-  code: string;
-  code_alpha3: string;
-  name: string;
-  local_name: string;
-  currency_code: string;
-  currency_symbol: string;
-  phone_prefix: string;
-  timezone: string;
-  languages: string[];
-  is_active: boolean;
-}
-
 export interface PaymentMethod {
   id: string;
-  user_id: string;
+  name: string;
   type: string;
-  provider: string;
-  last_four: string | null;
-  card_brand: string | null;
-  exp_month: number | null;
-  exp_year: number | null;
-  phone_number: string | null;
-  provider_token: string | null;
-  is_default: boolean;
-  is_verified: boolean;
-  created_at: string;
-  payment_provider_id: string | null;
-  currency: string;
-  updated_at: string;
-  metadata: Record<string, any>;
 }
 
+// Product Availability Interface
 export interface ProductAvailability {
-  id: string;
-  product_id: string;
+  id?: string;
+  product_id?: string;
   date: string;
   availability_type: 'available' | 'unavailable';
-  price_override: number | null;
+  price_override?: number | null;
   notes?: string;
-  created_at: string;
+  created_at?: string;
+} 
+
+// Ensure AdminStats is exported
+export interface AdminStats {
+  totalUsers: number;
+  totalItems: number;
+  activeBookings: number;
+  totalRevenue: number;
+  monthlyGrowth: {
+    users: number;
+    items: number;
+    bookings: number;
+    revenue: number;
+  };
+} 
+
+// Payment Transaction Interface
+export interface PaymentTransactionResponse {
+  transactions: any[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+} 
+
+// Country Input Interface
+export interface CreateCountryInput {
+  name: string;
+  code: string;
+  code_alpha3?: string;
+  local_name?: string;
+  currency_code?: string;
+  currency_symbol?: string;
+  phone_prefix?: string;
+  timezone?: string;
+  languages?: string[];
+  is_active?: boolean;
 } 

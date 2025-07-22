@@ -14,6 +14,35 @@ interface FeaturedRentalsSectionProps {
   products?: Product[];
 }
 
+// Define an interface for image objects
+interface ProductImage {
+  url?: string;
+  image_url?: string;
+  path?: string;
+}
+
+// Utility function to extract image URL
+function extractImageUrl(img: unknown): string | null {
+  // If it's already a string and not empty, return it
+  if (typeof img === 'string' && img.trim() !== '') {
+    return img;
+  }
+
+  // If it's an object, try to extract URL from known properties
+  if (img && typeof img === 'object') {
+    const possibleUrlProps = ['url', 'image_url', 'path'] as const;
+    for (const prop of possibleUrlProps) {
+      const value = (img as Record<string, unknown>)[prop];
+      if (typeof value === 'string' && value.trim() !== '') {
+        return value;
+      }
+    }
+  }
+
+  // If no valid URL found
+  return null;
+}
+
 const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ products = [] }) => {
   const [activeFilter, setActiveFilter] = useState('trending');
   const navigate = useNavigate();
@@ -25,22 +54,44 @@ const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ product
     const token = localStorage.getItem('token') || undefined;
     const fetchImages = async () => {
       const imagesMap: { [productId: string]: string[] } = {};
+      
       await Promise.all(products.map(async (item) => {
         try {
-          const { data, error } = await fetchProductImages(item.id, token);
-          if (!error && data && Array.isArray(data.data)) {
-            imagesMap[item.id] = data.data.map((img: any) => img.url || img.image_url || img.path);
-          } else if (!error && data && Array.isArray(data)) {
-            imagesMap[item.id] = data.map((img: any) => img.url || img.image_url || img.path);
-          } else {
-            imagesMap[item.id] = [];
+          const images = await fetchProductImages(item.id, token);
+          
+          console.log(`Images for product ${item.id}:`, images);
+          
+          // Normalize images to extract URLs
+          const normalizedImages: string[] = [];
+          
+          // Handle array of images
+          if (Array.isArray(images)) {
+            images.forEach(img => {
+              const extractedUrl = extractImageUrl(img);
+              if (extractedUrl) normalizedImages.push(extractedUrl);
+            });
+          } 
+          // Handle single image
+          else {
+            const extractedUrl = extractImageUrl(images);
+            if (extractedUrl) normalizedImages.push(extractedUrl);
           }
-        } catch {
-          imagesMap[item.id] = [];
+          
+          console.log(`Normalized images for product ${item.id}:`, normalizedImages);
+
+          // Use placeholder if no images
+          imagesMap[item.id] = normalizedImages.length > 0 
+            ? normalizedImages 
+            : ['/assets/img/placeholder-image.png'];
+        } catch (error) {
+          console.error(`Error fetching images for product ${item.id}:`, error);
+          imagesMap[item.id] = ['/assets/img/placeholder-image.png'];
         }
       }));
+
       if (isMounted) setProductImages(imagesMap);
     };
+    
     if (products.length > 0) fetchImages();
     return () => { isMounted = false; };
   }, [products]);
@@ -49,7 +100,7 @@ const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ product
     let isMounted = true;
     const fetchLocations = async () => {
       const locationsMap: { [id: string]: { city: string | null, country: string | null } } = {};
-      await Promise.all(products.map(async (item) => {
+      const locationPromises = products.map(async (item) => {
         let lat: number | undefined, lng: number | undefined;
         if (typeof item.location === 'string') {
           const coords = wkbHexToLatLng(item.location);
@@ -69,11 +120,13 @@ const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ product
           lat = (item.location as any).lat ?? (item.location as any).latitude;
           lng = (item.location as any).lng ?? (item.location as any).longitude;
         }
+        
         if (lat !== undefined && lng !== undefined) {
           try {
             const { city, country } = await getCityFromCoordinates(lat, lng);
             locationsMap[item.id] = { city, country };
           } catch (e) {
+            console.warn(`Location fetch failed for item ${item.id}:`, e);
             locationsMap[item.id] = { city: null, country: null };
           }
         } else if (
@@ -81,11 +134,18 @@ const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ product
           typeof item.location === 'object' &&
           'city' in item.location
         ) {
-          locationsMap[item.id] = { city: (item.location as any).city, country: null };
+          locationsMap[item.id] = { 
+            city: (item.location as any).city, 
+            country: (item.location as any).country || null 
+          };
         } else {
           locationsMap[item.id] = { city: null, country: null };
         }
-      }));
+      });
+
+      // Use Promise.allSettled to prevent one failed request from stopping others
+      await Promise.allSettled(locationPromises);
+      
       if (isMounted) setItemLocations(locationsMap);
     };
     if (products.length > 0) fetchLocations();
@@ -154,6 +214,10 @@ const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ product
                   src={productImages[item.id]?.[0] || '/assets/img/placeholder-image.png'}
                   alt={item.title}
                   className="w-full h-36 sm:h-40 lg:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    console.error(`Error loading image for item ${item.id}:`, productImages[item.id]);
+                    (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
+                  }}
                 />
 
                 {/* Badges */}

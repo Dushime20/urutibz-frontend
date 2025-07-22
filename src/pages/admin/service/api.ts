@@ -3,23 +3,27 @@ import { Package } from 'lucide-react';
 import type {
   Category,
   CreateCategoryInput,
-  PaymentTransactionResponse,
-  AdminStats,
   RecentUser,
   RecentBooking,
   AdminUser,
   AdminBooking,
   PaginationResponse,
   Country,
-  CreateCountryInput,
+
   PaymentMethod,
   ProductAvailability
+} from '../interfaces';
+import {
+  type AdminStats,
+  type BookingOverridePayload,
+  type CreateCountryInput,
+  type PaymentTransactionResponse
 } from '../interfaces';
 
 export type { AdminBooking } from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
-export async function fetchAllProducts(token?: string) {
+export async function fetchAllProducts(token?: string, isAdminDashboard: boolean = false) {
   const url = `${API_BASE_URL}/products`;
   try {
     const headers: Record<string, string> = {};
@@ -27,11 +31,30 @@ export async function fetchAllProducts(token?: string) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     const response = await axios.get(url, { headers });
-    return { data: response.data.data.data, error: null };
+    
+    // For admin dashboard, return all products without filtering
+    if (isAdminDashboard) {
+      return { 
+        data: response.data.data.data, 
+        error: null,
+        total: response.data.data.data.length
+      };
+    }
+
+    // Filter for active products for other views
+    const activeProducts = response.data.data.data.filter((product: any) => 
+      !product.status || product.status.toLowerCase() === 'active'
+    );
+
+    return { 
+      data: activeProducts, 
+      error: null,
+      total: activeProducts.length
+    };
   } catch (err: any) {
     const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch products';
     console.error('Error fetching products:', errorMsg);
-    return { data: null, error: errorMsg };
+    return { data: null, error: errorMsg, total: 0 };
   }
 }
 
@@ -45,7 +68,7 @@ export async function fetchUserById(owner_id: string, token?: string) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     const response = await axios.get(url, { headers });
-    
+
     // Log full response details
     console.group('User Fetch Details');
     console.log('Raw Response:', JSON.stringify(response.data, null, 2));
@@ -63,53 +86,93 @@ export async function fetchUserById(owner_id: string, token?: string) {
   }
 }
 
-// Fetch product images by productId
+// Define an interface for image objects
+interface ProductImage {
+  id?: string;
+  product_id?: string;
+  image_url: string;
+  thumbnail_url?: string | null;
+  alt_text?: string | null;
+  sort_order?: number;
+  is_primary?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export async function fetchProductImages(productId: string, token?: string) {
   try {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    console.group(`Fetching Product Images for Product ${productId}`);
+    console.group(`🖼️ Fetching Product Images for Product ${productId}`);
     console.log('Request URL:', `${API_BASE_URL}/product-images/product/${productId}`);
     console.log('Request Headers:', headers);
 
     const response = await axios.get(`${API_BASE_URL}/product-images/product/${productId}`, { headers });
     
     console.log('Full Raw Response:', JSON.stringify(response.data, null, 2));
-    console.log('Response Status:', response.status);
-    console.log('Response Headers:', response.headers);
+    console.log('Response Type:', typeof response.data);
+    console.log('Response Keys:', Object.keys(response.data));
 
     // Comprehensive image data extraction
-    let images: any[] = [];
+    let images: string[] = [];
     
-    if (response.data && response.data.data) {
-      console.log('Data exists in response.data.data');
-      if (Array.isArray(response.data.data)) {
-        images = response.data.data;
-      } else if (response.data.data.data && Array.isArray(response.data.data.data)) {
-        images = response.data.data.data;
-      }
-    } else if (response.data && Array.isArray(response.data)) {
-      console.log('Data is direct array in response.data');
-      images = response.data;
-    }
+    // Multiple extraction strategies
+    const extractImageUrls = (data: any): string[] => {
+      console.group('Image URL Extraction');
+      console.log('Input Data:', data);
 
-    console.log('Extracted Images:', images);
+      // Strategy 1: Directly from data property of successful response
+      if (data?.success && data?.data) {
+        const extractedImages = data.data
+          .map((img: any) => img.image_url || img.url || img.path)
+          .filter((url: string) => url && url.trim() !== '');
+        
+        console.log('Extracted from Success Response:', extractedImages);
+        console.groupEnd();
+        return extractedImages;
+      }
+      
+      // Strategy 2: Direct array of image objects
+      if (Array.isArray(data)) {
+        const extractedImages = data
+          .map((img: any) => img.image_url || img.url || img.path)
+          .filter((url: string) => url && url.trim() !== '');
+        
+        console.log('Extracted from Direct Array:', extractedImages);
+        console.groupEnd();
+        return extractedImages;
+      }
+      
+      // Strategy 3: Nested data structures
+      if (data?.data) {
+        const extractedImages = (Array.isArray(data.data) ? data.data : [data.data])
+          .map((img: any) => img.image_url || img.url || img.path)
+          .filter((url: string) => url && url.trim() !== '');
+        
+        console.log('Extracted from Nested Data:', extractedImages);
+        console.groupEnd();
+        return extractedImages;
+      }
+      
+      console.warn('No images extracted');
+      console.groupEnd();
+      return [];
+    };
+
+    // Try different extraction methods
+    images = extractImageUrls(response.data);
+
+    console.log('Final Extracted Images:', images);
     console.log('Image Count:', images.length);
     
-    // Log image details
-    images.forEach((img, index) => {
-      console.log(`Image ${index + 1}:`, {
-        url: img?.url || img?.image_url || img?.src,
-        type: typeof img
-      });
-    });
-
     console.groupEnd();
 
-    return images;
+    return images.length > 0 
+      ? images 
+      : ['/assets/img/placeholder-image.png'];
   } catch (err: any) {
-    console.group(`Error Fetching Product Images for Product ${productId}`);
+    console.group(`❌ Error Fetching Product Images for Product ${productId}`);
     console.error('Error Details:', {
       message: err.message,
       response: err.response?.data,
@@ -118,7 +181,7 @@ export async function fetchProductImages(productId: string, token?: string) {
     });
     console.groupEnd();
 
-    return []; // Return empty array on error
+    return ['/assets/img/placeholder-image.png']; // Always return a placeholder
   }
 }
 
@@ -187,45 +250,10 @@ export async function fetchAdminStats(token?: string): Promise<AdminStats> {
     const response = await axios.get(`${API_BASE_URL}/admin/dashboard`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    console.log('Stats API Response:', response.data);
-    const statsData = response.data?.data || response.data;
-
-    // Get total verified users (those with kyc_status === 'verified')
-    const verifiedUsers = statsData.totalUsers && statsData.verifiedUsers !== undefined 
-      ? statsData.verifiedUsers 
-      : statsData.totalUsers * 0.2; // Fallback to 20% if not provided
-
-    return {
-      totalUsers: statsData.totalUsers || 0,
-      totalItems: statsData.activeProducts || 0,
-      activeBookings: statsData.totalBookings || 0,
-      totalRevenue: statsData.totalRevenue || 0,
-      monthlyGrowth: {
-        users: 0,
-        items: 0,
-        bookings: 0,
-        revenue: 0
-      }
-    };
-  } catch (error: any) {
+    return response.data;
+  } catch (error) {
     console.error('Error fetching admin stats:', error);
-    console.error('Error details:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
-    return {
-      totalUsers: 0,
-      totalItems: 0,
-      activeBookings: 0,
-      totalRevenue: 0,
-      monthlyGrowth: {
-        users: 0,
-        items: 0,
-        bookings: 0,
-        revenue: 0
-      }
-    };
+    throw error;
   }
 }
 
@@ -235,7 +263,7 @@ export async function fetchRecentUsers(limit: number = 5, token?: string): Promi
       params: { page: 1, limit },
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    
+
     const users = response.data?.data?.items || [];
     return users.map((user: AdminUser) => {
       // Get first letter of first and last name for default avatar text
@@ -288,7 +316,7 @@ export async function fetchRecentBookings(limit: number = 5, token?: string): Pr
       params: { page: 1, limit },
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    
+
     const bookings = response.data?.data?.items || [];
 
     // Fetch product images for each booking
@@ -300,7 +328,7 @@ export async function fetchRecentBookings(limit: number = 5, token?: string): Pr
           `${API_BASE_URL}/product-images/product/${booking.product_id}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
-        
+
         // Get the first image URL if available
         const images = imageResponse.data?.data || [];
         if (images.length > 0) {
@@ -443,12 +471,12 @@ export async function fetchProductAvailability(productId: string, token?: string
     console.log('Request Headers:', headers);
 
     const response = await axios.get(`${API_BASE_URL}/product-availability/product/${productId}`, { headers });
-    
+
     console.log('Raw Response:', response.data);
-    
+
     // Normalize response to ensure we always return an array
     const availabilityData = response.data?.data || response.data || [];
-    
+
     console.log('Processed Availability Data:', availabilityData);
     console.log('Availability Count:', availabilityData.length);
     console.groupEnd();
@@ -538,5 +566,59 @@ export async function fetchAdminBookingById(bookingId: string, token?: string) {
   } catch (err: any) {
     console.error('Error fetching admin booking details:', err);
     throw new Error(err?.response?.data?.message || 'Failed to fetch booking details');
+  }
+}
+
+/**
+ * Override a booking's status by admin
+ * @param bookingId The unique identifier of the booking to override
+ * @param payload The override details including new status and optional reason
+ * @param token Optional authentication token
+ * @returns Promise resolving to the updated booking or error
+ */
+export async function overrideBooking(
+  bookingId: string,
+  payload: BookingOverridePayload,
+  token?: string
+) {
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    console.group('Booking Override Request');
+    console.log('Booking ID:', bookingId);
+    console.log('Payload:', JSON.stringify(payload, null, 2));
+
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/bookings/${bookingId}/override`,
+      payload,
+      { headers }
+    );
+
+    console.log('Override Response:', JSON.stringify(response.data, null, 2));
+    console.groupEnd();
+
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error: any) {
+    console.group('Booking Override Error');
+    console.error('Error Details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    console.groupEnd();
+
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to override booking'
+    };
   }
 }

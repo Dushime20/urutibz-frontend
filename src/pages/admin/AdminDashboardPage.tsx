@@ -209,7 +209,7 @@ const AdminDashboardPage: React.FC = () => {
     setProductsError(null);
     const tokenRaw = localStorage.getItem('token');
     const token = tokenRaw || undefined;
-    fetchAllProducts(token)
+    fetchAllProducts(token, true)
       .then(async (result) => {
         if (result.error) {
           setProductsError(result.error);
@@ -329,13 +329,13 @@ const AdminDashboardPage: React.FC = () => {
                                   <div className="p-2 rounded-full bg-green-50 mb-2"><CheckCircle className="w-6 h-6 text-green-600" aria-label="Uptime" /></div>
                                   <div className="text-2xl font-bold text-gray-900">{realtimeMetrics.uptime}</div>
                                   <div className="text-xs text-gray-500 mt-1">Uptime</div>
-                                </div>
+                  </div>
                                 {/* Timestamp */}
                                 <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
                                   <div className="p-2 rounded-full bg-gray-100 mb-2"><Activity className="w-6 h-6 text-gray-500" aria-label="Timestamp" /></div>
                                   <div className="text-xs text-gray-500">Timestamp</div>
                                   <div className="text-sm text-gray-700 mt-1">{new Date(realtimeMetrics.timestamp).toLocaleString()}</div>
-                                </div>
+                  </div>
                               </>
                             ) : (
                               <div className="col-span-6 flex items-center justify-center h-20 text-gray-500">No real-time metrics available.</div>
@@ -346,7 +346,7 @@ const AdminDashboardPage: React.FC = () => {
                         <section className="mb-8">
                           <h2 className="text-2xl font-bold text-gray-900 mb-4">Statistics</h2>
                           <div className="mb-6">
-                            <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
+                    <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
                           </div>
                         </section>
                         {/* Analytics Section */}
@@ -438,7 +438,7 @@ const AdminDashboardPage: React.FC = () => {
                         {/* Recent Activity */}
                         <section>
                           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h2>
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             {/* Recent Users Card */}
                             <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 mb-8">
                               <div className="flex items-center justify-between mb-4">
@@ -575,29 +575,29 @@ const AdminDashboardPage: React.FC = () => {
                             <div className="flex items-center justify-between mb-4">
                               <h3 className="text-lg font-bold dark:text-gray-100">Recent Transactions</h3>
                               <a href="/admin/transactions" className="text-my-primary text-sm font-medium hover:underline">View All</a>
-                            </div>
+                    </div>
                             <div className="overflow-x-auto">
-                              <RecentTransactionsList limit={5} />
-                            </div>
+                      <RecentTransactionsList limit={5} />
+                    </div>
                           </div>
                         </section>
                       </>
                     );
                   case 'items':
                     return (
-                      <ItemsManagement
-                        products={products}
-                        owners={owners}
-                        loading={loadingProducts}
-                        itemCategories={itemCategories}
-                        itemFilter={itemFilter}
-                        setItemFilter={setItemFilter}
-                        selectedLocation={selectedLocation}
-                        selectedItems={selectedItems}
-                        setSelectedItems={setSelectedItems}
-                        Button={Button}
-                        error={productsError || undefined}
-                      />
+              <ItemsManagement
+                products={products}
+                owners={owners}
+                loading={loadingProducts}
+                itemCategories={itemCategories}
+                itemFilter={itemFilter}
+                setItemFilter={setItemFilter}
+                selectedLocation={selectedLocation}
+                selectedItems={selectedItems}
+                setSelectedItems={setSelectedItems}
+                Button={Button}
+                error={productsError || undefined}
+              />
                     );
                   case 'users':
                     return <UserManagement Button={Button} />;

@@ -4,7 +4,7 @@ import {
   Search, Filter, MapPin, Star, Clock,
   Grid, List, Heart,
   Camera, Laptop, Car, Gamepad2, Headphones, Watch,
-  Package, Zap, Truck
+  Package, Zap, Truck, AlertCircle
 } from 'lucide-react';
 import { itemCategories } from '../data/mockRentalData';
 import { formatPrice } from '../lib/utils';
@@ -66,6 +66,58 @@ async function getCityFromCoordinates(lat: number, lng: number): Promise<{ city:
   };
 }
 
+// Modify the location fetching logic
+const processItemLocations = async (items: any[]) => {
+  const processedItems = await Promise.all(items.map(async (item) => {
+    let city = null;
+    let country = null;
+
+    try {
+      // Extract coordinates
+      let lat, lng;
+      if (typeof item.location === 'string') {
+        const coords = wkbHexToLatLng(item.location);
+        if (coords) {
+          lat = coords.lat;
+          lng = coords.lng;
+        }
+      } else if (
+        item.location &&
+        typeof item.location === 'object' &&
+        ('lat' in item.location || 'latitude' in item.location) &&
+        ('lng' in item.location || 'longitude' in item.location)
+      ) {
+        lat = (item.location as any).lat ?? (item.location as any).latitude;
+        lng = (item.location as any).lng ?? (item.location as any).longitude;
+      }
+
+      // Fetch city if coordinates are available
+      if (lat !== undefined && lng !== undefined) {
+        const locationData = await getCityFromCoordinates(lat, lng);
+        city = locationData.city;
+        country = locationData.country;
+      } else if (
+        item.location &&
+        typeof item.location === 'object' &&
+        'city' in item.location
+      ) {
+        city = (item.location as any).city;
+      }
+    } catch (error) {
+      console.error(`Error processing location for item ${item.id}:`, error);
+      // Continue with null city/country
+    }
+
+    return {
+      ...item,
+      city,
+      country
+    };
+  }));
+
+  return processedItems;
+};
+
 const ItemSearchPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -82,6 +134,7 @@ const ItemSearchPage: React.FC = () => {
   // Results state
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [totalResults, setTotalResults] = useState(0);
   const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
   // Change itemCities to itemLocations to store both city and country
@@ -90,113 +143,76 @@ const ItemSearchPage: React.FC = () => {
 
   // Filter and search logic
   useEffect(() => {
-    setLoading(true);
-    const token = localStorage.getItem('token') || undefined;
-    console.log(fetchAllProducts(token),'fecth all products from api')
-    fetchAllProducts(token).then(async result => {
-      console.log('API raw products:', result.data);
-      let filteredItems: Product[] = (result.data || []).filter((item: Product) => (item.status || '').toLowerCase() === 'active');
-      console.log('After status filter:', filteredItems);
-      if (searchQuery) {
-        filteredItems = filteredItems.filter((item: Product) =>
-          item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (item.tags && item.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
-        );
-        console.log('After search filter:', filteredItems);
-      }
-      // Category filter
-      if (selectedCategory !== 'all') {
-        filteredItems = filteredItems.filter((item: Product) => item.category === selectedCategory || item.category_id === selectedCategory);
-        console.log('After category filter:', filteredItems);
-      }
-      // Location filter
-      if (selectedLocation !== 'all') {
-        filteredItems = filteredItems.filter((item: Product) => item.location?.city === selectedLocation || item.location === selectedLocation);
-        console.log('After location filter:', filteredItems);
-      }
-      // Sort items
-      switch (sortBy) {
-        case 'price-low':
-          filteredItems.sort((a: Product, b: Product) => a.price - b.price);
-          break;
-        case 'price-high':
-          filteredItems.sort((a: Product, b: Product) => b.price - a.price);
-          break;
-        case 'rating':
-          filteredItems.sort((a: Product, b: Product) => (b.rating || 0) - (a.rating || 0));
-          break;
-        case 'newest':
-          filteredItems.sort((a: Product, b: Product) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
-          break;
-        default:
-          filteredItems.sort((a: Product, b: Product) => {
-            if (a.featured && !b.featured) return -1;
-            if (!a.featured && b.featured) return 1;
-            return (b.rating || 0) - (a.rating || 0);
-          });
-      }
-      console.log('Filtered items before setItems:', filteredItems);
-      setItems(filteredItems);
-      setTotalResults(filteredItems.length);
-      setLoading(false);
-      // Robust image fetching pattern
-      const imagesMap: { [productId: string]: string[] } = {};
-      await Promise.all(filteredItems.map(async (item) => {
-        try {
-          const { data, error } = await fetchProductImages(item.id, token);
-          if (!error && data && Array.isArray(data.data)) {
-            imagesMap[item.id] = data.data.map((img: any) => img.url || img.image_url || img.path);
-          } else if (!error && data && Array.isArray(data)) {
-            imagesMap[item.id] = data.map((img: any) => img.url || img.image_url || img.path);
-          } else {
-            imagesMap[item.id] = [];
-          }
-        } catch {
-          imagesMap[item.id] = [];
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token') || undefined;
+        
+        // Fetch items
+        const result = await fetchAllProducts(token);
+        
+        if (result.error) {
+          setError(result.error);
+          return;
         }
-      }));
-      setProductImages(imagesMap);
+        
+        const productList = result.data || [];
+        console.log('Fetched productList:', productList);
+        
+        // Set total results
+        setTotalResults(result.total || productList.length);
+        
+        // Process item locations
+        const processedItems = await processItemLocations(productList);
+        
+        console.log('Processed Items:', processedItems);
+        setItems(processedItems);
 
-      // Fetch city names for items with geometry
-      const locationsMap: { [id: string]: { city: string | null, country: string | null } } = {};
-      await Promise.all(filteredItems.map(async (item) => {
-        let lat, lng;
-        if (typeof item.location === 'string') {
-          // WKB hex string
-          const coords = wkbHexToLatLng(item.location);
-          console.log('WKB parse:', item.location, coords);
-          if (coords) {
-            lat = coords.lat;
-            lng = coords.lng;
-          }
-        } else if (item.location && (item.location.lat || item.location.latitude) && (item.location.lng || item.location.longitude)) {
-          lat = item.location.lat ?? item.location.latitude;
-          lng = item.location.lng ?? item.location.longitude;
-        }
-        if (lat && lng) {
+        // Fetch images for each product
+        console.group('🖼️ ItemSearchPage Image Fetching');
+        const imagesMap: { [productId: string]: string[] } = {};
+        
+        await Promise.all(processedItems.map(async (item) => {
           try {
-            const { city, country } = await getCityFromCoordinates(lat, lng);
-            console.log('Reverse geocode:', { lat, lng, city, country });
-            locationsMap[item.id] = { city, country };
-          } catch (e) {
-            console.error('Reverse geocode error:', e);
+            const images = await fetchProductImages(item.id, token);
+            
+            console.log(`Images for product ${item.id}:`, images);
+
+            // Normalize images to ensure we have valid URLs
+            const normalizedImages = Array.isArray(images) 
+              ? images.map(img => 
+                  typeof img === 'string' 
+                    ? img 
+                    : (img.url || img.image_url || img.path)
+                ).filter(img => img && img.trim() !== '')
+              : [images].filter(img => img && img.trim() !== '');
+
+            console.log(`Normalized images for product ${item.id}:`, normalizedImages);
+
+            // Use placeholder if no images
+            imagesMap[item.id] = normalizedImages.length > 0 
+              ? normalizedImages 
+              : ['/assets/img/placeholder-image.png'];
+          } catch (error) {
+            console.error(`Error fetching images for product ${item.id}:`, error);
+            imagesMap[item.id] = ['/assets/img/placeholder-image.png'];
           }
-        } else if (item.location && item.location.city) {
-          locationsMap[item.id] = { city: item.location.city, country: null };
-        } else {
-          console.log('No valid location for item:', item.id, item.location);
-        }
-      }));
-      setItemLocations(locationsMap);
-    }).catch(() => {
-      setItems([]);
-      setTotalResults(0);
-      setLoading(false);
-      setProductImages({});
-    });
-  }, [searchQuery, selectedCategory, selectedLocation, priceRange, sortBy]);
+        }));
+
+        console.log('Final Images Map:', imagesMap);
+        console.groupEnd();
+
+        setProductImages(imagesMap);
+      } catch (err) {
+        console.error('Error fetching items:', err);
+        setError('Failed to load items');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItems();
+  }, []);
 
   // Update URL params
   useEffect(() => {
@@ -361,6 +377,16 @@ const ItemSearchPage: React.FC = () => {
 
       {/* Results Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Error Handling */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
+              <p className="text-sm">{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Results Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -595,3 +621,5 @@ const ItemSearchPage: React.FC = () => {
 };
 
 export default ItemSearchPage;
+
+console.log('ItemSearchPage component loaded and exported');

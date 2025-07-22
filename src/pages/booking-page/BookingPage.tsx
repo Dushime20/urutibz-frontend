@@ -7,8 +7,74 @@ import { getProductById, fetchProductImages } from '../admin/service/api'; // ad
 import { wkbHexToLatLng, getCityFromCoordinates } from '../../lib/utils';
 import AddPaymentMethod from './components/AddPaymentMethod';
 import PaymentStepper from './components/PaymentStepper';
-import { createBooking, fetchPaymentMethods, processPaymentTransaction } from './service/api'; // Assuming createBooking is in this file
+import { createBooking, fetchPaymentMethods } from './service/api'; // Assuming createBooking is in this file
+import { fetchProductImages as adminFetchProductImages } from '../admin/service/api';
 import { useToast } from '../../contexts/ToastContext';
+
+// Define a more comprehensive type for images and responses
+type ImageType = string | { url?: string; image_url?: string; path?: string };
+type ImageResponse = {
+  data?: ImageType[] | ImageType;
+  success?: boolean;
+  message?: string;
+} | ImageType[];
+
+// Type guard to check if input is an image
+function isImage(input: any): input is ImageType {
+  return (
+    typeof input === 'string' || 
+    (typeof input === 'object' && (
+      input.url || 
+      input.image_url || 
+      input.path
+    ))
+  );
+}
+
+// Utility function to extract image URL
+function getImageUrl(image: ImageType | undefined): string {
+  if (!image) return '/assets/img/placeholder-image.png';
+  
+  if (typeof image === 'string') return image;
+  
+  return (
+    (image as { url?: string })?.url || 
+    (image as { image_url?: string })?.image_url || 
+    (image as { path?: string })?.path || 
+    '/assets/img/placeholder-image.png'
+  );
+}
+
+// Utility function to normalize images
+function normalizeImages(input: any): ImageType[] {
+  // If input is an array, filter for valid images
+  if (Array.isArray(input)) {
+    return input.filter(isImage);
+  }
+  
+  // If input is an object with data property
+  if (input && typeof input === 'object') {
+    const dataImages = input.data;
+    
+    // If data is an array, filter for valid images
+    if (Array.isArray(dataImages)) {
+      return dataImages.filter(isImage);
+    }
+    
+    // If data is a single valid image
+    if (isImage(dataImages)) {
+      return [dataImages];
+    }
+  }
+  
+  // If input is a single valid image
+  if (isImage(input)) {
+    return [input];
+  }
+  
+  // Fallback to empty array
+  return [];
+}
 
 const BookingPage: React.FC = () => {
   const { carId, itemId } = useParams<{ carId?: string; itemId?: string }>();
@@ -20,7 +86,8 @@ const BookingPage: React.FC = () => {
   
   // Find the item/car being booked
   const [bookingItem, setBookingItem] = useState<any>(null);
-  const [images, setImages] = useState<any[]>([]);
+  // State for product images
+  const [images, setImages] = useState<ImageType[]>(['/assets/img/placeholder-image.png']);
   const [loading, setLoading] = useState(true);
   const [itemLocation, setItemLocation] = useState<{ city: string | null, country: string | null }>({ city: null, country: null });
   console.log(bookingItem,'booked item')
@@ -112,6 +179,7 @@ const BookingPage: React.FC = () => {
     const token = localStorage.getItem('token') || undefined;
     fetchPaymentMethods(token)
       .then((res) => {
+        // Assuming the response has a data property
         setPaymentMethods(res.data?.data || res.data || []);
       })
       .catch(() => setPaymentMethods([]));
@@ -120,6 +188,55 @@ const BookingPage: React.FC = () => {
   useEffect(() => {
     fetchAndSetPaymentMethods();
   }, []);
+
+  // Fetch product images when item details are loaded
+  useEffect(() => {
+    const fetchProductImagesForBooking = async () => {
+      try {
+        const token = localStorage.getItem('token') || undefined;
+        if (bookingItem?.id) {
+          // Fetch images with a generic approach
+          const fetchedImagesResponse = await adminFetchProductImages(bookingItem.id, token);
+          
+          // Normalize images with a flexible approach
+          const normalizedImages: ImageType[] = [];
+          
+          // Check if response is an array
+          if (Array.isArray(fetchedImagesResponse)) {
+            normalizedImages.push(...fetchedImagesResponse.filter(isImage));
+          } 
+          // Check if response is an object with data property
+          else if (fetchedImagesResponse && typeof fetchedImagesResponse === 'object') {
+            const data = (fetchedImagesResponse as { data?: ImageType[] | ImageType }).data;
+            
+            if (Array.isArray(data)) {
+              normalizedImages.push(...data.filter(isImage));
+            } else if (isImage(data)) {
+              normalizedImages.push(data);
+            }
+          } 
+          // Check if response is a single image
+          else if (isImage(fetchedImagesResponse)) {
+            normalizedImages.push(fetchedImagesResponse);
+          }
+
+          // Use placeholder if no images found
+          setImages(
+            normalizedImages.length > 0 
+              ? normalizedImages 
+              : ['/assets/img/placeholder-image.png']
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching product images:', error);
+        setImages(['/assets/img/placeholder-image.png']);
+      }
+    };
+
+    if (bookingItem?.id) {
+      fetchProductImagesForBooking();
+    }
+  }, [bookingItem]);
 
   // Handle case when item/car is not found
   if (loading) {
@@ -259,7 +376,7 @@ const BookingPage: React.FC = () => {
             >
               <div className="flex items-center">
                 <img 
-                  src={images[0]?.url || images[0]?.image_url || images[0]?.path || '/assets/img/placeholder-image.png'} 
+                  src={getImageUrl(images[0])} 
                   alt={bookingItem.name}
                   className="w-8 h-8 object-cover rounded-lg mr-2 border border-gray-200 group-hover:border-primary-300 transition-colors"
                 />
@@ -627,7 +744,7 @@ const BookingPage: React.FC = () => {
                 <div className="flex items-start space-x-4">
                   <div className="relative">
                     <img
-                      src={images[0]?.url || images[0]?.image_url || images[0]?.path || '/assets/img/placeholder-image.png'}
+                      src={getImageUrl(images[0])}
                       alt={bookingItem.name}
                       className="w-20 h-16 object-cover rounded-xl shadow-md border border-gray-200"
                     />
