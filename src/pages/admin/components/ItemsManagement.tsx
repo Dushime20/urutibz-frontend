@@ -10,6 +10,7 @@ import type { Category } from '../interfaces';
 import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
+import { moderateAdminProduct } from '../service/api';
 
 interface ItemsManagementProps {
   products: Product[];
@@ -41,6 +42,12 @@ const AdminProductDetailModal: React.FC<{
   // New state for category and owner details
   const [categoryName, setCategoryName] = useState<string>('N/A');
   const [ownerName, setOwnerName] = useState<string>('Unknown');
+
+  // Add moderation state
+  const [moderationAction, setModerationAction] = useState<'approve' | 'reject' | 'flag' | 'quarantine'>('approve');
+  const [moderationReason, setModerationReason] = useState('');
+  const [moderateLoading, setModerateLoading] = useState(false);
+  const [moderateError, setModerateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !productId) return;
@@ -153,6 +160,22 @@ const AdminProductDetailModal: React.FC<{
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => (images.length ? (prev - 1 + images.length) % images.length : 0));
+  };
+
+  // Moderate handler
+  const handleModerate = async () => {
+    setModerateLoading(true);
+    setModerateError(null);
+    try {
+      const token = localStorage.getItem('token') || undefined;
+      await moderateAdminProduct(productId, { action: moderationAction, reason: moderationReason }, token);
+      setModerateOpen(false);
+      // Optionally refresh product list or show a toast
+    } catch (err: any) {
+      setModerateError(err.message || 'Failed to moderate product');
+    } finally {
+      setModerateLoading(false);
+    }
   };
 
   if (!open) return null;
@@ -270,33 +293,43 @@ const AdminProductDetailModal: React.FC<{
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Action</label>
-                  <select className="w-full border rounded px-3 py-2">
-                    <option>Approve</option>
-                    <option>Reject</option>
-                    <option>Flag</option>
-                    <option>Quarantine</option>
+                  <select
+                    className="w-full border rounded px-3 py-2"
+                    value={moderationAction}
+                    onChange={e => setModerationAction(e.target.value as any)}
+                  >
+                    <option value="approve">Approve</option>
+                    <option value="reject">Reject</option>
+                    <option value="flag">Flag</option>
+                    <option value="quarantine">Quarantine</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Reason (Optional)</label>
-                  <textarea 
-                    className="w-full border rounded px-3 py-2 h-24" 
+                  <textarea
+                    className="w-full border rounded px-3 py-2 h-24"
                     placeholder="Enter reason for moderation"
+                    value={moderationReason}
+                    onChange={e => setModerationReason(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <button 
+                  <button
                     onClick={() => setModerateOpen(false)}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    disabled={moderateLoading}
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
+                    onClick={handleModerate}
+                    disabled={moderateLoading}
                     className="px-4 py-2 bg-my-primary text-white rounded-lg hover:bg-my-primary/90"
                   >
-                    Submit
+                    {moderateLoading ? 'Submitting...' : 'Submit'}
                   </button>
                 </div>
+                {moderateError && <div className="text-red-600 mt-2">{moderateError}</div>}
               </div>
             </div>
           </div>

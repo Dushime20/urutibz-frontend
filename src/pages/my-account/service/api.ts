@@ -185,3 +185,44 @@ export async function fetchProductImages(productId: string, token?: string) {
     return { data: [], error };
   }
 }
+
+export async function fetchUserReviews(userId: string, token?: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/review/user/${userId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching user reviews:', error);
+    return [];
+  }
+}
+
+export async function fetchReviewById(reviewId: string, token?: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/review/${reviewId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data?.data || null;
+  } catch (error) {
+    console.error('Error fetching review by ID:', error);
+    return null;
+  }
+}
+
+export async function fetchReviewByBookingId(bookingId: string, token?: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/review/booking/${bookingId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    // Handle array response - return the first review if available
+    const reviews = response.data?.data || [];
+    return {
+      review: reviews.length > 0 ? reviews[0] : null,
+      count: reviews.length
+    };
+  } catch (error) {
+    console.error('Error fetching review by booking ID:', error);
+    return { review: null, count: 0 };
+  }
+}

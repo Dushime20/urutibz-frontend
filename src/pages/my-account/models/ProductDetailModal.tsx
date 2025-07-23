@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Edit3, MapPin, Package, DollarSign, Tag, Calendar, Star, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
+import { X, Edit3, MapPin, Package, DollarSign, Tag, Calendar, Star, ChevronLeft, ChevronRight, ZoomIn, Shield, CheckCircle, AlertCircle } from 'lucide-react';
 import { getProductById, getProductImagesByProductId } from '../service/api';
 
 interface ProductDetailModalProps {
@@ -52,21 +52,43 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  const getConditionBadgeColor = (condition: string) => {
+    switch (condition?.toLowerCase()) {
+      case 'new':
+        return 'bg-success-100 text-success-700 border-success-200';
+      case 'excellent':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'good':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'fair':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'used':
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
   if (!open) return null;
 
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full mx-4 h-[95vh] overflow-hidden flex flex-col">
-          {/* Header */}
-          <div className="bg-cyan-600 px-6 py-4 text-white flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Product Details</h2>
-            <button 
-              onClick={onClose} 
-              className="p-2 hover:bg-white/20 rounded-full transition-colors duration-200"
-            >
-              <X size={24} />
-            </button>
+        <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-7xl w-full mx-4 h-[95vh] overflow-hidden flex flex-col">
+          {/* Enhanced Header */}
+          <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-8 py-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl text-my-primary font-bold">Product Details</h2>
+                <p className="text-my-primary text-sm mt-1">View complete product information</p>
+              </div>
+              <button 
+                onClick={onClose} 
+                className="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200"
+              >
+                <X size={24}  className='text-my-primary'/>
+              </button>
+            </div>
           </div>
 
           {/* Content */}
@@ -74,74 +96,73 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
             {loading ? (
               <div className="flex items-center justify-center py-16">
                 <div className="flex items-center space-x-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                   <span className="text-gray-600 font-medium">Loading product details...</span>
                 </div>
               </div>
             ) : error ? (
               <div className="flex items-center justify-center py-16">
-                <div className="text-red-500 bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="font-medium">{error}</p>
+                <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-medium">{error}</span>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6">
-                {/* Images Section */}
-                <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
+                {/* Enhanced Images Section */}
+                <div className="space-y-6">
                   {images.length > 0 ? (
                     <>
                       {/* Main Image */}
-                      <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square">
+                      <div className="relative bg-gray-100 rounded-2xl overflow-hidden aspect-square shadow-lg">
                         <img
                           src={images[currentImageIndex]?.url || images[currentImageIndex]?.image_url || images[currentImageIndex]?.path}
                           alt={images[currentImageIndex]?.alt_text || `Product image ${currentImageIndex + 1}`}
                           className="w-full h-full object-cover"
                         />
                         
-                        {/* Zoom button */}
+                        {/* Enhanced Controls */}
                         <button
                           onClick={() => setSelectedImage(images[currentImageIndex]?.url || images[currentImageIndex]?.image_url || images[currentImageIndex]?.path)}
-                          className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                          className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-3 rounded-xl backdrop-blur-sm transition-all duration-200"
                         >
                           <ZoomIn size={20} />
                         </button>
 
-                        {/* Navigation arrows */}
                         {images.length > 1 && (
                           <>
                             <button
                               onClick={prevImage}
-                              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-3 rounded-xl backdrop-blur-sm transition-all duration-200"
                             >
                               <ChevronLeft size={20} />
                             </button>
                             <button
                               onClick={nextImage}
-                              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-3 rounded-xl backdrop-blur-sm transition-all duration-200"
                             >
                               <ChevronRight size={20} />
                             </button>
                           </>
                         )}
 
-                        {/* Image counter */}
                         {images.length > 1 && (
-                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm backdrop-blur-sm">
                             {currentImageIndex + 1} / {images.length}
                           </div>
                         )}
                       </div>
 
-                      {/* Thumbnail Images */}
+                      {/* Enhanced Thumbnail Grid */}
                       {images.length > 1 && (
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-4 gap-3">
                           {images.map((img, idx) => (
                             <button
                               key={idx}
                               onClick={() => setCurrentImageIndex(idx)}
-                              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                              className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-200 ${
                                 idx === currentImageIndex 
-                                  ? 'border-teal-500 ring-2 ring-teal-200' 
+                                  ? 'border-primary-500 ring-2 ring-primary-200 shadow-lg' 
                                   : 'border-gray-200 hover:border-gray-300'
                               }`}
                             >
@@ -156,50 +177,62 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
                       )}
                     </>
                   ) : (
-                    <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center">
                       <div className="text-center text-gray-500">
-                        <Package size={48} className="mx-auto mb-2" />
-                        <p>No images available</p>
+                        <Package size={48} className="mx-auto mb-4" />
+                        <p className="font-medium">No images available</p>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Product Information */}
-                <div className="space-y-6">
+                {/* Enhanced Product Information */}
+                <div className="space-y-8">
                   {product && (
                     <>
                       {/* Title and Basic Info */}
                       <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.title}</h1>
+                        <div className="flex items-center gap-3 mb-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getConditionBadgeColor(product.condition)}`}>
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            {product.condition || 'Used'}
+                          </span>
+                          {product.country_id && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              {product.country_id}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-gray-600 leading-relaxed">{product.description}</p>
                       </div>
 
-                      {/* Pricing */}
-                      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-xl border border-teal-200">
-                        <div className="flex items-center mb-3">
-                          <DollarSign className="text-teal-600 mr-2" size={20} />
-                          <h3 className="text-lg font-semibold text-teal-800">Pricing</h3>
+                      {/* Enhanced Pricing */}
+                      <div className="bg-gradient-to-r from-primary-50 to-primary-100 p-6 rounded-2xl border border-primary-200">
+                        <div className="flex items-center mb-4">
+                          <DollarSign className="text-primary-600 mr-2" size={24} />
+                          <h3 className="text-xl font-bold text-primary-800">Pricing</h3>
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Daily Rate:</span>
-                            <span className="font-semibold text-teal-600">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 font-medium">Daily Rate:</span>
+                            <span className="text-2xl font-bold text-primary-600">
                               {product.base_price_per_day} {product.base_currency}
                             </span>
                           </div>
                           {product.base_price_per_week && (
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span className="text-gray-600">Weekly Rate:</span>
-                              <span className="font-semibold text-teal-600">
+                              <span className="font-semibold text-primary-600">
                                 {product.base_price_per_week} {product.base_currency}
                               </span>
                             </div>
                           )}
                           {product.base_price_per_month && (
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span className="text-gray-600">Monthly Rate:</span>
-                              <span className="font-semibold text-teal-600">
+                              <span className="font-semibold text-primary-600">
                                 {product.base_price_per_month} {product.base_currency}
                               </span>
                             </div>
@@ -207,69 +240,61 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
                         </div>
                       </div>
 
-                      {/* Product Details */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center mb-2">
-                            <Tag className="text-gray-500 mr-2" size={16} />
-                            <span className="text-sm font-medium text-gray-700">Category</span>
+                      {/* Enhanced Product Details Grid */}
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                          <div className="flex items-center mb-3">
+                            <Tag className="text-gray-500 mr-2" size={20} />
+                            <span className="font-semibold text-gray-700">Category</span>
                           </div>
-                          <p className="text-gray-900">{product.category_id}</p>
+                          <p className="text-gray-900 font-medium">{product.category_id}</p>
                         </div>
 
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center mb-2">
-                            <Star className="text-gray-500 mr-2" size={16} />
-                            <span className="text-sm font-medium text-gray-700">Condition</span>
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                          <div className="flex items-center mb-3">
+                            <Package className="text-gray-500 mr-2" size={20} />
+                            <span className="font-semibold text-gray-700">Pickup Methods</span>
                           </div>
-                          <p className="text-gray-900 capitalize">{product.condition}</p>
-                        </div>
-
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center mb-2">
-                            <MapPin className="text-gray-500 mr-2" size={16} />
-                            <span className="text-sm font-medium text-gray-700">Country</span>
-                          </div>
-                          <p className="text-gray-900">{product.country_id}</p>
-                        </div>
-
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center mb-2">
-                            <Package className="text-gray-500 mr-2" size={16} />
-                            <span className="text-sm font-medium text-gray-700">Pickup Methods</span>
-                          </div>
-                          <p className="text-gray-900 capitalize">
+                          <div className="flex flex-wrap gap-2">
                             {Array.isArray(product.pickup_methods) 
-                              ? product.pickup_methods.join(', ') 
-                              : 'Not specified'}
-                          </p>
+                              ? product.pickup_methods.map((method: string, idx: number) => (
+                                  <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                                    {method.charAt(0).toUpperCase() + method.slice(1)}
+                                  </span>
+                                ))
+                              : <span className="text-gray-500">Not specified</span>
+                            }
+                          </div>
                         </div>
                       </div>
 
-                      {/* Features */}
+                      {/* Enhanced Features */}
                       {product.features && Array.isArray(product.features) && product.features.length > 0 && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Features</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div className="bg-gradient-to-r from-success-50 to-success-100 p-6 rounded-2xl border border-success-200">
+                          <h3 className="text-lg font-bold text-success-800 mb-4 flex items-center">
+                            <Shield className="w-5 h-5 mr-2" />
+                            Features
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {product.features.map((feature: string, idx: number) => (
-                              <div key={idx} className="flex items-center space-x-2">
-                                <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-                                <span className="text-gray-700">{feature}</span>
+                              <div key={idx} className="flex items-center space-x-3">
+                                <div className="w-2 h-2 bg-success-500 rounded-full flex-shrink-0"></div>
+                                <span className="text-success-700 font-medium">{feature}</span>
                               </div>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      {/* Specifications */}
+                      {/* Enhanced Specifications */}
                       {product.specifications && Object.keys(product.specifications).length > 0 && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Specifications</h3>
-                          <div className="space-y-3">
+                        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                          <h3 className="text-lg font-bold text-gray-900 mb-4">Specifications</h3>
+                          <div className="space-y-4">
                             {Object.entries(product.specifications).map(([key, value]) => (
-                              <div key={key} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                              <div key={key} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
                                 <span className="text-gray-600 font-medium">{key}:</span>
-                                <span className="text-gray-900">
+                                <span className="text-gray-900 font-semibold">
                                   {typeof value === 'string' || typeof value === 'number'
                                     ? value
                                     : JSON.stringify(value)}
@@ -280,21 +305,21 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
                         </div>
                       )}
 
-                      {/* Location */}
+                      {/* Enhanced Location */}
                       {product.location && (product.location.latitude || product.location.longitude) && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
-                          <div className="flex items-center mb-3">
-                            <MapPin className="text-gray-500 mr-2" size={20} />
-                            <h3 className="text-lg font-semibold text-gray-900">Location</h3>
+                        <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-6 rounded-2xl border border-yellow-200">
+                          <div className="flex items-center mb-4">
+                            <MapPin className="text-yellow-600 mr-2" size={20} />
+                            <h3 className="text-lg font-bold text-yellow-800">Location</h3>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-6">
                             <div>
-                              <span className="text-gray-600">Latitude:</span>
-                              <p className="text-gray-900 font-mono">{product.location.latitude}</p>
+                              <span className="text-yellow-700 font-medium">Latitude:</span>
+                              <p className="text-yellow-900 font-mono text-sm">{product.location.latitude}</p>
                             </div>
                             <div>
-                              <span className="text-gray-600">Longitude:</span>
-                              <p className="text-gray-900 font-mono">{product.location.longitude}</p>
+                              <span className="text-yellow-700 font-medium">Longitude:</span>
+                              <p className="text-yellow-900 font-mono text-sm">{product.location.longitude}</p>
                             </div>
                           </div>
                         </div>
@@ -306,16 +331,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
             )}
           </div>
 
-          {/* Footer with Edit Button */}
+          {/* Enhanced Footer */}
           {!loading && !error && onEdit && (
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end">
-              <button
-                onClick={onEdit}
-                className="flex items-center space-x-2 bg-cyan-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                <Edit3 size={18} />
-                <span>Edit Product</span>
-              </button>
+            <div className="border-t border-gray-200 px-8 py-6 bg-gray-50">
+              <div className="flex justify-end">
+                <button
+                  onClick={onEdit}
+                  className="flex items-center gap-2 bg-my-primary hover:bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <Edit3 size={18} />
+                  Edit Product
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -323,15 +350,15 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
 
       {/* Enhanced Lightbox */}
       {selectedImage && ReactDOM.createPortal(
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
           <div className="relative max-w-5xl max-h-[90vh] p-4">
             <img 
               src={selectedImage} 
               alt="Full size" 
-              className="max-h-full max-w-full object-contain rounded-lg shadow-2xl" 
+              className="max-h-full max-w-full object-contain rounded-2xl shadow-2xl" 
             />
             <button
-              className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm rounded-full p-2 text-gray-700 hover:bg-white hover:text-red-500 transition-all duration-200 shadow-lg"
+              className="absolute top-6 right-6 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full p-3 text-gray-700 hover:text-red-500 transition-all duration-200 shadow-lg"
               onClick={e => { e.stopPropagation(); setSelectedImage(null); }}
             >
               <X size={24} />

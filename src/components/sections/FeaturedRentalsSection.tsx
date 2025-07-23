@@ -263,6 +263,15 @@ const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ product
                   <span className="flex-shrink-0">{item.distance} Loading... away</span>
                 </div>
 
+                {/* Rating and Reviews */}
+                <div className="flex items-center space-x-2 mb-2 lg:mb-3">
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-3 h-3 lg:w-4 lg:h-4 text-yellow-500 fill-current" />
+                    <span className="text-sm font-medium font-inter">{item.average_rating || '0.00'}</span>
+                    <span className="text-xs text-platform-grey font-inter">({item.review_count || 0} reviews)</span>
+                  </div>
+                </div>
+
                 {/* Owner */}
                 <div className="flex items-center space-x-2 mb-2 lg:mb-3">
                   <img
@@ -274,10 +283,6 @@ const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ product
                   {item.owner?.verified && (
                     <Shield className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-active flex-shrink-0" />
                   )}
-                  <div className="flex items-center space-x-1 ml-auto">
-                    <Star className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-yellow-500 fill-current" />
-                    <span className="text-xs text-platform-grey font-inter">{item.owner?.rating ?? 'loading...'}</span>
-                  </div>
                 </div>
 
                 {/* Price & CTA */}

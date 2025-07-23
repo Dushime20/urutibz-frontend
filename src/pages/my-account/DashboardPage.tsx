@@ -21,7 +21,10 @@ import {
   fetchProductImages,
   fetchDashboardStats,
   fetchRecentBookings,
-  fetchRecentTransactions
+  fetchRecentTransactions,
+  fetchUserReviews,
+  fetchReviewById,
+  fetchReviewByBookingId
 } from './service/api';
 import { useToast } from '../../contexts/ToastContext';
 import NewListingModal from './models/NewListingModal';
@@ -143,6 +146,14 @@ const DashboardPage: React.FC = () => {
   const [recentDashboardBookings, setRecentDashboardBookings] = useState<any[]>([]);
   const [recentDashboardTransactions, setRecentDashboardTransactions] = useState<any[]>([]);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
+  const [userReviews, setUserReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<any>(null);
+  const [showReviewDetail, setShowReviewDetail] = useState(false);
+  const [loadingReviewDetail, setLoadingReviewDetail] = useState(false);
+  const [bookingReviews, setBookingReviews] = useState<{ [bookingId: string]: any }>({});
+  const [loadingBookingReviews, setLoadingBookingReviews] = useState<{ [bookingId: string]: boolean }>({});
+  const [bookingReviewCounts, setBookingReviewCounts] = useState<{ [bookingId: string]: number }>({});
 
   // Add new useEffect for dashboard data
   useEffect(() => {
@@ -162,7 +173,7 @@ const DashboardPage: React.FC = () => {
         const bookingsWithDetails = await Promise.all(
           bookings.map(async (booking: any) => {
             const product = await getProductById(booking.product_id);
-            const images = await fetchProductImages(booking.product_id, token);
+            const images = await fetchProductImages(booking.product_id, token ?? undefined);
             return {
               ...booking,
               product,
@@ -237,11 +248,24 @@ const DashboardPage: React.FC = () => {
         const bookingsRes = await fetchUserBookings(token);
         const bookings = bookingsRes.data || [];
         setUserBookings(bookings);
+        
+        // Fetch product details and images for each booking
         for (const booking of bookings) {
-          const product = await getProductById(booking.product_id, token);
+          const product = await getProductById(booking.product_id);
           setBookingProducts(prev => ({ ...prev, [booking.id]: product }));
-          const imagesRes = await fetchProductImages(booking.product_id, token);
+          const imagesRes = await fetchProductImages(booking.product_id, token ?? undefined);
           setBookingImages(prev => ({ ...prev, [booking.id]: imagesRes.data || [] }));
+          
+          // Also check for reviews for this booking
+          try {
+            const reviewResult = await fetchReviewByBookingId(booking.id, token ?? undefined);
+            if (reviewResult.review) {
+              setBookingReviews(prev => ({ ...prev, [booking.id]: reviewResult.review }));
+              setBookingReviewCounts(prev => ({ ...prev, [booking.id]: reviewResult.count }));
+            }
+          } catch (reviewError) {
+            console.error(`Error fetching review for booking ${booking.id}:`, reviewError);
+          }
         }
       } catch (err) {
         setUserBookings([]);
@@ -251,6 +275,28 @@ const DashboardPage: React.FC = () => {
     };
     fetchBookings();
   }, []);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (activeTab !== 'reviews') return;
+      
+      setLoadingReviews(true);
+      try {
+        const token = localStorage.getItem('token');
+        // For now, using a hardcoded user ID - in a real app, you'd get this from user context
+        const userId = '7f102034-45c2-460a-bc89-a7525cf32938'; // This should come from user context
+        const reviews = await fetchUserReviews(userId, token ?? undefined);
+        setUserReviews(reviews);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        setUserReviews([]);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    fetchReviews();
+  }, [activeTab]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -464,13 +510,13 @@ const DashboardPage: React.FC = () => {
           <div className={`p-3 rounded-2xl ${bgColor}`}>
             <Icon className={`w-6 h-6 ${color}`} />
           </div>
-          {trend && <TrendingUp className="w-5 h-5 text-emerald-500" />}
+          {trend && <TrendingUp className="w-5 h-5 text-success-500" />}
         </div>
         <div className="space-y-1">
           <div className="text-2xl font-bold text-gray-900">{value}</div>
           <div className="text-sm text-gray-500">{title}</div>
           {subtitle && (
-            <div className="flex items-center text-xs text-emerald-600 font-medium">
+            <div className="flex items-center text-xs text-success-600 font-medium">
               <ArrowUpRight className="w-3 h-3 mr-1" />
               {subtitle}
             </div>
@@ -484,27 +530,52 @@ const DashboardPage: React.FC = () => {
     <button
       onClick={onClick}
       className={`group relative w-full flex items-center px-4 py-3.5 rounded-2xl font-medium transition-all duration-300 ${active
-        ? 'text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
+        ? ' bg-gray-200'
         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
         }`}
-      style={{
-        backgroundColor: active ? 'var(--color-active)' : 'transparent',
-      }}
     >
       <Icon className={`w-5 h-5 mr-3 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-105'}`} />
       <span className="flex-1 text-left">{label}</span>
       {hasNotification && (
         <div className="w-2 h-2 bg-red-500 rounded-full ml-auto animate-pulse"></div>
       )}
-      {active && (
-        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-white rounded-l-full"></div>
-      )}
+    
     </button>
   );
 
   const handleCloseModal = () => {
     console.log('Modal close handler called');
     setShowModal(false);
+  };
+
+  const handleViewReviewDetail = async (reviewId: string) => {
+    setLoadingReviewDetail(true);
+    try {
+      const token = localStorage.getItem('token');
+      const reviewDetail = await fetchReviewById(reviewId, token ?? undefined);
+      setSelectedReview(reviewDetail);
+      setShowReviewDetail(true);
+    } catch (error) {
+      console.error('Error fetching review detail:', error);
+      showToast('Failed to load review details', 'error');
+    } finally {
+      setLoadingReviewDetail(false);
+    }
+  };
+
+  const handleViewBookingReview = async (bookingId: string) => {
+    setLoadingBookingReviews(prev => ({ ...prev, [bookingId]: true }));
+    try {
+      const token = localStorage.getItem('token');
+      const result = await fetchReviewByBookingId(bookingId, token ?? undefined);
+      setBookingReviews(prev => ({ ...prev, [bookingId]: result.review }));
+      setBookingReviewCounts(prev => ({ ...prev, [bookingId]: result.count }));
+    } catch (error) {
+      console.error('Error fetching booking review:', error);
+      showToast('Failed to load booking review', 'error');
+    } finally {
+      setLoadingBookingReviews(prev => ({ ...prev, [bookingId]: false }));
+    }
   };
 
   return (
@@ -522,7 +593,7 @@ const DashboardPage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Search..."
-                  className="pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200 w-64"
+                  className="pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-xl focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all duration-200 w-64"
                 />
               </div>
               <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -554,7 +625,7 @@ const DashboardPage: React.FC = () => {
                     className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-lg"
                   />
                   {user.verified && (
-                    <div className="absolute -bottom-2 -right-2 bg-blue-500 rounded-xl p-2 shadow-lg">
+                    <div className="absolute -bottom-2 -right-2 bg-primary-500 rounded-xl p-2 shadow-lg">
                       <Shield className="w-4 h-4 text-white" />
                     </div>
                   )}
@@ -566,7 +637,7 @@ const DashboardPage: React.FC = () => {
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
                     <span className="text-sm font-semibold text-yellow-700">{user.rating}</span>
                   </div>
-                  <span className="text-xs px-3 py-1 bg-blue-500 text-white rounded-lg font-medium">
+                  <span className="text-xs px-3 py-1 bg-primary-500 text-white rounded-lg font-medium">
                     {user.hostLevel}
                   </span>
                 </div>
@@ -650,8 +721,8 @@ const DashboardPage: React.FC = () => {
                         value={dashboardStats.activeBookings}
                         subtitle="View all →"
                         trend={true}
-                        color="text-blue-600"
-                        bgColor="bg-blue-50"
+                        color="text-primary-600"
+                        bgColor="bg-primary-50"
                       />
                       <StatCard
                         icon={Wallet}
@@ -659,8 +730,8 @@ const DashboardPage: React.FC = () => {
                         value={`$${dashboardStats.totalEarnings.toLocaleString()}`}
                         subtitle="Available"
                         trend={true}
-                        color="text-emerald-600"
-                        bgColor="bg-emerald-50"
+                        color="text-success-600"
+                        bgColor="bg-success-50"
                       />
                       <StatCard
                         icon={DollarSign}
@@ -690,7 +761,7 @@ const DashboardPage: React.FC = () => {
                           <h3 className="text-lg font-bold text-gray-900">Recent Bookings</h3>
                           <Link
                             to="#"
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
+                            className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center group"
                           >
                             View all
                             <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -714,7 +785,7 @@ const DashboardPage: React.FC = () => {
                               <div className="text-right">
                                 <p className="font-bold text-gray-900">${booking.product?.base_price_per_day || 0}</p>
                                 <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${
-                                  booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                                  booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-success-100 text-success-700'
                                 }`}>
                                   {booking.status}
                                 </span>
@@ -730,7 +801,7 @@ const DashboardPage: React.FC = () => {
                           <h3 className="text-lg font-bold text-gray-900">Transactions</h3>
                           <Link
                             to="#"
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center group"
+                            className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center group"
                           >
                             View all
                             <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -745,7 +816,7 @@ const DashboardPage: React.FC = () => {
                               </div>
                               <div className="text-right">
                                 <p className={`font-bold text-sm ${
-                                  transaction.transaction_type === 'booking_payment' ? 'text-emerald-600' : 'text-red-600'
+                                  transaction.transaction_type === 'booking_payment' ? 'text-success-600' : 'text-red-600'
                                 }`}>
                                   {transaction.transaction_type === 'booking_payment' ? '+' : '-'}${transaction.amount}
                                 </p>
@@ -786,28 +857,145 @@ const DashboardPage: React.FC = () => {
                     userBookings.map((booking) => {
                       const product = bookingProducts[booking.id];
                       const images = bookingImages[booking.id] || [];
+                      const bookingReview = bookingReviews[booking.id];
+                      const isLoadingReview = loadingBookingReviews[booking.id];
+                      const reviewCount = bookingReviewCounts[booking.id] || 0;
+                      
                       return (
-                        <div key={booking.id} className="flex items-center space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                          <img
-                            src={images[0]?.image_url || '/assets/img/placeholder-image.png'}
-                            alt={product?.title || 'Product'}
-                            className="w-24 h-18 rounded-xl object-cover"
-                          />
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 mb-1">{product?.title || 'Product'}</h4>
-                            <p className="text-sm text-gray-500 mb-2">
-                              {new Date(booking.start_date).toLocaleString()} - {new Date(booking.end_date).toLocaleString()}
-                            </p>
-                            <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${
-                              booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                            }`}>
-                              {booking.status}
-                            </span>
+                        <div key={booking.id} className="border border-gray-100 rounded-2xl p-6 hover:border-gray-200 transition-colors">
+                          <div className="flex items-center space-x-4 mb-4">
+                            <img
+                              src={images[0]?.image_url || '/assets/img/placeholder-image.png'}
+                              alt={product?.title || 'Product'}
+                              className="w-24 h-18 rounded-xl object-cover"
+                            />
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 mb-1">{product?.title || 'Product'}</h4>
+                              <p className="text-sm text-gray-500 mb-2">
+                                {new Date(booking.start_date).toLocaleString()} - {new Date(booking.end_date).toLocaleString()}
+                              </p>
+                              <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${
+                                booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-success-100 text-success-700'
+                              }`}>
+                                {booking.status}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-xl text-gray-900">
+                                {product?.base_price_per_day ? `$${product.base_price_per_day}` : ''}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-xl text-gray-900">
-                              {product?.base_price_per_day ? `$${product.base_price_per_day}` : ''}
-                            </p>
+                          
+                          {/* Review Section */}
+                          <div className="border-t border-gray-100 pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-2">
+                                <h5 className="font-medium text-gray-900">Review</h5>
+                                {reviewCount > 0 && (
+                                  <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
+                                    {reviewCount} review{reviewCount !== 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
+                              {!bookingReview && !isLoadingReview && reviewCount === 0 && (
+                                <button
+                                  onClick={() => handleViewBookingReview(booking.id)}
+                                  className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                                >
+                                  Check for Review
+                                </button>
+                              )}
+                              {!bookingReview && !isLoadingReview && reviewCount > 0 && (
+                                <button
+                                  onClick={() => handleViewBookingReview(booking.id)}
+                                  className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                                >
+                                  View Review
+                                </button>
+                              )}
+                            </div>
+                            
+                            {isLoadingReview ? (
+                              <div className="flex items-center justify-center py-4">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
+                                <span className="ml-2 text-sm text-gray-500">Loading review...</span>
+                              </div>
+                            ) : bookingReview ? (
+                              <div className="bg-gray-50 rounded-xl p-4">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div>
+                                    <h6 className="font-semibold text-gray-900">{bookingReview.title}</h6>
+                                    <p className="text-sm text-gray-500">
+                                      {new Date(bookingReview.createdAt).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    {[...Array(5)].map((_, index) => (
+                                      <Star
+                                        key={index}
+                                        className={`w-4 h-4 ${
+                                          index < bookingReview.overallRating
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    ))}
+                                    <span className="ml-2 text-sm font-medium text-gray-900">
+                                      {bookingReview.overallRating}/5
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                <p className="text-gray-700 text-sm mb-3">{bookingReview.comment}</p>
+                                
+                                <div className="grid grid-cols-3 gap-3 text-xs">
+                                  <div className="text-center">
+                                    <div className="font-semibold text-gray-900">{bookingReview.communicationRating}</div>
+                                    <div className="text-gray-500">Communication</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="font-semibold text-gray-900">{bookingReview.conditionRating}</div>
+                                    <div className="text-gray-500">Condition</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="font-semibold text-gray-900">{bookingReview.valueRating}</div>
+                                    <div className="text-gray-500">Value</div>
+                                  </div>
+                                </div>
+                                
+                                {bookingReview.response && (
+                                  <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                                        <span className="text-xs text-white font-bold">R</span>
+                                      </div>
+                                      <span className="text-xs font-medium text-gray-900">Your Response</span>
+                                    </div>
+                                    <p className="text-gray-700 text-xs">{bookingReview.response}</p>
+                                  </div>
+                                )}
+                                
+                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    bookingReview.moderationStatus === 'approved' 
+                                      ? 'bg-success-100 text-success-700'
+                                      : bookingReview.moderationStatus === 'pending'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    {bookingReview.moderationStatus}
+                                  </span>
+                                  {bookingReview.isFlagged && (
+                                    <span className="text-red-500 text-xs">⚠️ Flagged</span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-gray-500 text-sm">
+                                {reviewCount === 0 ? 'No review available for this booking' : 'Click "View Review" to see the review details'}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -820,7 +1008,7 @@ const DashboardPage: React.FC = () => {
             {activeTab === 'listings' && (
               loadingListings ? (
                 <div className="flex items-center justify-center py-8">
-                  <svg className="animate-spin h-6 w-6 text-[#01aaa7] mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-6 w-6 text-primary-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                   </svg>
@@ -835,7 +1023,7 @@ const DashboardPage: React.FC = () => {
                   <div className="text-gray-500 mb-6">You haven't created any product listings. Click below to get started!</div>
                   <Button
                     onClick={handleOpenModal}
-                    className="bg-[#01aaa7] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#019c98] transition-colors"
+                    className="bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors"
                   >
                     Add New Listing
                   </Button>
@@ -844,7 +1032,7 @@ const DashboardPage: React.FC = () => {
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-gray-900">My Listings</h3>
-                    <Button onClick={handleOpenModal} className="mb-4 bg-[#01aaa7] text-white">Add New Listing</Button>
+                    <Button onClick={handleOpenModal} className="mb-4 bg-primary-500 text-white">Add New Listing</Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {myListings.map((listing) => (
@@ -872,7 +1060,7 @@ const DashboardPage: React.FC = () => {
                           <span className="text-lg font-bold text-gray-900">{listing.base_price_per_day}/{listing.base_currency}</span>
                           <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
                             listing.status === 'active'
-                              ? 'bg-green-100 text-green-700'
+                              ? 'bg-success-100 text-success-700'
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
                             {listing.status || 'Draft'}
@@ -905,7 +1093,7 @@ const DashboardPage: React.FC = () => {
             {activeTab === 'wallet' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-8 text-white relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-8 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
                     <div className="relative">
                       <h4 className="text-lg font-semibold mb-2 opacity-90">Available Balance</h4>
@@ -915,7 +1103,7 @@ const DashboardPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl p-8 text-white relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-success-600 to-success-700 rounded-3xl p-8 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
                     <div className="relative">
                       <h4 className="text-lg font-semibold mb-2 opacity-90">Total Earnings</h4>
@@ -942,7 +1130,7 @@ const DashboardPage: React.FC = () => {
                           <p className="text-sm text-gray-500">{transaction.date}</p>
                         </div>
                         <div className="text-right">
-                          <p className={`font-bold text-lg ${transaction.type === 'Earning' ? 'text-emerald-600' : 'text-red-600'
+                          <p className={`font-bold text-lg ${transaction.type === 'Earning' ? 'text-success-600' : 'text-red-600'
                             }`}>
                             {transaction.type === 'Earning' ? '+' : '-'}${transaction.amount}
                           </p>
@@ -979,7 +1167,7 @@ const DashboardPage: React.FC = () => {
                           <span className="text-sm font-semibold text-yellow-700">{car.rating}</span>
                         </div>
                       </div>
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-colors">
+                      <Button className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-xl font-medium transition-colors">
                         Book Now
                       </Button>
                     </div>
@@ -990,20 +1178,135 @@ const DashboardPage: React.FC = () => {
 
             {activeTab === 'reviews' && (
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Reviews</h3>
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Star className="w-10 h-10 text-gray-400" />
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">My Reviews</h3>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">
+                      {userReviews.length} review{userReviews.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                  <h4 className="text-lg font-semibold text-gray-600 mb-2">No Reviews Yet</h4>
-                  <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                    Start renting cars to receive reviews from hosts and renters.
-                    Your reviews will help build trust with the community.
-                  </p>
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors">
-                    Browse Cars
-                  </Button>
                 </div>
+                
+                {loadingReviews ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                  </div>
+                ) : userReviews.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Star className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-600 mb-2">No Reviews Yet</h4>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                      Start renting cars to receive reviews from hosts and renters.
+                      Your reviews will help build trust with the community.
+                    </p>
+                    <Button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors">
+                      Browse Cars
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {userReviews.map((review) => (
+                      <div key={review.id} className="border border-gray-100 rounded-2xl p-6 hover:border-gray-200 transition-colors">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                              <Star className="w-6 h-6 text-primary-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{review.title}</h4>
+                              <p className="text-sm text-gray-500">
+                                {new Date(review.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            {[...Array(5)].map((_, index) => (
+                              <Star
+                                key={index}
+                                className={`w-4 h-4 ${
+                                  index < review.overallRating
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                            <span className="ml-2 text-sm font-medium text-gray-900">
+                              {review.overallRating}/5
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <p className="text-gray-700 mb-4">{review.comment}</p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-gray-900">{review.communicationRating}</div>
+                            <div className="text-xs text-gray-500">Communication</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-gray-900">{review.conditionRating}</div>
+                            <div className="text-xs text-gray-500">Condition</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-gray-900">{review.valueRating}</div>
+                            <div className="text-xs text-gray-500">Value</div>
+                          </div>
+                          {review.deliveryRating && (
+                            <div className="text-center">
+                              <div className="text-lg font-semibold text-gray-900">{review.deliveryRating}</div>
+                              <div className="text-xs text-gray-500">Delivery</div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {review.response && (
+                          <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
+                                <span className="text-xs text-white font-bold">R</span>
+                              </div>
+                              <span className="text-sm font-medium text-gray-900">Your Response</span>
+                            </div>
+                            <p className="text-gray-700 text-sm">{review.response}</p>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <span className={`px-2 py-1 rounded-full ${
+                              review.moderationStatus === 'approved' 
+                                ? 'bg-success-100 text-success-700'
+                                : review.moderationStatus === 'pending'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}>
+                              {review.moderationStatus}
+                            </span>
+                            {review.isVerifiedBooking && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {review.isFlagged && (
+                              <span className="text-red-500 text-xs">⚠️ Flagged</span>
+                            )}
+                            <button
+                              onClick={() => handleViewReviewDetail(review.id)}
+                              disabled={loadingReviewDetail}
+                              className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                            >
+                              {loadingReviewDetail ? 'Loading...' : 'View Details'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1034,6 +1337,170 @@ const DashboardPage: React.FC = () => {
         onClose={() => setShowEditModal(false)}
         productId={editProductId || ''}
       />
+
+      {/* Review Detail Modal */}
+      {showReviewDetail && selectedReview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Review Details</h3>
+                <button
+                  onClick={() => {
+                    setShowReviewDetail(false);
+                    setSelectedReview(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Review Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                      <Star className="w-6 h-6 text-primary-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{selectedReview.title}</h4>
+                      <p className="text-sm text-gray-500">
+                        {new Date(selectedReview.createdAt).toLocaleDateString()} at{' '}
+                        {new Date(selectedReview.createdAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    {[...Array(5)].map((_, index) => (
+                      <Star
+                        key={index}
+                        className={`w-5 h-5 ${
+                          index < selectedReview.overallRating
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                    <span className="ml-2 text-lg font-medium text-gray-900">
+                      {selectedReview.overallRating}/5
+                    </span>
+                  </div>
+                </div>
+
+                {/* Review Comment */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h5 className="font-medium text-gray-900 mb-2">Review Comment</h5>
+                  <p className="text-gray-700">{selectedReview.comment}</p>
+                </div>
+
+                {/* Detailed Ratings */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-xl">
+                    <div className="text-2xl font-bold text-gray-900">{selectedReview.communicationRating}</div>
+                    <div className="text-sm text-gray-500">Communication</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-xl">
+                    <div className="text-2xl font-bold text-gray-900">{selectedReview.conditionRating}</div>
+                    <div className="text-sm text-gray-500">Condition</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-xl">
+                    <div className="text-2xl font-bold text-gray-900">{selectedReview.valueRating}</div>
+                    <div className="text-sm text-gray-500">Value</div>
+                  </div>
+                  {selectedReview.deliveryRating && (
+                    <div className="text-center p-4 bg-gray-50 rounded-xl">
+                      <div className="text-2xl font-bold text-gray-900">{selectedReview.deliveryRating}</div>
+                      <div className="text-sm text-gray-500">Delivery</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* AI Analysis */}
+                {selectedReview.aiSentimentScore && (
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <h5 className="font-medium text-gray-900 mb-3">AI Analysis</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-blue-600">
+                          {parseFloat(selectedReview.aiSentimentScore).toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-500">Sentiment Score</div>
+                      </div>
+                      {selectedReview.aiToxicityScore && (
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-orange-600">
+                            {parseFloat(selectedReview.aiToxicityScore).toFixed(2)}
+                          </div>
+                          <div className="text-xs text-gray-500">Toxicity Score</div>
+                        </div>
+                      )}
+                      {selectedReview.aiHelpfulnessScore && (
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-green-600">
+                            {parseFloat(selectedReview.aiHelpfulnessScore).toFixed(2)}
+                          </div>
+                          <div className="text-xs text-gray-500">Helpfulness Score</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Response Section */}
+                {selectedReview.response && (
+                  <div className="bg-green-50 rounded-xl p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-white font-bold">R</span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">Your Response</span>
+                      {selectedReview.responseDate && (
+                        <span className="text-xs text-gray-500">
+                          {new Date(selectedReview.responseDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-700">{selectedReview.response}</p>
+                  </div>
+                )}
+
+                {/* Metadata */}
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Review ID:</span>
+                      <p className="font-mono text-xs text-gray-700">{selectedReview.id}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Booking ID:</span>
+                      <p className="font-mono text-xs text-gray-700">{selectedReview.bookingId}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Reviewer ID:</span>
+                      <p className="font-mono text-xs text-gray-700">{selectedReview.reviewerId}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Status:</span>
+                      <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
+                        selectedReview.moderationStatus === 'approved' 
+                          ? 'bg-success-100 text-success-700'
+                          : selectedReview.moderationStatus === 'pending'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {selectedReview.moderationStatus}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

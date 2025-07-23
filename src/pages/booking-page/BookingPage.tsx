@@ -1,879 +1,665 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronRight, CreditCard, Calendar, Clock, MapPin, AlertCircle, CheckCircle, Smartphone, Wallet, Banknote, User, Mail, Phone } from 'lucide-react';
-import Button from '../../components/ui/Button';
-import { formatPrice } from '../../lib/utils';
-import { getProductById, fetchProductImages } from '../admin/service/api'; // adjust path as needed
-import { wkbHexToLatLng, getCityFromCoordinates } from '../../lib/utils';
-import AddPaymentMethod from './components/AddPaymentMethod';
-import PaymentStepper from './components/PaymentStepper';
-import { createBooking, fetchPaymentMethods } from './service/api'; // Assuming createBooking is in this file
-import { fetchProductImages as adminFetchProductImages } from '../admin/service/api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  Calendar as CalendarIcon,
+  CreditCard as CreditCardIcon,
+  CheckCircle as CheckCircleIcon,
+  Star as StarIcon,
+  MapPin as MapPinIcon,
+  Clock,
+  User,
+  MessageSquare,
+  TrendingUp,
+  Shield,
+} from 'react-feather';
+import { createBooking } from './service/api';
+import { fetchProductImages, getProductById } from '../admin/service/api';
 import { useToast } from '../../contexts/ToastContext';
+import ReviewForm from './components/ReviewForm';
+import PaymentStepper from './components/PaymentStepper';
+import Button from '../../components/ui/Button';
 
-// Define a more comprehensive type for images and responses
-type ImageType = string | { url?: string; image_url?: string; path?: string };
-type ImageResponse = {
-  data?: ImageType[] | ImageType;
-  success?: boolean;
-  message?: string;
-} | ImageType[];
-
-// Type guard to check if input is an image
-function isImage(input: any): input is ImageType {
-  return (
-    typeof input === 'string' || 
-    (typeof input === 'object' && (
-      input.url || 
-      input.image_url || 
-      input.path
-    ))
-  );
-}
-
-// Utility function to extract image URL
-function getImageUrl(image: ImageType | undefined): string {
-  if (!image) return '/assets/img/placeholder-image.png';
-  
-  if (typeof image === 'string') return image;
-  
-  return (
-    (image as { url?: string })?.url || 
-    (image as { image_url?: string })?.image_url || 
-    (image as { path?: string })?.path || 
-    '/assets/img/placeholder-image.png'
-  );
-}
-
-// Utility function to normalize images
-function normalizeImages(input: any): ImageType[] {
-  // If input is an array, filter for valid images
-  if (Array.isArray(input)) {
-    return input.filter(isImage);
-  }
-  
-  // If input is an object with data property
-  if (input && typeof input === 'object') {
-    const dataImages = input.data;
-    
-    // If data is an array, filter for valid images
-    if (Array.isArray(dataImages)) {
-      return dataImages.filter(isImage);
-    }
-    
-    // If data is a single valid image
-    if (isImage(dataImages)) {
-      return [dataImages];
-    }
-  }
-  
-  // If input is a single valid image
-  if (isImage(input)) {
-    return [input];
-  }
-  
-  // Fallback to empty array
-  return [];
-}
+const steps = [
+  { label: 'Booking Details', icon: CalendarIcon, description: 'Select dates and preferences' },
+  { label: 'Payment', icon: CreditCardIcon, description: 'Secure payment processing' },
+  { label: 'Confirmation', icon: CheckCircleIcon, description: 'Booking confirmed' },
+  { label: 'Review', icon: StarIcon, description: 'Share your experience' },
+];
 
 const BookingPage: React.FC = () => {
-  const { carId, itemId } = useParams<{ carId?: string; itemId?: string }>();
   const navigate = useNavigate();
-  
-  // Support both legacy car bookings and new item bookings
-  const bookingId = itemId || carId;
-  const isLegacyCarBooking = !!carId && !itemId;
-  
-  // Find the item/car being booked
-  const [bookingItem, setBookingItem] = useState<any>(null);
-  // State for product images
-  const [images, setImages] = useState<ImageType[]>(['/assets/img/placeholder-image.png']);
-  const [loading, setLoading] = useState(true);
-  const [itemLocation, setItemLocation] = useState<{ city: string | null, country: string | null }>({ city: null, country: null });
-  console.log(bookingItem,'booked item')
-  useEffect(() => {
-    if (!itemId) return;
-    setLoading(true);
-    const token = localStorage.getItem('token') || undefined;
-    getProductById(itemId, token).then(result => {
-      let product = null;
-      if (result) {
-        product = result;
+  const { itemId } = useParams<{ itemId: string }>();
+  const { showToast } = useToast();
 
-      } else if (result.data && result.data.data && result.data.data.status === 'active') {
-        product = result.data.data;
-      }
-      setBookingItem(product);
-      setLoading(false);
-      if (product && product.id) {
-        fetchProductImages(product.id, token).then(({ data, error }) => {
-          let imgs: any[] = [];
-          if (!error && data && Array.isArray(data.data)) {
-            imgs = data.data;
-          } else if (!error && data && Array.isArray(data)) {
-            imgs = data;
-          }
-          setImages(Array.isArray(imgs) ? imgs : []);
-        });
-        // Fetch city/country for location
-        if (product.location) {
-          let lat, lng;
-          if (typeof product.location === 'string') {
-            const coords = wkbHexToLatLng(product.location);
-            if (coords) {
-              lat = coords.lat;
-              lng = coords.lng;
-            }
-          } else if (
-            product.location &&
-            typeof product.location === 'object' &&
-            ('lat' in product.location || 'latitude' in product.location) &&
-            ('lng' in product.location || 'longitude' in product.location)
-          ) {
-            lat = (product.location as any).lat ?? (product.location as any).latitude;
-            lng = (product.location as any).lng ?? (product.location as any).longitude;
-          }
-          if (lat !== undefined && lng !== undefined) {
-            getCityFromCoordinates(lat, lng).then(({ city, country }) => {
-              setItemLocation({ city, country });
-            });
-          } else if (
-            product.location &&
-            typeof product.location === 'object' &&
-            'city' in product.location
-          ) {
-            setItemLocation({ city: (product.location as any).city, country: null });
-          } else {
-            setItemLocation({ city: null, country: null });
-          }
-        } else {
-          setItemLocation({ city: null, country: null });
-        }
-      } else {
-        setImages([]);
-        setItemLocation({ city: null, country: null });
-      }
-    });
-  }, [itemId]);
-  
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  // State
+  const [bookingItem, setBookingItem] = useState<any>(null);
+  const [images, setImages] = useState<string[]>(['/assets/img/placeholder-image.png']);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     startDate: '',
     endDate: '',
-    startTime: '10:00',
-    endTime: '10:00',
+    pickupTime: '10:00',
+    returnTime: '10:00',
     pickupMethod: 'pickup',
     renterNotes: '',
-    agreeTerms: false,
-    paymentMethod: '',
   });
-
-  const [currentStep, setCurrentStep] = useState<'details' | 'payment' | 'confirmation'>('details');
+  const [currentStep, setCurrentStep] = useState(0);
+  const [bookingId, setBookingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
-  
-  const { showToast } = useToast();
 
-  const fetchAndSetPaymentMethods = () => {
-    const token = localStorage.getItem('token') || undefined;
-    fetchPaymentMethods(token)
-      .then((res) => {
-        // Assuming the response has a data property
-        setPaymentMethods(res.data?.data || res.data || []);
-      })
-      .catch(() => setPaymentMethods([]));
-  };
+  // Rental calculation
+  const rentalDetails = useMemo(() => {
+    const startDate = formData.startDate ? new Date(formData.startDate) : null;
+    const endDate = formData.endDate ? new Date(formData.endDate) : null;
+    let rentalDays = 0;
+    if (startDate && endDate) {
+      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+      rentalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (rentalDays === 0) rentalDays = 1;
+    }
+    const itemPrice = bookingItem?.base_price_per_day || 0;
+    const amount = itemPrice * rentalDays;
+    const serviceFee = amount * 0.1;
+    const totalCost = amount + serviceFee;
+    return { rentalDays, itemPrice, amount, serviceFee, totalCost };
+  }, [formData, bookingItem]);
 
+  // Fetch item and images
+  console.log(bookingItem,'data to check why booking item not visible')
   useEffect(() => {
-    fetchAndSetPaymentMethods();
-  }, []);
-
-  // Fetch product images when item details are loaded
-  useEffect(() => {
-    const fetchProductImagesForBooking = async () => {
+    const fetchItemDetails = async () => {
       try {
         const token = localStorage.getItem('token') || undefined;
-        if (bookingItem?.id) {
-          // Fetch images with a generic approach
-          const fetchedImagesResponse = await adminFetchProductImages(bookingItem.id, token);
-          
-          // Normalize images with a flexible approach
-          const normalizedImages: ImageType[] = [];
-          
-          // Check if response is an array
-          if (Array.isArray(fetchedImagesResponse)) {
-            normalizedImages.push(...fetchedImagesResponse.filter(isImage));
-          } 
-          // Check if response is an object with data property
-          else if (fetchedImagesResponse && typeof fetchedImagesResponse === 'object') {
-            const data = (fetchedImagesResponse as { data?: ImageType[] | ImageType }).data;
-            
-            if (Array.isArray(data)) {
-              normalizedImages.push(...data.filter(isImage));
-            } else if (isImage(data)) {
-              normalizedImages.push(data);
-            }
-          } 
-          // Check if response is a single image
-          else if (isImage(fetchedImagesResponse)) {
-            normalizedImages.push(fetchedImagesResponse);
-          }
-
-          // Use placeholder if no images found
-          setImages(
-            normalizedImages.length > 0 
-              ? normalizedImages 
-              : ['/assets/img/placeholder-image.png']
-          );
+        if (itemId) {
+          const productDetails = await getProductById(itemId, token);
+          setBookingItem(productDetails);
+          const productImages = await fetchProductImages(itemId, token);
+          const normalizedImages = Array.isArray(productImages)
+            ? productImages
+            : (productImages && Array.isArray((productImages as any).data) ? (productImages as any).data : []);
+          setImages(normalizedImages.length > 0 ? normalizedImages : ['/assets/img/placeholder-image.png']);
         }
       } catch (error) {
-        console.error('Error fetching product images:', error);
-        setImages(['/assets/img/placeholder-image.png']);
+        showToast('Failed to load item details', 'error');
+      } finally {
+        setLoading(false);
       }
     };
+    fetchItemDetails();
+  }, [itemId, showToast]);
 
-    if (bookingItem?.id) {
-      fetchProductImagesForBooking();
-    }
-  }, [bookingItem]);
+  // Debugging: log currentStep and bookingId
+  useEffect(() => {
+    console.log('Current Step:', currentStep, 'Booking ID:', bookingId);
+  }, [currentStep, bookingId]);
 
-  // Handle case when item/car is not found
-  if (loading) {
-    return <div>Loading...</div>;
-  }
- 
+  // Handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
-  };
-
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (currentStep === 'details') {
-      setIsSubmitting(true);
-      setValidationErrors({});
-      try {
-        const token = localStorage.getItem('token') || '';
-        const bookingPayload = {
-          product_id: bookingItem?.id,
-          owner_id: bookingItem?.owner_id,
-          start_date: formData.startDate,
-          end_date: formData.endDate,
-          pickup_time: formData.startTime,
-          return_time: formData.endTime,
-          pickup_method: formData.pickupMethod,
-          renter_notes: formData.renterNotes,
-        };
-        // @ts-ignore
-        await createBooking(bookingPayload, token);
-        showToast('Booking successful!', 'success');
-        setCurrentStep('payment');
-      } catch (error) {
-        setValidationErrors({ api: 'Booking failed. Please try again.' });
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else if (currentStep === 'payment') {
-      let errors: Record<string, string> = {};
-      
-      // No specific validation for pickupMethod or renterNotes as they are not required
-      
-      // If there are validation errors, show them and don't proceed
-      if (Object.keys(errors).length > 0) {
-        setValidationErrors(errors);
-        return;
-      }
-      
-      // Clear any previous errors
-      setValidationErrors({});
-      setIsSubmitting(true);
-      
-      try {
-        const token = localStorage.getItem('token') || '';
-        const bookingPayload = {
-          product_id: bookingItem?.id,
-          owner_id: bookingItem?.owner_id,
-          start_date: formData.startDate,
-          end_date: formData.endDate,
-          pickup_time: formData.startTime,
-          return_time: formData.endTime,
-          pickup_method: formData.pickupMethod,
-          renter_notes: formData.renterNotes,
-        };
-        // @ts-ignore
-        await createBooking(bookingPayload, token);
-        setCurrentStep('confirmation');
-      } catch (error) {
-        setValidationErrors({ api: 'Booking failed. Please try again.' });
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else if (currentStep === 'confirmation') {
-      navigate('/dashboard');
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear validation error when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  // Calculate rental duration and cost
-  const startDate = formData.startDate ? new Date(formData.startDate) : null;
-  const endDate = formData.endDate ? new Date(formData.endDate) : null;
-  
-  let rentalDays = 0;
-  if (startDate && endDate) {
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    rentalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (rentalDays === 0) rentalDays = 1; // Minimum 1 day
-  }
-  
-  const itemPrice = bookingItem.base_price_per_day;
-  const amount = itemPrice * rentalDays;
-  const serviceFee = amount * 0.1;
-  const totalCost = amount + serviceFee;
+  const handleSubmitBookingDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setValidationErrors({});
+    const errors: Record<string, string> = {};
+    if (!formData.startDate) errors.startDate = 'Pickup date is required';
+    if (!formData.endDate) errors.endDate = 'Return date is required';
+    if (formData.startDate && formData.endDate && new Date(formData.startDate) > new Date(formData.endDate)) {
+      errors.dates = 'Return date must be after pickup date';
+    }
+    if (!formData.pickupTime) errors.pickupTime = 'Pickup time is required';
+    if (!formData.returnTime) errors.returnTime = 'Return time is required';
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setIsSubmitting(false);
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token') || '';
+      const bookingPayload = {
+        product_id: bookingItem?.id,
+        owner_id: bookingItem?.owner_id,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        pickup_time: formData.pickupTime,
+        return_time: formData.returnTime,
+        pickup_method: formData.pickupMethod,
+        renter_notes: formData.renterNotes,
+      };
+      const response = await createBooking(bookingPayload, token);
+      
+      console.log('Booking creation response:', response);
+      console.log('Booking ID from response:', response.data?.data?.id);
+      
+      if (response.success && response.data?.data?.id) {
+        setBookingId(response.data.data.id);
+        setCurrentStep(1);
+        showToast('Booking details confirmed', 'success');
+      } else {
+        showToast('Failed to create booking', 'error');
+      }
+    } catch {
+      showToast('Booking failed. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
-      {/* Enhanced Breadcrumb */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <nav className="flex items-center text-sm">
-            <Link to="/" className="group flex items-center text-gray-600 hover:text-primary-600 transition-all duration-200">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-2 group-hover:bg-primary-100 transition-colors">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                </div>
-                <span className="font-medium">Home</span>
-              </div>
-            </Link>
-            <ChevronRight className="w-4 h-4 mx-3 text-gray-300" />
-            <Link to={isLegacyCarBooking ? "/cars" : "/items"} className="group flex items-center text-gray-600 hover:text-primary-600 transition-all duration-200">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-2 group-hover:bg-primary-100 transition-colors">
-                  {isLegacyCarBooking ? (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2.586a2 2 0 01.586-1.414L12 10V7a1 1 0 011-1h2a1 1 0 011 1v3l2.414 2.586A2 2 0 0119 14.414V17M9 17h10M9 17l-3 3M19 17l3 3" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  )}
-                </div>
-                <span className="font-medium">{isLegacyCarBooking ? "Cars" : "Items"}</span>
-              </div>
-            </Link>
-            <ChevronRight className="w-4 h-4 mx-3 text-gray-300" />
-            <Link 
-              to={isLegacyCarBooking ? `/cars/${bookingId}` : `/items/${bookingId}`} 
-              className="group flex items-center text-gray-600 hover:text-primary-600 transition-all duration-200"
-            >
-              <div className="flex items-center">
-                <img 
-                  src={getImageUrl(images[0])} 
-                  alt={bookingItem.name}
-                  className="w-8 h-8 object-cover rounded-lg mr-2 border border-gray-200 group-hover:border-primary-300 transition-colors"
-                />
-                <span className="font-medium truncate max-w-[150px]">{bookingItem.title}</span>
-              </div>
-            </Link>
-            <ChevronRight className="w-4 h-4 mx-3 text-gray-300" />
-            <div className="flex items-center text-primary-600 font-semibold">
-              <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mr-2">
-                <Calendar className="w-4 h-4" />
-              </div>
-              <span>Book Now</span>
-            </div>
-          </nav>
+  const handlePaymentSuccess = () => {
+    setCurrentStep(2);
+    showToast('Payment successful!', 'success');
+  };
+
+  const handleReviewSubmitted = () => {
+    showToast('Thank you for your review!', 'success');
+    navigate('/dashboard');
+  };
+
+  // Enhanced Stepper UI
+  const renderStepper = () => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
+      <div className="flex items-center justify-between relative">
+        {/* Progress Line */}
+        <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-10">
+          <div 
+            className="h-full bg-[#00aaa9] transition-all duration-500 ease-out"
+            style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+          />
         </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Enhanced Progress Steps */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <div className="relative">
-            {/* Progress Line */}
-            <div className="absolute top-6 left-0 w-full h-1 bg-gray-200 rounded-full">
-              <div 
-                className={`h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-700 ease-out ${
-                  currentStep === 'details' ? 'w-0' : 
-                  currentStep === 'payment' ? 'w-1/2' : 'w-full'
-                }`} 
-              />
-            </div>
-            
-            <div className="relative flex justify-between">
-              {/* Step 1: Details */}
-              <div className="flex flex-col items-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-3 transition-all duration-300 ${
-                  currentStep === 'details' 
-                    ? 'border-primary-600 bg-white shadow-lg shadow-primary-200' 
-                    : currentStep === 'payment' || currentStep === 'confirmation'
-                    ? 'border-green-500 bg-green-500 shadow-lg shadow-green-200'
-                    : 'border-gray-200 bg-white'
-                } relative z-10`}>
-                  {currentStep === 'payment' || currentStep === 'confirmation' ? (
-                    <CheckCircle className="w-6 h-6 text-white" />
-                  ) : (
-                    <Calendar className={`w-6 h-6 ${currentStep === 'details' ? 'text-primary-600' : 'text-gray-400'}`} />
-                  )}
-                </div>
-                <div className="mt-3 text-center">
-                  <div className={`font-semibold text-sm ${
-                    currentStep === 'details' ? 'text-primary-600' : 
-                    currentStep === 'payment' || currentStep === 'confirmation' ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    Rental Details
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">Enter booking info</div>
-                </div>
-              </div>
-              
-              {/* Step 2: Payment */}
-              <div className="flex flex-col items-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-3 transition-all duration-300 ${
-                  currentStep === 'payment'
-                    ? 'border-primary-600 bg-white shadow-lg shadow-primary-200'
-                    : currentStep === 'confirmation'
-                    ? 'border-green-500 bg-green-500 shadow-lg shadow-green-200'
-                    : 'border-gray-200 bg-white'
-                } relative z-10`}>
-                  {currentStep === 'confirmation' ? (
-                    <CheckCircle className="w-6 h-6 text-white" />
-                  ) : (
-                    <CreditCard className={`w-6 h-6 ${currentStep === 'payment' ? 'text-primary-600' : 'text-gray-400'}`} />
-                  )}
-                </div>
-                <div className="mt-3 text-center">
-                  <div className={`font-semibold text-sm ${
-                    currentStep === 'payment' ? 'text-primary-600' : 
-                    currentStep === 'confirmation' ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    Payment
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">Choose payment method</div>
-                </div>
-              </div>
-              
-              {/* Step 3: Confirmation */}
-              <div className="flex flex-col items-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-3 transition-all duration-300 ${
-                  currentStep === 'confirmation'
-                    ? 'border-primary-600 bg-white shadow-lg shadow-primary-200'
-                    : 'border-gray-200 bg-white'
-                } relative z-10`}>
-                  <CheckCircle className={`w-6 h-6 ${currentStep === 'confirmation' ? 'text-primary-600' : 'text-gray-400'}`} />
-                </div>
-                <div className="mt-3 text-center">
-                  <div className={`font-semibold text-sm ${currentStep === 'confirmation' ? 'text-primary-600' : 'text-gray-400'}`}>
-                    Confirmation
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">Booking complete</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="xl:col-span-2">
-            {currentStep === 'details' && (
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
-                {/* Header */}
-                <div className="p-8 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-3xl font-bold text-gray-900">Rental Details</h2>
-                      <p className="text-gray-600 mt-2">Please provide your booking information</p>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-full">
-                      <Clock className="w-4 h-4 mr-2" />
-                      <span>Takes ~2 mins</span>
-                    </div>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-8">
-                  <div className="space-y-10">
-                    {/* Rental Period Section */}
-                    <div>
-                      <div className="flex items-center mb-6">
-                        <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center mr-4">
-                          <Calendar className="w-5 h-5 text-primary-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900">Rental Period</h3>
-                          <p className="text-gray-600 text-sm">When do you need the {bookingItem.type === 'car' ? 'car' : 'item'}?</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Pickup Date & Time */}
-                        <div className="space-y-4">
-                          <div>
-                            <label htmlFor="startDate" className="block text-sm font-semibold text-gray-900 mb-3">
-                              Pickup Date <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              id="startDate"
-                              name="startDate"
-                              type="date"
-                              value={formData.startDate}
-                              onChange={handleChange}
-                              required
-                              min={new Date().toISOString().split('T')[0]}
-                              className="block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="startTime" className="block text-sm font-semibold text-gray-900 mb-3">
-                              Pickup Time <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              id="startTime"
-                              name="startTime"
-                              type="time"
-                              value={formData.startTime}
-                              onChange={handleChange}
-                              required
-                              className="block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200"
-                            />
-                          </div>
-                        </div>
-                        {/* Return Date & Time */}
-                        <div className="space-y-4">
-                          <div>
-                            <label htmlFor="endDate" className="block text-sm font-semibold text-gray-900 mb-3">
-                              Return Date <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              id="endDate"
-                              name="endDate"
-                              type="date"
-                              value={formData.endDate}
-                              onChange={handleChange}
-                              required
-                              min={formData.startDate || new Date().toISOString().split('T')[0]}
-                              className="block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="endTime" className="block text-sm font-semibold text-gray-900 mb-3">
-                              Return Time <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              id="endTime"
-                              name="endTime"
-                              type="time"
-                              value={formData.endTime}
-                              onChange={handleChange}
-                              required
-                              className="block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Pickup Method */}
-                    <div>
-                      <label htmlFor="pickupMethod" className="block text-sm font-semibold text-gray-900 mb-3">
-                        Pickup Method <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        id="pickupMethod"
-                        name="pickupMethod"
-                        value={formData.pickupMethod}
-                        onChange={handleChange}
-                        required
-                        className="block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200"
-                      >
-                        <option value="pickup">Pickup</option>
-                        <option value="delivery">Delivery</option>
-                      </select>
-                    </div>
-                    {/* Renter Notes */}
-                    <div>
-                      <label htmlFor="renterNotes" className="block text-sm font-semibold text-gray-900 mb-3">
-                        Notes for Owner (optional)
-                      </label>
-                      <textarea
-                        id="renterNotes"
-                        name="renterNotes"
-                        value={formData.renterNotes}
-                        onChange={handleChange}
-                        rows={3}
-                        className="block w-full border-2 rounded-xl p-4 text-gray-900 focus:ring-4 focus:ring-primary-100 transition-all duration-200"
-                        placeholder="Please call me when you arrive for pickup."
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-10 pt-8 border-t border-gray-100">
-                    <Button type="submit" className="w-full lg:w-auto px-12 py-4 text-lg font-semibold rounded-xl">
-                      {isSubmitting ? (
-                        <div className="flex items-center">
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                          Processing...
-                        </div>
-                      ) : (
-                        'Complete Booking'
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {currentStep === 'payment' && (
-              <PaymentStepper
-                bookingId={bookingItem.id}
-                amount={amount}
-                currency={paymentMethods[0]?.currency || 'RWF'}
-                onSuccess={() => setCurrentStep('confirmation')}
-              />
-            )}
-
-            {currentStep === 'confirmation' && (
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-100 text-center">
-                <div className="p-8">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle className="w-12 h-12 text-green-600" />
-                  </div>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-3">Booking Confirmed!</h2>
-                  <p className="text-lg text-gray-600 mb-8">
-                    Your booking has been confirmed. You will receive a confirmation email shortly.
-                  </p>
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-8 mb-8 text-left">
-                    <div className="flex items-center mb-6">
-                      <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900">Booking Details</h3>
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 mb-1">Booking ID</p>
-                          <p className="text-lg font-bold text-gray-900">{bookingItem?.booking_id || bookingItem?.id || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 mb-1">{bookingItem.type === 'car' ? 'Car' : 'Item'}</p>
-                          <p className="text-lg font-bold text-gray-900">{bookingItem.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 mb-1">Pickup Date & Time</p>
-                          <p className="text-lg font-semibold text-gray-900">
-                            {formData.startDate ? new Date(formData.startDate).toLocaleDateString() : 'N/A'}, {formData.startTime}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 mb-1">Return Date & Time</p>
-                          <p className="text-lg font-semibold text-gray-900">
-                            {formData.endDate ? new Date(formData.endDate).toLocaleDateString() : 'N/A'}, {formData.endTime}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 mb-1">Payment Method</p>
-                          <p className="text-lg font-semibold text-gray-900">
-                            {bookingItem?.payment_method || 'Unknown'}
-                          </p>
-                        </div>
-                        {bookingItem?.mobile_money_number && (
-                          <div>
-                            <p className="text-sm font-medium text-gray-600 mb-1">Mobile Money Number</p>
-                            <p className="text-lg font-semibold text-gray-900">{bookingItem.phone_number}</p>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 mb-1">Total Amount</p>
-                          <p className="text-2xl font-bold text-primary-600">{bookingItem.base_price_per_day}</p>
-                        </div>
-                      </div>
-                    </div>
-                    {['mtn', 'airtel', 'mpesa', 'orange', 'wave', 'other-mobile'].includes(bookingItem?.payment_method || '') && (
-                      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                        <div className="flex items-start">
-                          <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                            <Smartphone className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-blue-900 mb-2">Payment Status</h4>
-                            <p className="text-sm text-blue-800">
-                              A payment request has been sent to your mobile money account.
-                              Please check your phone for the payment prompt and follow the instructions to complete the payment.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <Button 
-                    onClick={() => navigate('/dashboard')} 
-                    className="px-12 py-4 text-lg font-semibold rounded-xl"
-                  >
-                    Go to Dashboard
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+        
+        {steps.map((step, idx) => {
+          const StepIcon = step.icon;
+          const isActive = currentStep === idx;
+          const isCompleted = currentStep > idx;
           
-          {/* Enhanced Order Summary */}
-          <div className="xl:col-span-1">
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 sticky top-32">
-              {/* Header */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-gray-900">Order Summary</h3>
-                  <div className="flex items-center text-sm font-semibold text-primary-600 bg-primary-50 px-3 py-1 rounded-full">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {rentalDays || 0} {rentalDays === 1 ? 'day' : 'days'}
-                  </div>
-                </div>
+          return (
+            <div key={step.label} className="flex flex-col items-center relative z-10">
+              <div className={`
+                w-10 h-10 rounded-full flex items-center justify-center mb-3 transition-all duration-300
+                ${isActive 
+                  ? 'bg-[#00aaa9] text-white shadow-lg shadow-[#00aaa9]/25' 
+                  : isCompleted 
+                    ? 'bg-[#00aaa9] text-white' 
+                    : 'bg-gray-100 text-gray-400'
+                }
+              `}>
+                <StepIcon className="w-5 h-5" />
               </div>
-              
-              {/* Item Details */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-start space-x-4">
-                  <div className="relative">
-                    <img
-                      src={getImageUrl(images[0])}
-                      alt={bookingItem.name}
-                      className="w-20 h-16 object-cover rounded-xl shadow-md border border-gray-200"
-                    />
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">1</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 mb-1 truncate">{bookingItem.name}</h4>
-                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <MapPin className="w-3 h-3 mr-1" />
-                      <span className="truncate">
-                        {bookingItem.type === 'car' 
-                          ? `${bookingItem.year} • ${bookingItem.transmission}` 
-                          : `${bookingItem.category} • ${itemLocation.city || 'Unknown'}${itemLocation.country ? `, ${itemLocation.country}` : ''}`
-                        }
-                      </span>
-                    </div>
-                    <div className="flex items-baseline">
-                      <span className="text-lg font-bold text-primary-600">{formatPrice(itemPrice)}</span>
-                      <span className="text-sm text-gray-500 ml-1">/ {bookingItem.type === 'car' ? 'day' : (bookingItem.priceUnit || 'day')}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Cost Breakdown */}
-              <div className="p-6 space-y-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-gray-900">Rental Cost</p>
-                    <p className="text-xs text-gray-500">{rentalDays || 0} {rentalDays === 1 ? 'day' : 'days'} × {formatPrice(itemPrice)}</p>
-                  </div>
-                  <span className="font-bold text-gray-900">{formatPrice(amount)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-gray-900">Service Fee</p>
-                    <p className="text-xs text-gray-500">Platform service charge (10%)</p>
-                  </div>
-                  <span className="font-bold text-gray-900">{formatPrice(serviceFee)}</span>
-                </div>
-
-                <div className="border-t border-dashed border-gray-300 my-4"></div>
-                
-                <div className="flex justify-between items-center py-2 bg-primary-50 rounded-xl px-4">
-                  <div>
-                    <p className="font-bold text-lg text-gray-900">Total Amount</p>
-                    <p className="text-xs text-gray-600">Including all fees</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-2xl text-primary-600">{formatPrice(totalCost)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Messages */}
-              <div className="p-6 border-t border-gray-100">
-                {currentStep === 'details' && (
-                  <div className="bg-primary-50 border border-primary-200 text-primary-800 p-4 rounded-xl">
-                    <div className="flex items-start">
-                      <div className="w-6 h-6 bg-primary-100 rounded-lg flex items-center justify-center mr-3 mt-0.5">
-                        <AlertCircle className="w-4 h-4 text-primary-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold mb-1">Secure your booking now</p>
-                        <p className="text-sm">Fill in the required information to proceed with your rental request.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {currentStep === 'payment' && (
-                  <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl">
-                    <div className="flex items-start">
-                      <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center mr-3 mt-0.5">
-                        <CreditCard className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold mb-1">Secure Payment</p>
-                        <p className="text-sm">
-                          Your payment information is secure and encrypted. We do not store your card details.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {currentStep === 'confirmation' && (
-                  <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl">
-                    <div className="flex items-start">
-                      <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center mr-3 mt-0.5">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold mb-1">Booking Confirmed</p>
-                        <p className="text-sm">
-                          Your booking has been successfully confirmed. Check your email for details.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              <div className="text-center max-w-24">
+                <span className={`
+                  block text-sm font-semibold mb-1 transition-colors
+                  ${isActive ? 'text-[#00aaa9]' : isCompleted ? 'text-gray-700' : 'text-gray-400'}
+                `}>
+                  {step.label}
+                </span>
+                <span className="text-xs text-gray-500 hidden sm:block leading-tight">
+                  {step.description}
+                </span>
               </div>
             </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
-      {showAddPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 relative">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-              onClick={() => setShowAddPaymentModal(false)}
-            >
-              &times;
-            </button>
-            <AddPaymentMethod
-              onSuccess={() => {
-                setShowAddPaymentModal(false);
-                fetchAndSetPaymentMethods();
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
-}
+
+  // Enhanced Step Content
+  const renderStepContent = () => {
+    if (currentStep === 0) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Details</h2>
+            <p className="text-gray-600">Please provide your rental preferences and schedule</p>
+          </div>
+          
+          <form onSubmit={handleSubmitBookingDetails} className="space-y-8">
+            {/* Rental Period */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                <CalendarIcon className="w-5 h-5 mr-2 text-[#00aaa9]" />
+                Rental Period
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pickup Date
+                    </label>
+                    <input 
+                      type="date" 
+                      name="startDate" 
+                      value={formData.startDate} 
+                      onChange={handleChange}
+                      className={`
+                        w-full px-4 py-3 border rounded-xl transition-all duration-200
+                        focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none
+                        ${validationErrors.startDate ? 'border-red-300 bg-red-50' : 'border-gray-300'}
+                      `}
+                      required 
+                    />
+                    {validationErrors.startDate && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <span className="w-4 h-4 mr-1">⚠</span>
+                        {validationErrors.startDate}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pickup Time
+                    </label>
+                    <input 
+                      type="time" 
+                      name="pickupTime" 
+                      value={formData.pickupTime} 
+                      onChange={handleChange}
+                      className={`
+                        w-full px-4 py-3 border rounded-xl transition-all duration-200
+                        focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none
+                        ${validationErrors.pickupTime ? 'border-red-300 bg-red-50' : 'border-gray-300'}
+                      `}
+                      required 
+                    />
+                    {validationErrors.pickupTime && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <span className="w-4 h-4 mr-1">⚠</span>
+                        {validationErrors.pickupTime}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Return Date
+                    </label>
+                    <input 
+                      type="date" 
+                      name="endDate" 
+                      value={formData.endDate} 
+                      onChange={handleChange}
+                      className={`
+                        w-full px-4 py-3 border rounded-xl transition-all duration-200
+                        focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none
+                        ${validationErrors.endDate ? 'border-red-300 bg-red-50' : 'border-gray-300'}
+                      `}
+                      required 
+                    />
+                    {validationErrors.endDate && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <span className="w-4 h-4 mr-1">⚠</span>
+                        {validationErrors.endDate}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Return Time
+                    </label>
+                    <input 
+                      type="time" 
+                      name="returnTime" 
+                      value={formData.returnTime} 
+                      onChange={handleChange}
+                      className={`
+                        w-full px-4 py-3 border rounded-xl transition-all duration-200
+                        focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none
+                        ${validationErrors.returnTime ? 'border-red-300 bg-red-50' : 'border-gray-300'}
+                      `}
+                      required 
+                    />
+                    {validationErrors.returnTime && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <span className="w-4 h-4 mr-1">⚠</span>
+                        {validationErrors.returnTime}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {validationErrors.dates && (
+                <p className="text-red-500 text-sm mt-4 flex items-center bg-red-50 p-3 rounded-lg">
+                  <span className="w-4 h-4 mr-2">⚠</span>
+                  {validationErrors.dates}
+                </p>
+              )}
+            </div>
+
+            {/* Pickup Method */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                <MapPinIcon className="w-5 h-5 mr-2 text-[#00aaa9]" />
+                Pickup Method
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className={`
+                  relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
+                  ${formData.pickupMethod === 'pickup' 
+                    ? 'border-[#00aaa9] bg-[#00aaa9]/5' 
+                    : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}>
+                  <input
+                    type="radio"
+                    name="pickupMethod"
+                    value="pickup"
+                    checked={formData.pickupMethod === 'pickup'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className={`
+                    w-4 h-4 rounded-full border-2 mr-3 transition-all duration-200
+                    ${formData.pickupMethod === 'pickup'
+                      ? 'border-[#00aaa9] bg-[#00aaa9] shadow-sm'
+                      : 'border-gray-300'
+                    }
+                  `}>
+                    {formData.pickupMethod === 'pickup' && (
+                      <div className="w-2 h-2 bg-white rounded-full m-0.5" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-900">Pickup at Location</span>
+                    <p className="text-sm text-gray-600">Meet the owner at their location</p>
+                  </div>
+                </label>
+                <label className={`
+                  relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
+                  ${formData.pickupMethod === 'delivery' 
+                    ? 'border-[#00aaa9] bg-[#00aaa9]/5' 
+                    : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}>
+                  <input
+                    type="radio"
+                    name="pickupMethod"
+                    value="delivery"
+                    checked={formData.pickupMethod === 'delivery'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className={`
+                    w-4 h-4 rounded-full border-2 mr-3 transition-all duration-200
+                    ${formData.pickupMethod === 'delivery'
+                      ? 'border-[#00aaa9] bg-[#00aaa9] shadow-sm'
+                      : 'border-gray-300'
+                    }
+                  `}>
+                    {formData.pickupMethod === 'delivery' && (
+                      <div className="w-2 h-2 bg-white rounded-full m-0.5" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-900">Delivery</span>
+                    <p className="text-sm text-gray-600">Have it delivered to you</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Additional Notes */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2 text-[#00aaa9]" />
+                Additional Information
+              </h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Special Instructions (Optional)
+                </label>
+                <textarea 
+                  name="renterNotes" 
+                  value={formData.renterNotes} 
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none resize-none"
+                  rows={4} 
+                  placeholder="Any special requests or instructions for the owner..."
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end pt-6 border-t border-gray-200">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-8 py-3 bg-[#00aaa9] hover:bg-[#008b8a] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                aria-label="Continue to Payment"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Continue to Payment
+                    <CreditCardIcon className="w-4 h-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+    
+    if (currentStep === 1 && bookingId) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Secure Payment</h2>
+            <p className="text-gray-600">Complete your booking with our secure payment system</p>
+          </div>
+          <PaymentStepper
+            bookingId={bookingId}
+            amount={rentalDetails.totalCost}
+            currency="RWF"
+            onSuccess={handlePaymentSuccess}
+          />
+        </div>
+      );
+    }
+    
+    if (currentStep === 2) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <CheckCircleIcon className="w-12 h-12 text-green-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Booking Confirmed!</h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-md">
+              🎉 Your booking was successful! You'll receive a confirmation email shortly.
+            </p>
+            
+            {/* Booking Summary Card */}
+            <div className="bg-gray-50 rounded-xl p-6 mb-8 w-full max-w-md">
+              <h3 className="font-semibold text-gray-900 mb-4">Booking Summary</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Booking ID</span>
+                  <span className="font-medium">{bookingId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Duration</span>
+                  <span className="font-medium">{rentalDetails.rentalDays} {rentalDetails.rentalDays === 1 ? 'day' : 'days'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Paid</span>
+                  <span className="font-medium text-[#00aaa9]">
+                    {rentalDetails.totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+              <Button
+                onClick={() => setCurrentStep(3)}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#00aaa9] hover:bg-[#008b8a] text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                aria-label="Leave a Review"
+              >
+                <StarIcon className="w-5 h-5" />
+                Leave a Review
+              </Button>
+              <Button
+                onClick={() => navigate('/dashboard')}
+                className="flex-1 flex items-center justify-center gap-2 border-2 border-[#00aaa9] text-[#00aaa9] bg-white font-semibold py-3 px-6 rounded-xl hover:bg-[#00aaa9] hover:text-white transition-all duration-200"
+                aria-label="Go to Dashboard"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (currentStep === 3 && bookingId) {
+      console.log('Rendering Review step with bookingId:', bookingId);
+      console.log('Owner ID from bookingItem:', bookingItem?.owner_id);
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-2xl mx-auto">
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Share Your Experience</h2>
+            <p className="text-gray-600">Help others by sharing your experience with this rental</p>
+          </div>
+          <ReviewForm 
+            bookingId={bookingId} 
+            ownerId={bookingItem?.owner_id}
+            onReviewSubmitted={handleReviewSubmitted} 
+          />
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="w-12 h-12 border-4 border-[#00aaa9] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading booking details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto">
+          {renderStepper()}
+          
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Enhanced Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
+                <div className="relative mb-6">
+                  <img 
+                    src={images[0]} 
+                    alt={bookingItem?.name || bookingItem?.title} 
+                    className="w-full h-48 rounded-xl object-cover"
+                  />
+                  <div className="absolute top-3 right-3">
+                    <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-[#00aaa9]">
+                      Featured
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {bookingItem?.title || bookingItem?.name}
+                  </h3>
+                  <div className="flex items-center text-gray-600 mb-3">
+                    <MapPinIcon className="w-4 h-4 mr-2" />
+                    <span className="text-sm">
+                      {bookingItem?.location?.city || 'Unknown'}, {bookingItem?.location?.country || ''}
+                    </span>
+                  </div>
+                  
+                  {/* Rating */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <StarIcon className="w-4 h-4 text-yellow-400 fill-current" />
+                    <span className="text-sm font-medium">{bookingItem?.average_rating || '0.00'}</span>
+                    <span className="text-xs text-gray-500">({bookingItem?.review_count || 0} reviews)</span>
+                  </div>
+                </div>
+                
+                {/* Price Breakdown */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-4">Price Breakdown</h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Daily Rate</span>
+                      <span className="font-medium">
+                        {rentalDetails.itemPrice.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Duration</span>
+                      <span className="font-medium">
+                        {rentalDetails.rentalDays} {rentalDetails.rentalDays === 1 ? 'day' : 'days'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal</span>
+                      <span className="font-medium">
+                        {rentalDetails.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Service Fee (10%)</span>
+                      <span className="font-medium">
+                        {rentalDetails.serviceFee.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                      </span>
+                    </div>
+                    <div className="border-t border-gray-200 pt-3">
+                      <div className="flex justify-between">
+                        <span className="font-bold text-gray-900">Total</span>
+                        <span className="font-bold text-xl text-[#00aaa9]">
+                          {rentalDetails.totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Trust Indicators */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                    <Shield className="w-4 h-4 text-green-500" />
+                    <span>Secure Payment</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-600 mt-2">
+                    <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                    <span>Verified Owner</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              {renderStepContent()}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default BookingPage;

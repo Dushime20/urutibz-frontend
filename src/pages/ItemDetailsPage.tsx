@@ -359,11 +359,11 @@ const ItemDetailsPage: React.FC = () => {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-1">
                     <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                    <span className="font-semibold">{item.rating}</span>
-                    <span className="text-gray-600">({item.totalReviews} reviews)</span>
+                    <span className="font-semibold">{item.average_rating || '0.00'}</span>
+                    <span className="text-gray-600">({item.review_count || 0} reviews)</span>
                   </div>
                   <span className="text-gray-300">•</span>
-                  <span className="text-gray-600">{item.totalBookings} bookings</span>
+                  <span className="text-gray-600">{item.view_count || 0} views</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-6">
