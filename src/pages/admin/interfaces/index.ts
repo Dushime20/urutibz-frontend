@@ -186,8 +186,24 @@ export interface AdminStats {
 } 
 
 // Payment Transaction Interface
+export interface PaymentTransaction {
+  id: string;
+  transaction_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  processed_at?: string;
+  user_id?: string;
+  booking_id?: string;
+  description?: string;
+  transaction_type?: string; // For backward compatibility
+  provider?: string; // For backward compatibility
+}
+
 export interface PaymentTransactionResponse {
-  transactions: any[];
+  data: PaymentTransaction[];
   pagination: {
     page: number;
     limit: number;

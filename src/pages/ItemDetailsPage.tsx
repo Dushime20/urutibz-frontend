@@ -50,8 +50,7 @@ const ItemDetailsPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
 
   // Debug: log user and kyc_status
-  console.log('User:', user);
-  console.log('user.kyc_status:', user?.kyc_status);
+
 
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +63,7 @@ const ItemDetailsPage: React.FC = () => {
   const [itemLocation, setItemLocation] = useState<{ city: string | null, country: string | null }>({ city: null, country: null });
 
   useEffect(() => {
-    console.log(id, 'id from params')
+
     if (!id) return;
     setLoading(true);
     const token = localStorage.getItem('token') || undefined;
@@ -76,51 +75,30 @@ const ItemDetailsPage: React.FC = () => {
         if (result && result.id) {
           fetchProductImages(result.id, token)
             .then((rawImages) => {
-              console.group('🖼️ ItemDetailsPage Image Processing');
-              console.log('Raw Images:', rawImages);
-              console.log('Raw Images Type:', typeof rawImages);
-              console.log('Raw Images Is Array:', Array.isArray(rawImages));
-              
               // Normalize images to extract URLs
               const normalizedImages: string[] = [];
               
               // Handle array of images
               if (Array.isArray(rawImages)) {
-                rawImages.forEach((img, index) => {
-                  console.log(`Processing image ${index}:`, img);
-                  console.log(`Image ${index} Type:`, typeof img);
-                  
+                rawImages.forEach((img) => {
                   const extractedUrl = extractImageUrl(img);
-                  console.log(`Extracted URL for image ${index}:`, extractedUrl);
-                  
                   if (extractedUrl) normalizedImages.push(extractedUrl);
                 });
               } 
               // Handle single image
               else {
-                console.log('Single image processing:', rawImages);
-                console.log('Single image type:', typeof rawImages);
-                
                 const extractedUrl = extractImageUrl(rawImages);
-                console.log('Extracted URL for single image:', extractedUrl);
-                
                 if (extractedUrl) normalizedImages.push(extractedUrl);
               }
-              
-              console.log('Normalized Images:', normalizedImages);
               
               // Fallback to placeholder if no images
               const finalImages = normalizedImages.length > 0 
                 ? normalizedImages 
                 : ['/assets/img/placeholder-image.png'];
               
-              console.log('Final Images:', finalImages);
-              console.groupEnd();
-              
               setImages(finalImages);
             })
-            .catch((error) => {
-              console.error('🚨 Image Fetching Error:', error);
+            .catch(() => {
               // Fallback to placeholder on error
               setImages(['/assets/img/placeholder-image.png']);
             });
@@ -131,8 +109,7 @@ const ItemDetailsPage: React.FC = () => {
         
         // Rest of the existing location fetching logic remains the same
       })
-      .catch((error) => {
-        console.error('Error fetching product details:', error);
+      .catch(() => {
         setLoading(false);
         setError('Failed to load product details');
         navigate('/items');
@@ -142,7 +119,7 @@ const ItemDetailsPage: React.FC = () => {
   if (loading) {
     return <div>Loading...</div>;
   }
-  console.log(images,'iamges from out side the state')
+  
   if (!item) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -190,17 +167,11 @@ const ItemDetailsPage: React.FC = () => {
   };
 
   const renderImage = (image: string | ProductImage, index?: number) => {
-    // Log the input image
-    console.log(`Rendering image${index !== undefined ? ` at index ${index}` : ''}:`, image);
-    console.log(`Image type: ${typeof image}`);
-
     // Determine the actual image URL
     const currentImageUrl = 
       typeof image === 'string' 
         ? image 
         : (image.url || image.image_url || image.path || '/assets/img/placeholder-image.png');
-    
-    console.log(`Determined image URL${index !== undefined ? ` for index ${index}` : ''}:`, currentImageUrl);
     
     return (
       <img 
@@ -208,8 +179,6 @@ const ItemDetailsPage: React.FC = () => {
         alt={`Product image ${index !== undefined ? index + 1 : ''}`} 
         className="w-full h-full object-cover"
         onError={(e) => {
-          console.error(`Error loading image${index !== undefined ? ` at index ${index}` : ''}:`, currentImageUrl);
-          console.error('Original image object:', image);
           (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
         }}
       />
@@ -248,10 +217,9 @@ const ItemDetailsPage: React.FC = () => {
                   }
                   alt={item.name}
                   className="w-full h-96 object-cover"
-                  onError={(e) => {
-                    console.error('Main image load error:', images[currentImageIndex]);
-                    (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
-                  }}
+                                  onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
+                }}
                 />
 
                 {/* Image Navigation */}

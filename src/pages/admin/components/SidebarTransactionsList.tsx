@@ -69,21 +69,21 @@ const SidebarTransactionsList: React.FC<SidebarTransactionsListProps> = ({ limit
               <div className="flex-1 min-w-0">
                 <div className="flex items-center">
                   <span className="text-xs font-medium text-gray-700 truncate">
-                    {txn.transaction_type.replace(/_/g, ' ')}
+                    {txn.payment_method ? txn.payment_method.replace(/_/g, ' ') : '-'}
                   </span>
                   <span className={`text-xs ml-2 ${statusColor(txn.status)}`}>
                     • {txn.status}
                   </span>
                 </div>
                 <div className="text-[11px] text-gray-500 truncate">
-                  {txn.processed_at ? new Date(txn.processed_at).toLocaleDateString() : '-'}
+                  {txn.created_at ? new Date(txn.created_at).toLocaleDateString() : '-'}
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-xs font-semibold text-gray-900">
                   {txn.amount.toLocaleString()} {txn.currency}
                 </div>
-                <div className="text-[11px] text-gray-500">{txn.provider}</div>
+                <div className="text-[11px] text-gray-500">{txn.payment_method || '-'}</div>
               </div>
             </div>
           ))}

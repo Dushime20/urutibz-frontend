@@ -438,133 +438,112 @@ const AdminDashboardPage: React.FC = () => {
                         {/* Recent Activity */}
                         <section>
                           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h2>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Recent Users Card */}
-                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 mb-8">
+                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold dark:text-gray-100">Recent Users</h3>
+                                <h3 className="text-lg font-semibold dark:text-gray-100">Recent Users</h3>
                                 <a href="/admin/users" className="text-my-primary text-sm font-medium hover:underline">View All</a>
                               </div>
-                              <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                  <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
-                                    <tr>
-                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">User</th>
-                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Email</th>
-                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                                    </tr>
-                                  </thead>
-                                  <TransitionGroup component="tbody">
-                                    {recentUsers.slice((userPage-1)*usersPerPage, userPage*usersPerPage).map(user => (
-                                      <CSSTransition key={user.id} timeout={300} classNames="fade">
-                                        <tr
-                                          className="hover:bg-gray-50 dark:hover:bg-gray-800 even:bg-gray-50 dark:even:bg-gray-800 transition cursor-pointer"
-                                          onClick={() => setSelectedUser(user)}
-                                        >
-                                          <td className="px-4 py-2 flex items-center gap-2">
-                                            <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
-                                            <span className="font-medium">{user.name}</span>
-                                          </td>
-                                          <td className="px-4 py-2 truncate max-w-xs" title={user.email}>{user.email}</td>
-                                          <td className="px-4 py-2">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${user.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{user.verified ? 'Verified' : 'Pending'}</span>
-                                          </td>
-                                        </tr>
-                                      </CSSTransition>
-                                    ))}
-                                  </TransitionGroup>
-                                </table>
-                                {/* Pagination */}
-                                <div className="flex justify-end mt-2 gap-2">
-                                  <button onClick={() => setUserPage(p => Math.max(1, p-1))} disabled={userPage === 1} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Prev</button>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">Page {userPage}</span>
-                                  <button onClick={() => setUserPage(p => p+1)} disabled={userPage*usersPerPage >= recentUsers.length} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Next</button>
-                                </div>
+                              <div className="space-y-3">
+                                {recentUsers.slice(0, 3).map(user => (
+                                  <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer" onClick={() => setSelectedUser(user)}>
+                                    <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
+                                    </div>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${user.verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
+                                      {user.verified ? 'Verified' : 'Pending'}
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
+                              {recentUsers.length === 0 && (
+                                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                                  No recent users found
+                                </div>
+                              )}
+                              
                               {/* User Detail Modal */}
                               {selectedUser && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                  <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 max-w-md w-full">
+                                  <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
                                     <div className="flex justify-between items-center mb-4">
-                                      <h4 className="text-lg font-bold">User Details</h4>
-                                      <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
+                                      <h4 className="text-lg font-semibold">User Details</h4>
+                                      <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-my-primary text-xl">&times;</button>
                                     </div>
                                     <div className="flex items-center gap-4 mb-4">
-                                      <img src={selectedUser.avatar || '/assets/img/profiles/avatar-01.jpg'} alt={selectedUser.name || ''} className="w-16 h-16 rounded-full" />
+                                      <img src={selectedUser.avatar || '/assets/img/profiles/avatar-01.jpg'} alt={selectedUser.name || ''} className="w-16 h-16 rounded-full object-cover" />
                                       <div>
-                                        <div className="font-bold text-lg">{selectedUser.name || ''}</div>
-                                        <div className="text-gray-500">{selectedUser.email || ''}</div>
-                                        <div className="text-xs mt-1"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${selectedUser.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedUser.verified ? 'Verified' : 'Pending'}</span></div>
+                                        <div className="font-semibold text-lg">{selectedUser.name || ''}</div>
+                                        <div className="text-gray-500 text-sm">{selectedUser.email || ''}</div>
+                                        <div className="mt-2">
+                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedUser.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                            {selectedUser.verified ? 'Verified' : 'Pending'}
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
-                                    <div className="text-xs text-gray-500">Joined: {selectedUser.joinDate || ''}</div>
+                                    <div className="text-sm text-gray-500">Joined: {selectedUser.joinDate || ''}</div>
                                   </div>
                                 </div>
                               )}
                             </div>
+                            
                             {/* Recent Bookings Card */}
-                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 mb-8">
+                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold dark:text-gray-100">Recent Bookings</h3>
+                                <h3 className="text-lg font-semibold dark:text-gray-100">Recent Bookings</h3>
                                 <a href="/admin/bookings" className="text-my-primary text-sm font-medium hover:underline">View All</a>
                               </div>
-                              <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                  <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
-                                    <tr>
-                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Item</th>
-                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Customer</th>
-                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Dates</th>
-                                    </tr>
-                                  </thead>
-                                  <TransitionGroup component="tbody">
-                                    {recentBookings.slice((bookingPage-1)*bookingsPerPage, bookingPage*bookingsPerPage).map(booking => (
-                                      <CSSTransition key={booking.id} timeout={300} classNames="fade">
-                                        <tr
-                                          className="hover:bg-gray-50 dark:hover:bg-gray-800 even:bg-gray-50 dark:even:bg-gray-800 transition cursor-pointer"
-                                          onClick={() => setSelectedBooking(booking)}
-                                        >
-                                          <td className="px-4 py-2 flex items-center gap-2">
-                                            <img src={booking.itemImage} alt={booking.itemName} className="w-8 h-8 rounded" />
-                                            <span className="font-medium">{booking.itemName}</span>
-                                          </td>
-                                          <td className="px-4 py-2 truncate max-w-xs" title={booking.customerName}>{booking.customerName}</td>
-                                          <td className="px-4 py-2">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{booking.status}</span>
-                                          </td>
-                                          <td className="px-4 py-2 text-xs text-gray-500">
-                                            {booking.startDate} - {booking.endDate}
-                                          </td>
-                                        </tr>
-                                      </CSSTransition>
-                                    ))}
-                                  </TransitionGroup>
-                                </table>
-                                {/* Pagination */}
-                                <div className="flex justify-end mt-2 gap-2">
-                                  <button onClick={() => setBookingPage(p => Math.max(1, p-1))} disabled={bookingPage === 1} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Prev</button>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">Page {bookingPage}</span>
-                                  <button onClick={() => setBookingPage(p => p+1)} disabled={bookingPage*bookingsPerPage >= recentBookings.length} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Next</button>
-                                </div>
+                              <div className="space-y-3">
+                                {recentBookings.slice(0, 3).map(booking => (
+                                  <div key={booking.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer" onClick={() => setSelectedBooking(booking)}>
+                                    <img src={booking.itemImage} alt={booking.itemName} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{booking.itemName}</div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{booking.customerName}</div>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${booking.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
+                                        {booking.status}
+                                      </span>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">${booking.amount}</div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
+                              {recentBookings.length === 0 && (
+                                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                                  No recent bookings found
+                                </div>
+                              )}
+                              
                               {/* Booking Detail Modal */}
                               {selectedBooking && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                  <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 max-w-md w-full">
+                                  <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
                                     <div className="flex justify-between items-center mb-4">
-                                      <h4 className="text-lg font-bold">Booking Details</h4>
-                                      <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
+                                      <h4 className="text-lg font-semibold">Booking Details</h4>
+                                      <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-my-primary text-xl">&times;</button>
                                     </div>
                                     <div className="flex items-center gap-4 mb-4">
-                                      <img src={selectedBooking.itemImage || ''} alt={selectedBooking.itemName || ''} className="w-16 h-16 rounded" />
+                                      <img src={selectedBooking.itemImage || ''} alt={selectedBooking.itemName || ''} className="w-16 h-16 rounded-lg object-cover" />
                                       <div>
-                                        <div className="font-bold text-lg">{selectedBooking.itemName || ''}</div>
-                                        <div className="text-gray-500">{selectedBooking.customerName || ''}</div>
-                                        <div className="text-xs mt-1"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${selectedBooking.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedBooking.status}</span></div>
+                                        <div className="font-semibold text-lg">{selectedBooking.itemName || ''}</div>
+                                        <div className="text-gray-500 text-sm">{selectedBooking.customerName || ''}</div>
+                                        <div className="mt-2">
+                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedBooking.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                            {selectedBooking.status}
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
-                                    <div className="text-xs text-gray-500">Dates: {selectedBooking.startDate || ''} - {selectedBooking.endDate || ''}</div>
+                                                                         <div className="text-sm text-gray-500">
+                                       <div>Amount: ${selectedBooking.amount}</div>
+                                       <div>Dates: {selectedBooking.startDate || ''} - {selectedBooking.endDate || ''}</div>
+                                     </div>
                                   </div>
                                 </div>
                               )}

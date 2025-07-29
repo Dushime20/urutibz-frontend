@@ -1,42 +1,94 @@
 import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
+// Fetch current user profile
+export async function fetchUserProfile(token: string) {
+  try {
+    // Extract user ID from JWT token
+    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
+    
+    if (!userId) {
+      return {
+        data: null,
+        success: false,
+        error: 'No user ID found in token'
+      };
+    }
+
+    // Use the /users/{userId} endpoint instead of /auth/me
+    const response = await axios.get(`${API_BASE_URL}/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    return {
+      data: response.data.data || response.data,
+      success: true,
+      error: null
+    };
+  } catch (error: any) {
+    const errorMsg = error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Failed to fetch user profile';
+    return {
+      data: null,
+      success: false,
+      error: errorMsg
+    };
+  }
+}
+
 // Add new functions for dashboard overview - USER SPECIFIC
 export async function fetchDashboardStats(token: string) {
   try {
-    console.log('Fetching user-specific dashboard stats...');
+    // Get user ID from token
+    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
+    
+    if (!userId) {
+      return {
+        activeBookings: 0,
+        totalEarnings: 0,
+        totalTransactions: 0,
+        wishlistItems: 0
+      };
+    }
     
     // Get user-specific data from user endpoints
-    const [bookingsRes, transactionsRes, myProductsRes] = await Promise.all([
+    const [bookingsRes, myProductsRes] = await Promise.all([
       axios.get(`${API_BASE_URL}/bookings`, { headers: { Authorization: `Bearer ${token}` } }),
-      axios.get(`${API_BASE_URL}/payment-transactions`, { headers: { Authorization: `Bearer ${token}` } }),
       axios.get(`${API_BASE_URL}/products/my/products`, { headers: { Authorization: `Bearer ${token}` } })
     ]);
 
-    console.log('User bookings response:', bookingsRes.data);
-    console.log('User transactions response:', transactionsRes.data);
-    console.log('User products response:', myProductsRes.data);
+    // Fetch user-specific transactions
+    const userTransactionData = await fetchUserTransactions(userId, token);
 
-    const bookings = bookingsRes.data?.data?.data || [];
-    const transactions = transactionsRes.data?.data?.data || [];
-    const myProducts = myProductsRes.data?.data?.data || [];
+    const bookings = bookingsRes.data?.data?.data || bookingsRes.data?.data || [];
+    const transactions = userTransactionData.success && userTransactionData.data ? userTransactionData.data : [];
+    const myProducts = myProductsRes.data?.data?.data || myProductsRes.data?.data || [];
 
     // Calculate user-specific stats
     const activeBookings = bookings.filter((booking: any) => 
       booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'active'
     ).length;
 
-    // Calculate total earnings from transactions where user received money
-    const totalEarnings = transactions
-      .filter((transaction: any) => 
-        transaction.status === 'completed' && 
-        (transaction.transaction_type === 'booking_payment' || transaction.transaction_type === 'payout')
-      )
-      .reduce((sum: number, transaction: any) => sum + (parseFloat(transaction.amount) || 0), 0);
+    // Calculate total earnings from completed transactions
+    const completedTransactions = transactions.filter((transaction: any) => 
+      transaction.status === 'completed'
+    );
+    
+    const totalEarnings = completedTransactions
+      .reduce((sum: number, transaction: any) => {
+        const amount = parseFloat(transaction.amount) || 0;
+        return sum + amount;
+      }, 0);
 
     // Total transaction amount (all transactions)
     const totalTransactions = transactions
-      .reduce((sum: number, transaction: any) => sum + (parseFloat(transaction.amount) || 0), 0);
+      .reduce((sum: number, transaction: any) => {
+        const amount = parseFloat(transaction.amount) || 0;
+        return sum + amount;
+      }, 0);
 
     // Count user's active products as wishlist proxy
     const wishlistItems = myProducts.filter((product: any) => 
@@ -49,8 +101,6 @@ export async function fetchDashboardStats(token: string) {
       totalTransactions,
       wishlistItems
     };
-
-    console.log('Calculated user dashboard stats:', userStats);
 
     return userStats;
   } catch (error) {
@@ -101,7 +151,7 @@ export async function createProduct(productData: any) {
 export async function createProductImage(imageData: any) {
   const token = localStorage.getItem('token');
   const formData = new FormData();
-console.log(imageData,'image data')
+  
   // Append each image file as 'images'
   if (Array.isArray(imageData.images)) {
     for (const file of imageData.images) {
@@ -114,7 +164,6 @@ console.log(imageData,'image data')
   if (imageData.alt_text) formData.append('alt_text', imageData.alt_text);
   if (imageData.sort_order) formData.append('sort_order', imageData.sort_order);
   if (imageData.isPrimary) formData.append('isPrimary', imageData.isPrimary);
-  console.log(formData,'data to send in db')
 
   const response = await axios.post(
     `${API_BASE_URL}/product-images/multiple`,
@@ -134,7 +183,6 @@ export async function getMyProducts() {
   const response = await axios.get(`${API_BASE_URL}/products/my/products`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-//   console.log(response.data.data)
   return response.data.data.data;
 }
 
@@ -152,7 +200,6 @@ export async function getProductById(productId: string) {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }
   );
-  console.log(response.data.data,'data from single  product')
   return response.data.data;
 }
 
@@ -266,5 +313,28 @@ export async function fetchReviewByBookingId(bookingId: string, token?: string) 
   } catch (error) {
     console.error('Error fetching review by booking ID:', error);
     return { review: null, count: 0 };
+  }
+}
+
+// Fetch user-specific transactions using the user ID endpoint
+export async function fetchUserTransactions(userId: string, token: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/payment-transactions/user/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    
+    return {
+      data: response.data?.data || [],
+      count: response.data?.count || 0,
+      success: response.data?.success || false
+    };
+  } catch (error) {
+    console.error('Error fetching user transactions:', error);
+    return {
+      data: [],
+      count: 0,
+      success: false,
+      error: error
+    };
   }
 }

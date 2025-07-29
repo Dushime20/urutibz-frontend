@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Card } from '../ui/DesignSystem';
 import { Link } from 'react-router-dom';
@@ -14,17 +14,107 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+// Helper function to fetch real user profile for verification status
+const fetchUserProfile = async (token: string) => {
+  try {
+    // Extract user ID from JWT token
+    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
+    
+    if (!userId) return null;
+
+    const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Failed to fetch user profile for verification:', error);
+    return null;
+  }
+};
+
 const VerificationBanner: React.FC = () => {
   const { user, canListItems, canRentItems } = useAuth();
+  const [realUserData, setRealUserData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch real user data for verification status
+  useEffect(() => {
+    const loadRealUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        const userData = await fetchUserProfile(token);
+        if (userData) {
+          console.log('Real user data for verification:', userData);
+          console.log('KYC Status:', userData.kyc_status);
+          console.log('Email verified:', userData.email_verified_at);
+          console.log('Phone verified:', userData.phone_verified_at);
+        }
+        setRealUserData(userData);
+      } catch (error) {
+        console.error('Error loading user data for verification:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRealUserData();
+  }, []);
 
   if (!user) return null;
 
-  const { verification } = user;
+  // Create verification object from real user data if available, otherwise use auth context
+  const verification = realUserData ? {
+    isProfileComplete: !!(realUserData.first_name && realUserData.last_name),
+    isEmailVerified: !!realUserData.email_verified_at,
+    isPhoneVerified: !!realUserData.phone_verified_at,
+    isIdVerified: realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved',
+    isAddressVerified: !!(realUserData.address || realUserData.city || realUserData.country),
+    isFullyVerified: realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved',
+    verificationStep: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved') ? 'complete' : 
+                     (!realUserData.first_name || !realUserData.last_name) ? 'profile' :
+                     (!realUserData.email_verified_at) ? 'email' :
+                     (!realUserData.phone_verified_at) ? 'phone' :
+                     (!realUserData.kyc_status || realUserData.kyc_status === 'pending') ? 'id' : 'address'
+  } : user.verification;
 
   if (!verification) return null;
 
+  // Show loading state while fetching real data
+  if (isLoading) {
+    return (
+      <Card className="mb-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center animate-pulse">
+            <Clock className="w-6 h-6 text-gray-500" />
+          </div>
+          <div className="flex-1">
+            <div className="h-5 bg-gray-300 rounded mb-2 w-48 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   // If fully verified, show success banner
   if (verification.isFullyVerified) {
+    const userName = realUserData ? 
+      `${realUserData.first_name || ''} ${realUserData.last_name || ''}`.trim() || realUserData.email :
+      user.name;
+      
     return (
       <Card className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
         <div className="flex items-center gap-4">
@@ -36,15 +126,20 @@ const VerificationBanner: React.FC = () => {
               Verification Complete! 🎉
             </h3>
             <p className="text-green-700">
-              Your account is fully verified. You can now list items and rent from others.
+              Welcome {userName}! Your account is fully verified. You can now list items and rent from others.
             </p>
+            {realUserData && (
+              <div className="mt-2 text-sm text-green-600">
+                ✓ KYC Status: {realUserData.kyc_status} | Email: {realUserData.email}
+              </div>
+            )}
           </div>
         </div>
       </Card>
     );
   }
 
-  // Get verification requirements
+  // Get verification requirements with real user data context
   const requirements = [
     {
       key: 'profile',
@@ -52,7 +147,9 @@ const VerificationBanner: React.FC = () => {
       icon: User,
       completed: verification.isProfileComplete,
       link: '/verify/profile',
-      description: 'Add your personal information'
+      description: realUserData ? 
+        `${realUserData.first_name ? '✓' : '✗'} First name, ${realUserData.last_name ? '✓' : '✗'} Last name` :
+        'Add your personal information'
     },
     {
       key: 'email',
@@ -60,7 +157,9 @@ const VerificationBanner: React.FC = () => {
       icon: Mail,
       completed: verification.isEmailVerified,
       link: '/verify/email',
-      description: 'Confirm your email address'
+      description: realUserData ? 
+        `${realUserData.email || 'No email'} ${realUserData.email_verified_at ? '(Verified)' : '(Unverified)'}` :
+        'Confirm your email address'
     },
     {
       key: 'phone',
@@ -68,7 +167,9 @@ const VerificationBanner: React.FC = () => {
       icon: Phone,
       completed: verification.isPhoneVerified,
       link: '/verify/phone',
-      description: 'Add your phone number'
+      description: realUserData ? 
+        `${realUserData.phone || 'No phone'} ${realUserData.phone_verified_at ? '(Verified)' : '(Unverified)'}` :
+        'Add your phone number'
     },
     {
       key: 'id',
@@ -76,7 +177,9 @@ const VerificationBanner: React.FC = () => {
       icon: IdCard,
       completed: verification.isIdVerified,
       link: '/verify/id',
-      description: 'Government-issued ID'
+      description: realUserData ? 
+        `KYC Status: ${realUserData.kyc_status || 'pending'}` :
+        'Government-issued ID'
     },
     {
       key: 'address',
@@ -84,14 +187,22 @@ const VerificationBanner: React.FC = () => {
       icon: MapPin,
       completed: verification.isAddressVerified,
       link: '/verify/address',
-      description: 'Confirm your location'
+      description: realUserData ? 
+        `${realUserData.city || realUserData.address || 'No address set'}` :
+        'Confirm your location'
     }
   ];
 
   const completedCount = requirements.filter(req => req.completed).length;
   const nextStep = requirements.find(req => !req.completed);
-  const canRent = canRentItems();
-  const canList = canListItems();
+  
+  // Use real verification data for capabilities
+  const canRent = realUserData ? 
+    (verification.isProfileComplete && verification.isEmailVerified) : 
+    canRentItems();
+  const canList = realUserData ? 
+    verification.isFullyVerified : 
+    canListItems();
 
   return (
     <Card className="mb-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
@@ -112,6 +223,11 @@ const VerificationBanner: React.FC = () => {
               </h3>
               <p className="text-amber-700">
                 Complete verification to unlock all features ({completedCount}/{requirements.length} steps complete)
+                {realUserData && (
+                  <span className="block mt-1 text-sm">
+                    Current KYC Status: {realUserData.kyc_status || 'pending'}
+                  </span>
+                )}
               </p>
             </div>
             

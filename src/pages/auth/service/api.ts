@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-console.log(API_BASE_URL)
 // Register user function
 export async function registerUser(formData: {
   firstName: string;

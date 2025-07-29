@@ -75,8 +75,8 @@ const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit =
                     className="hover:bg-gray-50 dark:hover:bg-gray-800 even:bg-gray-50 dark:even:bg-gray-800 transition cursor-pointer"
                     onClick={() => setSelectedTxn(txn)}
                   >
-                    <td className="px-4 py-2 font-semibold text-my-primary" title={txn.transaction_type.replace(/_/g, ' ')}>
-                      {txn.transaction_type.replace(/_/g, ' ')}
+                    <td className="px-4 py-2 font-semibold text-my-primary" title={txn.payment_method ? txn.payment_method.replace(/_/g, ' ') : '-'}>
+                      {txn.transaction_type ? txn.transaction_type.replace(/_/g, ' ') : '-'}
                     </td>
                     <td className="px-4 py-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor(txn.status)}`}>{txn.status}</span>
@@ -86,7 +86,7 @@ const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit =
                     </td>
                     <td className="px-4 py-2 truncate max-w-xs" title={txn.provider}>{txn.provider}</td>
                     <td className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
-                      {txn.processed_at ? new Date(txn.processed_at).toLocaleString() : '-'}
+                      {txn.created_at ? new Date(txn.created_at).toLocaleString() : '-'}
                     </td>
                   </tr>
                 </CSSTransition>
@@ -109,11 +109,11 @@ const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit =
               <h4 className="text-lg font-bold">Transaction Details</h4>
               <button onClick={() => setSelectedTxn(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
             </div>
-            <div className="mb-2 text-sm"><b>Type:</b> {selectedTxn.transaction_type.replace(/_/g, ' ')}</div>
+            <div className="mb-2 text-sm"><b>Type:</b> {selectedTxn.payment_method ? selectedTxn.payment_method.replace(/_/g, ' ') : '-'}</div>
             <div className="mb-2 text-sm"><b>Status:</b> <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor(selectedTxn.status)}`}>{selectedTxn.status}</span></div>
             <div className="mb-2 text-sm"><b>Amount:</b> {selectedTxn.amount.toLocaleString()} {selectedTxn.currency}</div>
-            <div className="mb-2 text-sm"><b>Provider:</b> {selectedTxn.provider}</div>
-            <div className="mb-2 text-sm"><b>Date:</b> {selectedTxn.processed_at ? new Date(selectedTxn.processed_at).toLocaleString() : '-'}</div>
+            <div className="mb-2 text-sm"><b>Provider:</b> {selectedTxn.payment_method || '-'}</div>
+            <div className="mb-2 text-sm"><b>Date:</b> {selectedTxn.created_at ? new Date(selectedTxn.created_at).toLocaleString() : '-'}</div>
             <div className="mb-2 text-sm"><b>Txn ID:</b> {selectedTxn.id}</div>
           </div>
         </div>

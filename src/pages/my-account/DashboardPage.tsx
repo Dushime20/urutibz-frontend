@@ -7,7 +7,11 @@ import {
   Calendar, Heart,
   Car, Wallet, BookOpen, ArrowUpRight,
   Bell, Search, 
-  MoreHorizontal
+  MoreHorizontal, User, Camera, 
+  Lock, Globe, Eye, EyeOff,
+  Save, Edit2, Trash2, Upload,
+  Key, Mail, Phone, MapPin,
+  CreditCard, Languages, Moon, Sun
 } from 'lucide-react';
 import { Button } from '../../components/ui/DesignSystem';
 import VerificationBanner from '../../components/verification/VerificationBanner';
@@ -22,11 +26,14 @@ import {
   fetchDashboardStats,
   fetchRecentBookings,
   fetchRecentTransactions,
+  fetchUserTransactions,
   fetchUserReviews,
   fetchReviewById,
-  fetchReviewByBookingId
+  fetchReviewByBookingId,
+  fetchUserProfile
 } from './service/api';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import NewListingModal from './models/NewListingModal';
 import ProductDetailModal from './models/ProductDetailModal';
 import EditProductModal from './models/EditProductModal';
@@ -73,17 +80,84 @@ type FormState = {
 };
 
 // Add this utility function at the top or in a utils file
-async function getCityFromCoordinates(lat: number, lng: number) {
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+
+// Helper function to truncate text intelligently
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text || text.length <= maxLength) return text;
+  
+  // Try to break at word boundaries
+  const truncated = text.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  
+  // If we found a space and it's not too close to the beginning, break there
+  if (lastSpace > maxLength * 0.6) {
+    return truncated.substring(0, lastSpace) + '...';
+  }
+  
+  // Otherwise, just truncate with ellipsis
+  return truncated + '...';
+};
+
+// Helper component for user avatar display
+const UserAvatar: React.FC<{ 
+  avatar: string | null; 
+  verified: boolean; 
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+}> = ({ avatar, verified, className = '', size = 'lg' }) => {
+  const sizeClasses = {
+    sm: 'w-10 h-10',
+    md: 'w-16 h-16', 
+    lg: 'w-20 h-20'
+  };
+  
+  const iconSizes = {
+    sm: 'w-5 h-5',
+    md: 'w-8 h-8',
+    lg: 'w-10 h-10'
+  };
+
+  return (
+    <div className={`relative inline-block ${className}`}>
+      {avatar ? (
+        <img
+          src={avatar}
+          alt="User"
+          className={`${sizeClasses[size]} rounded-2xl object-cover ring-4 ring-white shadow-lg`}
+          onError={(e) => {
+            // If image fails to load, replace with icon placeholder
+            const parent = (e.target as HTMLImageElement).parentElement;
+            if (parent) {
+              parent.innerHTML = `
+                <div class="${sizeClasses[size]} rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 ring-4 ring-white shadow-lg flex items-center justify-center">
+                  <svg class="${iconSizes[size]} text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                </div>
+              `;
+            }
+          }}
+        />
+      ) : (
+        <div className={`${sizeClasses[size]} rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 ring-4 ring-white shadow-lg flex items-center justify-center`}>
+          <User className={`${iconSizes[size]} text-gray-500`} />
+        </div>
+      )}
+      {verified && (
+        <div className="absolute -bottom-2 -right-2 bg-primary-500 rounded-xl p-2 shadow-lg">
+          <Shield className="w-4 h-4 text-white" />
+        </div>
+      )}
+    </div>
   );
-  const data = await response.json();
-  return data.address.city || data.address.town || data.address.village || null;
-}
+};
 
 const DashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'wishlist' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'wishlist' | 'reviews' | 'settings'>('overview');
   const { showToast } = useToast();
+  const { user: authUser } = useAuth();
+  const [realUser, setRealUser] = useState<any>(null);
+  const [userLoading, setUserLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<FormState>({
     title: '',
@@ -117,7 +191,7 @@ const DashboardPage: React.FC = () => {
             },
           }));
         },
-        (error) => {
+        () => {
           // Optionally handle error (user denied, etc.)
         }
       );
@@ -154,6 +228,107 @@ const DashboardPage: React.FC = () => {
   const [bookingReviews, setBookingReviews] = useState<{ [bookingId: string]: any }>({});
   const [loadingBookingReviews, setLoadingBookingReviews] = useState<{ [bookingId: string]: boolean }>({});
   const [bookingReviewCounts, setBookingReviewCounts] = useState<{ [bookingId: string]: number }>({});
+  const [userTransactions, setUserTransactions] = useState<any[]>([]);
+  const [loadingWallet, setLoadingWallet] = useState(false);
+
+  // Fetch real user profile data
+  useEffect(() => {
+    const fetchRealUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setUserLoading(false);
+          return;
+        }
+
+        const userProfileData = await fetchUserProfile(token);
+        
+        if (userProfileData.success && userProfileData.data) {
+          // Debug: Log the actual API response to see field names
+          console.log('User Profile API Response:', userProfileData.data);
+          console.log('First Name:', userProfileData.data.firstName);
+          console.log('Last Name:', userProfileData.data.lastName);
+          console.log('Available fields:', Object.keys(userProfileData.data));
+          
+          // Transform backend user data to match frontend interface
+          const transformedUser = {
+            id: userProfileData.data.id,
+            name: (() => {
+              // Construct name from firstName and lastName (actual API format)
+              const firstName = userProfileData.data.firstName || '';
+              const lastName = userProfileData.data.lastName || '';
+              const fullName = `${firstName} ${lastName}`.trim();
+              
+              // Return full name if available, otherwise fallback to email
+              return fullName.length > 0 ? fullName : (userProfileData.data.email || 'User');
+            })(),
+            email: userProfileData.data.email,
+            avatar: userProfileData.data.profile_image || null,
+            location: userProfileData.data.address || 'Location not set',
+            verified: userProfileData.data.kyc_status === 'verified',
+            rating: parseFloat(userProfileData.data.rating) || 0,
+            totalRentals: parseInt(userProfileData.data.total_rentals) || 0,
+            totalEarnings: parseFloat(userProfileData.data.total_earnings) || 0,
+            hostLevel: userProfileData.data.kyc_status === 'verified' ? 'Verified Host' : 'New Host',
+            joinedDate: userProfileData.data.createdAt,
+            phone: userProfileData.data.phone,
+            dateOfBirth: userProfileData.data.dateOfBirth,
+            role: userProfileData.data.role || 'user',
+            status: userProfileData.data.status || 'active',
+            kyc_status: userProfileData.data.kyc_status,
+            // Store raw API data for settings form
+            firstName: userProfileData.data.firstName,
+            lastName: userProfileData.data.lastName,
+            emailVerified: userProfileData.data.emailVerified,
+            phoneVerified: userProfileData.data.phoneVerified,
+            verifications: userProfileData.data.verifications || [],
+            kycProgress: userProfileData.data.kycProgress || {},
+            // Verification status based on available data
+            verification: {
+              isProfileComplete: !!(userProfileData.data.firstName && userProfileData.data.lastName),
+              isEmailVerified: userProfileData.data.emailVerified === true,
+              isPhoneVerified: !!userProfileData.data.phone, // If phone exists, it's verified
+              isIdVerified: userProfileData.data.kyc_status === 'verified',
+              isAddressVerified: !!userProfileData.data.address,
+              isFullyVerified: userProfileData.data.kyc_status === 'verified',
+              verificationStep: userProfileData.data.kyc_status === 'verified' ? 'complete' : 'profile'
+            }
+          };
+          
+          setRealUser(transformedUser);
+        } else {
+          // Fallback to auth user data if API fails
+          if (authUser) {
+            setRealUser({
+              ...authUser,
+              avatar: authUser.avatar || null,
+              totalRentals: 0,
+              totalEarnings: 0,
+              hostLevel: authUser.verification?.isFullyVerified ? 'Verified Host' : 'New Host',
+              rating: 0
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        // Fallback to auth user if there's an error
+        if (authUser) {
+          setRealUser({
+            ...authUser,
+            avatar: authUser.avatar || null,
+            totalRentals: 0,
+            totalEarnings: 0,
+            hostLevel: authUser.verification?.isFullyVerified ? 'Verified Host' : 'New Host',
+            rating: 0
+          });
+        }
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    fetchRealUserData();
+  }, [authUser]);
 
   // Add new useEffect for dashboard data
   useEffect(() => {
@@ -183,9 +358,32 @@ const DashboardPage: React.FC = () => {
         );
         setRecentDashboardBookings(bookingsWithDetails);
 
-        // Fetch recent transactions
-        const transactions = await fetchRecentTransactions(token);
-        setRecentDashboardTransactions(transactions);
+        // Fetch recent transactions (user-specific)
+        try {
+          const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+          const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
+          
+          if (userId) {
+            const userTransactionData = await fetchUserTransactions(userId, token);
+            if (userTransactionData.success) {
+              // Get only the most recent 5 transactions for overview
+              setRecentDashboardTransactions(userTransactionData.data.slice(0, 5));
+            } else {
+              // Fallback to general recent transactions
+              const transactions = await fetchRecentTransactions(token);
+              setRecentDashboardTransactions(transactions);
+            }
+          } else {
+            // Fallback if no user ID found
+            const transactions = await fetchRecentTransactions(token);
+            setRecentDashboardTransactions(transactions);
+          }
+        } catch (tokenError) {
+          console.error('Error parsing token for transactions:', tokenError);
+          // Fallback to general recent transactions
+          const transactions = await fetchRecentTransactions(token);
+          setRecentDashboardTransactions(transactions);
+        }
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -196,6 +394,47 @@ const DashboardPage: React.FC = () => {
 
     fetchDashboardData();
   }, [activeTab]);
+
+  // Add useEffect for fetching user transactions when wallet tab is active
+  useEffect(() => {
+    const fetchWalletData = async () => {
+      if (activeTab !== 'wallet') return;
+      
+      setLoadingWallet(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No token found');
+          return;
+        }
+
+        // Decode token to get user ID (or get it from your auth context)
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
+        
+        if (!userId) {
+          console.error('No user ID found in token');
+          return;
+        }
+
+        const transactionData = await fetchUserTransactions(userId, token);
+        
+        if (transactionData.success) {
+          setUserTransactions(transactionData.data);
+        } else {
+          console.error('Failed to fetch user transactions:', transactionData.error);
+          showToast('Failed to load transactions', 'error');
+        }
+      } catch (error) {
+        console.error('Error fetching wallet data:', error);
+        showToast('Failed to load wallet data', 'error');
+      } finally {
+        setLoadingWallet(false);
+      }
+    };
+
+    fetchWalletData();
+  }, [activeTab, showToast]);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -412,77 +651,33 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // Mock user data
-  const user = {
-    name: 'Amara Nkomo',
-    avatar: '/assets/img/profiles/avatar-01.jpg',
-    location: 'Kigali, Rwanda',
-    verified: true,
-    rating: 4.9,
-    totalRentals: 47,
-    totalEarnings: 3240,
-    hostLevel: 'Super Host',
-    walletBalance: 24665,
-    totalTransactions: 15210,
-    wishlistItems: 24,
-    activeBookings: 3,
-    verification: {
-      isProfileComplete: true,
-      isEmailVerified: true,
-      isPhoneVerified: true,
-      isIdVerified: true,
-      isAddressVerified: true,
-      isFullyVerified: true,
-      verificationStep: 'complete',
+  // Use real user data with fallback
+  const user = realUser || {
+    name: authUser?.name || 'Loading...',
+    avatar: authUser?.avatar || null,
+    location: 'Location not set',
+    verified: authUser?.verification?.isFullyVerified || false,
+    rating: 0,
+    totalRentals: 0,
+    totalEarnings: 0,
+    hostLevel: 'New Host',
+    walletBalance: 0,
+    totalTransactions: 0,
+    wishlistItems: 0,
+    activeBookings: 0,
+    verification: authUser?.verification || {
+      isProfileComplete: false,
+      isEmailVerified: false,
+      isPhoneVerified: false,
+      isIdVerified: false,
+      isAddressVerified: false,
+      isFullyVerified: false,
+      verificationStep: 'profile',
     },
   };
 
   // Mock data for dashboard sections
-  const recentBookings = [
-    {
-      id: 1,
-      carName: 'Ferrari 458 MM Speciale',
-      carImage: '/assets/img/cars/car-04.jpg',
-      rentType: 'Hourly',
-      startDate: '15 Sep 2023, 11:30 PM',
-      endDate: '15 Sep 2023, 1:30 PM',
-      price: 200,
-      status: 'Upcoming',
-      statusColor: 'secondary'
-    },
-    {
-      id: 2,
-      carName: 'Kia Soul 2016',
-      carImage: '/assets/img/cars/car-05.jpg',
-      rentType: 'Daily',
-      startDate: '10 Sep 2023, 09:00 AM',
-      endDate: '12 Sep 2023, 05:00 PM',
-      price: 300,
-      status: 'Active',
-      statusColor: 'primary'
-    }
-  ];
 
-  const recentTransactions = [
-    {
-      id: 1,
-      carName: 'Hyundai Elantra',
-      carImage: '/assets/img/cars/car-06.jpg',
-      type: 'Earning',
-      amount: 250,
-      date: '15 Sep 2023',
-      status: 'Completed'
-    },
-    {
-      id: 2,
-      carName: 'Chevrolet Pick Truck 3.5L',
-      carImage: '/assets/img/cars/car-07.jpg',
-      type: 'Refund',
-      amount: 150,
-      date: '12 Sep 2023',
-      status: 'Processing'
-    }
-  ];
 
   const wishlistCars = [
     {
@@ -535,7 +730,7 @@ const DashboardPage: React.FC = () => {
         }`}
     >
       <Icon className={`w-5 h-5 mr-3 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-105'}`} />
-      <span className="flex-1 text-left">{label}</span>
+      <span className="flex-1 text-left truncate">{label}</span>
       {hasNotification && (
         <div className="w-2 h-2 bg-red-500 rounded-full ml-auto animate-pulse"></div>
       )}
@@ -544,7 +739,6 @@ const DashboardPage: React.FC = () => {
   );
 
   const handleCloseModal = () => {
-    console.log('Modal close handler called');
     setShowModal(false);
   };
 
@@ -615,32 +809,70 @@ const DashboardPage: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
           {/* Sidebar */}
           <div className="xl:col-span-1">
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24">
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24 overflow-hidden min-w-0">
               {/* User Profile */}
-              <div className="text-center mb-8">
-                <div className="relative inline-block mb-4">
-                  <img
-                    src={user.avatar}
-                    alt="User"
-                    className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-lg"
-                  />
-                  {user.verified && (
-                    <div className="absolute -bottom-2 -right-2 bg-primary-500 rounded-xl p-2 shadow-lg">
-                      <Shield className="w-4 h-4 text-white" />
+              <div className="text-center mb-8 overflow-hidden">
+                {userLoading ? (
+                  // Loading state
+                  <div className="animate-pulse">
+                    <div className="relative inline-block mb-4">
+                      <div className="w-20 h-20 rounded-2xl bg-gray-200 ring-4 ring-white shadow-lg flex items-center justify-center">
+                        <User className="w-10 h-10 text-gray-400" />
+                      </div>
                     </div>
-                  )}
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{user.name}</h3>
-                <p className="text-sm text-gray-500 mb-3">{user.location}</p>
-                <div className="flex items-center justify-center space-x-3">
-                  <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-lg">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
-                    <span className="text-sm font-semibold text-yellow-700">{user.rating}</span>
+                    <div className="h-5 bg-gray-200 rounded mb-2 w-32 mx-auto"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-3 w-24 mx-auto"></div>
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="h-6 bg-gray-200 rounded w-16"></div>
+                      <div className="h-6 bg-gray-200 rounded w-20"></div>
+                    </div>
                   </div>
-                  <span className="text-xs px-3 py-1 bg-primary-500 text-white rounded-lg font-medium">
-                    {user.hostLevel}
-                  </span>
-                </div>
+                ) : (
+                  // Actual user profile
+                  <>
+                    <UserAvatar 
+                      avatar={user.avatar} 
+                      verified={user.verified} 
+                      className="mb-4" 
+                      size="lg" 
+                    />
+                                        <h3 className="text-lg font-bold text-gray-900 mb-1 w-full text-center px-1" title={user.name}>
+                      {truncateText(user.name, 20)}
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-3 w-full text-center px-1" title={user.location}>
+                      {truncateText(user.location, 25)}
+                    </p>
+                     <div className="flex items-center justify-center space-x-2 flex-wrap gap-2">
+                      <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-lg">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
+                        <span className="text-sm font-semibold text-yellow-700">
+                          {user.rating ? user.rating.toFixed(1) : '0.0'}
+                        </span>
+                      </div>
+                      <span className="text-xs px-3 py-1 bg-primary-500 text-white rounded-lg font-medium max-w-24 truncate" title={user.hostLevel}>
+                        {truncateText(user.hostLevel || '', 12)}
+                      </span>
+                    </div>
+                    
+                    {/* User Stats */}
+                    {!userLoading && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-xl overflow-hidden">
+                        <div className="grid grid-cols-2 gap-3 text-center min-w-0">
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">{user.totalRentals || 0}</div>
+                            <div className="text-xs text-gray-500">Rentals</div>
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">
+                              {user.joinedDate ? new Date(user.joinedDate).getFullYear() : new Date().getFullYear()}
+                            </div>
+                            <div className="text-xs text-gray-500">Joined</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Navigation */}
@@ -681,6 +913,12 @@ const DashboardPage: React.FC = () => {
                   active={activeTab === 'reviews'}
                   onClick={() => setActiveTab('reviews')}
                 />
+                <NavigationItem
+                  icon={Settings}
+                  label="Settings"
+                  active={activeTab === 'settings'}
+                  onClick={() => setActiveTab('settings')}
+                />
 
                 <div className="border-t border-gray-100 pt-4 mt-6">
                   <Link
@@ -690,13 +928,6 @@ const DashboardPage: React.FC = () => {
                     <MessageCircle className="w-5 h-5 mr-3" />
                     <span className="flex-1">Messages</span>
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  </Link>
-                  <Link
-                    to="/dashboard/settings"
-                    className="w-full flex items-center px-4 py-3.5 rounded-2xl font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
-                  >
-                    <Settings className="w-5 h-5 mr-3" />
-                    <span>Settings</span>
                   </Link>
                 </div>
               </nav>
@@ -768,30 +999,37 @@ const DashboardPage: React.FC = () => {
                           </Link>
                         </div>
                         <div className="space-y-4">
-                          {recentDashboardBookings.map((booking) => (
-                            <div key={booking.id} className="group flex items-center space-x-4 p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-50 transition-all duration-200">
-                              <div className="relative">
-                                <img
-                                  src={booking.images?.[0]?.image_url || '/assets/img/placeholder-image.png'}
-                                  alt={booking.product?.title || 'Product'}
-                                  className="w-16 h-12 rounded-xl object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-colors duration-200"></div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-gray-900 truncate">{booking.product?.title || 'Product'}</h4>
-                                <p className="text-sm text-gray-500">{new Date(booking.start_date).toLocaleDateString()}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-bold text-gray-900">${booking.product?.base_price_per_day || 0}</p>
-                                <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${
-                                  booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-success-100 text-success-700'
-                                }`}>
-                                  {booking.status}
-                                </span>
-                              </div>
+                          {recentDashboardBookings.length === 0 ? (
+                            <div className="text-center py-8">
+                              <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                              <p className="text-gray-500 text-sm">No recent bookings found</p>
                             </div>
-                          ))}
+                          ) : (
+                            recentDashboardBookings.map((booking) => (
+                              <div key={booking.id} className="group flex items-center space-x-4 p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-50 transition-all duration-200">
+                                <div className="relative">
+                                  <img
+                                    src={booking.images?.[0]?.image_url || '/assets/img/placeholder-image.png'}
+                                    alt={booking.product?.title || 'Product'}
+                                    className="w-16 h-12 rounded-xl object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-colors duration-200"></div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-gray-900 truncate">{booking.product?.title || 'Product'}</h4>
+                                  <p className="text-sm text-gray-500">{new Date(booking.start_date).toLocaleDateString()}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-gray-900">${booking.product?.base_price_per_day || 0}</p>
+                                  <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${
+                                    booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-success-100 text-success-700'
+                                  }`}>
+                                    {booking.status}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
 
@@ -799,31 +1037,67 @@ const DashboardPage: React.FC = () => {
                       <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between mb-6">
                           <h3 className="text-lg font-bold text-gray-900">Transactions</h3>
-                          <Link
-                            to="#"
+                          <button
+                            onClick={() => setActiveTab('wallet')}
                             className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center group"
                           >
                             View all
                             <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                          </Link>
+                          </button>
                         </div>
-                        <div className="space-y-4">
-                          {recentDashboardTransactions.map((transaction) => (
-                            <div key={transaction.id} className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900">{transaction.transaction_type}</p>
-                                <p className="text-xs text-gray-500">{new Date(transaction.created_at).toLocaleDateString()}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className={`font-bold text-sm ${
-                                  transaction.transaction_type === 'booking_payment' ? 'text-success-600' : 'text-red-600'
-                                }`}>
-                                  {transaction.transaction_type === 'booking_payment' ? '+' : '-'}${transaction.amount}
-                                </p>
-                                <p className="text-xs text-gray-500">{transaction.status}</p>
-                              </div>
+                        <div className="space-y-3">
+                          {recentDashboardTransactions.length === 0 ? (
+                            <div className="text-center py-8">
+                              <DollarSign className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                              <p className="text-gray-500 text-sm">No transactions yet</p>
                             </div>
-                          ))}
+                          ) : (
+                            recentDashboardTransactions.slice(0, 3).map((transaction) => (
+                              <div key={transaction.id} className="p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200 border border-gray-100/50">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
+                                      <DollarSign className="w-4 h-4 text-primary-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-semibold text-gray-900 capitalize">
+                                        {transaction.transaction_type?.replace(/_/g, ' ') || 'Payment'}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {new Date(transaction.created_at).toLocaleDateString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric'
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-bold text-sm text-gray-900">
+                                      {parseFloat(transaction.amount).toLocaleString()} {transaction.currency}
+                                    </p>
+                                    <span className={`inline-block px-2 py-1 rounded-lg text-xs font-medium ${
+                                      transaction.status === 'completed' 
+                                        ? 'bg-green-100 text-green-700' 
+                                        : transaction.status === 'pending'
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : 'bg-red-100 text-red-700'
+                                    }`}>
+                                      {transaction.status}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between text-xs text-gray-400">
+                                  <span>via {transaction.provider}</span>
+                                  <span>
+                                    {new Date(transaction.created_at).toLocaleTimeString('en-US', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1092,89 +1366,502 @@ const DashboardPage: React.FC = () => {
 
             {activeTab === 'wallet' && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-8 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-                    <div className="relative">
-                      <h4 className="text-lg font-semibold mb-2 opacity-90">Available Balance</h4>
-                      <p className="text-3xl font-bold mb-4">${user.walletBalance.toLocaleString()}</p>
-                      <button className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Available Balance Card */}
+                  <div className="bg-gradient-to-br from-active via-active to-active-dark rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-active/25">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                          <Wallet className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">
+                          Available
+                        </div>
+                      </div>
+                      <h4 className="text-lg font-semibold mb-2 text-white/90">Wallet Balance</h4>
+                      <p className="text-4xl font-bold mb-6 text-white">${dashboardStats.totalEarnings.toLocaleString()}</p>
+                      <button className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm hover:scale-105 border border-white/20">
                         Withdraw Funds
                       </button>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-br from-success-600 to-success-700 rounded-3xl p-8 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-                    <div className="relative">
-                      <h4 className="text-lg font-semibold mb-2 opacity-90">Total Earnings</h4>
-                      <p className="text-3xl font-bold mb-4">${user.totalEarnings.toLocaleString()}</p>
-                      <button className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
-                        View Details
+                  
+                  {/* Total Transactions Card */}
+                  <div className="bg-gradient-to-br from-platform-grey via-platform-dark-grey to-platform-dark-grey rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-platform-dark-grey/25">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                          <DollarSign className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">
+                          Total
+                        </div>
+                      </div>
+                      <h4 className="text-lg font-semibold mb-2 text-white/90">Transaction Volume</h4>
+                      <p className="text-4xl font-bold mb-6 text-white">${dashboardStats.totalTransactions.toLocaleString()}</p>
+                      <button
+                        onClick={() => setActiveTab('wallet')}
+                        className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm hover:scale-105 border border-white/20"
+                      >
+                        View All Transactions
                       </button>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                  <h4 className="text-lg font-bold text-gray-900 mb-6">Recent Transactions</h4>
-                  <div className="space-y-4">
-                    {recentTransactions.map((transaction) => (
-                      <div key={transaction.id} className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                        <img
-                          src={transaction.carImage}
-                          alt={transaction.carName}
-                          className="w-16 h-12 rounded-xl object-cover"
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{transaction.carName}</h4>
-                          <p className="text-sm text-gray-500">{transaction.date}</p>
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="text-lg font-bold text-gray-900">Payment Transactions</h4>
+                    {userTransactions.length > 0 && (
+                      <span className="text-sm text-gray-500">{userTransactions.length} total</span>
+                    )}
+                  </div>
+                  
+                  {loadingWallet ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                      <span className="ml-3 text-gray-600">Loading transactions...</span>
+                    </div>
+                  ) : userTransactions.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500 text-lg font-medium">No transactions found</p>
+                      <p className="text-gray-400 text-sm">Your payment history will appear here</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {userTransactions.map((transaction) => (
+                        <div key={transaction.id} className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                            <DollarSign className="w-6 h-6 text-primary-600" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-semibold text-gray-900 capitalize">
+                                {transaction.transaction_type?.replace(/_/g, ' ') || 'Payment'}
+                              </h4>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                transaction.status === 'completed' 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : transaction.status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {transaction.status}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500">
+                              {new Date(transaction.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                            {transaction.metadata?.description && (
+                              <p className="text-xs text-gray-400 mt-1">{transaction.metadata.description}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-lg text-gray-900">
+                              {parseFloat(transaction.amount).toLocaleString()} {transaction.currency}
+                            </p>
+                            <p className="text-xs text-gray-500">via {transaction.provider}</p>
+                            {transaction.metadata?.is_converted && (
+                              <p className="text-xs text-blue-600">
+                                Originally {transaction.metadata.original_amount} {transaction.metadata.original_currency}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className={`font-bold text-lg ${transaction.type === 'Earning' ? 'text-success-600' : 'text-red-600'
-                            }`}>
-                            {transaction.type === 'Earning' ? '+' : '-'}${transaction.amount}
-                          </p>
-                          <span className="text-xs text-gray-500">{transaction.status}</span>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+ {activeTab === 'settings' && (
+        <div className="space-y-6">
+          {/* Profile Settings */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Profile Settings</h3>
+              <Button variant="primary" className="flex items-center gap-2">
+                <Save className="w-4 h-4" />
+                Save Changes
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Profile Picture */}
+              <div className="lg:col-span-1">
+                <div className="text-center">
+                  <UserAvatar avatar={user.avatar} verified={user.verified} size="lg" className="mb-4 mx-auto" />
+                  <div className="space-y-2">
+                    <Button variant="outline" className="flex items-center gap-2 mx-auto">
+                      <Upload className="w-4 h-4" />
+                      Upload Photo
+                    </Button>
+                    <Button variant="ghost" className="flex items-center gap-2 mx-auto text-red-600 hover:text-red-700">
+                      <Trash2 className="w-4 h-4" />
+                      Remove Photo
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    JPG, GIF or PNG. Max size 2MB.
+                  </p>
+                </div>
+              </div>
+
+              {/* Profile Form */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      defaultValue={realUser?.firstName || ''}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Enter your first name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      defaultValue={realUser?.lastName || ''}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Enter your last name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="email"
+                      defaultValue={realUser?.email || ''}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  {realUser?.emailVerified === true ? (
+                    <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+                      <Shield className="w-4 h-4" />
+                      Email verified
+                    </p>
+                  ) : (
+                    <p className="text-sm text-amber-600 mt-1">
+                      Email not verified. <button className="text-amber-600 hover:text-amber-700 underline">Verify now</button>
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="tel"
+                      defaultValue={realUser?.phone || ''}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+                  {realUser?.phone ? (
+                    <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+                      <Shield className="w-4 h-4" />
+                      Phone verified
+                    </p>
+                  ) : (
+                    <p className="text-sm text-amber-600 mt-1">
+                      No phone number added. <button className="text-amber-600 hover:text-amber-700 underline">Add phone</button>
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      defaultValue={user.location}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Enter your location"
+                    />
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          </div>
 
-            {activeTab === 'wishlist' && (
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">My Wishlist</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {wishlistCars.map((car) => (
-                    <div key={car.id} className="group bg-gray-50 rounded-2xl p-6 hover:bg-gray-100/50 transition-all duration-300">
-                      <div className="relative mb-4">
-                        <img
-                          src={car.image}
-                          alt={car.name}
-                          className="w-full h-40 rounded-xl object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <button className="absolute top-3 right-3 p-2 bg-white/90 rounded-lg hover:bg-white transition-colors">
-                          <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-                        </button>
-                      </div>
-                      <h4 className="font-semibold text-gray-900 mb-2">{car.name}</h4>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-lg font-bold text-gray-900">${car.price}/day</span>
-                        <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-lg">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
-                          <span className="text-sm font-semibold text-yellow-700">{car.rating}</span>
-                        </div>
-                      </div>
-                      <Button className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-xl font-medium transition-colors">
-                        Book Now
-                      </Button>
+          {/* Security Settings */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Security & Privacy</h3>
+                <p className="text-gray-600">Manage your account security and privacy settings</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Password */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Lock className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Password</h4>
+                      <p className="text-sm text-gray-500">Last updated 3 months ago</p>
                     </div>
-                  ))}
+                  </div>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Edit2 className="w-4 h-4" />
+                    Change Password
+                  </Button>
                 </div>
               </div>
-            )}
+
+              {/* Two-Factor Authentication */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
+                      <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-500">Disabled</span>
+                    <Button variant="primary">Enable</Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Login Activity */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Eye className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Login Activity</h4>
+                      <p className="text-sm text-gray-500">View your recent login history</p>
+                    </div>
+                  </div>
+                  <Button variant="outline">View Activity</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Verification Status */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Account Verification</h3>
+                <p className="text-gray-600">Complete verification to unlock all features</p>
+              </div>
+              <div className="text-sm">
+                KYC Status: <span className={`font-medium ${
+                  realUser?.kyc_status === 'verified' ? 'text-green-600' : 
+                  realUser?.kyc_status === 'pending' ? 'text-amber-600' : 'text-gray-600'
+                }`}>
+                  {realUser?.kyc_status || 'Not started'}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { 
+                  icon: User, 
+                  title: 'Profile Complete', 
+                  completed: !!(realUser?.first_name && realUser?.last_name),
+                  description: 'Basic profile information'
+                },
+                { 
+                  icon: Mail, 
+                  title: 'Email Verified', 
+                  completed: realUser?.emailVerified === true,
+                  description: 'Email address confirmation'
+                },
+                { 
+                  icon: Phone, 
+                  title: 'Phone Verified', 
+                  completed: !!realUser?.phone,
+                  description: 'Phone number verification'
+                },
+                { 
+                  icon: Shield, 
+                  title: 'Identity Verified', 
+                  completed: realUser?.kyc_status === 'verified',
+                  description: 'Government ID verification'
+                },
+                { 
+                  icon: MapPin, 
+                  title: 'Address Verified', 
+                  completed: !!(realUser?.address || realUser?.city),
+                  description: 'Address confirmation'
+                },
+                { 
+                  icon: CreditCard, 
+                  title: 'Payment Method', 
+                  completed: false,
+                  description: 'Add payment method'
+                }
+              ].map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div 
+                    key={index}
+                    className={`border rounded-xl p-4 ${
+                      item.completed 
+                        ? 'border-green-200 bg-green-50' 
+                        : 'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`p-2 rounded-lg ${
+                        item.completed 
+                          ? 'bg-green-100 text-green-600' 
+                          : 'bg-gray-100 text-gray-400'
+                      }`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        item.completed ? 'text-green-800' : 'text-gray-700'
+                      }`}>
+                        {item.title}
+                      </span>
+                      {item.completed && (
+                        <div className="ml-auto bg-green-500 rounded-full p-1">
+                          <Shield className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-xs ${
+                      item.completed ? 'text-green-600' : 'text-gray-500'
+                    }`}>
+                      {item.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Preferences */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Preferences</h3>
+            
+            <div className="space-y-4">
+              {/* Language */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <Languages className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Language</h4>
+                    <p className="text-sm text-gray-500">Choose your preferred language</p>
+                  </div>
+                </div>
+                <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <option>English</option>
+                  <option>French</option>
+                  <option>Kinyarwanda</option>
+                  <option>Swahili</option>
+                </select>
+              </div>
+
+              {/* Currency */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Currency</h4>
+                    <p className="text-sm text-gray-500">Default currency for transactions</p>
+                  </div>
+                </div>
+                <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <option>USD ($)</option>
+                  <option>RWF (₨)</option>
+                  <option>KES (KSh)</option>
+                  <option>UGX (USh)</option>
+                  <option>EUR (€)</option>
+                </select>
+              </div>
+
+              {/* Theme */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <Moon className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Theme</h4>
+                    <p className="text-sm text-gray-500">Choose your preferred theme</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="p-2 border border-gray-200 rounded-lg">
+                    <Sun className="w-4 h-4" />
+                  </button>
+                  <button className="p-2 border border-gray-200 rounded-lg bg-gray-100">
+                    <Moon className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Email Notifications */}
+              <div className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-3">
+                  <Bell className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Email Notifications</h4>
+                    <p className="text-sm text-gray-500">Receive important updates via email</p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-red-200">
+            <h3 className="text-xl font-bold text-red-900 mb-2">Danger Zone</h3>
+            <p className="text-gray-600 mb-6">Irreversible and destructive actions</p>
+            
+            <div className="space-y-3">
+              <Button variant="outline" className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Account
+              </Button>
+              <p className="text-sm text-gray-500">
+                Once you delete your account, there is no going back. Please be certain.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
             {activeTab === 'reviews' && (
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
@@ -1339,6 +2026,7 @@ const DashboardPage: React.FC = () => {
       />
 
       {/* Review Detail Modal */}
+     
       {showReviewDetail && selectedReview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1501,6 +2189,8 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+
+     
     </div>
   );
 };

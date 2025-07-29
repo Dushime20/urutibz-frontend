@@ -46,10 +46,8 @@ const DocumentTypeStep: React.FC<DocumentTypeStepProps> = ({ countries, selected
             <button
               key={docType}
               onClick={() => {
-                console.log('Setting document type to:', docType);
                 setVerificationData((prev: any) => {
                   const updated = { ...prev, documentType: docType };
-                  console.log('Updated verification data:', updated);
                   return updated;
                 });
                 nextStep();

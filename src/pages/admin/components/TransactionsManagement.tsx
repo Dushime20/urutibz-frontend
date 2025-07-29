@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchRecentPaymentTransactions } from '../service/api';
-import type { PaymentTransaction } from '../service/api';
+import type { PaymentTransaction } from '../interfaces';
 import { Loader, Filter, Search, ArrowUpDown } from 'lucide-react';
 
 const TransactionsManagement: React.FC = () => {
@@ -27,8 +27,15 @@ const TransactionsManagement: React.FC = () => {
           typeFilter,
           searchTerm
         );
-        setTransactions(response.data);
-        setTotalPages(response.pagination.totalPages);
+        
+        // Ensure we have valid data before setting state
+        if (response && response.data && Array.isArray(response.data)) {
+          setTransactions(response.data);
+          setTotalPages(Math.ceil(response.pagination.total / 10)); // Calculate total pages
+        } else {
+          setTransactions([]);
+          setTotalPages(1);
+        }
       } catch (err: any) {
         setError(err.message || 'Failed to fetch transactions');
       } finally {
@@ -133,14 +140,15 @@ const TransactionsManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {transactions.map((txn) => (
+              {transactions && transactions.length > 0 ? transactions.map((txn) => {
+                return (
                 <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-4">
                     <span className="text-sm font-medium text-my-primary">{txn.id}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">
-                      {txn.transaction_type.replace(/_/g, ' ')}
+                      {txn.payment_method ? txn.payment_method.replace(/_/g, ' ') : '-'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -154,15 +162,22 @@ const TransactionsManagement: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{txn.provider}</span>
+                    <span className="text-sm text-gray-600">{txn.payment_method}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">
-                      {txn.processed_at ? new Date(txn.processed_at).toLocaleString() : '-'}
+                      {txn.created_at ? new Date(txn.created_at).toLocaleString() : '-'}
                     </span>
                   </td>
                 </tr>
-              ))}
+              );
+              }) : (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                    No transactions found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
