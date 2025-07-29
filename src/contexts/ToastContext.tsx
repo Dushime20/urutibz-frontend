@@ -1,4 +1,4 @@
-import React, { createContext, useState, ReactNode, useCallback, useContext } from 'react';
+import React, { createContext, useState, type ReactNode, useCallback, useContext } from 'react';
 
 // Define toast type
 export interface Toast {
@@ -46,7 +46,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Auto-remove toast after duration (default 5 seconds)
     const duration = toast.duration || 5000;
     setTimeout(() => {
-      removeToast(id);
+      setToasts(prevToasts => prevToasts.filter(t => t.id !== id));
     }, duration);
 
     return id;

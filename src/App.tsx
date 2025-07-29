@@ -21,12 +21,16 @@ import UrutiBzVerification from './pages/verification2/urutibiziVerification';
 // import AddressVerificationPage from './pages/verification/AddressVerificationPage';
 import DemoPage from './pages/DemoPage';
 import { ToastProvider } from './contexts/ToastContext';
+import ToastContainer from './components/ui/ToastContainer';
+import { DarkModeProvider } from './contexts/DarkModeContext';
 
 
 function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
+    <DarkModeProvider>
+      <ToastProvider>
+        <ToastContainer />
+        <AuthProvider>
         <Router>
           <Routes>
             {/* Auth routes - handle their own layout */}
@@ -111,6 +115,7 @@ function App() {
         </Router>
       </AuthProvider>
     </ToastProvider>
+    </DarkModeProvider>
   );
 }
 

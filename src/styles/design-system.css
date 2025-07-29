@@ -16,6 +16,15 @@
   /* Background and Foreground */
   --background-color: rgb(255, 255, 255);
   --foreground-color: rgb(83, 83, 83);
+}
+
+/* Dark mode variables */
+.dark {
+  --background-color: rgb(17, 24, 39);
+  --foreground-color: rgb(243, 244, 246);
+  --color-platform-dark-grey: rgb(243, 244, 246);
+  --color-platform-grey: rgb(156, 163, 175);
+  --color-platform-light-grey: rgb(75, 85, 99);
   
   /* Typography */
   --font-primary: 'Outfit', 'Inter', sans-serif;
@@ -98,7 +107,7 @@
   
   /* Cards */
   .card {
-    @apply bg-white rounded-platform shadow-platform border border-platform-light-grey transition-all duration-200 hover:shadow-platform-lg;
+    @apply bg-white dark:bg-gray-800 rounded-platform shadow-platform border border-platform-light-grey dark:border-gray-700 transition-all duration-200 hover:shadow-platform-lg;
   }
   
   .card-interactive {
@@ -119,7 +128,7 @@
   
   /* Forms */
   .form-input {
-    @apply w-full px-4 py-3 border border-platform-light-grey rounded-platform focus:outline-none focus:ring-2 focus:ring-active focus:border-active transition-all duration-200;
+    @apply w-full px-4 py-3 border border-platform-light-grey dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-platform focus:outline-none focus:ring-2 focus:ring-active focus:border-active transition-all duration-200;
   }
   
   .form-input:invalid {
@@ -127,7 +136,7 @@
   }
   
   .form-label {
-    @apply block text-sm font-medium text-platform-dark-grey mb-2;
+    @apply block text-sm font-medium text-platform-dark-grey dark:text-gray-300 mb-2;
   }
   
   .form-error {

@@ -462,7 +462,7 @@ const BookingPage: React.FC = () => {
           <PaymentStepper
             bookingId={bookingId}
             amount={rentalDetails.totalCost}
-            currency="RWF"
+            currency={bookingItem?.base_currency || "USD"}
             onSuccess={handlePaymentSuccess}
           />
         </div>
@@ -605,7 +605,10 @@ const BookingPage: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Daily Rate</span>
                       <span className="font-medium">
-                        {rentalDetails.itemPrice.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                        {rentalDetails.itemPrice.toLocaleString('en-US', { 
+                          style: 'currency', 
+                          currency: bookingItem?.base_currency || 'USD' 
+                        })}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -617,20 +620,29 @@ const BookingPage: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Subtotal</span>
                       <span className="font-medium">
-                        {rentalDetails.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                        {rentalDetails.amount.toLocaleString('en-US', { 
+                          style: 'currency', 
+                          currency: bookingItem?.base_currency || 'USD' 
+                        })}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Service Fee (10%)</span>
                       <span className="font-medium">
-                        {rentalDetails.serviceFee.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                        {rentalDetails.serviceFee.toLocaleString('en-US', { 
+                          style: 'currency', 
+                          currency: bookingItem?.base_currency || 'USD' 
+                        })}
                       </span>
                     </div>
                     <div className="border-t border-gray-200 pt-3">
                       <div className="flex justify-between">
                         <span className="font-bold text-gray-900">Total</span>
                         <span className="font-bold text-xl text-[#00aaa9]">
-                          {rentalDetails.totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                          {rentalDetails.totalCost.toLocaleString('en-US', { 
+                            style: 'currency', 
+                            currency: bookingItem?.base_currency || 'USD' 
+                          })}
                         </span>
                       </div>
                     </div>

@@ -18,6 +18,7 @@ interface AdminStatCardsProps {
 }
 
 const AdminStatCards: React.FC<AdminStatCardsProps> = ({ adminStats, verifiedUsers }) => {
+  console.log('admins stats',adminStats)
   const statCards = [
     {
       icon: Users,

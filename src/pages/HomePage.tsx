@@ -12,7 +12,7 @@ import FaqSection from '../components/sections/FaqSection';
 import AllCategoriesSection from '../components/sections/AllCategoriesSection';
 // import CTASection from '../components/sections/CTASection';
 import { useToast } from '../contexts/ToastContext';
-import { fetchAllProducts } from './admin/service/api'; // adjust path if needed
+import { fetchAvailableProducts } from './admin/service/api'; // adjust path if needed
 
 const HomePage: React.FC = () => {
   const { showToast } = useToast();
@@ -20,8 +20,19 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token') || undefined;
-    fetchAllProducts(token).then(result => {
+    
+    // First load: get active products quickly (skip availability check for performance)
+    fetchAvailableProducts(token, true).then(result => {
       setProducts(result.data || []);
+      
+      // Background load: get fully filtered products (with availability check)
+      setTimeout(() => {
+        fetchAvailableProducts(token, false).then(filteredResult => {
+          if (filteredResult.data) {
+            setProducts(filteredResult.data);
+          }
+        });
+      }, 1000);
     });
   }, []);
 

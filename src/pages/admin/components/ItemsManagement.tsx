@@ -4,6 +4,7 @@ import type { Product, Owner, ItemCategory } from '../types';
 import { fetchProductImages, getProductById, fetchUserById } from '../service/api';
 import { fetchProductAvailability } from '../service/api';
 import { type ProductAvailability } from '../interfaces';
+import { filterCurrentAndFutureAvailability } from '../../../lib/utils';
 import { fetchCategoryById } from '../service/api';
 import { fetchCategories } from '../service/api';
 import type { Category } from '../interfaces';
@@ -702,12 +703,16 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                       {item.base_price_per_day}{item.base_currency}/day
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {productAvailability[item.id] && productAvailability[item.id].length > 0 
-                        ? (productAvailability[item.id].some(a => a.availability_type === 'unavailable')
-                          ? (
+                      {(() => {
+                        // Filter only current and future unavailable dates using utility function
+                        const currentUnavailableDates = productAvailability[item.id]
+                          ? filterCurrentAndFutureAvailability(productAvailability[item.id], 'unavailable')
+                          : [];
+                        
+                        if (currentUnavailableDates.length > 0) {
+                          return (
                             <div className="flex flex-col">
-                              {productAvailability[item.id]
-                                .filter(a => a.availability_type === 'unavailable')
+                              {currentUnavailableDates
                                 .slice(0, 2)
                                 .map((availability, index) => (
                                   <div 
@@ -727,19 +732,17 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                                   </div>
                                 ))
                               }
-                              {productAvailability[item.id].filter(a => a.availability_type === 'unavailable').length > 2 && (
+                              {currentUnavailableDates.length > 2 && (
                                 <span className="text-xs text-gray-400">
-                                  +{productAvailability[item.id].filter(a => a.availability_type === 'unavailable').length - 2} more
+                                  +{currentUnavailableDates.length - 2} more
                                 </span>
                               )}
                             </div>
-                          ) : (
-                            <span className="text-xs text-green-600">Available</span>
-                          )
-                        ) : (
-                          <span className="text-xs text-green-600">Available</span>
-                        )
-                      }
+                          );
+                        } else {
+                          return <span className="text-xs text-green-600">Available</span>;
+                        }
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium relative">
                       <div className="flex items-center gap-2">

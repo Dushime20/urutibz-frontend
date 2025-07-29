@@ -9,7 +9,7 @@ import {
 import { itemCategories } from '../data/mockRentalData';
 import { formatPrice } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { fetchAllProducts, fetchProductImages } from './admin/service/api';
+import { fetchAvailableProducts, fetchProductImages } from './admin/service/api';
 
 // Product type definition with better typing
 type Product = {
@@ -178,7 +178,7 @@ const ItemSearchPage: React.FC = () => {
         setError(null);
         const token = localStorage.getItem('token') || undefined;
         
-        const result = await fetchAllProducts(token);
+        const result = await fetchAvailableProducts(token, false); // Full filtering for search page
         
         if (result.error) {
           setError(result.error);

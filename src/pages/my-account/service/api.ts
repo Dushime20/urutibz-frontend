@@ -1,20 +1,62 @@
 import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
-// Add new functions for dashboard overview
+// Add new functions for dashboard overview - USER SPECIFIC
 export async function fetchDashboardStats(token: string) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/dashboard/stats`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data?.data || {
-      activeBookings: 0,
-      totalEarnings: 0,
-      totalTransactions: 0,
-      wishlistItems: 0
+    console.log('Fetching user-specific dashboard stats...');
+    
+    // Get user-specific data from user endpoints
+    const [bookingsRes, transactionsRes, myProductsRes] = await Promise.all([
+      axios.get(`${API_BASE_URL}/bookings`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE_URL}/payment-transactions`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE_URL}/products/my/products`, { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+
+    console.log('User bookings response:', bookingsRes.data);
+    console.log('User transactions response:', transactionsRes.data);
+    console.log('User products response:', myProductsRes.data);
+
+    const bookings = bookingsRes.data?.data?.data || [];
+    const transactions = transactionsRes.data?.data?.data || [];
+    const myProducts = myProductsRes.data?.data?.data || [];
+
+    // Calculate user-specific stats
+    const activeBookings = bookings.filter((booking: any) => 
+      booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'active'
+    ).length;
+
+    // Calculate total earnings from transactions where user received money
+    const totalEarnings = transactions
+      .filter((transaction: any) => 
+        transaction.status === 'completed' && 
+        (transaction.transaction_type === 'booking_payment' || transaction.transaction_type === 'payout')
+      )
+      .reduce((sum: number, transaction: any) => sum + (parseFloat(transaction.amount) || 0), 0);
+
+    // Total transaction amount (all transactions)
+    const totalTransactions = transactions
+      .reduce((sum: number, transaction: any) => sum + (parseFloat(transaction.amount) || 0), 0);
+
+    // Count user's active products as wishlist proxy
+    const wishlistItems = myProducts.filter((product: any) => 
+      product.status === 'active' || product.status === 'available'
+    ).length;
+
+    const userStats = {
+      activeBookings,
+      totalEarnings,
+      totalTransactions,
+      wishlistItems
     };
+
+    console.log('Calculated user dashboard stats:', userStats);
+
+    return userStats;
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    console.error('Error fetching user dashboard stats:', error);
+    
+    // Return zeros if everything fails
     return {
       activeBookings: 0,
       totalEarnings: 0,

@@ -137,3 +137,34 @@ export async function submitIdForVerification({
     throw new Error(backendMsg || 'ID verification failed');
   }
 }
+
+// Forgot password function
+export async function forgotPassword(email: string) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, { email });
+    return response.data;
+  } catch (error: any) {
+    const backendMsg =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message;
+    throw new Error(backendMsg || 'Failed to send reset email');
+  }
+}
+
+// Reset password function
+export async function resetPassword(token: string, newPassword: string) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
+      token,
+      newPassword
+    });
+    return response.data;
+  } catch (error: any) {
+    const backendMsg =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message;
+    throw new Error(backendMsg || 'Failed to reset password');
+  }
+}

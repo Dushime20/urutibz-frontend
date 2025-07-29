@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Smartphone, Check, AlertCircle, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { CreditCard, Smartphone, Check, AlertCircle, ArrowLeft, ArrowRight, CheckCircle, ArrowUpDown } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import { processPaymentTransaction, fetchPaymentMethods } from '../service/api';
 import axios from 'axios';
 import { API_BASE_URL } from '../service/api';
+import { 
+  convertToMobileMoneyAmount, 
+  needsCurrencyConversion, 
+  formatCurrency, 
+  getMobileMoneyProviderCurrency 
+} from '../../../lib/utils';
 
 interface PaymentStepperProps {
   bookingId: string;
@@ -21,6 +27,12 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<any>(null);
   const [success, setSuccess] = useState(false);
+  const [conversionInfo, setConversionInfo] = useState<{
+    amount: number;
+    currency: string;
+    exchangeRate: number;
+    isConverted: boolean;
+  } | null>(null);
 
   const steps = [
     { id: 1, title: 'Choose Type', description: 'Select payment method' },
@@ -64,6 +76,29 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError(null);
+    
+    // Handle currency conversion when mobile money provider is selected
+    if (e.target.name === 'provider' && type === 'mobile_money') {
+      const provider = e.target.value;
+      console.log(`🔄 Currency conversion check:`, {
+        provider,
+        bookingCurrency: currency,
+        bookingAmount: amount,
+        needsConversion: needsCurrencyConversion(currency, provider)
+      });
+      
+      if (provider && needsCurrencyConversion(currency, provider)) {
+        const conversion = convertToMobileMoneyAmount(amount, currency, provider);
+        console.log(`💱 Currency conversion applied:`, conversion);
+        setConversionInfo({
+          ...conversion,
+          isConverted: true
+        });
+      } else {
+        console.log(`✅ No conversion needed`);
+        setConversionInfo(null);
+      }
+    }
   };
 
   const handleCreatePaymentMethod = async (e: React.FormEvent) => {
@@ -169,14 +204,22 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
         return;
       }
 
+      // Use converted amount and currency if conversion was applied
+      const finalAmount = conversionInfo ? conversionInfo.amount : amount;
+      const finalCurrency = conversionInfo ? conversionInfo.currency : currency;
+
       const paymentPayload = {
         booking_id: bookingId,
         payment_method_id: paymentMethodId,
-        amount: amount,
-        currency: currency,
+        amount: finalAmount,
+        currency: finalCurrency,
         transaction_type: 'booking_payment',
         metadata: {
           description: `Payment for booking #${bookingId}`,
+          original_amount: amount,
+          original_currency: currency,
+          exchange_rate: conversionInfo?.exchangeRate || 1,
+          is_converted: conversionInfo?.isConverted || false,
         },
       };
       
@@ -200,7 +243,16 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
             <CheckCircle className="w-12 h-12 text-success-600" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Payment Successful!</h2>
-          <p className="text-gray-600 mb-2">Your payment of <span className="font-semibold text-primary-600">{amount} {currency}</span> has been processed.</p>
+          <p className="text-gray-600 mb-2">
+            Your payment of <span className="font-semibold text-primary-600">
+              {conversionInfo ? `${conversionInfo.amount} ${conversionInfo.currency}` : `${amount} ${currency}`}
+            </span> has been processed.
+            {conversionInfo && conversionInfo.isConverted && (
+              <span className="text-sm text-gray-500 block mt-1">
+                (Converted from {amount} {currency})
+              </span>
+            )}
+          </p>
           <p className="text-sm text-gray-500">Redirecting you back to your booking...</p>
         </div>
       </div>
@@ -419,10 +471,36 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200"
                   >
                     <option value="">Select Provider</option>
-                    <option value="mtn_momo">MTN Mobile Money</option>
-                    <option value="airtel_money">Airtel Money</option>
+                    <option value="mtn_momo">MTN Mobile Money (RWF)</option>
+                    <option value="airtel_money">Airtel Money (RWF)</option>
+                    <option value="mpesa">M-PESA (KES)</option>
+                    <option value="mtn_uganda">MTN Uganda (UGX)</option>
                   </select>
                 </div>
+
+                {/* Currency Conversion Display */}
+                {conversionInfo && conversionInfo.isConverted && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <ArrowUpDown className="w-5 h-5 text-blue-600" />
+                      <span className="text-sm font-semibold text-blue-800">Currency Conversion</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Original Amount:</span>
+                        <span className="font-medium">{formatCurrency(amount, 'en-US', currency)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Exchange Rate:</span>
+                        <span className="font-medium">1 {currency} = {conversionInfo.exchangeRate.toFixed(2)} {conversionInfo.currency}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-blue-200 pt-2">
+                        <span className="text-blue-800 font-semibold">Amount to Pay:</span>
+                        <span className="text-blue-800 font-bold">{formatCurrency(conversionInfo.amount, 'en-US', conversionInfo.currency)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
@@ -502,13 +580,32 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                     <span className="font-medium">{bookingId}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Amount</span>
+                    <span className="text-gray-600">
+                      {conversionInfo?.isConverted ? 'Original Amount' : 'Amount'}
+                    </span>
                     <span className="font-medium">{amount} {currency}</span>
                   </div>
+                  
+                  {/* Show conversion details if applicable */}
+                  {conversionInfo && conversionInfo.isConverted && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Exchange Rate</span>
+                        <span className="font-medium">1 {currency} = {conversionInfo.exchangeRate.toFixed(2)} {conversionInfo.currency}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Converted Amount</span>
+                        <span className="font-medium">{conversionInfo.amount} {conversionInfo.currency}</span>
+                      </div>
+                    </>
+                  )}
+                  
                   <div className="border-t border-gray-200 pt-3">
                     <div className="flex justify-between">
-                      <span className="font-semibold text-gray-900">Total</span>
-                      <span className="font-bold text-xl text-primary-600">{amount} {currency}</span>
+                      <span className="font-semibold text-gray-900">Total to Pay</span>
+                      <span className="font-bold text-xl text-primary-600">
+                        {conversionInfo ? `${conversionInfo.amount} ${conversionInfo.currency}` : `${amount} ${currency}`}
+                      </span>
                     </div>
                   </div>
                 </div>

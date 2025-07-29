@@ -19,6 +19,7 @@ import {
   type CreateCountryInput,
   type PaymentTransactionResponse
 } from '../interfaces';
+import { isProductCurrentlyAvailable } from '../../../lib/utils';
 
 export type { AdminBooking } from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
@@ -250,7 +251,40 @@ export async function fetchAdminStats(token?: string): Promise<AdminStats> {
     const response = await axios.get(`${API_BASE_URL}/admin/dashboard`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    return response.data;
+    
+    console.log('Admin stats API response:', response.data);
+    
+    if (response.data?.success && response.data?.data) {
+      const data = response.data.data;
+      
+      // Map the API response to the expected AdminStats interface
+      return {
+        totalUsers: data.totalUsers || 0,
+        totalItems: data.activeProducts || 0, // Map activeProducts to totalItems
+        activeBookings: data.totalBookings || 0, // Map totalBookings to activeBookings
+        totalRevenue: data.totalRevenue || 0,
+        monthlyGrowth: {
+          users: data.recentUsers || 0, // Use recentUsers as growth indicator
+          items: data.activeProducts || 0,
+          bookings: data.recentBookings || 0, // Use recentBookings as growth indicator
+          revenue: data.totalRevenue || 0
+        }
+      };
+    }
+    
+    // Fallback to default values if API structure is unexpected
+    return {
+      totalUsers: 0,
+      totalItems: 0,
+      activeBookings: 0,
+      totalRevenue: 0,
+      monthlyGrowth: {
+        users: 0,
+        items: 0,
+        bookings: 0,
+        revenue: 0
+      }
+    };
   } catch (error) {
     console.error('Error fetching admin stats:', error);
     throw error;
@@ -435,6 +469,35 @@ export async function createCategory(data: CreateCategoryInput, token?: string):
   }
 }
 
+export async function updateCategory(categoryId: string, data: Partial<CreateCategoryInput>, token?: string): Promise<Category> {
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await axios.put(`${API_BASE_URL}/categories/${categoryId}`, data, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error updating category:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to update category');
+  }
+}
+
+export async function deleteCategory(categoryId: string, token?: string): Promise<void> {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    await axios.delete(`${API_BASE_URL}/categories/${categoryId}`, { headers });
+  } catch (err: any) {
+    console.error('Error deleting category:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to delete category');
+  }
+}
+
 export async function fetchCategoryById(categoryId: string, token?: string) {
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -447,11 +510,46 @@ export async function fetchCountries(): Promise<Country[]> {
   return response.data.data;
 }
 
+export async function fetchCountryById(countryId: string, token?: string): Promise<Country> {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(`${API_BASE_URL}/countries/${countryId}`, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    console.error('Error fetching country by ID:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch country');
+  }
+}
+
 export async function createCountry(data: CreateCountryInput, token?: string): Promise<Country> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const response = await axios.post(`${API_BASE_URL}/countries`, data, { headers });
   return response.data.data;
+}
+
+export async function updateCountry(countryId: string, data: Partial<CreateCountryInput>, token?: string): Promise<Country> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.put(`${API_BASE_URL}/countries/${countryId}`, data, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    console.error('Error updating country:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to update country');
+  }
+}
+
+export async function deleteCountry(countryId: string, token?: string): Promise<void> {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    await axios.delete(`${API_BASE_URL}/countries/${countryId}`, { headers });
+  } catch (err: any) {
+    console.error('Error deleting country:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to delete country');
+  }
 }
 
 export async function fetchPaymentMethods(token?: string): Promise<PaymentMethod[]> {
@@ -620,5 +718,67 @@ export async function overrideBooking(
       success: false,
       error: error.response?.data?.message || 'Failed to override booking'
     };
+  }
+}
+
+/**
+ * Fetches products that are active and currently available (not booked)
+ * This function filters products for the public portal
+ * @param token Optional authentication token
+ * @param skipAvailabilityCheck If true, only filters by active status (for performance)
+ */
+export async function fetchAvailableProducts(token?: string, skipAvailabilityCheck: boolean = false) {
+  try {
+    // First, get all active products
+    const productsResult = await fetchAllProducts(token, false);
+    
+    if (productsResult.error || !productsResult.data) {
+      return productsResult;
+    }
+
+    const activeProducts = productsResult.data;
+    
+    // If skipping availability check, return all active products
+    if (skipAvailabilityCheck) {
+      console.log(`Returning ${activeProducts.length} active products (skipped availability check)`);
+      return {
+        data: activeProducts,
+        error: null,
+        total: activeProducts.length
+      };
+    }
+
+    const availableProducts = [];
+
+    // Check availability for each product
+    for (const product of activeProducts) {
+      try {
+        // Fetch availability data for this product
+        const availabilityData = await fetchProductAvailability(product.id, token);
+        
+        // Check if product is currently available (not booked)
+        const isAvailable = isProductCurrentlyAvailable(availabilityData);
+        
+        if (isAvailable) {
+          availableProducts.push(product);
+        }
+      } catch (error) {
+        console.warn(`Could not check availability for product ${product.id}, including it as available:`, error);
+        // If we can't check availability, include the product (fail-safe approach)
+        availableProducts.push(product);
+      }
+    }
+
+    console.log(`Filtered ${activeProducts.length} active products to ${availableProducts.length} available products`);
+
+    return {
+      data: availableProducts,
+      error: null,
+      total: availableProducts.length
+    };
+  } catch (err: any) {
+    const errorMsg = err?.message || 'Failed to fetch available products';
+    console.error('Error fetching available products:', errorMsg);
+    return { data: null, error: errorMsg, total: 0 };
   }
 }
