@@ -5,7 +5,6 @@ import {
   Package, 
   ShoppingCart, 
   Settings, 
-  HelpCircle, 
   LogOut, 
   Moon,
   Sun,
@@ -14,9 +13,10 @@ import {
   FileText,
   Bell,
   MessageSquare,
-  Languages
+  Languages,
+  DollarSign
 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../../../context/AuthContext';
 import type { AuthContextType } from '../../../context/AuthContext';
@@ -32,8 +32,8 @@ interface AdminNavigationItemProps {
 }
 
 interface AdminSidebarProps {
-  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications';
-  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications') => void;
+  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications';
+  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications') => void;
   AdminNavigationItem: React.FC<AdminNavigationItemProps>;
 }
 
@@ -45,8 +45,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, logout } = useContext<AuthContextType>(AuthContext);
+  const { logout } = useContext<AuthContextType>(AuthContext);
   const { showToast } = useContext<ToastContextType>(ToastContext);
 
   useEffect(() => {
@@ -133,6 +132,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: CreditCard, 
       label: 'Payment Methods', 
       tab: 'paymentMethods' as const,
+      hasNotification: false
+    },
+    { 
+      icon: DollarSign, 
+      label: 'Pricing', 
+      tab: 'pricing' as const,
       hasNotification: false
     },
     { 
