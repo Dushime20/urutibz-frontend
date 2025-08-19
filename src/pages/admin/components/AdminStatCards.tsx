@@ -9,7 +9,6 @@ import {
 import { fetchAdminStats } from '../service/api';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import type { AdminStats } from '../interfaces';
-console.log('Imported interfaces:', Object.keys(await import('../interfaces')));
 
 // Define props interface
 interface AdminStatCardsProps {

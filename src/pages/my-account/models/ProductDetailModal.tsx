@@ -218,7 +218,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
                           <div className="flex justify-between items-center">
                             <span className="text-gray-600 font-medium">Daily Rate:</span>
                             <span className="text-2xl font-bold text-primary-600">
-                              {product.base_price_per_day} {product.base_currency}
+                              {product.base_price_per_day != null && product.base_currency
+                                ? `${product.base_price_per_day} ${product.base_currency}`
+                                : 'No price'}
                             </span>
                           </div>
                           {product.base_price_per_week && (

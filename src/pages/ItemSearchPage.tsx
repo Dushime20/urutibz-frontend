@@ -552,9 +552,9 @@ const ItemSearchPage: React.FC = () => {
                     {/* Price */}
                     <div className="flex items-center gap-2 mb-4">
                       <span className="text-xl font-bold text-[#00aaa9]">
-                        ${item.base_price_per_day || '0'}
+                        {item.base_price_per_day != null && item.base_currency ? `$${item.base_price_per_day}` : 'No price'}
                       </span>
-                      <span className="text-sm text-gray-600 font-medium">/{item.base_currency || 'day'}</span>
+                      <span className="text-sm text-gray-600 font-medium">{item.base_price_per_day != null && item.base_currency ? `/${item.base_currency}` : ''}</span>
                     </div>
 
                     {/* Features */}
@@ -651,9 +651,9 @@ const ItemSearchPage: React.FC = () => {
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
                             <span className="text-xl font-bold text-[#00aaa9]">
-                              ${item.base_price_per_day || '0'}
+                              {item.base_price_per_day != null && item.base_currency ? `$${item.base_price_per_day}` : 'No price'}
                             </span>
-                            <span className="text-sm text-gray-600">/{item.base_currency || 'day'}</span>
+                            <span className="text-sm text-gray-600">{item.base_price_per_day != null && item.base_currency ? `/${item.base_currency}` : ''}</span>
                           </div>
                           {item.condition && (
                             <span className="text-xs px-2.5 py-1 bg-green-100 text-green-700 rounded-full font-medium">

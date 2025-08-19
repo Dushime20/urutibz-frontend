@@ -24,6 +24,22 @@ import { isProductCurrentlyAvailable } from '../../../lib/utils';
 export type { AdminBooking } from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
+export async function fetchPricingStats(token?: string) {
+  const url = `${API_BASE_URL}/product-prices/stats`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await axios.get(url, { headers });
+    return { data: response.data.data, error: null };
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch pricing stats';
+    console.error('Error fetching pricing stats:', errorMsg);
+    return { data: null, error: errorMsg };
+  }
+}
+
 export async function fetchAllProducts(token?: string, isAdminDashboard: boolean = false) {
   const url = `${API_BASE_URL}/products`;
   try {
@@ -780,5 +796,592 @@ export async function fetchAvailableProducts(token?: string, skipAvailabilityChe
     const errorMsg = err?.message || 'Failed to fetch available products';
     console.error('Error fetching available products:', errorMsg);
     return { data: null, error: errorMsg, total: 0 };
+  }
+}
+
+/**
+ * Settings Management API Functions
+ */
+
+// Interface for platform settings
+export interface PlatformSettings {
+  siteName: string;
+  siteDescription: string;
+  contactEmail: string;
+  supportPhone: string;
+  defaultCurrency: string;
+  defaultLanguage: string;
+  timezone: string;
+  maintenanceMode: boolean;
+  registrationEnabled: boolean;
+  emailVerificationRequired: boolean;
+  phoneVerificationRequired: boolean;
+  kycRequired: boolean;
+  maxImagesPerProduct: number;
+  maxProductsPerUser: number;
+  autoApproveProducts: boolean;
+  autoApproveUsers: boolean;
+}
+
+// Interface for security settings
+export interface SecuritySettings {
+  sessionTimeout: number;
+  maxLoginAttempts: number;
+  passwordMinLength: number;
+  requireTwoFactor: boolean;
+  enableCaptcha: boolean;
+  ipWhitelist: string[];
+  allowedFileTypes: string[];
+  maxFileSize: number;
+  enableAuditLog: boolean;
+  dataRetentionDays: number;
+}
+
+// Interface for notification settings
+export interface NotificationSettings {
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  pushNotifications: boolean;
+  adminAlerts: boolean;
+  bookingNotifications: boolean;
+  paymentNotifications: boolean;
+  reviewNotifications: boolean;
+  systemMaintenanceAlerts: boolean;
+}
+
+// Interface for system settings
+export interface SystemSettings {
+  cacheEnabled: boolean;
+  cacheTimeout: number;
+  backupEnabled: boolean;
+  backupFrequency: string;
+  logLevel: string;
+  debugMode: boolean;
+  apiRateLimit: number;
+  maxConcurrentUsers: number;
+}
+
+// Combined settings interface
+export interface AdminSettings {
+  platform: PlatformSettings;
+  security: SecuritySettings;
+  notifications: NotificationSettings;
+  system: SystemSettings;
+}
+
+/**
+ * Fetch all admin settings
+ */
+export async function fetchAdminSettings(token?: string): Promise<AdminSettings> {
+  const url = `${API_BASE_URL}/admin/settings`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.get(url, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch settings';
+    console.error('Error fetching admin settings:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Update admin settings
+ */
+export async function updateAdminSettings(settings: Partial<AdminSettings>, token?: string): Promise<AdminSettings> {
+  const url = `${API_BASE_URL}/admin/settings`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.put(url, settings, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to update settings';
+    console.error('Error updating admin settings:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Reset admin settings to defaults
+ */
+export async function resetAdminSettings(token?: string): Promise<AdminSettings> {
+  const url = `${API_BASE_URL}/admin/settings/reset`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, {}, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to reset settings';
+    console.error('Error resetting admin settings:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Fetch system health and status
+ */
+export async function fetchSystemHealth(token?: string) {
+  const url = `${API_BASE_URL}/admin/system/health`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.get(url, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch system health';
+    console.error('Error fetching system health:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Fetch system logs
+ */
+export async function fetchSystemLogs(
+  level?: string,
+  limit: number = 100,
+  token?: string
+) {
+  const url = `${API_BASE_URL}/admin/system/logs`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const params = new URLSearchParams();
+    if (level) params.append('level', level);
+    params.append('limit', limit.toString());
+    
+    const response = await axios.get(`${url}?${params.toString()}`, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch system logs';
+    console.error('Error fetching system logs:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Clear system cache
+ */
+export async function clearSystemCache(token?: string) {
+  const url = `${API_BASE_URL}/admin/system/cache/clear`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, {}, { headers });
+    return response.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to clear cache';
+    console.error('Error clearing system cache:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Trigger system backup
+ */
+export async function triggerSystemBackup(token?: string) {
+  const url = `${API_BASE_URL}/admin/system/backup`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, {}, { headers });
+    return response.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to trigger backup';
+    console.error('Error triggering system backup:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Reports Management API Functions
+ */
+
+// Report interfaces
+export interface ReportFilters {
+  startDate?: string;
+  endDate?: string;
+  category?: string;
+  status?: string;
+  userId?: string;
+  productId?: string;
+  country?: string;
+  paymentMethod?: string;
+}
+
+export interface RevenueReport {
+  period: string;
+  totalRevenue: number;
+  totalBookings: number;
+  averageBookingValue: number;
+  revenueByCategory: { category: string; revenue: number; bookings: number }[];
+  revenueByCountry: { country: string; revenue: number; bookings: number }[];
+  revenueByMonth: { month: string; revenue: number; bookings: number }[];
+}
+
+export interface UserReport {
+  period: string;
+  totalUsers: number;
+  newUsers: number;
+  activeUsers: number;
+  verifiedUsers: number;
+  usersByCountry: { country: string; users: number }[];
+  usersByMonth: { month: string; users: number }[];
+  topUsers: { userId: string; name: string; bookings: number; revenue: number }[];
+}
+
+export interface BookingReport {
+  period: string;
+  totalBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  pendingBookings: number;
+  averageBookingDuration: number;
+  bookingsByCategory: { category: string; bookings: number; revenue: number }[];
+  bookingsByStatus: { status: string; count: number }[];
+  bookingsByMonth: { month: string; bookings: number; revenue: number }[];
+}
+
+export interface ProductReport {
+  period: string;
+  totalProducts: number;
+  activeProducts: number;
+  inactiveProducts: number;
+  averageRating: number;
+  productsByCategory: { category: string; products: number }[];
+  topProducts: { productId: string; title: string; bookings: number; revenue: number; rating: number }[];
+  productsByStatus: { status: string; count: number }[];
+}
+
+export interface TransactionReport {
+  period: string;
+  totalTransactions: number;
+  totalAmount: number;
+  successfulTransactions: number;
+  failedTransactions: number;
+  transactionsByMethod: { method: string; count: number; amount: number }[];
+  transactionsByStatus: { status: string; count: number; amount: number }[];
+  transactionsByMonth: { month: string; transactions: number; amount: number }[];
+}
+
+export interface PerformanceReport {
+  period: string;
+  averageResponseTime: number;
+  uptime: number;
+  errorRate: number;
+  activeUsers: number;
+  peakConcurrentUsers: number;
+  apiRequests: number;
+  cacheHitRate: number;
+}
+
+export interface CustomReport {
+  id: string;
+  name: string;
+  description: string;
+  type: 'revenue' | 'user' | 'booking' | 'product' | 'transaction' | 'performance' | 'custom';
+  filters: ReportFilters;
+  schedule?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  recipients?: string[];
+  lastGenerated?: string;
+  nextGeneration?: string;
+}
+
+/**
+ * Generate revenue report
+ */
+export async function generateRevenueReport(filters: ReportFilters, token?: string): Promise<RevenueReport> {
+  const url = `${API_BASE_URL}/admin/reports/revenue`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, filters, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to generate revenue report';
+    console.error('Error generating revenue report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Generate user report
+ */
+export async function generateUserReport(filters: ReportFilters, token?: string): Promise<UserReport> {
+  const url = `${API_BASE_URL}/admin/reports/users`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, filters, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to generate user report';
+    console.error('Error generating user report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Generate booking report
+ */
+export async function generateBookingReport(filters: ReportFilters, token?: string): Promise<BookingReport> {
+  const url = `${API_BASE_URL}/admin/reports/bookings`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, filters, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to generate booking report';
+    console.error('Error generating booking report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Generate product report
+ */
+export async function generateProductReport(filters: ReportFilters, token?: string): Promise<ProductReport> {
+  const url = `${API_BASE_URL}/admin/reports/products`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, filters, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to generate product report';
+    console.error('Error generating product report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Generate transaction report
+ */
+export async function generateTransactionReport(filters: ReportFilters, token?: string): Promise<TransactionReport> {
+  const url = `${API_BASE_URL}/admin/reports/transactions`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, filters, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to generate transaction report';
+    console.error('Error generating transaction report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Generate performance report
+ */
+export async function generatePerformanceReport(filters: ReportFilters, token?: string): Promise<PerformanceReport> {
+  const url = `${API_BASE_URL}/admin/reports/performance`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, filters, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to generate performance report';
+    console.error('Error generating performance report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Get all custom reports
+ */
+export async function fetchCustomReports(token?: string): Promise<CustomReport[]> {
+  const url = `${API_BASE_URL}/admin/reports/custom`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.get(url, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch custom reports';
+    console.error('Error fetching custom reports:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Create custom report
+ */
+export async function createCustomReport(report: Omit<CustomReport, 'id' | 'lastGenerated' | 'nextGeneration'>, token?: string): Promise<CustomReport> {
+  const url = `${API_BASE_URL}/admin/reports/custom`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, report, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to create custom report';
+    console.error('Error creating custom report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Update custom report
+ */
+export async function updateCustomReport(reportId: string, report: Partial<CustomReport>, token?: string): Promise<CustomReport> {
+  const url = `${API_BASE_URL}/admin/reports/custom/${reportId}`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.put(url, report, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to update custom report';
+    console.error('Error updating custom report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Delete custom report
+ */
+export async function deleteCustomReport(reportId: string, token?: string): Promise<void> {
+  const url = `${API_BASE_URL}/admin/reports/custom/${reportId}`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    await axios.delete(url, { headers });
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to delete custom report';
+    console.error('Error deleting custom report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Export report to various formats
+ */
+export async function exportReport(
+  reportType: string,
+  format: 'pdf' | 'csv' | 'excel' | 'json',
+  filters: ReportFilters,
+  token?: string
+): Promise<Blob> {
+  const url = `${API_BASE_URL}/admin/reports/export/${reportType}`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const params = new URLSearchParams();
+    params.append('format', format);
+    
+    const response = await axios.post(`${url}?${params.toString()}`, filters, { 
+      headers,
+      responseType: 'blob'
+    });
+    
+    return response.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to export report';
+    console.error('Error exporting report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Schedule report generation
+ */
+export async function scheduleReport(
+  reportId: string,
+  schedule: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly',
+  recipients: string[],
+  token?: string
+): Promise<void> {
+  const url = `${API_BASE_URL}/admin/reports/schedule/${reportId}`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    await axios.post(url, { schedule, recipients }, { headers });
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to schedule report';
+    console.error('Error scheduling report:', errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+/**
+ * Get report templates
+ */
+export async function fetchReportTemplates(token?: string): Promise<any[]> {
+  const url = `${API_BASE_URL}/admin/reports/templates`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.get(url, { headers });
+    return response.data.data;
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to fetch report templates';
+    console.error('Error fetching report templates:', errorMsg);
+    throw new Error(errorMsg);
   }
 }

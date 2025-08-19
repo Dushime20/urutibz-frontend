@@ -318,8 +318,14 @@ const ItemDetailsPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-gray-900">
-                      {formatPrice(item.base_price_per_day)}
-                      <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
+                      {item.base_price_per_day != null && item.base_currency ? (
+                        <>
+                          {formatPrice(item.base_price_per_day)}
+                          <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500 text-base">No price</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -410,8 +416,14 @@ const ItemDetailsPage: React.FC = () => {
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
                 <div className="text-center mb-6">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
-                    {item.base_price_per_day}
-                    <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
+                    {item.base_price_per_day != null && item.base_currency ? (
+                      <>
+                        {item.base_price_per_day}
+                        <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-500 text-base">No price</span>
+                    )}
                   </div>
                   <p className="text-sm text-gray-600">Item min rental period loading...</p>
                 </div>

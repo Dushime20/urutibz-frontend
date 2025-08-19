@@ -8,10 +8,22 @@ type FormState = {
   description: string;
   category_id: string;
   condition: string;
-  base_price_per_day: string;
-  base_currency: string;
-  base_price_per_week?: string;
-  base_price_per_month?: string;
+  // Pricing fields - moved from product to separate pricing system
+  price_per_hour: string;
+  price_per_day: string;
+  price_per_week: string;
+  price_per_month: string;
+  security_deposit: string;
+  currency: string;
+  market_adjustment_factor: string;
+  weekly_discount_percentage: string;
+  monthly_discount_percentage: string;
+  bulk_discount_threshold: string;
+  bulk_discount_percentage: string;
+  dynamic_pricing_enabled: boolean;
+  peak_season_multiplier: string;
+  off_season_multiplier: string;
+  // Product fields
   pickup_methods: string[];
   country_id: string;
   specifications: { [key: string]: string };
@@ -201,8 +213,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     Currency *
                   </label>
                   <select
-                    name="base_currency"
-                    value={form.base_currency}
+                    name="currency"
+                    value={form.currency}
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
@@ -220,8 +232,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     Price per Day *
                   </label>
                   <input
-                    name="base_price_per_day"
-                    value={form.base_price_per_day}
+                    name="price_per_day"
+                    value={form.price_per_day}
                     onChange={handleInputChange}
                     required
                     placeholder="0.00"
@@ -235,12 +247,11 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price per Week
-                    <span className="text-gray-500 text-xs ml-1">(optional)</span>
+                    Price per Hour
                   </label>
                   <input
-                    name="base_price_per_week"
-                    value={form.base_price_per_week}
+                    name="price_per_hour"
+                    value={form.price_per_hour}
                     onChange={handleInputChange}
                     placeholder="0.00"
                     type="number"
@@ -251,12 +262,43 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
 
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price per Month
-                    <span className="text-gray-500 text-xs ml-1">(optional)</span>
+                    Price per Week
                   </label>
                   <input
-                    name="base_price_per_month"
-                    value={form.base_price_per_month}
+                    name="price_per_week"
+                    value={form.price_per_week}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="group">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price per Month
+                  </label>
+                  <input
+                    name="price_per_month"
+                    value={form.price_per_month}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+
+                <div className="group">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Security Deposit
+                  </label>
+                  <input
+                    name="security_deposit"
+                    value={form.security_deposit}
                     onChange={handleInputChange}
                     placeholder="0.00"
                     type="number"

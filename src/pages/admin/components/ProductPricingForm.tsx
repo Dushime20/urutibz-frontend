@@ -17,11 +17,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Button } from '../../../components/ui/DesignSystem';
-import PricingService, {
-  ProductPrice,
-  CreateProductPriceRequest,
-  UpdateProductPriceRequest,
-} from '../service/pricingService';
+import PricingService from '../service/pricingService';
+import type { ProductPrice, CreateProductPriceRequest, UpdateProductPriceRequest } from '../types/pricing';
 
 interface ProductPricingFormProps {
   price?: ProductPrice | null;

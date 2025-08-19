@@ -72,6 +72,25 @@ const AdminProductDetailModal: React.FC<{
       console.log('Raw Images Data:', JSON.stringify(imagesData, null, 2));
       
       setProduct(productData);
+
+      // Fetch pricing for product and attach for display (daily/weekly/monthly, currency)
+      try {
+        const pricesRes = await import('../service/pricingService').then(m => m.default || m.PricingService);
+        const { fetchProductPricesByProductId } = await import('../../my-account/service/api');
+        const priceList = await fetchProductPricesByProductId(productId);
+        const firstPrice = Array.isArray(priceList?.data) ? priceList.data[0] : null;
+        if (firstPrice) {
+          setProduct((prev: any) => ({
+            ...prev,
+            base_price_per_day: firstPrice.price_per_day ?? prev?.base_price_per_day ?? null,
+            base_price_per_week: firstPrice.price_per_week ?? null,
+            base_price_per_month: firstPrice.price_per_month ?? null,
+            base_currency: firstPrice.currency ?? prev?.base_currency ?? null,
+          }));
+        }
+      } catch (e) {
+        console.warn('Failed to fetch product pricing for detail modal', e);
+      }
       
       // Normalize image data
       let productImages: any[] = [];
@@ -264,9 +283,28 @@ const AdminProductDetailModal: React.FC<{
                 <div className="font-medium text-gray-800">{categoryName}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500 uppercase mb-1">Price</div>
-                <div className="font-semibold text-my-primary">
-                  {product?.base_price_per_day} {product?.base_currency || 'USD'}
+                <div className="text-xs text-gray-500 uppercase mb-1">Pricing</div>
+                <div className="font-semibold text-my-primary space-y-1">
+                  <div>
+                    <span className="text-gray-600 font-medium mr-2">Daily:</span>
+                    <span>
+                      {product?.base_price_per_day != null && product?.base_currency
+                        ? `${product.base_price_per_day} ${product.base_currency}`
+                        : 'No price'}
+                    </span>
+                  </div>
+                  {product?.base_price_per_week != null && (
+                    <div>
+                      <span className="text-gray-600 font-medium mr-2">Weekly:</span>
+                      <span>{product.base_price_per_week} {product.base_currency}</span>
+                    </div>
+                  )}
+                  {product?.base_price_per_month != null && (
+                    <div>
+                      <span className="text-gray-600 font-medium mr-2">Monthly:</span>
+                      <span>{product.base_price_per_month} {product.base_currency}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
@@ -699,9 +737,32 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{item.status}</span>
                     </td>
-                    <td className="px-6 py-4  text-gray-900 dark:text-gray-100 text-md">
-                      {item.base_price_per_day}{item.base_currency}/day
-                    </td>
+                                          <td className="px-6 py-4 text-gray-900 dark:text-gray-100 text-md">
+                        <div className="space-y-1">
+                          {/* Daily Rate */}
+                          <div className="font-semibold">
+                            {(item.price_per_day != null && item.currency)
+                              ? `${item.price_per_day} ${item.currency}/day`
+                              : (item.base_price_per_day != null && item.base_currency)
+                              ? `${item.base_price_per_day} ${item.base_currency}/day`
+                              : 'No price'}
+                          </div>
+                          
+                          {/* Weekly Rate */}
+                          {(item.price_per_week != null && item.currency) && (
+                            <div className="text-sm text-gray-600">
+                              {item.price_per_week} {item.currency}/week
+                            </div>
+                          )}
+                          
+                          {/* Monthly Rate */}
+                          {(item.price_per_month != null && item.currency) && (
+                            <div className="text-sm text-gray-600">
+                              {item.price_per_month} {item.currency}/month
+                            </div>
+                          )}
+                        </div>
+                      </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {(() => {
                         // Filter only current and future unavailable dates using utility function

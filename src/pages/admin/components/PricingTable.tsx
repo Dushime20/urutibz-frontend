@@ -19,10 +19,8 @@ import {
   SortDesc,
 } from 'lucide-react';
 import { Button } from '../../../components/ui/DesignSystem';
-import PricingService, {
-  ProductPrice,
-  PriceFilters,
-} from '../service/pricingService';
+import PricingService from '../service/pricingService';
+import type { ProductPrice, PriceFilters } from '../types/pricing';
 
 interface PricingTableProps {
   prices: ProductPrice[];

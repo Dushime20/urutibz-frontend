@@ -17,6 +17,7 @@ import { Button } from '../../components/ui/DesignSystem';
 import VerificationBanner from '../../components/verification/VerificationBanner';
 import { 
   createProduct, 
+  createProductPricing,
   createProductImage, 
   getMyProducts, 
   getProductImagesByProductId, 
@@ -63,10 +64,22 @@ type FormState = {
   description: string;
   category_id: string;
   condition: string;
-  base_price_per_day: string;
-  base_currency: string;
-  base_price_per_week?: string;
-  base_price_per_month?: string;
+  // Pricing fields - moved from product to separate pricing system
+  price_per_hour: string;
+  price_per_day: string;
+  price_per_week: string;
+  price_per_month: string;
+  security_deposit: string;
+  currency: string;
+  market_adjustment_factor: string;
+  weekly_discount_percentage: string;
+  monthly_discount_percentage: string;
+  bulk_discount_threshold: string;
+  bulk_discount_percentage: string;
+  dynamic_pricing_enabled: boolean;
+  peak_season_multiplier: string;
+  off_season_multiplier: string;
+  // Product fields
   pickup_methods: string[];
   country_id: string;
   specifications: { [key: string]: string };
@@ -165,8 +178,22 @@ const DashboardPage: React.FC = () => {
     description: '',
     category_id: '',
     condition: 'new',
-    base_price_per_day: '',
-    base_currency: 'USD',
+    // Pricing fields
+    price_per_hour: '',
+    price_per_day: '',
+    price_per_week: '',
+    price_per_month: '',
+    security_deposit: '',
+    currency: 'USD',
+    market_adjustment_factor: '1.0',
+    weekly_discount_percentage: '0.1',
+    monthly_discount_percentage: '0.2',
+    bulk_discount_threshold: '5',
+    bulk_discount_percentage: '0.05',
+    dynamic_pricing_enabled: false,
+    peak_season_multiplier: '1.2',
+    off_season_multiplier: '0.8',
+    // Product fields
     pickup_methods: [],
     country_id: '',
     specifications: { spec1: '' }, // start with one empty specification
@@ -573,15 +600,16 @@ const DashboardPage: React.FC = () => {
       return;
     }
     try {
-      // 1. Create product
+      // 1. Create product (without pricing data)
       const productPayload = {
         title: form.title,
         slug: form.slug,
         description: form.description,
         category_id: form.category_id,
         condition: form.condition,
-        base_price_per_day: parseFloat(form.base_price_per_day),
-        base_currency: form.base_currency,
+        // Ensure backend NOT NULL constraints are satisfied
+        // base_price_per_day: parseFloat(form.price_per_day) || 0,
+        // base_currency: form.currency,
         pickup_methods: form.pickup_methods,
         country_id: form.country_id,
         specifications: form.specifications,
@@ -589,13 +617,105 @@ const DashboardPage: React.FC = () => {
         features: Array.isArray(form.features)
           ? form.features.filter(f => typeof f === 'string' && f.trim() !== '')
           : [],
-        ...(form.base_price_per_week && !isNaN(parseFloat(form.base_price_per_week)) && { base_price_per_week: parseFloat(form.base_price_per_week) }),
-        ...(form.base_price_per_month && !isNaN(parseFloat(form.base_price_per_month)) && { base_price_per_month: parseFloat(form.base_price_per_month) }),
       };
-      const productResponse = await createProduct(productPayload);
-      const productId = productResponse.data.id;
+      let productResponse;
+      let productId;
+      try {
+        productResponse = await createProduct(productPayload);
+      } catch (err: any) {
+        const errMsg = err?.response?.data?.message || err?.message || '';
+        const duplicateSlug = /slug|duplicate key/i.test(errMsg);
+        if (duplicateSlug) {
+          const uniqueSuffix = Math.random().toString(36).slice(2, 7);
+          const newSlug = `${form.slug}-${uniqueSuffix}`;
+          productPayload.slug = newSlug;
+          setForm((prev) => ({ ...prev, slug: newSlug }));
+          productResponse = await createProduct(productPayload);
+        } else {
+          throw err;
+        }
+      }
+      productId = productResponse?.data?.id || productResponse?.data?.data?.id || productResponse?.id;
       setForm((prev) => ({ ...prev, product_id: productId }));
-      // 2. Create product images (multiple)
+      
+      // 2. Create product pricing
+      if (productId) {
+        // Validate required fields for pricing
+        const daily = parseFloat(form.price_per_day);
+        if (!form.country_id || !form.currency || Number.isNaN(daily) || daily <= 0) {
+          showToast('Provide country, currency, and a daily price greater than 0.', 'error');
+          throw new Error('Missing or invalid pricing fields');
+        }
+        const pricingPayload: any = {
+          product_id: String(productId),
+          productId: String(productId), // compatibility
+          country_id: String(form.country_id),
+          countryId: String(form.country_id), // compatibility
+          currency: form.currency,
+          price_per_day: daily,
+          pricePerDay: daily, // compatibility
+          price_per_hour: parseFloat(form.price_per_hour) || 0,
+          pricePerHour: parseFloat(form.price_per_hour) || 0,
+          price_per_week: parseFloat(form.price_per_week) || 0,
+          pricePerWeek: parseFloat(form.price_per_week) || 0,
+          price_per_month: parseFloat(form.price_per_month) || 0,
+          pricePerMonth: parseFloat(form.price_per_month) || 0,
+          security_deposit: parseFloat(form.security_deposit) || 0,
+          securityDeposit: parseFloat(form.security_deposit) || 0,
+          market_adjustment_factor: parseFloat(form.market_adjustment_factor) || 1.0,
+          marketAdjustmentFactor: parseFloat(form.market_adjustment_factor) || 1.0,
+          weekly_discount_percentage: parseFloat(form.weekly_discount_percentage) || 0,
+          weeklyDiscountPercentage: parseFloat(form.weekly_discount_percentage) || 0,
+          monthly_discount_percentage: parseFloat(form.monthly_discount_percentage) || 0,
+          monthlyDiscountPercentage: parseFloat(form.monthly_discount_percentage) || 0,
+          bulk_discount_threshold: parseInt(form.bulk_discount_threshold as any) || 0,
+          bulkDiscountThreshold: parseInt(form.bulk_discount_threshold as any) || 0,
+          bulk_discount_percentage: parseFloat(form.bulk_discount_percentage) || 0,
+          bulkDiscountPercentage: parseFloat(form.bulk_discount_percentage) || 0,
+          dynamic_pricing_enabled: Boolean(form.dynamic_pricing_enabled),
+          dynamicPricingEnabled: Boolean(form.dynamic_pricing_enabled),
+          peak_season_multiplier: parseFloat(form.peak_season_multiplier) || 1.0,
+          peakSeasonMultiplier: parseFloat(form.peak_season_multiplier) || 1.0,
+          off_season_multiplier: parseFloat(form.off_season_multiplier) || 1.0,
+          offSeasonMultiplier: parseFloat(form.off_season_multiplier) || 1.0,
+          is_active: true,
+          isActive: true,
+        };
+        // Debug: log what we're sending to product-prices
+        try {
+          // Lazy import to avoid top-level import churn
+          const { logger } = await import('../../lib/logger');
+          logger.group('[DEBUG] Creating product pricing payload');
+          logger.debug('payload:', pricingPayload);
+          logger.groupEnd();
+        } catch {}
+        try {
+          await createProductPricing(pricingPayload);
+          console.log('product pricingPayload',productPayload)
+        } catch (err: any) {
+          const msg = err?.response?.data?.message || err?.message || 'Failed to create product pricing';
+          // Debug error with payload and server response
+          try {
+            const { logger } = await import('../../lib/logger');
+            logger.group('[DEBUG] Product pricing creation failed');
+            logger.error('error response:', err?.response?.data.data || err?.message);
+            logger.debug('sent payload:', pricingPayload);
+            logger.groupEnd();
+            logger.log(
+              msg.includes('country')
+                ? 'Please ensure product and country are set for pricing.'
+                : msg,
+              'error'
+            );
+          } catch {}
+          showToast(msg.includes('product_id') || msg.includes('country') ? 'Please ensure product and country are set for pricing.' : msg, 'error');
+         
+          
+          throw err;
+        }
+      }
+      
+      // 3. Create product images (multiple)
       if (form.images && form.images.length > 0 && productId) {
         const imagePayload = {
           images: form.images, // pass the array
@@ -613,8 +733,22 @@ const DashboardPage: React.FC = () => {
         description: '',
         category_id: '',
         condition: 'new',
-        base_price_per_day: '',
-        base_currency: 'USD',
+        // Pricing fields
+        price_per_hour: '',
+        price_per_day: '',
+        price_per_week: '',
+        price_per_month: '',
+        security_deposit: '',
+        currency: 'USD',
+        market_adjustment_factor: '1.0',
+        weekly_discount_percentage: '0.1',
+        monthly_discount_percentage: '0.2',
+        bulk_discount_threshold: '5',
+        bulk_discount_percentage: '0.05',
+        dynamic_pricing_enabled: false,
+        peak_season_multiplier: '1.2',
+        off_season_multiplier: '0.8',
+        // Product fields
         pickup_methods: [],
         country_id: '',
         specifications: { spec1: '' },
@@ -1020,7 +1154,7 @@ const DashboardPage: React.FC = () => {
                                   <p className="text-sm text-gray-500">{new Date(booking.start_date).toLocaleDateString()}</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="font-bold text-gray-900">${booking.product?.base_price_per_day || 0}</p>
+                                  <p className="font-bold text-gray-900">{booking.product?.base_price_per_day != null && booking.product?.base_currency ? `$${booking.product.base_price_per_day}` : ''}</p>
                                   <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${
                                     booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-success-100 text-success-700'
                                   }`}>
@@ -1331,7 +1465,7 @@ const DashboardPage: React.FC = () => {
                         )}
                         <h4 className="font-semibold text-gray-900 mb-3">{listing.title}</h4>
                         <div className="flex justify-between items-center mb-3">
-                          <span className="text-lg font-bold text-gray-900">{listing.base_price_per_day}/{listing.base_currency}</span>
+                          <span className="text-lg font-bold text-gray-900">{(listing.base_price_per_day != null && listing.base_currency) ? `${listing.base_price_per_day}/${listing.base_currency}` : 'No price'}</span>
                           <span className={`px-3 py-1 rounded-lg text-xs font-medium ${
                             listing.status === 'active'
                               ? 'bg-success-100 text-success-700'

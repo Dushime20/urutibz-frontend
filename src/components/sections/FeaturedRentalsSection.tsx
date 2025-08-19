@@ -288,8 +288,14 @@ const FeaturedRentalsSection: React.FC<FeaturedRentalsSectionProps> = ({ product
                 {/* Price & CTA */}
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <span className="text-base lg:text-lg font-bold text-active font-outfit">${item.base_price_per_day}</span>
-                    <span className="text-xs lg:text-sm text-platform-grey font-inter">/day</span>
+                    {item.base_price_per_day != null && item.base_currency ? (
+                      <>
+                        <span className="text-base lg:text-lg font-bold text-active font-outfit">${item.base_price_per_day}</span>
+                        <span className="text-xs lg:text-sm text-platform-grey font-inter">/day</span>
+                      </>
+                    ) : (
+                      <span className="text-xs lg:text-sm text-platform-grey font-inter">No price</span>
+                    )}
                     {item.originalPrice && (
                       <span className="text-xs text-platform-grey line-through ml-1 lg:ml-2 font-inter">${item.originalPrice}</span>
                     )}

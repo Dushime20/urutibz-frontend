@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from '../../../lib/logger';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
 // Fetch current user profile
@@ -148,6 +149,60 @@ export async function createProduct(productData: any) {
   return response.data;
 }
 
+export async function createProductPricing(pricingData: any) {
+  const token = localStorage.getItem('token');
+  try {
+    // Debug outgoing payload and field types
+    logger.group('[DEBUG] Outgoing POST /product-prices');
+    logger.debug('payload:', pricingData);
+    logger.debug('types:', {
+      product_id: typeof pricingData?.product_id,
+      country_id: typeof pricingData?.country_id,
+      currency: typeof pricingData?.currency,
+      price_per_day: typeof pricingData?.price_per_day,
+    });
+    logger.groupEnd();
+  } catch {}
+  // Build a whitelist payload with only accepted fields
+  const safePayload = {
+    product_id: String(pricingData?.product_id ?? ''),
+    country_id: String(pricingData?.country_id ?? ''),
+    currency: pricingData?.currency ?? '',
+    price_per_hour: Number(pricingData?.price_per_hour ?? 0),
+    price_per_day: Number(pricingData?.price_per_day ?? 0),
+    price_per_week: Number(pricingData?.price_per_week ?? 0),
+    price_per_month: Number(pricingData?.price_per_month ?? 0),
+    security_deposit: Number(pricingData?.security_deposit ?? 0),
+    market_adjustment_factor: Number(pricingData?.market_adjustment_factor ?? 1),
+    weekly_discount_percentage: Number(pricingData?.weekly_discount_percentage ?? 0),
+    monthly_discount_percentage: Number(pricingData?.monthly_discount_percentage ?? 0),
+    bulk_discount_threshold: Number(pricingData?.bulk_discount_threshold ?? 0),
+    bulk_discount_percentage: Number(pricingData?.bulk_discount_percentage ?? 0),
+    dynamic_pricing_enabled: Boolean(pricingData?.dynamic_pricing_enabled),
+    peak_season_multiplier: Number(pricingData?.peak_season_multiplier ?? 1),
+    off_season_multiplier: Number(pricingData?.off_season_multiplier ?? 1),
+    is_active: Boolean(pricingData?.is_active ?? true),
+  };
+  try {
+    const response = await axios.post(`${API_BASE_URL}/product-prices`, safePayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    // Log full server response body if available
+    try {
+      logger.group('[DEBUG] Response from POST /product-prices (error)');
+      logger.error('status:', error?.response?.status);
+      logger.error('data:', error?.response?.data);
+      logger.groupEnd();
+    } catch {}
+    throw error;
+  }
+}
+
 export async function createProductImage(imageData: any) {
   const token = localStorage.getItem('token');
   const formData = new FormData();
@@ -160,22 +215,52 @@ export async function createProductImage(imageData: any) {
   }
 
   // Append other fields if present
-  if (imageData.product_id) formData.append('product_id', imageData.product_id);
+  if (imageData.product_id) {
+    formData.append('product_id', String(imageData.product_id));
+    // Compatibility keys some backends expect
+    formData.append('productId', String(imageData.product_id));
+  }
   if (imageData.alt_text) formData.append('alt_text', imageData.alt_text);
-  if (imageData.sort_order) formData.append('sort_order', imageData.sort_order);
-  if (imageData.isPrimary) formData.append('isPrimary', imageData.isPrimary);
-
-  const response = await axios.post(
-    `${API_BASE_URL}/product-images/multiple`,
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+  if (imageData.sort_order !== undefined) formData.append('sort_order', String(imageData.sort_order));
+  if (imageData.isPrimary !== undefined) {
+    const isPrimaryVal = typeof imageData.isPrimary === 'boolean' ? imageData.isPrimary : String(imageData.isPrimary) === 'true';
+    formData.append('isPrimary', String(isPrimaryVal));
+    // Snake_case compatibility
+    formData.append('is_primary', String(isPrimaryVal));
+  }
+  // Debug FormData contents
+  try {
+    logger.group('[DEBUG] Outgoing POST /product-images/multiple');
+    const entries: any[] = [];
+    // @ts-ignore
+    for (const [key, value] of formData.entries()) {
+      entries.push({ key, value: value instanceof File ? { name: value.name, size: value.size, type: value.type } : String(value) });
     }
-  );
-  return response.data;
+    logger.debug('formData entries:', entries);
+    logger.groupEnd();
+  } catch {}
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/product-images/multiple`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    try {
+      logger.group('[DEBUG] Response from POST /product-images/multiple (error)');
+      logger.error('status:', error?.response?.status);
+      logger.error('data:', error?.response?.data);
+      logger.groupEnd();
+    } catch {}
+    throw error;
+  }
 }
 
 export async function getMyProducts() {
@@ -183,7 +268,27 @@ export async function getMyProducts() {
   const response = await axios.get(`${API_BASE_URL}/products/my/products`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  return response.data.data.data;
+  const products = response?.data?.data?.data || [];
+  // Enrich with active price so existing UI fields continue to work
+  try {
+    const enriched = await Promise.all(
+      products.map(async (p: any) => {
+        try {
+          const price = await fetchActiveDailyPrice(p.id);
+          return {
+            ...p,
+            base_price_per_day: price.pricePerDay ?? p.base_price_per_day ?? null,
+            base_currency: price.currency ?? p.base_currency ?? null,
+          };
+        } catch {
+          return p;
+        }
+      })
+    );
+    return enriched;
+  } catch {
+    return products;
+  }
 }
 
 export async function getProductImagesByProductId(productId: string) {
@@ -200,7 +305,52 @@ export async function getProductById(productId: string) {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }
   );
-  return response.data.data;
+  const product = response?.data?.data;
+  try {
+    const price = await fetchActiveDailyPrice(productId);
+    return {
+      ...product,
+      base_price_per_day: price.pricePerDay ?? product?.base_price_per_day ?? null,
+      base_currency: price.currency ?? product?.base_currency ?? null,
+    };
+  } catch {
+    return product;
+  }
+}
+
+// Fetch product prices by product ID (new helper using /product-prices/product/:id)
+export async function fetchProductPricesByProductId(productId: string, options?: { page?: number; limit?: number }) {
+  const token = localStorage.getItem('token');
+  const params = new URLSearchParams();
+  if (options?.page) params.append('page', String(options.page));
+  if (options?.limit) params.append('limit', String(options.limit));
+
+  const url = `${API_BASE_URL}/product-prices/product/${productId}${params.toString() ? `?${params.toString()}` : ''}`;
+  try {
+    const response = await axios.get(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return {
+      success: Boolean(response.data?.success),
+      data: Array.isArray(response.data?.data) ? response.data.data : [],
+      pagination: response.data?.pagination || null,
+    };
+  } catch (error: any) {
+    logger.error('Failed to fetch product prices by product ID:', error?.response?.data || error?.message);
+    return { success: false, data: [], pagination: null, error };
+  }
+}
+
+// Convenience: get the active/first price for display (daily rate + currency)
+export async function fetchActiveDailyPrice(productId: string): Promise<{ pricePerDay: number | null; currency: string | null; raw?: any }>{
+  const res = await fetchProductPricesByProductId(productId, { page: 1, limit: 1 });
+  if (!res.success || !res.data || res.data.length === 0) {
+    return { pricePerDay: null, currency: null };
+  }
+  const first = res.data[0];
+  const pricePerDay = first?.price_per_day != null ? Number(first.price_per_day) : null;
+  const currency = first?.currency ?? null;
+  return { pricePerDay, currency, raw: first };
 }
 
 export async function updateProduct(productId: string, productData: any) {

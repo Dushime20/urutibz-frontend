@@ -12,7 +12,8 @@ import {
   fetchRecentBookings,
   fetchAdminUsers,
   fetchAdminAnalytics,
-  fetchAdminRealtimeMetrics
+  fetchAdminRealtimeMetrics,
+  fetchPricingStats
 } from './service/api';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
@@ -102,6 +103,9 @@ const AdminDashboardPage: React.FC = () => {
   const [realtimeMetrics, setRealtimeMetrics] = useState<any>(null);
   const [loadingRealtime, setLoadingRealtime] = useState(false);
   const [realtimeError, setRealtimeError] = useState<string | null>(null);
+  const [pricingStats, setPricingStats] = useState<any>(null);
+  const [loadingPricingStats, setLoadingPricingStats] = useState(false);
+  const [pricingStatsError, setPricingStatsError] = useState<string | null>(null);
 
   // Add state for pagination and modals
   const [userPage, setUserPage] = useState(1);
@@ -119,15 +123,18 @@ const AdminDashboardPage: React.FC = () => {
         setOverviewError(null);
         setLoadingRealtime(true);
         setRealtimeError(null);
+        setLoadingPricingStats(true);
+        setPricingStatsError(null);
         const token = localStorage.getItem('token');
         // Fetch all overview data in parallel
-        const [stats, users, bookings, allUsers, analyticsData, realtimeData] = await Promise.all([
+        const [stats, users, bookings, allUsers, analyticsData, realtimeData, pricingData] = await Promise.all([
           fetchAdminStats(token || undefined),
           fetchRecentUsers(5, token || undefined),
           fetchRecentBookings(5, token || undefined),
           fetchAdminUsers(1, 1000, token || undefined),
           fetchAdminAnalytics(token || undefined),
-          fetchAdminRealtimeMetrics(token || undefined)
+          fetchAdminRealtimeMetrics(token || undefined),
+          fetchPricingStats(token || undefined)
         ]);
         setAdminStats(stats);
         setRecentUsers(users);
@@ -136,6 +143,8 @@ const AdminDashboardPage: React.FC = () => {
         setAnalyticsError(null);
         setRealtimeMetrics(realtimeData?.data || null);
         setRealtimeError(null);
+        setPricingStats(pricingData?.data || null);
+        setPricingStatsError(null);
         // Count verified users
         const verifiedCount = allUsers.items.filter((u: AdminUser) => u.kyc_status?.toLowerCase() === 'verified').length;
         setVerifiedUsersCount(verifiedCount);
@@ -144,10 +153,12 @@ const AdminDashboardPage: React.FC = () => {
         setOverviewError('Failed to load overview data');
         setAnalyticsError('Failed to load analytics data');
         setRealtimeError('Failed to load real-time metrics');
+        setPricingStatsError('Failed to load pricing statistics');
       } finally {
         setLoadingOverview(false);
         setLoadingAnalytics(false);
         setLoadingRealtime(false);
+        setLoadingPricingStats(false);
       }
     };
     fetchOverviewData();
@@ -435,6 +446,145 @@ const AdminDashboardPage: React.FC = () => {
                               {analytics && <ProductCategoriesChart topProducts={normalizedTopProducts} />}
                             </div>
                           </div>
+                        </section>
+                        {/* Pricing Statistics */}
+                        <section className="mb-8">
+                          <h2 className="text-2xl font-bold text-gray-900 mb-4">Pricing Statistics</h2>
+                          {loadingPricingStats ? (
+                            <div className="flex items-center justify-center h-32 text-gray-500">Loading pricing statistics...</div>
+                          ) : pricingStatsError ? (
+                            <div className="flex items-center justify-center h-32 text-red-500">{pricingStatsError}</div>
+                          ) : pricingStats ? (
+                            <>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {/* Total Price Records */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-600">Total Price Records</p>
+                                      <p className="text-2xl font-bold text-gray-900">{pricingStats.total_price_records}</p>
+                                    </div>
+                                    <div className="p-3 rounded-full bg-blue-50">
+                                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Active Price Records */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-600">Active Price Records</p>
+                                      <p className="text-2xl font-bold text-gray-900">{pricingStats.active_price_records}</p>
+                                    </div>
+                                    <div className="p-3 rounded-full bg-green-50">
+                                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Countries with Pricing */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-600">Countries with Pricing</p>
+                                      <p className="text-2xl font-bold text-gray-900">{pricingStats.countries_with_pricing}</p>
+                                    </div>
+                                    <div className="p-3 rounded-full bg-purple-50">
+                                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Currencies Supported */}
+                                <div className="bg-white rounded-xl shadow p-6">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-600">Currencies Supported</p>
+                                      <p className="text-2xl font-bold text-gray-900">{pricingStats.currencies_supported}</p>
+                                    </div>
+                                    <div className="p-3 rounded-full bg-yellow-50">
+                                      <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Price Distribution Charts */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                              {/* Price Range Distribution */}
+                              <div className="bg-white rounded-xl shadow p-6">
+                                <h3 className="text-lg font-bold mb-4">Price Range Distribution</h3>
+                                <div className="space-y-3">
+                                  {Object.entries(pricingStats.price_distribution?.by_price_range || {}).map(([range, count]) => (
+                                    <div key={range} className="flex items-center justify-between">
+                                      <span className="text-sm text-gray-600">{range}</span>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                                          <div 
+                                            className="bg-my-primary h-2 rounded-full" 
+                                            style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-900">{count}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Currency Distribution */}
+                              <div className="bg-white rounded-xl shadow p-6">
+                                <h3 className="text-lg font-bold mb-4">Currency Distribution</h3>
+                                <div className="space-y-3">
+                                  {Object.entries(pricingStats.price_distribution?.by_currency || {}).map(([currency, count]) => (
+                                    <div key={currency} className="flex items-center justify-between">
+                                      <span className="text-sm text-gray-600">{currency}</span>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                                          <div 
+                                            className="bg-my-primary h-2 rounded-full" 
+                                            style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-900">{count}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Discount Analysis */}
+                            <div className="bg-white rounded-xl shadow p-6 mt-6">
+                              <h3 className="text-lg font-bold mb-4">Discount Analysis</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-blue-600">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
+                                  <div className="text-sm text-gray-600">Weekly Discounts</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-green-600">{pricingStats.discount_analysis?.products_with_monthly_discount || 0}</div>
+                                  <div className="text-sm text-gray-600">Monthly Discounts</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-purple-600">{pricingStats.discount_analysis?.products_with_bulk_discount || 0}</div>
+                                  <div className="text-sm text-gray-600">Bulk Discounts</div>
+                                </div>
+                              </div>
+                            </div>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center h-32 text-gray-500">No pricing statistics available.</div>
+                          )}
                         </section>
                         {/* Recent Activity */}
                         <section>

@@ -1,8 +1,6 @@
 import { useState, useCallback } from 'react';
-import PricingService, {
-  PriceCalculationRequest,
-  PriceCalculationResponse,
-} from '../service/pricingService';
+import PricingService from '../service/pricingService';
+import type { PriceCalculationRequest, PriceCalculationResponse } from '../types/pricing';
 
 interface UsePriceCalculationReturn {
   // Data

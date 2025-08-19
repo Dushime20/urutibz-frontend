@@ -171,7 +171,9 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
               <div className="text-right">
                 <p className="text-sm text-gray-500">Total Price</p>
                 <p className="text-xl font-bold text-teal-500">
-                  {bookingDetails.base_price_per_day} USD
+                  {bookingDetails.base_price_per_day != null && bookingDetails.base_currency
+                    ? `${bookingDetails.base_price_per_day} ${bookingDetails.base_currency}`
+                    : 'No price'}
                 </p>
               </div>
             </div>
