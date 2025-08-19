@@ -332,7 +332,7 @@ const AdminDashboardPage: React.FC = () => {
                                 </div>
                                 {/* Response Time */}
                                 <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-blue-50 mb-2"><Clock className="w-6 h-6 text-blue-600" aria-label="Response Time" /></div>
+                                  <div className="p-2 rounded-full bg-my-primary/10 mb-2"><Clock className="w-6 h-6 text-my-primary" aria-label="Response Time" /></div>
                                   <div className="text-2xl font-bold text-gray-900">{Math.round(realtimeMetrics.responseTime)}<span className="text-base font-normal text-gray-400"> ms</span></div>
                                   <div className="text-xs text-gray-500 mt-1">Response Time</div>
                                 </div>
@@ -464,8 +464,8 @@ const AdminDashboardPage: React.FC = () => {
                                       <p className="text-sm font-medium text-gray-600">Total Price Records</p>
                                       <p className="text-2xl font-bold text-gray-900">{pricingStats.total_price_records}</p>
                                     </div>
-                                    <div className="p-3 rounded-full bg-blue-50">
-                                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <div className="p-3 rounded-full bg-my-primary/10">
+                  <svg className="w-6 h-6 text-my-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                                       </svg>
                                     </div>
@@ -568,7 +568,7 @@ const AdminDashboardPage: React.FC = () => {
                               <h3 className="text-lg font-bold mb-4">Discount Analysis</h3>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="text-center">
-                                  <div className="text-2xl font-bold text-blue-600">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
+                                  <div className="text-2xl font-bold text-my-primary">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
                                   <div className="text-sm text-gray-600">Weekly Discounts</div>
                                 </div>
                                 <div className="text-center">

@@ -402,7 +402,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
       const token = localStorage.getItem('token') || undefined;
       const imagesMap: { [productId: string]: any[] } = {};
       
-      const PLACEHOLDER_IMAGE = '/assets/img/placeholder-image.png';
+      const PLACEHOLDER_IMAGE = '/assets/img/404.png';
       
       console.group('Image Loading Process');
       console.log('Total Products:', products.length);
@@ -577,7 +577,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   }
 
   // Modify the image rendering logic
-  const PLACEHOLDER_IMAGE = '/assets/img/placeholder-image.png';
+  const PLACEHOLDER_IMAGE = '/assets/img/404.png';
 
   const getProductImageUrl = (item: Product, productImages: { [productId: string]: any[] }) => {
     // Comprehensive image source prioritization
@@ -830,7 +830,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                                 setActionMenuOpen(null);
                                 // You can add edit logic here
                               }}
-                              className="block w-full text-left px-4 py-2 text-sm text-blue-700 hover:bg-blue-50"
+                              className="block w-full text-left px-4 py-2 text-sm text-my-primary hover:bg-my-primary/10"
                             >
                               Edit
                             </button>

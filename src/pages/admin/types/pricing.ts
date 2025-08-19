@@ -126,16 +126,32 @@ export interface RentalPriceCalculationResponse {
 
 export interface PriceComparisonResponse {
   product_id: string;
-  comparisons: {
+  comparison_date: string;
+  base_duration_hours: number;
+  quantity: number;
+  country_prices: {
     country_id: string;
-    country_name: string;
+    country_name: string | null | '';
     currency: string;
-    price_per_day: number;
-    price_per_week: number;
-    price_per_month: number;
-    security_deposit: number;
-    market_adjustment_factor: number;
+    price_calculation: RentalPriceCalculationResponse;
+    rank_by_total: number;
+    rank_by_daily_rate: number;
   }[];
+  cheapest_country: {
+    country_id: string;
+    total_amount: number;
+    currency: string;
+    savings_percentage: number;
+  };
+  most_expensive_country: {
+    country_id: string;
+    total_amount: number;
+    currency: string;
+    premium_percentage: number;
+  };
+  average_price: number;
+  price_variance: number;
+  currency_diversity: string[];
 }
 
 export interface PricingStats {

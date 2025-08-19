@@ -447,7 +447,7 @@ const CountriesManagement: React.FC = () => {
                           <h3 className="font-semibold text-gray-900 mb-1">Languages</h3>
                           <div className="flex flex-wrap gap-1">
                             {countryDetails.languages.map((lang, index) => (
-                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                              <span key={index} className="px-2 py-1 bg-my-primary/10 text-my-primary rounded text-sm">
                                 {lang.toUpperCase()}
                               </span>
                             ))}

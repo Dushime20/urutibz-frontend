@@ -76,7 +76,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
           <p className="text-red-500">{error}</p>
           <button 
             onClick={onClose} 
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
+            className="mt-4 px-4 py-2 bg-my-primary text-white rounded-lg"
           >
             Close
           </button>
@@ -144,7 +144,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                         onClick={() => setCurrentImageIndex(index)}
                         className={`w-2 h-2 rounded-full ${
                           index === currentImageIndex 
-                            ? 'bg-blue-500' 
+                            ? 'bg-my-primary' 
                             : 'bg-gray-300'
                         }`}
                       />
@@ -209,7 +209,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
-                <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                <span className="text-sm text-my-primary bg-my-primary/10 px-2 py-1 rounded-full">
                   {bookingDetails.payment_status}
                 </span>
               </div>

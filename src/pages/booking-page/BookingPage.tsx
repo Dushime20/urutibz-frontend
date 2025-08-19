@@ -143,7 +143,8 @@ const BookingPage: React.FC = () => {
         setCurrentStep(1);
         showToast('Booking details confirmed', 'success');
       } else {
-        showToast('Failed to create booking', 'error');
+        const errMsg = (response as any)?.error || (response as any)?.message || 'Failed to create booking';
+        showToast(errMsg, 'error');
       }
     } catch {
       showToast('Booking failed. Please try again.', 'error');
@@ -496,7 +497,7 @@ const BookingPage: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Paid</span>
                   <span className="font-medium text-[#00aaa9]">
-                    {rentalDetails.totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                    {rentalDetails.totalCost}/{bookingItem.base_currency}
                   </span>
                 </div>
               </div>

@@ -18,7 +18,7 @@ const NotificationsManagement: React.FC<NotificationsManagementProps> = (props) 
     </div>
     {/* Notifications content goes here. Add your notifications list, settings, or summary here. */}
     <div className="text-gray-500 text-center py-12">
-      <Bell className="mx-auto w-12 h-12 text-blue-400 mb-4" />
+              <Bell className="mx-auto w-12 h-12 text-my-primary mb-4" />
       <p className="text-lg">Notifications features coming soon!</p>
     </div>
   </div>

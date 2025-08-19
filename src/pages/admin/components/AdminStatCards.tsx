@@ -23,7 +23,7 @@ const AdminStatCards: React.FC<AdminStatCardsProps> = ({ adminStats, verifiedUse
       icon: Users,
       title: 'Total Users',
       value: adminStats?.totalUsers || 0,
-      color: 'text-blue-500 bg-blue-100'
+      color: 'text-my-primary bg-my-primary/10'
     },
     {
       icon: Package,

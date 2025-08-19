@@ -221,6 +221,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                   >
                     <option value="">Select currency</option>
                     <option value="USD">USD ($)</option>
+                    <option value="RWF">RWF (FRW)</option>
                     <option value="EUR">EUR (€)</option>
                     <option value="GBP">GBP (£)</option>
                     <option value="CAD">CAD ($)</option>

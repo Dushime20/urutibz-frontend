@@ -202,6 +202,36 @@ export async function fetchProductImages(productId: string, token?: string) {
   }
 }
 
+// Fetch product prices by product ID (admin helper)
+export async function fetchProductPricesByProductId(productId: string, options?: { page?: number; limit?: number }) {
+  const token = localStorage.getItem('token');
+  const params = new URLSearchParams();
+  if (options?.page) params.append('page', String(options.page));
+  if (options?.limit) params.append('limit', String(options.limit));
+
+  const url = `${API_BASE_URL}/product-prices/product/${productId}${params.toString() ? `?${params.toString()}` : ''}`;
+  const response = await axios.get(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  return {
+    success: Boolean(response.data?.success),
+    data: Array.isArray(response.data?.data) ? response.data.data : [],
+    pagination: response.data?.pagination || null,
+  };
+}
+
+// Convenience: get the active/first price for display (daily rate + currency)
+export async function fetchActiveDailyPrice(productId: string): Promise<{ pricePerDay: number | null; currency: string | null; raw?: any }>{
+  const res = await fetchProductPricesByProductId(productId, { page: 1, limit: 1 });
+  if (!res.success || !res.data || res.data.length === 0) {
+    return { pricePerDay: null, currency: null };
+  }
+  const first = res.data[0];
+  const pricePerDay = first?.price_per_day != null ? Number(first.price_per_day) : null;
+  const currency = first?.currency ?? null;
+  return { pricePerDay, currency, raw: first };
+}
+
 // Fetch a single product by ID
 export async function getProductById(productId: string, token?: string) {
   const response = await axios.get(
@@ -210,8 +240,17 @@ export async function getProductById(productId: string, token?: string) {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }
   );
-  console.log('Product details for ID:', productId, response.data);
-  return response.data.data;
+  const product = response.data.data;
+  try {
+    const { pricePerDay, currency } = await fetchActiveDailyPrice(productId);
+    return {
+      ...product,
+      base_price_per_day: pricePerDay ?? product?.base_price_per_day ?? null,
+      base_currency: currency ?? product?.base_currency ?? null,
+    };
+  } catch {
+    return product;
+  }
 }
 
 // Update a product by ID
@@ -811,6 +850,13 @@ export interface PlatformSettings {
   supportPhone: string;
   defaultCurrency: string;
   defaultLanguage: string;
+  supportedLanguages?: Array<{
+    code: string;
+    label?: string;
+    nativeName?: string;
+    flag?: string;
+    enabled?: boolean;
+  }>;
   timezone: string;
   maintenanceMode: boolean;
   registrationEnabled: boolean;

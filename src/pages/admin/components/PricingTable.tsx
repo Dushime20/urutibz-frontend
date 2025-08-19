@@ -320,7 +320,7 @@ const PricingTable: React.FC<PricingTableProps> = ({
                     {price.country_id}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-my-primary/10 text-my-primary">
                       {price.currency}
                     </span>
                   </td>
@@ -350,7 +350,7 @@ const PricingTable: React.FC<PricingTableProps> = ({
                       </button>
                       <button
                         onClick={() => onEdit(price)}
-                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                        className="p-1 text-gray-400 hover:text-my-primary transition-colors"
                         title="Edit price"
                       >
                         <Edit className="w-4 h-4" />

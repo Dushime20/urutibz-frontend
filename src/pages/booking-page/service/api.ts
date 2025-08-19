@@ -140,3 +140,23 @@ export async function processPaymentTransaction(paymentData: any, token?: string
   );
   return response.data;
 }
+
+// Live currency conversion via backend API
+export async function convertCurrencyLive(params: { from: string; to: string; amount: number }, token?: string): Promise<{ amount: number; rate: number; timestamp?: string }> {
+  const { from, to, amount } = params;
+  const url = `${API_BASE_URL}/currency/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(String(amount))}`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(url, { headers });
+    const data = response.data?.data || response.data;
+    const convertedAmount = Number(data?.amount ?? data?.converted_amount ?? data?.result ?? 0);
+    const rate = Number(data?.rate ?? data?.exchange_rate ?? (convertedAmount && amount ? convertedAmount / amount : 0));
+    const timestamp = data?.timestamp || data?.date || undefined;
+    if (!convertedAmount || !rate) throw new Error('Invalid conversion response');
+    return { amount: convertedAmount, rate, timestamp };
+  } catch (err) {
+    // Bubble up for caller to optionally fallback
+    throw err as any;
+  }
+}

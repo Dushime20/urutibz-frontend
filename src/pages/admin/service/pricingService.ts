@@ -157,13 +157,16 @@ export class PricingService {
    */
   static async comparePrices(
     productId: string,
+    query?: { rental_duration_hours?: number; quantity?: number },
     token?: string
   ): Promise<PriceComparisonResponse> {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/product-prices/product/${productId}/compare`,
-        { headers: this.getHeaders(token) }
-      );
+      const params = new URLSearchParams();
+      if (query?.rental_duration_hours != null) params.append('rental_duration_hours', String(query.rental_duration_hours));
+      if (query?.quantity != null) params.append('quantity', String(query.quantity));
+      const qs = params.toString();
+      const url = `${API_BASE_URL}/product-prices/product/${productId}/compare${qs ? `?${qs}` : ''}`;
+      const response = await axios.get(url, { headers: this.getHeaders(token) });
       return response.data.data;
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to compare prices';
@@ -234,6 +237,26 @@ export class PricingService {
       console.error('Error fetching price history:', errorMsg);
       throw new Error(errorMsg);
     }
+  }
+
+  /**
+   * Get all prices for a specific product
+   */
+  static async getProductPricesByProductId(
+    productId: string,
+    options?: { page?: number; limit?: number },
+    token?: string
+  ): Promise<{ data: ProductPrice[]; pagination: any }> {
+    const params = new URLSearchParams();
+    if (options?.page) params.append('page', String(options.page));
+    if (options?.limit) params.append('limit', String(options.limit));
+    const qs = params.toString();
+    const url = `${API_BASE_URL}/product-prices/product/${productId}${qs ? `?${qs}` : ''}`;
+    const response = await axios.get(url, { headers: this.getHeaders(token) });
+    return {
+      data: Array.isArray(response.data?.data) ? response.data.data : [],
+      pagination: response.data?.pagination ?? null,
+    };
   }
 
   /**

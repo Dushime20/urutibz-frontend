@@ -6,8 +6,8 @@ import PricingTable from './PricingTable';
 import ProductPricingForm from './ProductPricingForm';
 import { usePricing } from '../hooks/usePricing';
 import PricingService from '../service/pricingService';
-import { fetchPricingStats } from '../service/api';
-import type { ProductPrice, CreateProductPriceRequest, UpdateProductPriceRequest, PricingStats, PriceFilters, RentalPriceCalculationRequest, RentalPriceCalculationResponse } from '../types/pricing';
+import { fetchPricingStats, fetchCountries } from '../service/api';
+import type { ProductPrice, CreateProductPriceRequest, UpdateProductPriceRequest, PriceFilters, RentalPriceCalculationRequest, RentalPriceCalculationResponse, PriceComparisonResponse } from '../types/pricing';
 
 const PricingManagement: React.FC = () => {
   const { showToast } = useToast();
@@ -48,10 +48,27 @@ const PricingManagement: React.FC = () => {
   const [calculationResult, setCalculationResult] = useState<RentalPriceCalculationResponse | null>(null);
   const [calculating, setCalculating] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
+  const [availablePrices, setAvailablePrices] = useState<ProductPrice[]>([]);
+  // Compare across countries state
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
+  const [compareResult, setCompareResult] = useState<PriceComparisonResponse | null>(null);
+  const [countryNameById, setCountryNameById] = useState<Record<string, string>>({});
 
   // Fetch pricing statistics on component mount
   useEffect(() => {
     fetchPricingStatsData();
+    // Preload countries for name mapping
+    (async () => {
+      try {
+        const countries = await fetchCountries();
+        const map: Record<string, string> = {};
+        countries.forEach((c: any) => {
+          if (c?.id) map[c.id] = c?.name || c?.country_name || c?.code || c?.id;
+        });
+        setCountryNameById(map);
+      } catch {}
+    })();
   }, []);
 
   const fetchPricingStatsData = async () => {
@@ -139,6 +156,25 @@ const PricingManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
+      try {
+        const { data } = await PricingService.getProductPricesByProductId(
+          calculationForm.product_id,
+          { page: 1, limit: 100 },
+          token || undefined
+        );
+        setAvailablePrices(data);
+        if (!data.some(p => p.country_id === calculationForm.country_id)) {
+          const first = data.find(p => p.is_active);
+          if (first) {
+            setCalculationForm(prev => ({
+              ...prev,
+              country_id: first.country_id,
+              currency: first.currency || prev.currency,
+            }));
+          }
+        }
+      } catch {}
+
       const result = await PricingService.calculateRentalPrice(calculationForm, token || undefined);
       
       if (result.error) {
@@ -154,6 +190,29 @@ const PricingManagement: React.FC = () => {
       console.error('Calculation error:', error);
     } finally {
       setCalculating(false);
+    }
+  };
+
+  const handleComparePrices = async () => {
+    if (!calculationForm.product_id) {
+      setCompareError('Product ID is required');
+      return;
+    }
+    setCompareLoading(true);
+    setCompareError(null);
+    setCompareResult(null);
+    try {
+      const token = localStorage.getItem('token');
+      const result = await PricingService.comparePrices(
+        calculationForm.product_id,
+        { rental_duration_hours: calculationForm.rental_duration_hours, quantity: calculationForm.quantity },
+        token || undefined
+      );
+      setCompareResult(result);
+    } catch (err: any) {
+      setCompareError(err?.message || 'Failed to compare prices');
+    } finally {
+      setCompareLoading(false);
     }
   };
 
@@ -186,8 +245,8 @@ const PricingManagement: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600">Total Price Records</p>
                 <p className="text-2xl font-bold text-gray-900">{pricingStats.total_price_records}</p>
               </div>
-              <div className="p-3 rounded-full bg-blue-50">
-                <DollarSign className="w-6 h-6 text-blue-600" />
+                              <div className="p-3 rounded-full bg-my-primary/10">
+                  <DollarSign className="w-6 h-6 text-my-primary" />
               </div>
             </div>
           </div>
@@ -246,7 +305,7 @@ const PricingManagement: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <div className="w-24 bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-blue-500 h-2 rounded-full" 
+                        className="bg-my-primary h-2 rounded-full" 
                         style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
                       ></div>
                     </div>
@@ -283,8 +342,8 @@ const PricingManagement: React.FC = () => {
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="text-lg font-bold mb-4">Discount Analysis</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
+                            <div className="text-center p-4 bg-my-primary/10 rounded-lg">
+                  <div className="text-2xl font-bold text-my-primary">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
               <div className="text-sm text-gray-600">Weekly Discounts</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
@@ -487,7 +546,7 @@ const PricingManagement: React.FC = () => {
                     value={calculationForm.product_id}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, product_id: e.target.value }))}
                     placeholder="Enter product UUID"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
                 
@@ -500,7 +559,7 @@ const PricingManagement: React.FC = () => {
                     value={calculationForm.country_id}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, country_id: e.target.value }))}
                     placeholder="Enter country UUID"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
                 
@@ -511,7 +570,7 @@ const PricingManagement: React.FC = () => {
                   <select
                     value={calculationForm.currency}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, currency: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
@@ -529,7 +588,7 @@ const PricingManagement: React.FC = () => {
                     value={calculationForm.rental_duration_hours}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, rental_duration_hours: parseInt(e.target.value) || 0 }))}
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
                 
@@ -542,7 +601,7 @@ const PricingManagement: React.FC = () => {
                     value={calculationForm.quantity}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
               </div>
@@ -564,6 +623,66 @@ const PricingManagement: React.FC = () => {
                   )}
                 </Button>
               </div>
+
+              {/* Compare Across Countries */}
+              <div className="bg-my-primary/10 border border-my-primary/20 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-my-primary font-semibold">Compare Across Countries</h4>
+                    <p className="text-my-primary/80 text-sm">Use current duration and quantity to compare total prices in all countries with pricing.</p>
+                  </div>
+                  <Button onClick={handleComparePrices} disabled={compareLoading} variant="outline">
+                    {compareLoading ? 'Comparing...' : 'Compare'}
+                  </Button>
+                </div>
+              </div>
+
+              {compareError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <span className="text-red-700">{compareError}</span>
+                  </div>
+                </div>
+              )}
+
+              {compareResult && (
+                <div className="bg-white rounded-xl shadow p-6 mb-6">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4">Country Price Comparison</h4>
+                  <div className="text-sm text-gray-600 mb-4">
+                    Base Duration: {compareResult.base_duration_hours} hours · Quantity: {compareResult.quantity}
+                  </div>
+                  <div className="space-y-3">
+                    {compareResult.country_prices.map((cp) => (
+                      <div key={cp.country_id} className="flex items-center justify-between p-3 rounded-lg border border-gray-200">
+                        <div>
+                          <div className="font-medium text-gray-900">{countryNameById[cp.country_id] || cp.country_name || cp.country_id}</div>
+                          <div className="text-gray-600 text-sm">Currency: {cp.currency}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">{cp.price_calculation.total_amount} {cp.price_calculation.currency}</div>
+                          <div className="text-gray-600 text-sm">Base: {cp.price_calculation.base_rate} ({cp.price_calculation.base_rate_type})</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <div className="text-sm text-green-700">Cheapest</div>
+                      <div className="text-lg font-bold text-green-900">{compareResult.cheapest_country.total_amount} {compareResult.cheapest_country.currency}</div>
+                    </div>
+                    <div className="p-4 bg-red-50 rounded-lg">
+                      <div className="text-sm text-red-700">Most Expensive</div>
+                      <div className="text-lg font-bold text-red-900">{compareResult.most_expensive_country.total_amount} {compareResult.most_expensive_country.currency}</div>
+                    </div>
+                                    <div className="p-4 bg-my-primary/10 rounded-lg">
+                  <div className="text-sm text-my-primary">Average Price</div>
+                  <div className="text-lg font-bold text-my-primary">{compareResult.average_price}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Error Display */}
               {calculationError && (
@@ -666,7 +785,7 @@ const PricingManagement: React.FC = () => {
         {activeView === 'stats' && (
           loadingStats ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-my-primary"></div>
               <span className="ml-3 text-gray-600">Loading statistics...</span>
             </div>
           ) : (

@@ -271,7 +271,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
             ? 'bg-green-50 text-green-700 border border-green-200' 
             : saveStatus === 'error'
             ? 'bg-red-50 text-red-700 border border-red-200'
-            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'bg-my-primary/10 text-my-primary border border-my-primary/20'
         }`}>
           {saveStatus === 'success' ? (
             <CheckCircle className="w-5 h-5" />

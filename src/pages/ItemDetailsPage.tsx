@@ -10,7 +10,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatPrice } from '../lib/utils';
 import Button from '../components/ui/Button';
 import { getProductById, fetchProductImages } from './admin/service/api'; // adjust path as needed
-import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 
 // Define an interface for image objects
 interface ProductImage {
@@ -320,7 +319,7 @@ const ItemDetailsPage: React.FC = () => {
                     <div className="text-3xl font-bold text-gray-900">
                       {item.base_price_per_day != null && item.base_currency ? (
                         <>
-                          {formatPrice(item.base_price_per_day)}
+                          {item.base_price_per_day}
                           <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
                         </>
                       ) : (
@@ -355,7 +354,7 @@ const ItemDetailsPage: React.FC = () => {
                   )}
                   <div className="flex items-center gap-1 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm">
                     <Shield className="w-4 h-4" />
-                    ${item.securityDeposit} Security Deposit
+                    ${item.security} Security Deposit
                   </div>
                 </div>
 

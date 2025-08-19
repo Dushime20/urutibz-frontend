@@ -40,7 +40,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({ open, onClose, book
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="bg-white rounded-md shadow-2xl max-w-lg w-full mx-4 overflow-hidden flex flex-col">
-        <div className="bg-blue-600 px-6 py-4 text-white flex items-center justify-between">
+        <div className="bg-my-primary px-6 py-4 text-white flex items-center justify-between">
           <h2 className="text-lg font-bold">Edit Booking</h2>
           <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl font-bold">&times;</button>
         </div>
@@ -82,7 +82,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({ open, onClose, book
           {error && <div className="text-red-500 text-sm">{error}</div>}
           <div className="flex justify-end gap-2 mt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+            <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded bg-my-primary text-white hover:bg-my-primary/80 disabled:opacity-50">
               {isSubmitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>

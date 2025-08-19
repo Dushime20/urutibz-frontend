@@ -274,7 +274,7 @@ const RentalCalculator: React.FC<RentalCalculatorProps> = ({ onCalculate }) => {
                 )}
 
                 {formData.include_deposit && calculation.security_deposit > 0 && (
-                  <div className="flex items-center justify-between text-blue-600">
+                  <div className="flex items-center justify-between text-my-primary">
                     <span>Security Deposit:</span>
                     <span>+{formatPrice(calculation.security_deposit, calculation.currency)}</span>
                   </div>

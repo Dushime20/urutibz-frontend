@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Smartphone, Check, AlertCircle, ArrowLeft, ArrowRight, CheckCircle, ArrowUpDown } from 'lucide-react';
+import { CreditCard, Smartphone, Check, AlertCircle, CheckCircle, ArrowUpDown } from 'lucide-react';
 import Button from '../../../components/ui/Button';
-import { processPaymentTransaction, fetchPaymentMethods } from '../service/api';
+import { processPaymentTransaction, fetchPaymentMethods, convertCurrencyLive } from '../service/api';
 import axios from 'axios';
 import { API_BASE_URL } from '../service/api';
 import { 
@@ -73,7 +73,7 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     setError(null);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError(null);
     
@@ -88,12 +88,18 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
       });
       
       if (provider && needsCurrencyConversion(currency, provider)) {
-        const conversion = convertToMobileMoneyAmount(amount, currency, provider);
-        console.log(`💱 Currency conversion applied:`, conversion);
-        setConversionInfo({
-          ...conversion,
-          isConverted: true
-        });
+        const targetCurrency = getMobileMoneyProviderCurrency(provider);
+        const token = localStorage.getItem('token') || undefined;
+        try {
+          const live = await convertCurrencyLive({ from: currency, to: targetCurrency, amount }, token);
+          console.log('💱 Live conversion applied:', live);
+          setConversionInfo({ amount: live.amount, currency: targetCurrency, exchangeRate: live.rate, isConverted: true });
+        } catch (e) {
+          // Fallback to local static conversion if live fails
+          const fallback = convertToMobileMoneyAmount(amount, currency, provider);
+          console.warn('Live conversion failed, using fallback:', e);
+          setConversionInfo({ ...fallback, isConverted: true });
+        }
       } else {
         console.log(`✅ No conversion needed`);
         setConversionInfo(null);
@@ -272,7 +278,7 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
             />
           </div>
           
-          {steps.map((stepItem, idx) => {
+          {steps.map((stepItem) => {
             const isActive = step === stepItem.id;
             const isCompleted = step > stepItem.id;
             

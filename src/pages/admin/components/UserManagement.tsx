@@ -112,7 +112,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         return 'bg-purple-100 text-purple-700';
       case 'user':
       case 'renter':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-my-primary/10 text-my-primary';
       default:
         return 'bg-gray-100 text-gray-700';
     }
@@ -151,7 +151,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+          <Button className="bg-my-primary hover:bg-my-primary/80 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
             <Plus className="w-4 h-4 mr-2" />
             Add User
           </Button>
@@ -159,13 +159,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       </div>
       {/* User Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 rounded-2xl p-4">
+        <div className="bg-my-primary/10 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-600 font-medium">Total Users</p>
-              <p className="text-2xl font-bold text-blue-700">{stats.total}</p>
+              <p className="text-sm text-my-primary font-medium">Total Users</p>
+              <p className="text-2xl font-bold text-my-primary">{stats.total}</p>
             </div>
-            <Users className="w-8 h-8 text-blue-600" />
+            <Users className="w-8 h-8 text-my-primary" />
           </div>
         </div>
         <div className="bg-green-50 rounded-2xl p-4">

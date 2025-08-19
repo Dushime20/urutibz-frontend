@@ -262,7 +262,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
               value={revenueReport.totalBookings.toLocaleString()}
               subtitle={revenueReport.period}
               icon={Calendar}
-              color="bg-blue-500"
+              color="bg-my-primary"
             />
             <StatCard
               title="Average Booking Value"
@@ -318,7 +318,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
               value={userReport.totalUsers.toLocaleString()}
               subtitle={userReport.period}
               icon={Users}
-              color="bg-blue-500"
+              color="bg-my-primary"
             />
             <StatCard
               title="New Users"

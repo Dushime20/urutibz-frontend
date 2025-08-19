@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
-  Search, Filter, MapPin, Star, Clock,
+  Filter, MapPin, Star, 
   Grid, List, Heart,
   Camera, Laptop, Car, Gamepad2, Headphones, Watch,
-  Package, Zap, Truck, AlertCircle, ChevronDown, X
+  Package, Truck, AlertCircle, ChevronDown, X
 } from 'lucide-react';
 import { itemCategories } from '../data/mockRentalData';
-import { formatPrice } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { fetchAvailableProducts, fetchProductImages } from './admin/service/api';
+import { fetchAvailableProducts, fetchProductImages, fetchActiveDailyPrice } from './admin/service/api';
 
 // Product type definition with better typing
 type Product = {
@@ -190,12 +189,25 @@ const ItemSearchPage: React.FC = () => {
         
         // Process item locations
         const processedItems = await processItemLocations(productList);
-        setItems(processedItems);
+
+        // Enrich with active daily price and currency
+        const enrichedItems = await Promise.all(processedItems.map(async (item) => {
+          try {
+            const { pricePerDay, currency } = await fetchActiveDailyPrice(item.id);
+            return {
+              ...item,
+              base_price_per_day: pricePerDay != null ? String(pricePerDay) : (item.base_price_per_day ?? null),
+              base_currency: currency ?? (item.base_currency ?? null),
+            } as Product;
+          } catch {
+            return item as Product;
+          }
+        }));
 
         // Fetch images for each product with proper error handling
         const imagesMap: { [productId: string]: string[] } = {};
         
-        await Promise.all(processedItems.map(async (item) => {
+        await Promise.all(enrichedItems.map(async (item) => {
           try {
             const images = await fetchProductImages(item.id, token);
             
@@ -222,6 +234,7 @@ const ItemSearchPage: React.FC = () => {
         }));
 
         setProductImages(imagesMap);
+        setItems(enrichedItems);
       } catch (err) {
         console.error('Error fetching items:', err);
         setError('Failed to load items');
@@ -552,7 +565,7 @@ const ItemSearchPage: React.FC = () => {
                     {/* Price */}
                     <div className="flex items-center gap-2 mb-4">
                       <span className="text-xl font-bold text-[#00aaa9]">
-                        {item.base_price_per_day != null && item.base_currency ? `$${item.base_price_per_day}` : 'No price'}
+                        {item.base_price_per_day != null && item.base_currency ? `${item.base_price_per_day}` : 'No price'}
                       </span>
                       <span className="text-sm text-gray-600 font-medium">{item.base_price_per_day != null && item.base_currency ? `/${item.base_currency}` : ''}</span>
                     </div>
