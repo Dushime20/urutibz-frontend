@@ -20,7 +20,43 @@ import {
   type PaymentTransactionResponse
 } from '../interfaces';
 import { isProductCurrentlyAvailable } from '../../../lib/utils';
-import type { PaymentProvider, CreatePaymentProviderInput, PaymentProviderStats, FeeCalculationResult, ProviderComparisonResponse, BulkUpdatePaymentProvidersPayload, InsuranceProvider, CreateInsuranceProviderInput, InsuranceProviderStats, CategoryRegulation, CreateCategoryRegulationInput, UpdateCategoryRegulationInput, CategoryRegulationStats, ComplianceCheckResult, RegulationAnalytics, BulkRegulationOperation, RegulationTemplate, RegulationValidationResult, RegulationAuditLog, RegulationSearchFilters, RegulationSearchResult, RegulationStatusDashboard, RegulationNotificationPayload, RegulationImportResult, RegulationConflict, RegulationExtensionRequest } from '../interfaces';
+import type { 
+  PaymentProvider, 
+  CreatePaymentProviderInput, 
+  PaymentProviderStats, 
+  FeeCalculationResult, 
+  ProviderComparisonResponse, 
+  BulkUpdatePaymentProvidersPayload, 
+  InsuranceProvider, 
+  CreateInsuranceProviderInput, 
+  InsuranceProviderStats, 
+  CategoryRegulation, 
+  CreateCategoryRegulationInput, 
+  UpdateCategoryRegulationInput, 
+  CategoryRegulationStats, 
+  ComplianceCheckResult, 
+  RegulationAnalytics, 
+  BulkRegulationOperation, 
+  RegulationTemplate, 
+  RegulationValidationResult, 
+  RegulationAuditLog, 
+  RegulationSearchFilters, 
+  RegulationSearchResult, 
+  RegulationStatusDashboard, 
+  RegulationNotificationPayload, 
+  RegulationImportResult, 
+  RegulationConflict, 
+  RegulationExtensionRequest,
+  AdministrativeDivision,
+  CreateAdministrativeDivisionInput,
+  UpdateAdministrativeDivisionInput,
+  AdministrativeDivisionSearchFilters,
+  AdministrativeDivisionSearchResult,
+  AdministrativeDivisionTree,
+  AdministrativeDivisionHierarchy,
+  AdministrativeDivisionStats,
+  ToggleStatusPayload
+} from '../interfaces';
 
 export type { AdminBooking } from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
@@ -562,8 +598,28 @@ export async function fetchCategoryById(categoryId: string, token?: string) {
 }
 
 export async function fetchCountries(): Promise<Country[]> {
-  const response = await axios.get(`${API_BASE_URL}/countries`);
-  return response.data.data;
+  try {
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('Fetching countries from:', `${API_BASE_URL}/countries`);
+    const response = await axios.get(`${API_BASE_URL}/countries`);
+    console.log('Countries API response:', response.data);
+    
+    // Check if response has the expected structure
+    if (response.data && response.data.success && response.data.data) {
+      const countries = response.data.data;
+      console.log('Extracted countries:', countries);
+      console.log('Countries type:', typeof countries);
+      console.log('Countries length:', countries?.length);
+      return countries || [];
+    } else {
+      console.log('Unexpected response structure:', response.data);
+      return [];
+    }
+  } catch (error: any) {
+    console.error('Error fetching countries:', error);
+    console.error('Error response:', error?.response?.data);
+    throw error;
+  }
 }
 
 export async function fetchCountryById(countryId: string, token?: string): Promise<Country> {
@@ -1957,4 +2013,190 @@ export async function copyRegulation(id: string, data?: Partial<CreateCategoryRe
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const response = await axios.post(`${API_BASE_URL}/category-regulations/${id}/copy`, data || {}, { headers });
   return response.data;
+}
+
+// Administrative Divisions API Functions
+export async function fetchAdministrativeDivisions(filters: AdministrativeDivisionSearchFilters = {}, token?: string): Promise<AdministrativeDivision[]> {
+  try {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+    
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.get(`${API_BASE_URL}/administrative-divisions?${params.toString()}`, { headers });
+    return response.data?.data || response.data || [];
+  } catch (err: any) {
+    console.error('Error fetching administrative divisions:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch administrative divisions');
+  }
+}
+
+export async function searchAdministrativeDivisions(query: string, filters: Partial<AdministrativeDivisionSearchFilters> = {}, token?: string): Promise<AdministrativeDivisionSearchResult> {
+  try {
+    const params = new URLSearchParams({ q: query });
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+    
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.get(`${API_BASE_URL}/administrative-divisions/search?${params.toString()}`, { headers });
+    return response.data?.data || response.data || { divisions: [], total: 0 };
+  } catch (err: any) {
+    console.error('Error searching administrative divisions:', err);
+    throw new Error(err?.response?.data?.message || 'Search failed');
+  }
+}
+
+export async function fetchAdministrativeDivisionTree(countryId?: string, maxDepth?: number, token?: string): Promise<AdministrativeDivisionTree> {
+  try {
+    const params = new URLSearchParams();
+    if (countryId) params.append('country_id', countryId);
+    if (maxDepth) params.append('max_depth', String(maxDepth));
+    
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.get(`${API_BASE_URL}/administrative-divisions/tree?${params.toString()}`, { headers });
+    return response.data?.data || response.data;
+  } catch (err: any) {
+    console.error('Error fetching administrative division tree:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch tree structure');
+  }
+}
+
+export async function fetchAdministrativeDivisionsByCountry(countryId: string, filters: Partial<AdministrativeDivisionSearchFilters> = {}, token?: string): Promise<AdministrativeDivision[]> {
+  try {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+    
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.get(`${API_BASE_URL}/administrative-divisions/countries/${countryId}?${params.toString()}`, { headers });
+    return response.data?.data?.divisions || response.data?.divisions || [];
+  } catch (err: any) {
+    console.error('Error fetching administrative divisions by country:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch divisions by country');
+  }
+}
+
+export async function fetchAdministrativeDivisionById(id: string, filters: Partial<AdministrativeDivisionSearchFilters> = {}, token?: string): Promise<AdministrativeDivision> {
+  try {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+    
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.get(`${API_BASE_URL}/administrative-divisions/${id}?${params.toString()}`, { headers });
+    return response.data?.data || response.data;
+  } catch (err: any) {
+    console.error('Error fetching administrative division by ID:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch division details');
+  }
+}
+
+export async function fetchAdministrativeDivisionHierarchy(id: string, filters: Partial<AdministrativeDivisionSearchFilters> = {}, token?: string): Promise<AdministrativeDivisionHierarchy> {
+  try {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+    
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.get(`${API_BASE_URL}/administrative-divisions/${id}/hierarchy?${params.toString()}`, { headers });
+    return response.data?.data || response.data;
+  } catch (err: any) {
+    console.error('Error fetching administrative division hierarchy:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch hierarchy');
+  }
+}
+
+export async function createAdministrativeDivision(data: CreateAdministrativeDivisionInput, token?: string): Promise<{ data?: AdministrativeDivision; error?: string }> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.post(`${API_BASE_URL}/administrative-divisions`, data, { headers });
+    return { data: response.data?.data || response.data };
+  } catch (err: any) {
+    console.error('Error creating administrative division:', err);
+    return { error: err?.response?.data?.message || 'Failed to create division' };
+  }
+}
+
+export async function updateAdministrativeDivision(id: string, data: UpdateAdministrativeDivisionInput, token?: string): Promise<{ data?: AdministrativeDivision; error?: string }> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.put(`${API_BASE_URL}/administrative-divisions/${id}`, data, { headers });
+    return { data: response.data?.data || response.data };
+  } catch (err: any) {
+    console.error('Error updating administrative division:', err);
+    return { error: err?.response?.data?.message || 'Failed to update division' };
+  }
+}
+
+export async function deleteAdministrativeDivision(id: string, token?: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    await axios.delete(`${API_BASE_URL}/administrative-divisions/${id}`, { headers });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error deleting administrative division:', err);
+    return { success: false, error: err?.response?.data?.message || 'Failed to delete division' };
+  }
+}
+
+export async function toggleAdministrativeDivisionStatus(id: string, payload: ToggleStatusPayload, token?: string): Promise<{ data?: AdministrativeDivision; error?: string }> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.patch(`${API_BASE_URL}/administrative-divisions/${id}/toggle-status`, payload, { headers });
+    return { data: response.data?.data || response.data };
+  } catch (err: any) {
+    console.error('Error toggling administrative division status:', err);
+    return { error: err?.response?.data?.message || 'Failed to toggle status' };
+  }
+}
+
+export async function fetchAdministrativeDivisionStats(countryId?: string, token?: string): Promise<AdministrativeDivisionStats> {
+  try {
+    const params = new URLSearchParams();
+    if (countryId) params.append('country_id', countryId);
+    
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.get(`${API_BASE_URL}/administrative-divisions/stats?${params.toString()}`, { headers });
+    return response.data?.data || response.data;
+  } catch (err: any) {
+    console.error('Error fetching administrative division stats:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch statistics');
+  }
 }

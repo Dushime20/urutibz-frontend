@@ -586,3 +586,104 @@ export interface RegulationExtensionRequest {
   reason: string;
   approved_by: string;
 } 
+
+// Administrative Divisions Interfaces
+export interface AdministrativeDivision {
+  id: string;
+  country_id: string;
+  parent_id?: string | null;
+  level: number;
+  name: string;
+  local_name?: string;
+  type: 'province' | 'district' | 'sector' | 'cell' | 'village' | string;
+  code: string;
+  population?: number;
+  area_km2?: number;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+  country?: Country;
+  parent?: AdministrativeDivision;
+  children?: AdministrativeDivision[];
+}
+
+export interface CreateAdministrativeDivisionInput {
+  country_id: string;
+  parent_id?: string;
+  level: number;
+  name: string;
+  local_name?: string;
+  type: string;
+  code: string;
+  population?: number;
+  area_km2?: number;
+  coordinates?: {
+    latitude?: number;
+    longitude?: number;
+  };
+  is_active?: boolean;
+}
+
+export interface UpdateAdministrativeDivisionInput extends Partial<CreateAdministrativeDivisionInput> {}
+
+export interface AdministrativeDivisionSearchFilters {
+  country_id?: string;
+  parent_id?: string;
+  level?: number;
+  type?: string;
+  is_active?: boolean;
+  search?: string;
+  has_children?: boolean;
+  min_population?: number;
+  max_population?: number;
+  include_country?: boolean;
+  include_parent?: boolean;
+  include_children?: boolean;
+  limit?: number;
+  offset?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+}
+
+export interface AdministrativeDivisionSearchResult {
+  divisions: AdministrativeDivision[];
+  total: number;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  };
+}
+
+export interface AdministrativeDivisionTree {
+  country: Country;
+  divisions: AdministrativeDivision[];
+}
+
+export interface AdministrativeDivisionHierarchy {
+  division: AdministrativeDivision;
+  ancestors: AdministrativeDivision[];
+  descendants: AdministrativeDivision[];
+}
+
+export interface AdministrativeDivisionStats {
+  total_divisions: number;
+  active_divisions: number;
+  inactive_divisions: number;
+  by_level: Record<string, number>;
+  by_type: Record<string, number>;
+  by_country: Record<string, number>;
+  total_population: number;
+  total_area_km2: number;
+}
+
+export interface ToggleStatusPayload {
+  is_active: boolean;
+  reason?: string;
+} 
