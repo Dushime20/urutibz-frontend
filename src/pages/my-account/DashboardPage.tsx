@@ -271,11 +271,7 @@ const DashboardPage: React.FC = () => {
         const userProfileData = await fetchUserProfile(token);
         
         if (userProfileData.success && userProfileData.data) {
-          // Debug: Log the actual API response to see field names
-          console.log('User Profile API Response:', userProfileData.data);
-          console.log('First Name:', userProfileData.data.firstName);
-          console.log('Last Name:', userProfileData.data.lastName);
-          console.log('Available fields:', Object.keys(userProfileData.data));
+        
           
           // Transform backend user data to match frontend interface
           const transformedUser = {
@@ -907,7 +903,7 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-my-primary/10 to-indigo-50/30">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1092,7 +1088,7 @@ const DashboardPage: React.FC = () => {
                       <StatCard
                         icon={Wallet}
                         title="Total Earnings"
-                        value={`$${dashboardStats.totalEarnings.toLocaleString()}`}
+                        value={`${dashboardStats.totalEarnings.toLocaleString()}`}
                         subtitle="Available"
                         trend={true}
                         color="text-success-600"
@@ -1101,7 +1097,7 @@ const DashboardPage: React.FC = () => {
                       <StatCard
                         icon={DollarSign}
                         title="Total Transactions"
-                        value={`$${dashboardStats.totalTransactions.toLocaleString()}`}
+                        value={`${dashboardStats.totalTransactions.toLocaleString()}`}
                         subtitle="+12% this month"
                         trend={true}
                         color="text-purple-600"
@@ -1156,7 +1152,7 @@ const DashboardPage: React.FC = () => {
                                 <div className="text-right">
                                   <p className="font-bold text-gray-900">{booking.product?.base_price_per_day != null && booking.product?.base_currency ? `$${booking.product.base_price_per_day}` : ''}</p>
                                   <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${
-                                    booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-success-100 text-success-700'
+                                    booking.status === 'pending' ? 'bg-my-primary/10 text-my-primary' : 'bg-success-100 text-success-700'
                                   }`}>
                                     {booking.status}
                                   </span>
@@ -1190,9 +1186,9 @@ const DashboardPage: React.FC = () => {
                               <div key={transaction.id} className="p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200 border border-gray-100/50">
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex items-center space-x-3">
-                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
+                                    {/* <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
                                       <DollarSign className="w-4 h-4 text-primary-600" />
-                                    </div>
+                                    </div> */}
                                     <div>
                                       <p className="text-sm font-semibold text-gray-900 capitalize">
                                         {transaction.transaction_type?.replace(/_/g, ' ') || 'Payment'}
@@ -1283,7 +1279,7 @@ const DashboardPage: React.FC = () => {
                                 {new Date(booking.start_date).toLocaleString()} - {new Date(booking.end_date).toLocaleString()}
                               </p>
                               <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${
-                                booking.status === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-success-100 text-success-700'
+                                booking.status === 'pending' ? 'bg-my-primary/10 text-my-primary' : 'bg-success-100 text-success-700'
                               }`}>
                                 {booking.status}
                               </span>
@@ -1528,9 +1524,9 @@ const DashboardPage: React.FC = () => {
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
                     <div className="relative z-10">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                        {/* <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                           <DollarSign className="w-6 h-6 text-white" />
-                        </div>
+                        </div> */}
                         <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">
                           Total
                         </div>
@@ -1570,9 +1566,9 @@ const DashboardPage: React.FC = () => {
                     <div className="space-y-4">
                       {userTransactions.map((transaction) => (
                         <div key={transaction.id} className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                          {/* <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
                             <DollarSign className="w-6 h-6 text-primary-600" />
-                          </div>
+                          </div> */}
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
                               <h4 className="font-semibold text-gray-900 capitalize">
@@ -1607,7 +1603,7 @@ const DashboardPage: React.FC = () => {
                             </p>
                             <p className="text-xs text-gray-500">via {transaction.provider}</p>
                             {transaction.metadata?.is_converted && (
-                              <p className="text-xs text-blue-600">
+                              <p className="text-xs text-my-primary">
                                 Originally {transaction.metadata.original_amount} {transaction.metadata.original_currency}
                               </p>
                             )}
@@ -2106,7 +2102,7 @@ const DashboardPage: React.FC = () => {
                               {review.moderationStatus}
                             </span>
                             {review.isVerifiedBooking && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                              <span className="px-2 py-1 bg-my-primary/10 text-my-primary rounded-full">
                                 Verified
                               </span>
                             )}
@@ -2242,11 +2238,11 @@ const DashboardPage: React.FC = () => {
 
                 {/* AI Analysis */}
                 {selectedReview.aiSentimentScore && (
-                  <div className="bg-blue-50 rounded-xl p-4">
+                  <div className="bg-my-primary/10 rounded-xl p-4">
                     <h5 className="font-medium text-gray-900 mb-3">AI Analysis</h5>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center">
-                        <div className="text-lg font-semibold text-blue-600">
+                        <div className="text-lg font-semibold text-my-primary">
                           {parseFloat(selectedReview.aiSentimentScore).toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-500">Sentiment Score</div>

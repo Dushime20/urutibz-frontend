@@ -57,7 +57,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
       case 'new':
         return 'bg-success-100 text-success-700 border-success-200';
       case 'excellent':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
+        return 'bg-my-primary/10 text-my-primary border-my-primary/30';
       case 'good':
         return 'bg-green-100 text-green-700 border-green-200';
       case 'fair':
@@ -260,7 +260,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
                           <div className="flex flex-wrap gap-2">
                             {Array.isArray(product.pickup_methods) 
                               ? product.pickup_methods.map((method: string, idx: number) => (
-                                  <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                                  <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-my-primary/10 text-my-primary border border-my-primary/30">
                                     {method.charAt(0).toUpperCase() + method.slice(1)}
                                   </span>
                                 ))

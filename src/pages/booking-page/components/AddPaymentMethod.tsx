@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CreditCard, Smartphone, Check, AlertCircle } from 'lucide-react';
 import Button from '../../../components/ui/Button';
-import { addPaymentMethod } from '../service/api';
+import { addPaymentMethod, fetchPaymentProviders } from '../service/api';
 
 interface AddPaymentMethodProps {
   onSuccess: () => void;
@@ -13,6 +13,16 @@ const AddPaymentMethod: React.FC<AddPaymentMethodProps> = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [providers, setProviders] = useState<{ id: string; provider_name: string; provider_type: string; display_name: string }[]>([]);
+
+  const token = useMemo(() => localStorage.getItem('token') ?? undefined, []);
+
+  useEffect(() => {
+    (async () => {
+      const list = await fetchPaymentProviders(token);
+      setProviders(list);
+    })();
+  }, []);
 
   const handleTypeChange = (selectedType: 'card' | 'mobile_money') => {
     setType(selectedType);
@@ -136,9 +146,9 @@ const AddPaymentMethod: React.FC<AddPaymentMethodProps> = ({ onSuccess }) => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200"
                 >
                   <option value="">Select Provider</option>
-                  <option value="visa">Visa</option>
-                  <option value="mastercard">MasterCard</option>
-                  <option value="amex">American Express</option>
+                  {providers.filter(p => p.provider_type === 'card').map(p => (
+                    <option key={p.id} value={p.provider_name}>{p.display_name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -223,8 +233,9 @@ const AddPaymentMethod: React.FC<AddPaymentMethodProps> = ({ onSuccess }) => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200"
                 >
                   <option value="">Select Provider</option>
-                  <option value="mtn_momo">MTN Mobile Money</option>
-                  <option value="airtel_money">Airtel Money</option>
+                  {providers.filter(p => p.provider_type === 'mobile_money').map(p => (
+                    <option key={p.id} value={p.provider_name}>{p.display_name}</option>
+                  ))}
                 </select>
               </div>
 

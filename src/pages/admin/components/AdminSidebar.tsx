@@ -14,7 +14,8 @@ import {
   Bell,
   MessageSquare,
   Languages,
-  DollarSign
+  DollarSign,
+  ChevronDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,8 +33,8 @@ interface AdminNavigationItemProps {
 }
 
 interface AdminSidebarProps {
-  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications';
-  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications') => void;
+  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications';
+  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications') => void;
   AdminNavigationItem: React.FC<AdminNavigationItemProps>;
 }
 
@@ -85,98 +86,90 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     navigate('/login');
   };
 
-  const navigationItems = [
-    { 
-      icon: LayoutGrid, 
-      label: 'Overview', 
-      tab: 'overview' as const,
-      hasNotification: false
+  // Collapsible grouped navigation
+  const groups: Array<{
+    key: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    items: Array<{
+      icon: React.ComponentType<{ className?: string }>;
+      label: string;
+      tab: AdminSidebarProps['activeTab'];
+      hasNotification?: boolean;
+    }>;
+  }> = [
+    {
+      key: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutGrid,
+      items: [
+        { icon: LayoutGrid, label: 'Overview', tab: 'overview' }
+      ]
     },
-    { 
-      icon: Package, 
-      label: 'Items', 
-      tab: 'items' as const,
-      hasNotification: false
+    {
+      key: 'management',
+      label: 'Management',
+      icon: Package,
+      items: [
+        { icon: Package, label: 'Items', tab: 'items' },
+        { icon: Users, label: 'Users', tab: 'users' },
+        { icon: ShoppingCart, label: 'Bookings', tab: 'bookings' },
+        { icon: FileText, label: 'Categories', tab: 'categories' },
+        { icon: Globe, label: 'Countries', tab: 'countries' },
+        { icon: CreditCard, label: 'Payment Methods', tab: 'paymentMethods' },
+        { icon: CreditCard, label: 'Payment Providers', tab: 'paymentProviders' },
+        { icon: DollarSign, label: 'Pricing', tab: 'pricing' }
+      ]
     },
-    { 
-      icon: Users, 
-      label: 'Users', 
-      tab: 'users' as const,
-      hasNotification: false
+    {
+      key: 'finance',
+      label: 'Finance',
+      icon: CreditCard,
+      items: [
+        { icon: CreditCard, label: 'Transactions', tab: 'transactions' }
+      ]
     },
-    { 
-      icon: ShoppingCart, 
-      label: 'Bookings', 
-      tab: 'bookings' as const,
-      hasNotification: false
+    {
+      key: 'reports',
+      label: 'Reports',
+      icon: FileText,
+      items: [
+        { icon: FileText, label: 'Reports', tab: 'reports' }
+      ]
     },
-    { 
-      icon: CreditCard, 
-      label: 'Transactions', 
-      tab: 'transactions' as const,
-      hasNotification: false
+    {
+      key: 'system',
+      label: 'System',
+      icon: Settings,
+      items: [
+        { icon: Settings, label: 'Settings', tab: 'settings' },
+        { icon: Globe, label: 'Locations', tab: 'locations' },
+        { icon: Languages, label: 'Languages', tab: 'languages' }
+      ]
     },
-    { 
-      icon: FileText, 
-      label: 'Categories', 
-      tab: 'categories' as const,
-      hasNotification: false
-    },
-    { 
-      icon: Globe, 
-      label: 'Countries', 
-      tab: 'countries' as const,
-      hasNotification: false
-    },
-    { 
-      icon: CreditCard, 
-      label: 'Payment Methods', 
-      tab: 'paymentMethods' as const,
-      hasNotification: false
-    },
-    { 
-      icon: DollarSign, 
-      label: 'Pricing', 
-      tab: 'pricing' as const,
-      hasNotification: false
-    },
-    { 
-      icon: FileText, 
-      label: 'Reports', 
-      tab: 'reports' as const,
-      hasNotification: false
-    },
-    { 
-      icon: Settings, 
-      label: 'Settings', 
-      tab: 'settings' as const,
-      hasNotification: false
-    },
-    { 
-      icon: Globe, 
-      label: 'Locations', 
-      tab: 'locations' as const,
-      hasNotification: false
-    },
-    { 
-      icon: Languages, 
-      label: 'Languages', 
-      tab: 'languages' as const,
-      hasNotification: false
-    },
-    { 
-      icon: MessageSquare, 
-      label: 'Messaging', 
-      tab: 'messaging' as const,
-      hasNotification: false
-    },
-    { 
-      icon: Bell, 
-      label: 'Notifications', 
-      tab: 'notifications' as const,
-      hasNotification: false
+    {
+      key: 'communication',
+      label: 'Communication',
+      icon: MessageSquare,
+      items: [
+        { icon: MessageSquare, label: 'Messaging', tab: 'messaging' },
+        { icon: Bell, label: 'Notifications', tab: 'notifications' }
+      ]
     }
   ];
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    dashboard: true,
+    management: true,
+    finance: false,
+    reports: false,
+    system: false,
+    communication: false
+  });
+
+  const toggleGroup = (key: string) => {
+    setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <div 
@@ -189,15 +182,33 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     >
       {/* Navigation */}
       <nav className="space-y-2 px-4 pt-4">
-        {navigationItems.map((item) => (
-          <AdminNavigationItem 
-            key={item.tab}
-            icon={item.icon}
-            label={item.label}
-            active={activeTab === item.tab}
-            onClick={() => setActiveTab(item.tab)}
-            hasNotification={item.hasNotification}
-          />
+        {groups.map(group => (
+          <div key={group.key} className="mb-2">
+            <button
+              onClick={() => toggleGroup(group.key)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center">
+                <group.icon className="w-5 h-5 mr-3 text-gray-600" />
+                <span className="font-medium text-gray-800 dark:text-gray-200">{group.label}</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openGroups[group.key] ? 'rotate-180' : ''}`} />
+            </button>
+            {openGroups[group.key] && (
+              <div className="mt-1 pl-2 space-y-1">
+                {group.items.map(item => (
+                  <AdminNavigationItem
+                    key={item.tab}
+                    icon={item.icon}
+                    label={item.label}
+                    active={activeTab === item.tab}
+                    onClick={() => setActiveTab(item.tab)}
+                    hasNotification={item.hasNotification}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
 

@@ -519,7 +519,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
                           <button
                             type="button"
-                            className="opacity-0 group-hover:opacity-100 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-all duration-200 mr-2"
+                            className="opacity-0 group-hover:opacity-100 bg-my-primary text-white p-2 rounded-full hover:bg-my-primary/90 transition-all duration-200 mr-2"
                             onClick={() => {
                               setEditingImage(img);
                               setImageEditForm({ alt_text: img.alt_text || '', image: null });

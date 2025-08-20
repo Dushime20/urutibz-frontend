@@ -35,6 +35,7 @@ import TransactionsManagement from './components/TransactionsManagement';
 import CategoriesManagement from './components/CategoriesManagement';
 import CountriesManagement from './components/CountriesManagement';
 import PaymentMethodsManagement from './components/PaymentMethodsManagement';
+import PaymentProvidersManagement from './components/PaymentProvidersManagement';
 import PricingManagement from './components/PricingManagement';
 import ProductCategoriesChart from './components/ProductCategoriesChart';
 import {
@@ -69,7 +70,7 @@ interface Owner {
 }
 
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -741,6 +742,8 @@ const AdminDashboardPage: React.FC = () => {
                     return <CountriesManagement />;
                   case 'paymentMethods':
                     return <PaymentMethodsManagement />;
+                  case 'paymentProviders':
+                    return <PaymentProvidersManagement />;
                   case 'pricing':
                     return <PricingManagement />;
                   case 'reports':

@@ -70,3 +70,6 @@ export interface FilterOptions {
   seats: number[];
   features: string[];
 }
+
+// Export user types from the user.ts file
+export * from './user';

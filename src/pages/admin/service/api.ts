@@ -20,6 +20,7 @@ import {
   type PaymentTransactionResponse
 } from '../interfaces';
 import { isProductCurrentlyAvailable } from '../../../lib/utils';
+import type { PaymentProvider, CreatePaymentProviderInput, PaymentProviderStats, FeeCalculationResult, ProviderComparisonResponse, BulkUpdatePaymentProvidersPayload } from '../interfaces';
 
 export type { AdminBooking } from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
@@ -612,6 +613,118 @@ export async function fetchPaymentMethods(token?: string): Promise<PaymentMethod
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const response = await axios.get(`${API_BASE_URL}/payment-methods`, { headers });
   return response.data.data.data;
+}
+
+// Payment Providers CRUD
+export async function fetchPaymentProviders(token?: string): Promise<PaymentProvider[]> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/payment-providers`, { headers });
+  // Support both {data:{data:[]}} and {data:[]} response shapes
+  return response.data?.data?.data ?? response.data?.data ?? response.data ?? [];
+}
+
+export async function createPaymentProvider(payload: CreatePaymentProviderInput, token?: string): Promise<{ data: PaymentProvider | null; error: string | null }> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.post(`${API_BASE_URL}/payment-providers`, payload, { headers });
+    return { data: response.data?.data ?? response.data, error: null };
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to create payment provider';
+    return { data: null, error: errorMsg };
+  }
+}
+
+export async function updatePaymentProvider(providerId: string, payload: Partial<CreatePaymentProviderInput>, token?: string): Promise<{ data: PaymentProvider | null; error: string | null }> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.put(`${API_BASE_URL}/payment-providers/${providerId}`, payload, { headers });
+    return { data: response.data?.data ?? response.data, error: null };
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to update payment provider';
+    return { data: null, error: errorMsg };
+  }
+}
+
+export async function deletePaymentProvider(providerId: string, token?: string): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    await axios.delete(`${API_BASE_URL}/payment-providers/${providerId}`, { headers });
+    return { success: true, error: null };
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to delete payment provider';
+    return { success: false, error: errorMsg };
+  }
+}
+
+// Payment Providers Additional APIs
+export async function fetchPaymentProviderById(id: string, token?: string): Promise<PaymentProvider> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/payment-providers/${id}`, { headers });
+  return response.data?.data ?? response.data;
+}
+
+export async function searchPaymentProviders(query: string, token?: string): Promise<PaymentProvider[]> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/payment-providers/search`, { params: { query }, headers });
+  return response.data?.data ?? response.data ?? [];
+}
+
+export async function fetchPaymentProviderStats(token?: string): Promise<PaymentProviderStats> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/payment-providers/stats`, { headers });
+  const raw = response.data?.data ?? response.data ?? {};
+  // Normalize snake_case payload to our camelCase interface
+  const normalized: PaymentProviderStats = {
+    totalProviders: Number(raw.total_providers ?? raw.totalProviders ?? 0),
+    activeProviders: Number(raw.active_providers ?? raw.activeProviders ?? 0),
+    avgFeePercentage: raw.average_fee_percentage ?? raw.avgFeePercentage ?? null,
+    byType: raw.providers_by_type ?? raw.byType ?? undefined,
+    byCurrency: raw.providers_by_currency ?? raw.byCurrency ?? undefined,
+  };
+  return normalized;
+}
+
+export async function bulkUpdatePaymentProviders(payload: BulkUpdatePaymentProvidersPayload, token?: string): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    await axios.patch(`${API_BASE_URL}/payment-providers/bulk`, payload, { headers });
+    return { success: true, error: null };
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to bulk update payment providers';
+    return { success: false, error: errorMsg };
+  }
+}
+
+export async function fetchPaymentProvidersByCountry(countryId: string, token?: string): Promise<PaymentProvider[]> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/payment-providers/country/${countryId}`, { headers });
+  return response.data?.data ?? response.data ?? [];
+}
+
+export async function calculateFeesForCountry(options: { countryId: string; amount: number; currency: string; provider_type?: string }, token?: string): Promise<FeeCalculationResult[]> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const { countryId, amount, currency, provider_type } = options;
+  const response = await axios.get(`${API_BASE_URL}/payment-providers/country/${countryId}/calculate`, { params: { amount, currency, provider_type }, headers });
+  return response.data?.data ?? response.data ?? [];
+}
+
+export async function compareProvidersForCountry(options: { countryId: string; amount: number; currency: string; provider_type?: string }, token?: string): Promise<ProviderComparisonResponse> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const { countryId, amount, currency, provider_type } = options;
+  const response = await axios.get(`${API_BASE_URL}/payment-providers/country/${countryId}/compare`, { params: { amount, currency, provider_type }, headers });
+  const data = response.data?.data ?? response.data;
+  return Array.isArray(data) ? { items: data } : data;
 }
 
 export async function fetchProductAvailability(productId: string, token?: string): Promise<ProductAvailability[]> {

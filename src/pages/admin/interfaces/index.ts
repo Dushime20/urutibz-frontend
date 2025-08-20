@@ -160,6 +160,93 @@ export interface PaymentMethod {
   type: string;
 }
 
+// Payment Provider Interfaces
+export interface PaymentProviderSettings {
+  public_key?: string;
+  secret_key?: string;
+  webhook_secret?: string;
+  [key: string]: any;
+}
+
+export interface PaymentProvider {
+  id: string;
+  country_id: string;
+  provider_name: string; // machine name, e.g., mtn_momo
+  provider_type: 'mobile_money' | 'bank' | 'card' | 'wallet' | string;
+  display_name: string;
+  logo_url?: string;
+  supported_currencies: string[];
+  min_amount?: number;
+  max_amount?: number;
+  fee_percentage?: number;
+  fee_fixed?: number;
+  supports_refunds?: boolean;
+  supports_recurring?: boolean;
+  processing_time_minutes?: number;
+  description?: string;
+  settings?: PaymentProviderSettings;
+  api_endpoint?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreatePaymentProviderInput {
+  country_id: string;
+  provider_name: string;
+  provider_type: 'mobile_money' | 'bank' | 'card' | 'wallet' | string;
+  display_name: string;
+  logo_url?: string;
+  supported_currencies: string[];
+  min_amount?: number;
+  max_amount?: number;
+  fee_percentage?: number;
+  fee_fixed?: number;
+  supports_refunds?: boolean;
+  supports_recurring?: boolean;
+  processing_time_minutes?: number;
+  description?: string;
+  settings?: PaymentProviderSettings;
+  api_endpoint?: string;
+}
+
+// Payment Provider Stats/Responses
+export interface PaymentProviderStats {
+  totalProviders: number;
+  byType?: Record<string, number>;
+  byCurrency?: Record<string, number>;
+  avgFeePercentage?: number | null;
+  activeProviders?: number;
+}
+
+export interface FeeCalculationResult {
+  country_id: string;
+  provider_id: string;
+  provider_name: string;
+  provider_type: string;
+  currency: string;
+  amount: number;
+  fee_percentage?: number;
+  fee_fixed?: number;
+  total_fee: number;
+  total_amount: number;
+  processing_time_minutes?: number;
+}
+
+export interface ProviderComparisonItem extends FeeCalculationResult {
+  display_name: string;
+  logo_url?: string;
+}
+
+export interface ProviderComparisonResponse {
+  items: ProviderComparisonItem[];
+}
+
+export interface BulkUpdatePaymentProvidersPayload {
+  ids: string[];
+  updates: Partial<CreatePaymentProviderInput>;
+}
+
 // Product Availability Interface
 export interface ProductAvailability {
   id?: string;

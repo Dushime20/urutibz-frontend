@@ -141,6 +141,29 @@ export async function processPaymentTransaction(paymentData: any, token?: string
   return response.data;
 }
 
+// Payment Providers (for booking flows)
+export interface BookingPaymentProvider {
+  id: string;
+  provider_name: string;
+  provider_type: string; // 'card' | 'mobile_money' | 'bank' | 'wallet'
+  display_name: string;
+  logo_url?: string;
+  supported_currencies?: string[];
+}
+
+export async function fetchPaymentProviders(token?: string): Promise<BookingPaymentProvider[]> {
+  const url = `${API_BASE_URL}/payment-providers`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(url, { headers });
+    const data = response.data?.data?.data ?? response.data?.data ?? response.data ?? [];
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    return [];
+  }
+}
+
 // Live currency conversion via backend API
 export async function convertCurrencyLive(params: { from: string; to: string; amount: number }, token?: string): Promise<{ amount: number; rate: number; timestamp?: string }> {
   const { from, to, amount } = params;
