@@ -33,8 +33,8 @@ interface AdminNavigationItemProps {
 }
 
 interface AdminSidebarProps {
-  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications';
-  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications') => void;
+  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications';
+  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications') => void;
   AdminNavigationItem: React.FC<AdminNavigationItemProps>;
 }
 
@@ -118,6 +118,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         { icon: Globe, label: 'Countries', tab: 'countries' },
         { icon: CreditCard, label: 'Payment Methods', tab: 'paymentMethods' },
         { icon: CreditCard, label: 'Payment Providers', tab: 'paymentProviders' },
+        { icon: CreditCard, label: 'Insurance Providers', tab: 'insuranceProviders' },
+        { icon: FileText, label: 'Category Regulations', tab: 'categoryRegulations' },
         { icon: DollarSign, label: 'Pricing', tab: 'pricing' }
       ]
     },

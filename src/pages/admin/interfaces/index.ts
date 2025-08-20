@@ -210,6 +210,83 @@ export interface CreatePaymentProviderInput {
   api_endpoint?: string;
 }
 
+// Insurance Provider Interfaces
+export interface InsuranceProviderAddress {
+  line1?: string;
+  city?: string;
+  [key: string]: any;
+}
+
+export interface InsuranceProviderContactInfo {
+  phone?: string;
+  email?: string;
+  website?: string;
+  address?: InsuranceProviderAddress;
+}
+
+export interface InsuranceProvider {
+  id: string;
+  country_id: string;
+  provider_name: string;
+  display_name: string;
+  logo_url?: string;
+  contact_info?: InsuranceProviderContactInfo;
+  supported_categories?: string[]; // category IDs
+  api_endpoint?: string;
+  api_credentials?: Record<string, any>;
+  is_active: boolean;
+  provider_type?: string; // TRADITIONAL | AGGREGATOR | etc.
+  license_number?: string;
+  rating?: number | string;
+  coverage_types?: string[];
+  min_coverage_amount?: number | string;
+  max_coverage_amount?: number | string;
+  deductible_options?: Array<number | string>;
+  processing_time_days?: number;
+  languages_supported?: string[];
+  commission_rate?: number | string;
+  integration_status?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateInsuranceProviderInput {
+  country_id: string;
+  provider_name: string;
+  display_name: string;
+  logo_url?: string;
+  contact_info?: InsuranceProviderContactInfo;
+  supported_categories?: string[];
+  api_endpoint?: string;
+  api_credentials?: Record<string, any>;
+  is_active?: boolean;
+  provider_type?: string;
+  license_number?: string;
+  rating?: number;
+  coverage_types?: string[];
+  min_coverage_amount?: number;
+  max_coverage_amount?: number;
+  deductible_options?: number[];
+  processing_time_days?: number;
+  languages_supported?: string[];
+  commission_rate?: number;
+  integration_status?: string;
+}
+
+export interface InsuranceProviderStats {
+  total_providers?: number;
+  active_providers?: number;
+  inactive_providers?: number;
+  providers_by_country?: Record<string, number>;
+  providers_by_type?: Record<string, number>;
+  providers_with_refunds?: number; // if applicable
+  providers_with_recurring?: number; // if applicable
+  average_rating?: number | null;
+  average_processing_days?: number | null;
+  countries_with_providers?: number;
+  supported_currencies?: string[];
+}
+
 // Payment Provider Stats/Responses
 export interface PaymentProviderStats {
   totalProviders: number;
@@ -310,4 +387,202 @@ export interface CreateCountryInput {
   timezone?: string;
   languages?: string[];
   is_active?: boolean;
+} 
+
+// Category Regulations Interfaces
+export interface CategoryRegulation {
+  id: string;
+  category_id: string;
+  country_id: string;
+  regulation_type: 'LICENSING' | 'SAFETY' | 'ENVIRONMENTAL' | 'FINANCIAL' | 'OPERATIONAL' | 'COMPLIANCE';
+  title: string;
+  description: string;
+  requirements: string[];
+  compliance_deadline: string;
+  penalties: string[];
+  is_active: boolean;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  enforcement_level: 'LENIENT' | 'MODERATE' | 'STRICT' | 'VERY_STRICT';
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+}
+
+export interface CreateCategoryRegulationInput {
+  category_id: string;
+  country_id: string;
+  regulation_type: 'LICENSING' | 'SAFETY' | 'ENVIRONMENTAL' | 'FINANCIAL' | 'OPERATIONAL' | 'COMPLIANCE';
+  title: string;
+  description: string;
+  requirements: string[];
+  compliance_deadline: string;
+  penalties: string[];
+  is_active?: boolean;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  enforcement_level: 'LENIENT' | 'MODERATE' | 'STRICT' | 'VERY_STRICT';
+}
+
+export interface UpdateCategoryRegulationInput extends Partial<CreateCategoryRegulationInput> {}
+
+export interface CategoryRegulationStats {
+  total_regulations: number;
+  active_regulations: number;
+  inactive_regulations: number;
+  regulations_by_type: Record<string, number>;
+  regulations_by_priority: Record<string, number>;
+  regulations_by_enforcement: Record<string, number>;
+  countries_with_regulations: number;
+  categories_with_regulations: number;
+  compliance_rate: number;
+  upcoming_deadlines: number;
+}
+
+export interface ComplianceCheckResult {
+  category_id: string;
+  country_id: string;
+  is_compliant: boolean;
+  missing_requirements: string[];
+  compliance_score: number;
+  next_deadline: string;
+  recommendations: string[];
+}
+
+export interface RegulationAnalytics {
+  total_regulations: number;
+  compliance_rate: number;
+  enforcement_metrics: Record<string, number>;
+  priority_distribution: Record<string, number>;
+  type_distribution: Record<string, number>;
+  country_distribution: Record<string, number>;
+  trend_data: Array<{
+    period: string;
+    compliance_rate: number;
+    new_regulations: number;
+    expiring_regulations: number;
+  }>;
+}
+
+export interface BulkRegulationOperation {
+  regulations: Array<{
+    id?: string;
+    operation: 'create' | 'update' | 'delete';
+    data?: CreateCategoryRegulationInput | UpdateCategoryRegulationInput;
+  }>;
+}
+
+export interface RegulationTemplate {
+  id: string;
+  name: string;
+  description: string;
+  regulation_type: string;
+  default_requirements: string[];
+  default_penalties: string[];
+  applicable_categories: string[];
+  applicable_countries: string[];
+}
+
+export interface RegulationValidationResult {
+  is_valid: boolean;
+  errors: string[];
+  warnings: string[];
+  suggestions: string[];
+}
+
+export interface RegulationAuditLog {
+  id: string;
+  regulation_id: string;
+  user_id: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'ACTIVATE' | 'DEACTIVATE' | 'ARCHIVE' | 'RESTORE';
+  changes: Record<string, any>;
+  timestamp: string;
+  ip_address?: string;
+  user_agent?: string;
+}
+
+export interface RegulationSearchFilters {
+  category_id?: string;
+  country_id?: string;
+  regulation_type?: string;
+  is_active?: boolean;
+  priority?: string;
+  enforcement_level?: string;
+  page?: number;
+  limit?: number;
+  include_deleted?: boolean;
+  q?: string;
+  fields?: string[];
+  fuzzy?: boolean;
+}
+
+export interface RegulationSearchResult {
+  regulations: CategoryRegulation[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
+
+export interface RegulationStatusDashboard {
+  total_regulations: number;
+  active_regulations: number;
+  compliance_overview: {
+    compliant: number;
+    non_compliant: number;
+    at_risk: number;
+  };
+  pending_deadlines: Array<{
+    regulation_id: string;
+    title: string;
+    deadline: string;
+    days_remaining: number;
+  }>;
+  enforcement_metrics: {
+    total_violations: number;
+    resolved_violations: number;
+    pending_violations: number;
+  };
+}
+
+export interface RegulationNotificationPayload {
+  recipients: string[];
+  message: string;
+  notification_type: 'DEADLINE_REMINDER' | 'COMPLIANCE_ALERT' | 'ENFORCEMENT_UPDATE';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+}
+
+export interface RegulationImportResult {
+  total_imported: number;
+  total_failed: number;
+  errors: Array<{
+    row: number;
+    field: string;
+    message: string;
+  }>;
+  warnings: Array<{
+    row: number;
+    field: string;
+    message: string;
+  }>;
+}
+
+export interface RegulationConflict {
+  regulation_id: string;
+  conflict_type: 'DUPLICATE' | 'OVERLAPPING' | 'CONTRADICTORY';
+  conflicting_regulations: string[];
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  description: string;
+  resolution_suggestions: string[];
+}
+
+export interface RegulationExtensionRequest {
+  new_deadline: string;
+  reason: string;
+  approved_by: string;
 } 

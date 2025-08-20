@@ -36,6 +36,8 @@ import CategoriesManagement from './components/CategoriesManagement';
 import CountriesManagement from './components/CountriesManagement';
 import PaymentMethodsManagement from './components/PaymentMethodsManagement';
 import PaymentProvidersManagement from './components/PaymentProvidersManagement';
+import InsuranceProvidersManagement from './components/InsuranceProvidersManagement';
+import CategoryRegulationsManagement from './components/CategoryRegulationsManagement';
 import PricingManagement from './components/PricingManagement';
 import ProductCategoriesChart from './components/ProductCategoriesChart';
 import {
@@ -70,7 +72,7 @@ interface Owner {
 }
 
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -746,6 +748,10 @@ const AdminDashboardPage: React.FC = () => {
                     return <PaymentProvidersManagement />;
                   case 'pricing':
                     return <PricingManagement />;
+                  case 'insuranceProviders':
+                    return <InsuranceProvidersManagement />;
+                  case 'categoryRegulations':
+                    return <CategoryRegulationsManagement />;
                   case 'reports':
                     return <ReportsManagement />;
                   case 'locations':

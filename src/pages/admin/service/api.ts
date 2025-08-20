@@ -20,7 +20,7 @@ import {
   type PaymentTransactionResponse
 } from '../interfaces';
 import { isProductCurrentlyAvailable } from '../../../lib/utils';
-import type { PaymentProvider, CreatePaymentProviderInput, PaymentProviderStats, FeeCalculationResult, ProviderComparisonResponse, BulkUpdatePaymentProvidersPayload } from '../interfaces';
+import type { PaymentProvider, CreatePaymentProviderInput, PaymentProviderStats, FeeCalculationResult, ProviderComparisonResponse, BulkUpdatePaymentProvidersPayload, InsuranceProvider, CreateInsuranceProviderInput, InsuranceProviderStats, CategoryRegulation, CreateCategoryRegulationInput, UpdateCategoryRegulationInput, CategoryRegulationStats, ComplianceCheckResult, RegulationAnalytics, BulkRegulationOperation, RegulationTemplate, RegulationValidationResult, RegulationAuditLog, RegulationSearchFilters, RegulationSearchResult, RegulationStatusDashboard, RegulationNotificationPayload, RegulationImportResult, RegulationConflict, RegulationExtensionRequest } from '../interfaces';
 
 export type { AdminBooking } from '../interfaces';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
@@ -725,6 +725,115 @@ export async function compareProvidersForCountry(options: { countryId: string; a
   const response = await axios.get(`${API_BASE_URL}/payment-providers/country/${countryId}/compare`, { params: { amount, currency, provider_type }, headers });
   const data = response.data?.data ?? response.data;
   return Array.isArray(data) ? { items: data } : data;
+}
+
+// Insurance Providers API
+export async function fetchInsuranceProviders(params?: Record<string, any>, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers`, { headers, params });
+  return response.data;
+}
+
+export async function searchInsuranceProviders(params: Record<string, any>, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers/search`, { headers, params });
+  return response.data;
+}
+
+export async function fetchInsuranceProviderStats(params?: { country_id?: string }, token?: string): Promise<InsuranceProviderStats> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers/stats`, { headers, params });
+  return response.data?.data ?? response.data;
+}
+
+export async function fetchLiveInsuranceProviders(params?: { country_id?: string; include_credentials?: boolean }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers/live`, { headers, params });
+  return response.data;
+}
+
+export async function compareInsuranceProviders(params: { category_id: string; coverage_amount?: number; country_id?: string }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers/compare`, { headers, params });
+  return response.data;
+}
+
+export async function coverageAnalysis(params: { category_id: string; country_id: string }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers/coverage-analysis`, { headers, params });
+  return response.data;
+}
+
+export async function bulkUpdateInsuranceProviders(payload: { ids: string[]; updates: Partial<CreateInsuranceProviderInput> }, token?: string) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/insurance-providers/bulk`, payload, { headers });
+  return response.data;
+}
+
+export async function fetchInsuranceProvidersByCountry(countryId: string, params?: { include_inactive?: boolean; include_credentials?: boolean }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers/country/${countryId}`, { headers, params });
+  return response.data;
+}
+
+export async function fetchInsuranceProvidersByCategory(categoryId: string, params?: { country_id?: string; include_inactive?: boolean; include_credentials?: boolean }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers/category/${categoryId}`, { headers, params });
+  return response.data;
+}
+
+export async function fetchInsuranceMarketAnalysis(countryId: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/insurance-providers/market-analysis/${countryId}`, { headers });
+  return response.data;
+}
+
+export async function fetchInsuranceProviderById(id: string, params?: { include_inactive?: boolean; include_credentials?: boolean; include_stats?: boolean }, token?: string) {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(`${API_BASE_URL}/insurance-providers/${id}`, { headers, params });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching insurance provider by ID:', err);
+    throw new Error(err?.response?.data?.message || err?.message || 'Failed to fetch insurance provider');
+  }
+}
+
+export async function createInsuranceProvider(payload: CreateInsuranceProviderInput, token?: string): Promise<{ data: InsuranceProvider | null; error: string | null }> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.post(`${API_BASE_URL}/insurance-providers`, payload, { headers });
+    return { data: response.data?.data ?? response.data, error: null };
+  } catch (err: any) {
+    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to create insurance provider';
+    return { data: null, error: errorMsg };
+  }
+}
+
+export async function updateInsuranceProvider(id: string, payload: Partial<CreateInsuranceProviderInput>, token?: string) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.put(`${API_BASE_URL}/insurance-providers/${id}`, payload, { headers });
+  return response.data;
+}
+
+export async function deleteInsuranceProvider(id: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.delete(`${API_BASE_URL}/insurance-providers/${id}`, { headers });
+  return response.data;
 }
 
 export async function fetchProductAvailability(productId: string, token?: string): Promise<ProductAvailability[]> {
@@ -1543,4 +1652,309 @@ export async function fetchReportTemplates(token?: string): Promise<any[]> {
     console.error('Error fetching report templates:', errorMsg);
     throw new Error(errorMsg);
   }
+}
+
+// Category Regulations API Functions
+export async function createCategoryRegulation(data: CreateCategoryRegulationInput, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations`, data, { headers });
+  return response.data;
+}
+
+export async function fetchCategoryRegulations(params?: RegulationSearchFilters, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations`, { headers, params });
+  return response.data;
+}
+
+export async function fetchCategoryRegulationById(id: string, params?: { include_deleted?: boolean }, token?: string) {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(`${API_BASE_URL}/category-regulations/${id}`, { headers, params });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching category regulation by ID:', err);
+    throw new Error(err?.response?.data?.message || err?.message || 'Failed to fetch category regulation');
+  }
+}
+
+export async function updateCategoryRegulation(id: string, data: UpdateCategoryRegulationInput, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.put(`${API_BASE_URL}/category-regulations/${id}`, data, { headers });
+  return response.data;
+}
+
+export async function deleteCategoryRegulation(id: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.delete(`${API_BASE_URL}/category-regulations/${id}`, { headers });
+  return response.data;
+}
+
+export async function searchCategoryRegulations(params: RegulationSearchFilters, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/search`, { headers, params });
+  return response.data;
+}
+
+export async function fetchCategoryRegulationStats(params?: { country_id?: string }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/stats`, { headers, params });
+  return response.data;
+}
+
+export async function fetchCategoryRegulationsByCategory(categoryId: string, params?: { country_id?: string; include_deleted?: boolean }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/category/${categoryId}`, { headers, params });
+  return response.data;
+}
+
+export async function fetchCategoryRegulationsByCountry(countryId: string, params?: { include_deleted?: boolean }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/country/${countryId}`, { headers, params });
+  return response.data;
+}
+
+export async function checkCompliance(categoryId: string, countryId: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/compliance/check`, { 
+    headers, 
+    params: { category_id: categoryId, country_id: countryId } 
+  });
+  return response.data;
+}
+
+export async function getRegulationAnalytics(params?: { period?: string; metric?: string }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/analytics/summary`, { headers, params });
+  return response.data;
+}
+
+export async function getRegulationAnalyticsByType(token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/analytics/by-type`, { headers });
+  return response.data;
+}
+
+export async function getRegulationAnalyticsByPriority(token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/analytics/by-priority`, { headers });
+  return response.data;
+}
+
+export async function getRegulationAnalyticsByCountry(token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/analytics/by-country`, { headers });
+  return response.data;
+}
+
+export async function bulkCreateCategoryRegulations(data: BulkRegulationOperation, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/bulk-create`, data, { headers });
+  return response.data;
+}
+
+export async function bulkUpdateCategoryRegulations(data: BulkRegulationOperation, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.put(`${API_BASE_URL}/category-regulations/bulk-update`, data, { headers });
+  return response.data;
+}
+
+export async function bulkDeleteCategoryRegulations(data: { regulations: string[] }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/bulk-delete`, data, { headers });
+  return response.data;
+}
+
+export async function getRegulationTemplates(token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/templates`, { headers });
+  return response.data;
+}
+
+export async function createRegulationFromTemplate(templateId: string, data: Partial<CreateCategoryRegulationInput>, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/from-template`, { template_id: templateId, ...data }, { headers });
+  return response.data;
+}
+
+export async function getRegulationValidationRules(token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/validation/rules`, { headers });
+  return response.data;
+}
+
+export async function validateRegulation(data: CreateCategoryRegulationInput, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/validate`, data, { headers });
+  return response.data;
+}
+
+export async function getRegulationHistory(id: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/history/${id}`, { headers });
+  return response.data;
+}
+
+export async function activateRegulation(id: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/${id}/activate`, {}, { headers });
+  return response.data;
+}
+
+export async function deactivateRegulation(id: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/${id}/deactivate`, {}, { headers });
+  return response.data;
+}
+
+export async function getRegulationStatusDashboard(token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/status/dashboard`, { headers });
+  return response.data;
+}
+
+export async function notifyRegulation(id: string, data: RegulationNotificationPayload, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/${id}/notify`, data, { headers });
+  return response.data;
+}
+
+export async function getRegulationAuditLog(params?: { start_date?: string; end_date?: string; user_id?: string; action?: string }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/audit/log`, { headers, params });
+  return response.data;
+}
+
+export async function importRegulationsCSV(file: File, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/import/csv`, formData, { 
+    headers: { ...headers, 'Content-Type': 'multipart/form-data' } 
+  });
+  return response.data;
+}
+
+export async function exportRegulationsCSV(params?: RegulationSearchFilters, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/export/csv`, { headers, params, responseType: 'blob' });
+  return response.data;
+}
+
+export async function exportRegulationsJSON(params?: RegulationSearchFilters, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/export/json`, { headers, params });
+  return response.data;
+}
+
+export async function getGlobalRegulationStatistics(token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/statistics/global`, { headers });
+  return response.data;
+}
+
+export async function getRegulationTrends(params?: { period?: string; metric?: string }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/statistics/trends`, { headers, params });
+  return response.data;
+}
+
+export async function archiveRegulation(id: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/${id}/archive`, {}, { headers });
+  return response.data;
+}
+
+export async function getArchivedRegulations(token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/archived`, { headers });
+  return response.data;
+}
+
+export async function restoreRegulation(id: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/${id}/restore`, {}, { headers });
+  return response.data;
+}
+
+export async function checkRegulationConflicts(categoryId: string, countryId: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/conflicts/check`, { 
+    headers, 
+    params: { category_id: categoryId, country_id: countryId } 
+  });
+  return response.data;
+}
+
+export async function resolveRegulationConflicts(data: { conflicts: string[]; resolution: string }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/conflicts/resolve`, data, { headers });
+  return response.data;
+}
+
+export async function getExpiringRegulations(params?: { days?: number }, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/expiring/soon`, { headers, params });
+  return response.data;
+}
+
+export async function extendRegulationDeadline(id: string, data: RegulationExtensionRequest, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/${id}/extend`, data, { headers });
+  return response.data;
+}
+
+export async function getRelatedRegulations(id: string, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(`${API_BASE_URL}/category-regulations/related/${id}`, { headers });
+  return response.data;
+}
+
+export async function copyRegulation(id: string, data?: Partial<CreateCategoryRegulationInput>, token?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.post(`${API_BASE_URL}/category-regulations/${id}/copy`, data || {}, { headers });
+  return response.data;
 }
