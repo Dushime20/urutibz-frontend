@@ -133,8 +133,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <select 
-                value={selectedLocation} 
+              <select
+                value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 className="bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
               >
@@ -144,8 +144,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 <option value="Kampala">🇺🇬 Kampala</option>
                 <option value="Nairobi">🇰🇪 Nairobi</option>
               </select>
-              <select 
-                value={selectedLanguage} 
+              <select
+                value={selectedLanguage}
                 onChange={(e) => setSelectedLanguage(e.target.value)}
                 className="bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
               >
@@ -178,10 +178,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 tabIndex={0}
                 onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
               >
-                <img 
+                <img
                   src="/assets/img/profiles/avatar-01.jpg"
-                  alt={`${user?.firstName} ${user?.lastName}`} 
-                  className="w-8 h-8 rounded-full object-cover" 
+                  alt={`${user?.firstName} ${user?.lastName}`}
+                  className="w-8 h-8 rounded-full object-cover"
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                   {user ? `${user.firstName} ${user.lastName}` : 'Loading...'}
@@ -201,25 +201,23 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                     {user?.email}
                   </div>
                   <div className="flex items-center space-x-2 mt-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      user?.kyc_status === 'verified' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : user?.kyc_status === 'pending'
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user?.kyc_status === 'verified'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : user?.kyc_status === 'pending'
                         ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                         : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                    }`}>
+                      }`}>
                       {user?.kyc_status === 'verified' ? '✓ Verified' : user?.kyc_status === 'pending' ? '⏳ Pending' : '❌ Unverified'}
                     </span>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      user?.role === 'admin' 
-                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                    }`}>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user?.role === 'admin'
+                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                      }`}>
                       {user?.role}
                     </span>
                   </div>
                 </div>
-                
+
                 {/* KYC Progress Section */}
                 {user && user.kycProgress && (
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
@@ -229,7 +227,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                         const isVerified = user.kycProgress!.verified.includes(item);
                         const isPending = user.kycProgress!.pending.includes(item);
                         const isRejected = user.kycProgress!.rejected.includes(item);
-                        
+
                         return (
                           <div key={item} className="flex items-center justify-between text-xs">
                             <span className="text-gray-600 dark:text-gray-400 capitalize">
@@ -255,8 +253,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                         <span>{user.kycProgress.completionRate}%</span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="bg-my-primary h-2 rounded-full transition-all duration-300" 
+                        <div
+                          className="bg-my-primary h-2 rounded-full transition-all duration-300"
                           style={{ width: `${user.kycProgress.completionRate}%` }}
                         ></div>
                       </div>
@@ -268,7 +266,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 <div className="px-4 py-2">
                   <button
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    onClick={() => {setShowProfileModal(true); }}
+                    onClick={() => { setShowProfileModal(true); }}
                     aria-label="Profile"
                   >
                     <User className="w-4 h-4 mr-2" /> Profile Details
@@ -286,14 +284,14 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
           </div>
         </div>
       </div>
-      
+
       {/* Enhanced Profile Modal */}
       {showProfileModal && user && (
         <Dialog open={showProfileModal} onClose={() => setShowProfileModal(false)} className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/30" aria-hidden="true" onClick={() => setShowProfileModal(false)} />
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
           <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 w-full max-w-2xl mx-auto z-50 max-h-[90vh] overflow-y-auto">
             <Dialog.Title className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Profile Details</Dialog.Title>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Basic Information */}
               <div className="space-y-4">
@@ -304,20 +302,18 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                   </div>
                   <div className="text-gray-500 dark:text-gray-400 mb-2">{user.email}</div>
                   <div className="flex space-x-2">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      user.kyc_status === 'verified' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : user.kyc_status === 'pending'
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${user.kyc_status === 'verified'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : user.kyc_status === 'pending'
                         ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                         : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                    }`}>
+                      }`}>
                       {user.kyc_status === 'verified' ? '✓ Verified' : user.kyc_status === 'pending' ? '⏳ Pending' : '❌ Unverified'}
                     </span>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      user.role === 'admin' 
-                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                    }`}>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${user.role === 'admin'
+                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                      }`}>
                       {user.role}
                     </span>
                   </div>
@@ -330,10 +326,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Status:</span>
-                    <span className={`font-medium ${
-                      user.status === 'active' ? 'text-green-600' : 
+                    <span className={`font-medium ${user.status === 'active' ? 'text-green-600' :
                       user.status === 'pending' ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
+                      }`}>
                       {user.status}
                     </span>
                   </div>
@@ -369,12 +364,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                     <span className="text-sm font-bold text-my-primary">{user.kycProgress.completionRate}%</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
-                    <div 
-                      className="bg-my-primary h-3 rounded-full transition-all duration-300" 
+                    <div
+                      className="bg-my-primary h-3 rounded-full transition-all duration-300"
                       style={{ width: `${user.kycProgress.completionRate}%` }}
                     ></div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">{user.kycProgress.verified.length}</div>

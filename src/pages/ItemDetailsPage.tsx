@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatPrice } from '../lib/utils';
 import Button from '../components/ui/Button';
 import { getProductById, fetchProductImages } from './admin/service/api'; // adjust path as needed
+import { UserProfileService } from './admin/service/userProfileService';
 
 // Define an interface for image objects
 interface ProductImage {
@@ -59,6 +60,7 @@ const ItemDetailsPage: React.FC = () => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [latestKycStatus, setLatestKycStatus] = useState<string | null>(null);
   const [itemLocation, setItemLocation] = useState<{ city: string | null, country: string | null }>({ city: null, country: null });
 
   useEffect(() => {
@@ -134,7 +136,7 @@ const ItemDetailsPage: React.FC = () => {
     );
   }
 
-  const handleBookNow = () => {
+  const handleBookNow = async () => {
     // Authentication Gate Logic
     if (!isAuthenticated) {
       // Show auth modal instead of direct redirect
@@ -142,12 +144,32 @@ const ItemDetailsPage: React.FC = () => {
       return;
     }
 
-    // Check KYC status
-    if (user?.kyc_status === 'verified') {
-      // Proceed to booking
-      navigate(`/booking/item/${item.id}`);
-    } else {
-      // Not verified, show verification modal
+    // Fetch latest KYC status from API (authoritative)
+    try {
+      const token = localStorage.getItem('token');
+      const storedUserStr = localStorage.getItem('user');
+      if (!token || !storedUserStr) {
+        setShowAuthModal(true);
+        return;
+      }
+      const storedUser = JSON.parse(storedUserStr);
+      const userId: string | undefined = storedUser?.id;
+      if (!userId) {
+        setShowAuthModal(true);
+        return;
+      }
+      const { data } = await UserProfileService.getUserProfile(userId, token);
+      const status: string | null = data?.kyc_status ?? null;
+      setLatestKycStatus(status);
+
+      if (status && status.toLowerCase() === 'verified') {
+        navigate(`/booking/item/${item.id}`);
+      } else {
+        setShowVerificationModal(true);
+      }
+    } catch (_err) {
+      // On API failure, be conservative and require verification
+      setLatestKycStatus(null);
       setShowVerificationModal(true);
     }
   };
@@ -556,7 +578,7 @@ const ItemDetailsPage: React.FC = () => {
       )}
 
       {/* Verification Modal */}
-      {showVerificationModal && user?.kyc_status !== 'verified' && (
+      {showVerificationModal && ((latestKycStatus ?? user?.kyc_status) !== 'verified') && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
           <div className="bg-white rounded-xl p-8 shadow-lg max-w-md w-full text-center">
             <h2 className="text-xl font-bold mb-4 text-[#01aaa7]">Verification Required</h2>

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Dialog } from '@headlessui/react';
-import { Save, Trash2, Edit2, Search, Eye, RefreshCw, Plus, Network, BarChart3, MapPin } from 'lucide-react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import { Save, Trash2, Edit2, Search, Eye, Plus, Network, MapPin } from 'lucide-react';
 import type { Country, AdministrativeDivision, CreateAdministrativeDivisionInput, AdministrativeDivisionStats, AdministrativeDivisionTree } from '../interfaces';
 import {
   fetchAdministrativeDivisions,
@@ -71,9 +71,7 @@ export default function AdministrativeDivisionsManagement() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<DivisionForm>(emptyForm);
 
-  const [showStatusToggle, setShowStatusToggle] = useState(false);
-  const [statusId, setStatusId] = useState<string | null>(null);
-  const [statusReason, setStatusReason] = useState('');
+
 
   const token = useMemo(() => localStorage.getItem('token') ?? undefined, []);
 
@@ -127,7 +125,10 @@ export default function AdministrativeDivisionsManagement() {
     })();
   }, [token]);
 
-
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('Modal state changed - showDetail:', showDetail, 'detail:', detail);
+  }, [showDetail, detail]);
 
   const doSearch = async () => {
     await load();
@@ -188,12 +189,16 @@ export default function AdministrativeDivisionsManagement() {
 
   const handleView = async (id: string) => {
     try {
+      console.log('Opening detail modal for ID:', id);
       setLoadingDetail(true);
       setError(null);
-      const division = await fetchAdministrativeDivisionById(id, token);
+      const division = await fetchAdministrativeDivisionById(id, undefined, token);
+      console.log('Fetched division data:', division);
       setDetail(division);
       setShowDetail(true);
+      console.log('Modal state set to show:', true);
     } catch (e: any) {
+      console.error('Error in handleView:', e);
       setError(e?.message || 'Failed to load division details');
     } finally {
       setLoadingDetail(false);
@@ -204,7 +209,7 @@ export default function AdministrativeDivisionsManagement() {
     try {
       setLoadingDetail(true);
       setError(null);
-      const division = await fetchAdministrativeDivisionById(id, token);
+      const division = await fetchAdministrativeDivisionById(id, undefined, token);
       setEditForm({
         country_id: division.country_id,
         parent_id: division.parent_id || '',
@@ -386,13 +391,14 @@ export default function AdministrativeDivisionsManagement() {
       </div>
 
       {/* Create Modal */}
-      <Dialog open={showCreate} onClose={() => setShowCreate(false)} className="fixed inset-0 z-50 flex items-center justify-center">
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" onClick={() => setShowCreate(false)} />
-        <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl mx-auto z-50 max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-gray-900">Create Administrative Division</h4>
-            <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-          </div>
+      <Dialog open={showCreate} onClose={() => setShowCreate(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <DialogPanel className="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+            <DialogTitle as="div" className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-900">Create Administrative Division</h4>
+              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </DialogTitle>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                          <div>
                <label className="block text-sm text-gray-600 mb-1">Country</label>
@@ -474,90 +480,94 @@ export default function AdministrativeDivisionsManagement() {
               <button type="submit" className="inline-flex items-center px-4 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90"><Save className="w-4 h-4 mr-2"/>Create</button>
             </div>
           </form>
+          </DialogPanel>
         </div>
       </Dialog>
 
              {/* Detail Modal */}
-       <Dialog open={showDetail} onClose={() => setShowDetail(false)} className="fixed inset-0 z-50 flex items-center justify-center">
-         <div className="fixed inset-0 bg-black/30" aria-hidden="true" onClick={() => setShowDetail(false)} />
-         <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl mx-auto z-50 max-h-[90vh] overflow-y-auto">
-           <div className="flex items-center justify-between mb-4">
-             <h4 className="text-lg font-semibold text-gray-900">Division Details</h4>
-             <button onClick={() => setShowDetail(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-           </div>
-           {loadingDetail ? (
-             <div className="text-gray-500">Loading...</div>
-           ) : detail ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Name</label>
-                 <div className="text-gray-900 font-medium">{detail.name}</div>
-               </div>
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Local Name</label>
-                 <div className="text-gray-900">{detail.local_name || '—'}</div>
-               </div>
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Code</label>
-                 <div className="text-gray-900 font-medium">{detail.code}</div>
-               </div>
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Type</label>
-                 <div className="text-gray-900">{detail.type}</div>
-               </div>
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Level</label>
-                 <div className="text-gray-900">{detail.level}</div>
-               </div>
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Country</label>
-                 <div className="text-gray-900">{countries.find(c => c.id === detail.country_id)?.name || detail.country_id}</div>
-               </div>
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Parent Division</label>
-                 <div className="text-gray-900">{detail.parent_id ? items.find(d => d.id === detail.parent_id)?.name || detail.parent_id : '—'}</div>
-               </div>
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Population</label>
-                 <div className="text-gray-900">{detail.population ? detail.population.toLocaleString() : '—'}</div>
-               </div>
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Area (km²)</label>
-                 <div className="text-gray-900">{detail.area_km2 ? detail.area_km2.toLocaleString() : '—'}</div>
-               </div>
-               {detail.coordinates && (
-                 <>
-                   <div>
-                     <label className="block text-sm text-gray-600 mb-1">Latitude</label>
-                     <div className="text-gray-900">{detail.coordinates.latitude}</div>
+       <Dialog open={showDetail} onClose={() => setShowDetail(false)} className="relative z-50">
+         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+         <div className="fixed inset-0 flex items-center justify-center p-4">
+           <DialogPanel className="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+             <DialogTitle as="div" className="flex items-center justify-between mb-4">
+               <h4 className="text-lg font-semibold text-gray-900">Division Details</h4>
+               <button onClick={() => setShowDetail(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+             </DialogTitle>
+             {loadingDetail ? (
+               <div className="text-gray-500">Loading...</div>
+             ) : detail ? (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Name</label>
+                   <div className="text-gray-900 font-medium">{detail.name}</div>
+                 </div>
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Local Name</label>
+                   <div className="text-gray-900">{detail.local_name || '—'}</div>
+                 </div>
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Code</label>
+                   <div className="text-gray-900 font-medium">{detail.code}</div>
+                 </div>
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Type</label>
+                   <div className="text-gray-900">{detail.type}</div>
+                 </div>
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Level</label>
+                   <div className="text-gray-900">{detail.level}</div>
+                 </div>
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Country</label>
+                   <div className="text-gray-900">{countries.find(c => c.id === detail.country_id)?.name || detail.country_id}</div>
+                 </div>
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Parent Division</label>
+                   <div className="text-gray-900">{detail.parent_id ? items.find(d => d.id === detail.parent_id)?.name || detail.parent_id : '—'}</div>
+                 </div>
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Population</label>
+                   <div className="text-gray-900">{detail.population ? detail.population.toLocaleString() : '—'}</div>
+                 </div>
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Area (km²)</label>
+                   <div className="text-gray-900">{detail.area_km2 ? detail.area_km2.toLocaleString() : '—'}</div>
+                 </div>
+                 {detail.coordinates && (
+                   <>
+                     <div>
+                       <label className="block text-sm text-gray-600 mb-1">Latitude</label>
+                       <div className="text-gray-900">{detail.coordinates.latitude}</div>
+                     </div>
+                     <div>
+                       <label className="block text-sm text-gray-600 mb-1">Longitude</label>
+                       <div className="text-gray-900">{detail.coordinates.longitude}</div>
+                     </div>
+                   </>
+                 )}
+                 <div>
+                   <label className="block text-sm text-gray-600 mb-1">Status</label>
+                   <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${detail.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                     {detail.is_active ? 'Active' : 'Inactive'}
                    </div>
-                   <div>
-                     <label className="block text-sm text-gray-600 mb-1">Longitude</label>
-                     <div className="text-gray-900">{detail.coordinates.longitude}</div>
-                   </div>
-                 </>
-               )}
-               <div>
-                 <label className="block text-sm text-gray-600 mb-1">Status</label>
-                 <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${detail.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                   {detail.is_active ? 'Active' : 'Inactive'}
                  </div>
                </div>
-             </div>
-           ) : (
-             <div className="text-gray-500">No details available.</div>
-           )}
+             ) : (
+               <div className="text-gray-500">No details available.</div>
+             )}
+           </DialogPanel>
          </div>
        </Dialog>
 
        {/* Edit Modal */}
-       <Dialog open={showEdit} onClose={() => setShowEdit(false)} className="fixed inset-0 z-50 flex items-center justify-center">
-         <div className="fixed inset-0 bg-black/30" aria-hidden="true" onClick={() => setShowEdit(false)} />
-         <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl mx-auto z-50 max-h-[90vh] overflow-y-auto">
-           <div className="flex items-center justify-between mb-4">
-             <h4 className="text-lg font-semibold text-gray-900">Edit Administrative Division</h4>
-             <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-           </div>
+       <Dialog open={showEdit} onClose={() => setShowEdit(false)} className="relative z-50">
+         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+         <div className="fixed inset-0 flex items-center justify-center p-4">
+           <DialogPanel className="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+             <DialogTitle as="div" className="flex items-center justify-between mb-4">
+               <h4 className="text-lg font-semibold text-gray-900">Edit Administrative Division</h4>
+               <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+             </DialogTitle>
            <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
                <label className="block text-sm text-gray-600 mb-1">Country</label>
@@ -616,17 +626,19 @@ export default function AdministrativeDivisionsManagement() {
                <button type="submit" className="inline-flex items-center px-4 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90"><Save className="w-4 h-4 mr-2"/>Update</button>
              </div>
            </form>
+           </DialogPanel>
          </div>
        </Dialog>
 
        {/* Tree View Modal */}
-       <Dialog open={showTree} onClose={() => setShowTree(false)} className="fixed inset-0 z-50 flex items-center justify-center">
-         <div className="fixed inset-0 bg-black/30" aria-hidden="true" onClick={() => setShowTree(false)} />
-         <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl mx-auto z-50 max-h-[90vh] overflow-y-auto">
-           <div className="flex items-center justify-between mb-4">
-             <h4 className="text-lg font-semibold text-gray-900">Administrative Divisions Tree</h4>
-             <button onClick={() => setShowTree(false)} className="text-gray-400 hover:text-gray-200">&times;</button>
-           </div>
+       <Dialog open={showTree} onClose={() => setShowTree(false)} className="relative z-50">
+         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+         <div className="fixed inset-0 flex items-center justify-center p-4">
+           <DialogPanel className="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+             <DialogTitle as="div" className="flex items-center justify-between mb-4">
+               <h4 className="text-lg font-semibold text-gray-900">Administrative Divisions Tree</h4>
+               <button onClick={() => setShowTree(false)} className="text-gray-400 hover:text-gray-200">&times;</button>
+             </DialogTitle>
            {treeData ? (
              <div>
                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
@@ -657,9 +669,10 @@ export default function AdministrativeDivisionsManagement() {
                  ))}
                </div>
              </div>
-           ) : (
+                        ) : (
              <div className="text-gray-500">Loading tree structure...</div>
            )}
+           </DialogPanel>
          </div>
        </Dialog>
     </div>
