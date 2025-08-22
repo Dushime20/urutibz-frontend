@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Filter, MoreHorizontal, X, Package } from 'lucide-react';
+import { Plus, Filter, MoreHorizontal, X, Package, Check, Shield } from 'lucide-react';
 import type { Product, Owner, ItemCategory } from '../types';
 import { fetchProductImages, getProductById, fetchUserById } from '../service/api';
 import { fetchProductAvailability } from '../service/api';
@@ -12,6 +12,7 @@ import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
 import { moderateAdminProduct } from '../service/api';
+import ProductModerationHistory from './ProductModerationHistory';
 
 interface ItemsManagementProps {
   products: Product[];
@@ -49,6 +50,28 @@ const AdminProductDetailModal: React.FC<{
   const [moderationReason, setModerationReason] = useState('');
   const [moderateLoading, setModerateLoading] = useState(false);
   const [moderateError, setModerateError] = useState<string | null>(null);
+  const [moderationSuccess, setModerationSuccess] = useState(false);
+
+  // Handle ESC key for moderation modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && moderateOpen && !moderateLoading && !moderationSuccess) {
+        setModerateOpen(false);
+        // Reset form when closing
+        setModerationAction('approve');
+        setModerationReason('');
+        setModerateError(null);
+      }
+    };
+
+    if (moderateOpen) {
+      document.addEventListener('keydown', handleEsc);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [moderateOpen, moderateLoading, moderationSuccess]);
 
   useEffect(() => {
     if (!open || !productId) return;
@@ -56,6 +79,12 @@ const AdminProductDetailModal: React.FC<{
     setLoading(true);
     setError(null);
     setCurrentImageIndex(0);
+    
+    // Reset moderation form state
+    setModerationAction('approve');
+    setModerationReason('');
+    setModerateError(null);
+    setModerationSuccess(false);
     
     const token = localStorage.getItem('token') || undefined;
     
@@ -189,8 +218,22 @@ const AdminProductDetailModal: React.FC<{
     try {
       const token = localStorage.getItem('token') || undefined;
       await moderateAdminProduct(productId, { action: moderationAction, reason: moderationReason }, token);
-      setModerateOpen(false);
-      // Optionally refresh product list or show a toast
+      
+      // Show success message
+      setModerationSuccess(true);
+      
+      // Wait a moment to show success, then close all modals
+      setTimeout(() => {
+        setModerationSuccess(false);
+        setModerateOpen(false);
+        onClose();
+        
+        // Optionally refresh product list or show a toast
+        if (onApproved) {
+          onApproved();
+        }
+      }, 1500);
+      
     } catch (err: any) {
       setModerateError(err.message || 'Failed to moderate product');
     } finally {
@@ -268,7 +311,10 @@ const AdminProductDetailModal: React.FC<{
             </div>
             <button 
               onClick={onClose} 
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              disabled={moderateLoading || moderationSuccess}
+              className={`text-gray-400 hover:text-gray-600 transition-colors ${
+                moderateLoading || moderationSuccess ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <X className="w-6 h-6" />
             </button>
@@ -317,16 +363,44 @@ const AdminProductDetailModal: React.FC<{
           <div className="flex space-x-3">
             <button 
               onClick={() => setModerateOpen(true)}
-              className="w-full bg-my-primary text-white px-6 py-2 rounded-lg hover:bg-my-primary/90 transition-colors"
+              className="flex-1 bg-my-primary text-white px-6 py-2 rounded-lg hover:bg-my-primary/90 transition-colors"
             >
               Moderate Product
+            </button>
+            <button 
+              onClick={() => {
+                onClose();
+                // Open moderation history for this product
+                setTimeout(() => {
+                  // Use a timeout to ensure the current modal closes first
+                  const event = new CustomEvent('openModerationHistory', { 
+                    detail: { productId, productTitle: product?.title || 'Product' } 
+                  });
+                  window.dispatchEvent(event);
+                }, 100);
+              }}
+              className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              History
             </button>
           </div>
         </div>
 
         {/* Moderate Product Modal */}
         {moderateOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !moderateLoading && !moderationSuccess) {
+                setModerateOpen(false);
+                // Reset form when closing
+                setModerationAction('approve');
+                setModerationReason('');
+                setModerateError(null);
+              }
+            }}
+          >
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
               <h3 className="text-xl font-bold mb-4">Moderate Product</h3>
               <div className="space-y-4">
@@ -336,6 +410,7 @@ const AdminProductDetailModal: React.FC<{
                     className="w-full border rounded px-3 py-2"
                     value={moderationAction}
                     onChange={e => setModerationAction(e.target.value as any)}
+                    disabled={moderationSuccess}
                   >
                     <option value="approve">Approve</option>
                     <option value="reject">Reject</option>
@@ -350,25 +425,57 @@ const AdminProductDetailModal: React.FC<{
                     placeholder="Enter reason for moderation"
                     value={moderationReason}
                     onChange={e => setModerationReason(e.target.value)}
+                    disabled={moderationSuccess}
                   />
                 </div>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => setModerateOpen(false)}
+                {moderationSuccess ? (
+                  <div className="text-center py-4">
+                    <div className="flex items-center justify-center text-green-600 text-lg font-semibold mb-2">
+                      <Check className="w-6 h-6 mr-2" />
+                      Product moderated successfully!
+                    </div>
+                    <div className="text-gray-600 text-sm">
+                      Closing in a moment...
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-end space-x-2">
+                                        <button
+                    onClick={() => {
+                      setModerateOpen(false);
+                      // Reset form when closing
+                      setModerationAction('approve');
+                      setModerationReason('');
+                      setModerateError(null);
+                    }}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                     disabled={moderateLoading}
                   >
                     Cancel
                   </button>
-                  <button
-                    onClick={handleModerate}
-                    disabled={moderateLoading}
-                    className="px-4 py-2 bg-my-primary text-white rounded-lg hover:bg-my-primary/90"
-                  >
-                    {moderateLoading ? 'Submitting...' : 'Submit'}
-                  </button>
-                </div>
-                {moderateError && <div className="text-red-600 mt-2">{moderateError}</div>}
+                      <button
+                        onClick={handleModerate}
+                        disabled={moderateLoading || moderationSuccess}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          moderateLoading || moderationSuccess
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-my-primary hover:bg-my-primary/90 text-white'
+                        }`}
+                      >
+                        {moderateLoading ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Submitting...
+                          </div>
+                        ) : (
+                          'Submit'
+                        )}
+                      </button>
+                    </div>
+                    {moderateError && <div className="text-red-600 mt-2">{moderateError}</div>}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -391,6 +498,8 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   // Add action menu state and click-away handler
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  // Add moderation history modal state
+  const [moderationHistoryProductId, setModerationHistoryProductId] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('Products received:', products);
@@ -548,6 +657,20 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
     }
     return () => document.removeEventListener('mousedown', handleClick);
   }, [actionMenuOpen]);
+
+  // Listen for custom event to open moderation history
+  useEffect(() => {
+    const handleOpenModerationHistory = (event: CustomEvent) => {
+      const { productId, productTitle } = event.detail;
+      setModerationHistoryProductId(productId);
+    };
+
+    window.addEventListener('openModerationHistory', handleOpenModerationHistory as EventListener);
+    
+    return () => {
+      window.removeEventListener('openModerationHistory', handleOpenModerationHistory as EventListener);
+    };
+  }, []);
 
   // Optionally, you can manage error state here if not passed as prop
   // const [error, setError] = useState<string | null>(null);
@@ -815,7 +938,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                           <MoreHorizontal className="w-5 h-5" />
                         </button>
                         {actionMenuOpen === item.id && (
-                          <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                          <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                             <button
                               onClick={() => {
                                 setActionMenuOpen(null);
@@ -823,7 +946,17 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                               }}
                               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             >
-                              View
+                              View Details
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActionMenuOpen(null);
+                                setModerationHistoryProductId(item.id);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center"
+                            >
+                              <Shield className="w-4 h-4 mr-2" />
+                              Moderation History
                             </button>
                             <button
                               onClick={() => {
@@ -843,7 +976,31 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             }
           </tbody>
         </table>
-        <AdminProductDetailModal open={!!viewProductId} onClose={() => setViewProductId(null)} productId={viewProductId || ''} />
+        <AdminProductDetailModal 
+          open={!!viewProductId} 
+          onClose={() => setViewProductId(null)} 
+          productId={viewProductId || ''} 
+          onApproved={() => {
+            // Refresh the product list after successful moderation
+            // This will trigger a re-render of the component
+            setViewProductId(null);
+            // You can also add a callback here to refresh the main product list
+            // if you have access to a refresh function from the parent component
+          }}
+        />
+        
+        {/* Moderation History Modal */}
+        {moderationHistoryProductId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <ProductModerationHistory
+                productId={moderationHistoryProductId}
+                productTitle={products.find(p => p.id === moderationHistoryProductId)?.title || 'Product'}
+                onClose={() => setModerationHistoryProductId(null)}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

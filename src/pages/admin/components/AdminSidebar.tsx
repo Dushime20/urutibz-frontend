@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Languages,
   DollarSign,
-  ChevronDown
+  ChevronDown,
+  Shield
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,8 +34,8 @@ interface AdminNavigationItemProps {
 }
 
 interface AdminSidebarProps {
-  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications';
-  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications') => void;
+  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation';
+  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation') => void;
   AdminNavigationItem: React.FC<AdminNavigationItemProps>;
 }
 
@@ -141,6 +142,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       ]
     },
     {
+      key: 'moderation',
+      label: 'Moderation',
+      icon: Shield,
+      items: [
+        { icon: Shield, label: 'Moderation Dashboard', tab: 'moderation' }
+      ]
+    },
+    {
       key: 'system',
       label: 'System',
       icon: Settings,
@@ -166,6 +175,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     management: true,
     finance: false,
     reports: false,
+    moderation: false,
     system: false,
     communication: false
   });

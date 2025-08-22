@@ -41,6 +41,7 @@ import CategoryRegulationsManagement from './components/CategoryRegulationsManag
 import AdministrativeDivisionsManagement from './components/AdministrativeDivisionsManagement';
 import PricingManagement from './components/PricingManagement';
 import ProductCategoriesChart from './components/ProductCategoriesChart';
+import ModerationDashboardPage from './ModerationDashboardPage';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
@@ -73,7 +74,7 @@ interface Owner {
 }
 
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -767,6 +768,8 @@ const AdminDashboardPage: React.FC = () => {
                     return <MessagingManagement />;
                   case 'notifications':
                     return <NotificationsManagement />;
+                  case 'moderation':
+                    return <ModerationDashboardPage />;
                   case 'settings':
                     return <SettingsManagement />;
                   default:

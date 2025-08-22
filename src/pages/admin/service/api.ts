@@ -2200,3 +2200,58 @@ export async function fetchAdministrativeDivisionStats(countryId?: string, token
     throw new Error(err?.response?.data?.message || 'Failed to fetch statistics');
   }
 }
+
+// Moderation API functions
+export async function fetchModerationActions(token?: string) {
+  try {
+    if (!token) {
+      throw new Error('Authentication token is required for moderation actions');
+    }
+    
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${token}`
+    };
+    
+    const response = await axios.get(`${API_BASE_URL}/admin/moderation/actions`, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching moderation actions:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch moderation actions');
+  }
+}
+
+export async function fetchModerationStats(token?: string) {
+  try {
+    if (!token) {
+      throw new Error('Authentication token is required for moderation statistics');
+    }
+    
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${token}`
+    };
+    
+    const response = await axios.get(`${API_BASE_URL}/admin/moderation/stats`, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching moderation stats:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch moderation statistics');
+  }
+}
+
+export async function fetchProductModerationActions(productId: string, token?: string) {
+  try {
+    if (!token) {
+      throw new Error('Authentication token is required for product moderation history');
+    }
+    
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${token}`
+    };
+    
+    const response = await axios.get(`${API_BASE_URL}/admin/moderation/actions/products/${productId}`, { headers });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error fetching product moderation actions:', err);
+    throw new Error(err?.response?.data?.message || 'Failed to fetch product moderation history');
+  }
+}
