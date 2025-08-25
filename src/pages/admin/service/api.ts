@@ -103,6 +103,60 @@ export async function getUserFavorites(token?: string) {
   return Array.isArray(response.data?.data) ? response.data.data : [];
 }
 
+// AI: Log user interaction
+export interface InteractionPayload {
+  userId?: string;
+  sessionId?: string;
+  actionType: 'click' | 'view' | 'favorite' | 'unfavorite' | 'navigate' | 'other';
+  targetType: 'product' | 'category' | 'button' | 'link' | 'other';
+  targetId?: string;
+  pageUrl?: string;
+  referrerUrl?: string;
+  userAgent?: string;
+  deviceType?: 'mobile' | 'desktop' | 'tablet' | 'other';
+  metadata?: Record<string, unknown>;
+}
+
+export async function logInteraction(payload: InteractionPayload, token?: string) {
+  const url = `${API_BASE_URL}/ai/interactions`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    await axios.post(url, payload, { headers });
+  } catch {
+    // swallow errors; tracking should not break UX
+  }
+}
+
+// AI: Get product interactions
+export async function getProductInteractions(
+  targetId: string, 
+  actionType?: string, 
+  limit: number = 5,
+  token?: string
+) {
+  const url = `${API_BASE_URL}/ai/interactions`;
+  const params = new URLSearchParams();
+  params.append('targetType', 'product');
+  params.append('targetId', targetId);
+  if (actionType) params.append('actionType', actionType);
+  params.append('limit', String(limit));
+  
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  try {
+    const response = await axios.get(`${url}?${params.toString()}`, { headers });
+    return {
+      success: Boolean(response.data?.success),
+      data: Array.isArray(response.data?.data) ? response.data.data : [],
+      meta: response.data?.meta || null,
+    };
+  } catch {
+    return { success: false, data: [], meta: null };
+  }
+}
+
 export async function fetchAllProducts(token?: string, isAdminDashboard: boolean = false) {
   const url = `${API_BASE_URL}/products`;
   try {

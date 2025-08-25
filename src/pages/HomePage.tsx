@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, Heart, TrendingUp } from 'lucide-react';
 
 import { fetchAvailableProducts } from './admin/service/api'; // adjust path if needed
-import { fetchProductImages, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service/api';
+import { fetchProductImages, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, logInteraction, getProductInteractions } from './admin/service/api';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 
 // Utility to normalize possible image shapes
@@ -43,6 +43,7 @@ const HomePage: React.FC = () => {
   const [itemLocations, setItemLocations] = useState<Record<string, { city: string | null; country: string | null }>>({});
   const [productPrices, setProductPrices] = useState<Record<string, any>>({});
   const [locationsLoading, setLocationsLoading] = useState<Record<string, boolean>>({});
+  const [productInteractions, setProductInteractions] = useState<Record<string, any[]>>({});
   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
 
   // Simple in-page search state (visual UX only for now)
@@ -231,6 +232,34 @@ const HomePage: React.FC = () => {
     return () => { isMounted = false; };
   }, [products]);
 
+  // Fetch product interactions for visible products
+  useEffect(() => {
+    let isMounted = true;
+    async function loadInteractions() {
+      const interactionMap: Record<string, any[]> = {};
+      const token = localStorage.getItem('token') || undefined;
+      
+      // Only fetch interactions for visible products (first 15)
+      const visibleProducts = products.slice(0, 15);
+      
+      await Promise.all(
+        visibleProducts.map(async (product) => {
+          try {
+            const result = await getProductInteractions(product.id, 'click', 3, token);
+            if (result.success && result.data) {
+              interactionMap[product.id] = result.data;
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch interactions for product ${product.id}:`, error);
+          }
+        })
+      );
+      if (isMounted) setProductInteractions(interactionMap);
+    }
+    if (products.length) loadInteractions();
+    return () => { isMounted = false; };
+  }, [products]);
+
   // Apply simple in-memory filter for the visible grid
   const filtered = products.filter(p => {
     const title = (p.title || p.name || '').toString().toLowerCase();
@@ -260,8 +289,28 @@ const HomePage: React.FC = () => {
           <Link to="/search" className="text-sm text-[#01aaa7] hover:underline">View all</Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {filtered.slice(0, 15).map((item) => (
-            <Link key={item.id} to={`/it/${item.id}`} className="group">
+          {filtered.slice(0, 15).map((item, index) => (
+            <Link key={item.id} to={`/it/${item.id}`} className="group"
+              onClick={() => {
+                const token = localStorage.getItem('token') || undefined;
+                const userStr = localStorage.getItem('user');
+                const userId = userStr ? (() => { try { return JSON.parse(userStr)?.id; } catch { return undefined; } })() : undefined;
+                const payload = {
+                  userId,
+                  sessionId: localStorage.getItem('sessionId') || undefined,
+                  actionType: 'click' as const,
+                  targetType: 'product' as const,
+                  targetId: item.id,
+                  pageUrl: `/it/${item.id}`,
+                  referrerUrl: document.referrer || '/homepage',
+                  userAgent: navigator.userAgent,
+                  deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' as const : 'desktop' as const,
+                  metadata: { source: 'home_grid', position: index }
+                };
+                // fire-and-forget
+                void logInteraction(payload, token);
+              }}
+            >
               <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
                 {/* Image Container */}
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
@@ -287,8 +336,24 @@ const HomePage: React.FC = () => {
                       try {
                         if (currentlyFav) {
                           await removeUserFavorite(item.id, token);
+                          void logInteraction({
+                            actionType: 'unfavorite',
+                            targetType: 'product',
+                            targetId: item.id,
+                            pageUrl: window.location.pathname,
+                            userAgent: navigator.userAgent,
+                            deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+                          }, token);
                         } else {
                           await addUserFavorite(item.id, token);
+                          void logInteraction({
+                            actionType: 'favorite',
+                            targetType: 'product',
+                            targetId: item.id,
+                            pageUrl: window.location.pathname,
+                            userAgent: navigator.userAgent,
+                            deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+                          }, token);
                         }
                       } catch {
                         // revert on failure
@@ -348,6 +413,16 @@ const HomePage: React.FC = () => {
                       <span className="font-semibold">Price on request</span>
                     )}
                   </div>
+
+                  {/* Interactions */}
+                  {productInteractions[item.id] && productInteractions[item.id].length > 0 && (
+                    <div className="text-xs text-gray-500 pt-1">
+                      <span className="flex items-center gap-1">
+                        <span>👥</span>
+                        <span>{productInteractions[item.id].length} recent interaction{productInteractions[item.id].length !== 1 ? 's' : ''}</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </Link>

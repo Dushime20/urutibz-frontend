@@ -9,7 +9,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { formatPrice, getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { getProductById, fetchProductImages, fetchProductPricesByProductId } from './admin/service/api'; // adjust path as needed
+import { getProductById, fetchProductImages, fetchProductPricesByProductId, getProductInteractions } from './admin/service/api'; // adjust path as needed
 import { UserProfileService } from './admin/service/userProfileService';
 
 // Define an interface for image objects
@@ -82,6 +82,7 @@ const ItemDetailsPage: React.FC = () => {
   const [itemLocation, setItemLocation] = useState<{ city: string | null, country: string | null }>({ city: null, country: null });
   const [productPrices, setProductPrices] = useState<any>(null);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [productInteractions, setProductInteractions] = useState<any[]>([]);
 
   useEffect(() => {
 
@@ -154,6 +155,25 @@ const ItemDetailsPage: React.FC = () => {
     }
     
     loadPrices();
+  }, [item?.id]);
+
+  // Fetch product interactions
+  useEffect(() => {
+    if (!item?.id) return;
+    
+    async function loadInteractions() {
+      try {
+        const token = localStorage.getItem('token') || undefined;
+        const result = await getProductInteractions(item.id, 'click', 5, token);
+        if (result.success && result.data) {
+          setProductInteractions(result.data);
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch interactions for product ${item.id}:`, error);
+      }
+    }
+    
+    loadInteractions();
   }, [item?.id]);
 
   // Fetch location data
@@ -486,6 +506,15 @@ const ItemDetailsPage: React.FC = () => {
                   </div>
                   <span className="text-gray-300">•</span>
                   <span className="text-gray-600">{item.view_count || 0} views</span>
+                  {productInteractions.length > 0 && (
+                    <>
+                      <span className="text-gray-300">•</span>
+                      <span className="text-gray-600 flex items-center gap-1">
+                        <span>👥</span>
+                        {productInteractions.length} recent interaction{productInteractions.length !== 1 ? 's' : ''}
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -552,6 +581,31 @@ const ItemDetailsPage: React.FC = () => {
                       <div key={index} className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-blue-500" />
                         <span className="text-gray-700">{includedItem}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Interactions */}
+              {productInteractions.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Recent Activity</h3>
+                  <div className="space-y-2">
+                    {productInteractions.slice(0, 3).map((interaction, index) => (
+                      <div key={interaction.id || index} className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        <span className="capitalize">{interaction.actionType}</span>
+                        <span>•</span>
+                        <span>{interaction.deviceType}</span>
+                        <span>•</span>
+                        <span>{new Date(interaction.createdAt).toLocaleDateString()}</span>
+                        {interaction.metadata?.source && (
+                          <>
+                            <span>•</span>
+                            <span className="text-gray-500">from {interaction.metadata.source}</span>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>

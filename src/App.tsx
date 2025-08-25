@@ -14,6 +14,7 @@ import FaqPage from './pages/FaqPage';
 import CreateListingPage from './pages/CreateListingPage';
 import ItemSearchPage from './pages/ItemSearchPage';
 import ItemDetailsPage from './pages/ItemDetailsPage';
+import FavoritesPage from './pages/FavoritesPage';
 // import ProfileVerificationPage from './pages/verification/ProfileVerificationPage';
 // import EmailVerificationPage from './pages/verification/EmailVerificationPage';
 // import PhoneVerificationPage from './pages/verification/PhoneVerificationPage';
@@ -45,6 +46,11 @@ function App() {
               <Route path="cars" element={<ItemSearchPage />} />
               <Route path="items" element={<ItemSearchPage />} />
               <Route path="browse" element={<ItemSearchPage />} />
+              <Route path="favorites" element={
+                <ProtectedRoute>
+                  <FavoritesPage />
+                </ProtectedRoute>
+              } />
               {/* <Route path="cars/:id" element={<ItemDetailsPage />} /> */}
               {/* <Route path="items/:id" element={<ItemDetailsPage />} /> */}
               <Route path="it/:id" element={<ItemDetailsPage />} />

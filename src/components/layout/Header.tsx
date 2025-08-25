@@ -163,6 +163,14 @@ const Header: React.FC = () => {
                 <PlusCircle className="w-4 h-4" />
                 List Item
               </Link>
+              {isAuthenticated && (
+                <Link 
+                  to="/favorites" 
+                  className="nav-link text-sm xl:text-base"
+                >
+                  Favorites
+                </Link>
+              )}
             </nav>
           </div>
 
@@ -410,6 +418,14 @@ const Header: React.FC = () => {
               >
                 List Your Item
               </Link>
+              {isAuthenticated && (
+                <Link 
+                  to="/favorites" 
+                  className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                >
+                  Favorites
+                </Link>
+              )}
               
               {!isAuthenticated && (
                 <div className="pt-2 space-y-2">
