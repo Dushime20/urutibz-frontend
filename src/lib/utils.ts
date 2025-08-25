@@ -90,17 +90,64 @@ export function wkbHexToLatLng(wkbHex: string) {
   return { lat, lng };
 }
 
-export async function getCityFromCoordinates(
-  lat: number, 
-  lng: number, 
-  retries: number = 2
-): Promise<{ city: string | null, country: string | null }> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+// Cache for geocoding results to avoid repeated API calls
+const geocodeCache = new Map<string, { city: string | null, country: string | null }>();
 
+// Circuit breaker for geocoding API
+let geocodingFailures = 0;
+let lastFailureTime = 0;
+const MAX_FAILURES = 5;
+const CIRCUIT_BREAKER_TIMEOUT = 60000; // 1 minute
+
+// Queue for sequential processing
+const geocodingQueue: Array<{
+  lat: number;
+  lng: number;
+  resolve: (value: { city: string | null, country: string | null }) => void;
+}> = [];
+let isProcessingQueue = false;
+
+async function processGeocodingQueue() {
+  if (isProcessingQueue || geocodingQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  while (geocodingQueue.length > 0) {
+    const request = geocodingQueue.shift()!;
+    
+    // Check circuit breaker
+    const now = Date.now();
+    if (geocodingFailures >= MAX_FAILURES && (now - lastFailureTime) < CIRCUIT_BREAKER_TIMEOUT) {
+      console.warn('Geocoding circuit breaker is open, returning fallback');
+      request.resolve({ city: null, country: null });
+      continue;
+    }
+    
+    try {
+      const result = await performGeocodingRequest(request.lat, request.lng);
+      geocodingFailures = 0; // Reset failures on success
+      request.resolve(result);
+    } catch (error) {
+      geocodingFailures++;
+      lastFailureTime = now;
+      console.warn(`Geocoding failed (${geocodingFailures}/${MAX_FAILURES}):`, error);
+      request.resolve({ city: null, country: null });
+    }
+    
+    // Always wait between requests
+    await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second between requests
+  }
+  
+  isProcessingQueue = false;
+}
+
+async function performGeocodingRequest(lat: number, lng: number): Promise<{ city: string | null, country: string | null }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+  try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10&addressdetails=1`,
       { 
         signal: controller.signal,
         headers: {
@@ -113,19 +160,12 @@ export async function getCityFromCoordinates(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.warn(`Geocoding API error: ${response.status} ${response.statusText}`);
-      if (retries > 0) {
-        // Random delay to prevent overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-        return getCityFromCoordinates(lat, lng, retries - 1);
-      }
-      return { city: null, country: null };
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
 
     if (!data.address) {
-      console.warn('No address found for coordinates:', { lat, lng });
       return { city: null, country: null };
     }
 
@@ -134,31 +174,47 @@ export async function getCityFromCoordinates(
                  data.address.village || 
                  data.address.hamlet || 
                  data.address.county || 
+                 data.address.state ||
                  null;
 
     const country = data.address.country || null;
 
     return { city, country };
-  } catch (error) {
-    console.error('Geocoding error:', error);
-    
-    // Detailed error logging
-    if (error instanceof TypeError) {
-      console.error('Network or fetch error:', error.message);
-    } else if (error instanceof DOMException && error.name === 'AbortError') {
-      console.error('Geocoding request timed out');
-      
-      // Retry mechanism for AbortError
-      if (retries > 0) {
-        console.log(`Retrying geocoding for coordinates: ${lat}, ${lng}`);
-        // Random delay to prevent immediate retry
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-        return getCityFromCoordinates(lat, lng, retries - 1);
-      }
-    }
-
-    return { city: null, country: null };
+  } finally {
+    clearTimeout(timeoutId);
   }
+}
+
+export async function getCityFromCoordinates(
+  lat: number, 
+  lng: number
+): Promise<{ city: string | null, country: string | null }> {
+  // Create cache key (rounded to 3 decimal places to group nearby coordinates)
+  const cacheKey = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+  
+  // Check cache first
+  if (geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey)!;
+  }
+
+  // Add to queue and return promise
+  return new Promise((resolve) => {
+    geocodingQueue.push({ lat, lng, resolve: (result) => {
+      // Fallback for Rwanda coordinates if geocoding fails
+      if (!result.city && !result.country) {
+        // Check if coordinates are in Rwanda (approximate bounds)
+        if (lat >= -2.5 && lat <= -1.0 && lng >= 28.8 && lng <= 30.9) {
+          result = { city: 'Kigali', country: 'Rwanda' };
+        }
+      }
+      
+      geocodeCache.set(cacheKey, result);
+      resolve(result);
+    }});
+    
+    // Start processing queue
+    processGeocodingQueue();
+  });
 }
 
 /**

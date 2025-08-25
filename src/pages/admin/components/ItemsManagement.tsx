@@ -503,7 +503,24 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
 
   useEffect(() => {
     console.log('Products received:', products);
-  }, [products]);
+    console.log('Current itemFilter:', itemFilter);
+    console.log('Current selectedLocation:', selectedLocation);
+    
+    // Debug filtering
+    const filteredByCategory = products.filter((item: Product) => itemFilter === 'all' || item.category_id === itemFilter);
+    const filteredByLocation = filteredByCategory.filter((item: Product) => selectedLocation === 'all' || item.location === selectedLocation);
+    
+    console.log('Total products:', products.length);
+    console.log('After category filter:', filteredByCategory.length);
+    console.log('After location filter:', filteredByLocation.length);
+    
+    // Log some sample products to see their structure
+    if (products.length > 0) {
+      console.log('Sample product:', products[0]);
+      console.log('Sample product category_id:', products[0].category_id);
+      console.log('Sample product location:', products[0].location);
+    }
+  }, [products, itemFilter, selectedLocation]);
 
   useEffect(() => {
     async function loadImages() {
@@ -757,6 +774,16 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
             </div>
           </div>
+          <Button 
+            onClick={() => {
+              setItemFilter('all');
+              // Reset other filters if available
+            }}
+            className="bg-red-100 hover:bg-red-200 border border-red-200 text-red-700 px-4 py-2 rounded-xl transition-colors flex items-center"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Reset Filters
+          </Button>
           <Button className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl transition-colors flex items-center">
             <Filter className="w-4 h-4 mr-2" />
             Filter
@@ -784,6 +811,38 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
           </div>
         ))}
       </div>
+      
+      {/* Filter Status Indicator */}
+      {(itemFilter !== 'all' || selectedLocation !== 'all') && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm text-blue-700">
+              <Filter className="w-4 h-4" />
+              <span>Active filters:</span>
+              {itemFilter !== 'all' && (
+                <span className="px-2 py-1 bg-blue-100 rounded-full text-xs">
+                  Category: {categories.find(c => c.id === itemFilter)?.name || itemFilter}
+                </span>
+              )}
+              {selectedLocation !== 'all' && (
+                <span className="px-2 py-1 bg-blue-100 rounded-full text-xs">
+                  Location: {selectedLocation}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setItemFilter('all');
+                // Reset location filter if available through props
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              Clear all filters
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">

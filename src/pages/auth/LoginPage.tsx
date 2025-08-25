@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Bot, Sparkles, ArrowLeft, Shield, Zap, Globe } from 'lucide-react';
-import logo from '.././../../public/assets/img/logo-2.svg';
+// Logo reference updated to use urutbz.png
 import { loginUser, fetchUserProfile } from './service/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -146,11 +146,8 @@ const LoginPage: React.FC = () => {
 
             <div className="max-w-md">
               {/* Logo */}
-              <div className="flex items-center space-x-3 mb-8">
-                <div className="p-3 bg-gradient-to-br from-active to-active-dark rounded-2xl shadow-2xl">
-                  <img src={logo} alt="UrutiBz" className="h-8 w-8" />
-                </div>
-                <h1 className="text-3xl font-bold text-platform-dark-grey font-outfit">UrutiBz</h1>
+              <div className="flex items-center mb-8">
+                <img src="/assets/img/yacht/urutilogo2.png" alt="UrutiBz" className="h-24 w-56" />
               </div>
 
               {/* Main Message */}
@@ -211,11 +208,8 @@ const LoginPage: React.FC = () => {
 
             {/* Mobile Logo */}
             <div className="lg:hidden text-center mb-8">
-              <div className="inline-flex items-center space-x-3">
-                <div className="p-3 bg-gradient-to-br from-active to-active-dark rounded-2xl shadow-2xl">
-                  <img src={logo} alt="UrutiBz" className="h-6 w-6" />
-                </div>
-                <h1 className="text-2xl font-bold text-platform-dark-grey font-outfit">UrutiBz</h1>
+              <div className="inline-flex items-center">
+                <img src="/assets/img/yacht/urutilogo2.png" alt="UrutiBz" className="h-20 w-48" />
               </div>
             </div>
 

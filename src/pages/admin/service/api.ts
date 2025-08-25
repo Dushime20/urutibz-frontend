@@ -77,6 +77,32 @@ export async function fetchPricingStats(token?: string) {
   }
 }
 
+// Add/Remove favorite for current user
+export async function addUserFavorite(productId: string, token?: string) {
+  const url = `${API_BASE_URL}/users/favorites`;
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const payload = { product_id: productId };
+  const response = await axios.post(url, payload, { headers });
+  return response.data;
+}
+
+export async function removeUserFavorite(productId: string, token?: string) {
+  const url = `${API_BASE_URL}/users/favorites/${productId}`;
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.delete(url, { headers });
+  return response.data;
+}
+
+export async function getUserFavorites(token?: string) {
+  const url = `${API_BASE_URL}/users/favorites`;
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await axios.get(url, { headers });
+  return Array.isArray(response.data?.data) ? response.data.data : [];
+}
+
 export async function fetchAllProducts(token?: string, isAdminDashboard: boolean = false) {
   const url = `${API_BASE_URL}/products`;
   try {

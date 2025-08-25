@@ -7,9 +7,9 @@ import {
   Package, Info, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { formatPrice } from '../lib/utils';
+import { formatPrice, getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { getProductById, fetchProductImages } from './admin/service/api'; // adjust path as needed
+import { getProductById, fetchProductImages, fetchProductPricesByProductId } from './admin/service/api'; // adjust path as needed
 import { UserProfileService } from './admin/service/userProfileService';
 
 // Define an interface for image objects
@@ -44,6 +44,24 @@ function extractImageUrl(img: unknown): string | null {
   return null;
 }
 
+// Utility to format currency display
+function formatCurrency(amount: string, currency: string): string {
+  const currencySymbols: { [key: string]: string } = {
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'JPY': '¥',
+    'CAD': 'C$',
+    'AUD': 'A$',
+    'CHF': 'CHF',
+    'CNY': '¥',
+    'INR': '₹'
+  };
+  
+  const symbol = currencySymbols[currency] || currency;
+  return symbol === currency ? `${currency} ${amount}` : `${symbol}${amount}`;
+}
+
 const ItemDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -62,6 +80,8 @@ const ItemDetailsPage: React.FC = () => {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [latestKycStatus, setLatestKycStatus] = useState<string | null>(null);
   const [itemLocation, setItemLocation] = useState<{ city: string | null, country: string | null }>({ city: null, country: null });
+  const [productPrices, setProductPrices] = useState<any>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   useEffect(() => {
 
@@ -117,8 +137,101 @@ const ItemDetailsPage: React.FC = () => {
       });
   }, [id, navigate]);
 
+  // Fetch product prices
+  useEffect(() => {
+    if (!item?.id) return;
+    
+    async function loadPrices() {
+      try {
+        const result = await fetchProductPricesByProductId(item.id);
+        if (result.success && result.data && result.data.length > 0) {
+          // Use the first pricing data available
+          setProductPrices(result.data[0]);
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch prices for product ${item.id}:`, error);
+      }
+    }
+    
+    loadPrices();
+  }, [item?.id]);
+
+  // Fetch location data
+  useEffect(() => {
+    if (!item) return;
+    
+    async function loadLocation() {
+      setLocationLoading(true);
+      let lat: number | undefined; 
+      let lng: number | undefined;
+      
+      // Try to extract coordinates from different possible fields
+      const locationSources = [item.location, item.geometry];
+      
+      for (const source of locationSources) {
+        if (!source) continue;
+        
+        // Handle string format (WKB hex)
+        if (typeof source === 'string') {
+          const coords = wkbHexToLatLng(source);
+          if (coords) { 
+            lat = coords.lat; 
+            lng = coords.lng; 
+            break;
+          }
+        } 
+        // Handle object format
+        else if (source && typeof source === 'object') {
+          // Try different property names
+          lat = (source as any).lat ?? (source as any).latitude ?? (source as any).y;
+          lng = (source as any).lng ?? (source as any).longitude ?? (source as any).x;
+          
+          // Handle nested coordinates array [lng, lat] or [lat, lng]
+          if ((source as any).coordinates && Array.isArray((source as any).coordinates)) {
+            const coords = (source as any).coordinates;
+            if (coords.length >= 2) {
+              // GeoJSON format is [longitude, latitude]
+              lng = coords[0];
+              lat = coords[1];
+            }
+          }
+          
+          if (lat != null && lng != null) break;
+        }
+      }
+      
+      if (lat != null && lng != null) {
+        try {
+          const { city, country } = await getCityFromCoordinates(lat, lng);
+          setItemLocation({ city, country });
+        } catch {
+          setItemLocation({ city: null, country: null });
+        }
+      } else {
+        setItemLocation({ city: null, country: null });
+      }
+      
+      setLocationLoading(false);
+    }
+    
+    loadLocation();
+  }, [item]);
+
   if (loading) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Item</h2>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <Button onClick={() => navigate('/items')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">
+          Browse Items
+        </Button>
+      </div>
+    </div>;
   }
   
   if (!item) {
@@ -329,7 +442,16 @@ const ItemDetailsPage: React.FC = () => {
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
-                        {itemLocation.city || 'Unknown'}{itemLocation.country ? `, ${itemLocation.country}` : ''}
+                        {locationLoading ? (
+                          <span className="flex items-center gap-1">
+                            <div className="w-3 h-3 border border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                            Loading location...
+                          </span>
+                        ) : (
+                          <>
+                            {itemLocation.city || 'Unknown'}{itemLocation.country ? `, ${itemLocation.country}` : ''}
+                          </>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -339,7 +461,12 @@ const ItemDetailsPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-gray-900">
-                      {item.base_price_per_day != null && item.base_currency ? (
+                      {productPrices?.price_per_day && productPrices?.currency ? (
+                        <>
+                          {formatCurrency(productPrices.price_per_day, productPrices.currency)}
+                          <span className="text-lg font-normal text-gray-600">/day</span>
+                        </>
+                      ) : item.base_price_per_day != null && item.base_currency ? (
                         <>
                           {item.base_price_per_day}
                           <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
@@ -376,7 +503,10 @@ const ItemDetailsPage: React.FC = () => {
                   )}
                   <div className="flex items-center gap-1 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm">
                     <Shield className="w-4 h-4" />
-                    ${item.security} Security Deposit
+                    {productPrices?.security_deposit && productPrices?.currency ? 
+                      `${formatCurrency(productPrices.security_deposit, productPrices.currency)} Security Deposit` :
+                      `$${item.security || 0} Security Deposit`
+                    }
                   </div>
                 </div>
 
@@ -437,7 +567,12 @@ const ItemDetailsPage: React.FC = () => {
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
                 <div className="text-center mb-6">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
-                    {item.base_price_per_day != null && item.base_currency ? (
+                    {productPrices?.price_per_day && productPrices?.currency ? (
+                      <>
+                        {formatCurrency(productPrices.price_per_day, productPrices.currency)}
+                        <span className="text-lg font-normal text-gray-600">/day</span>
+                      </>
+                    ) : item.base_price_per_day != null && item.base_currency ? (
                       <>
                         {item.base_price_per_day}
                         <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
@@ -446,7 +581,12 @@ const ItemDetailsPage: React.FC = () => {
                       <span className="text-gray-500 text-base">No price</span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600">Item min rental period loading...</p>
+                  <p className="text-sm text-gray-600">
+                    {productPrices?.min_rental_duration_hours ? 
+                      `Min rental: ${productPrices.min_rental_duration_hours} hours` : 
+                      'Item min rental period loading...'
+                    }
+                  </p>
                 </div>
 
                 {/* Book Now Button */}
@@ -485,7 +625,12 @@ const ItemDetailsPage: React.FC = () => {
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Security Deposit</span>
-                      <span className="font-medium">{formatPrice(item.securityDeposit)}</span>
+                      <span className="font-medium">
+                        {productPrices?.security_deposit && productPrices?.currency ? 
+                          formatCurrency(productPrices.security_deposit, productPrices.currency) :
+                          formatPrice(item.securityDeposit || 0)
+                        }
+                      </span>
                     </div>
                     {item.deliveryAvailable && item.deliveryFee && (
                       <div className="flex justify-between">

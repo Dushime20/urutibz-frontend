@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { ChevronDown, Globe, Menu, X, Bot, Moon, Sun } from 'lucide-react';
+import { ChevronDown, Globe, Menu, X, Bot, Moon, Sun, Search, User, PlusCircle } from 'lucide-react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 
 const languages = [
@@ -11,14 +11,84 @@ const languages = [
   { code: 'sw', label: 'Swahili', flag: '🇰🇪' },
 ];
 
+const topCategories = [
+  { id: 'vehicles', label: 'Vehicles' },
+  { id: 'electronics', label: 'Electronics' },
+  { id: 'events', label: 'Events' },
+  { id: 'tools', label: 'Tools' },
+  { id: 'sports', label: 'Sports' },
+  { id: 'photography', label: 'Photography' },
+  { id: 'outdoor', label: 'Outdoor' },
+];
+
 const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const [language, setLanguage] = useState(languages[0]);
+  const [, setLanguage] = useState(languages[0]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Integrated search state
+  const params = new URLSearchParams(location.search);
+  const [q, setQ] = useState<string>(params.get('q') || '');
+  const [checkIn, setCheckIn] = useState<string>(params.get('checkIn') || '');
+  const [checkOut, setCheckOut] = useState<string>(params.get('checkOut') || '');
+  // Guests removed per business request
+  const [nearMe, setNearMe] = useState<boolean>(params.get('nearMe') === 'true');
+  const [lat, setLat] = useState<string>(params.get('lat') || '');
+  const [lng, setLng] = useState<string>(params.get('lng') || '');
+  const [radiusKm, setRadiusKm] = useState<number>(Number(params.get('radiusKm') || 25));
+
+  useEffect(() => {
+    const p = new URLSearchParams(location.search);
+    setQ(p.get('q') || '');
+    setCheckIn(p.get('checkIn') || '');
+    setCheckOut(p.get('checkOut') || '');
+    setNearMe(p.get('nearMe') === 'true');
+    setLat(p.get('lat') || '');
+    setLng(p.get('lng') || '');
+    setRadiusKm(Number(p.get('radiusKm') || 25));
+  }, [location.search]);
+
+  const submitSearch = () => {
+    const sp = new URLSearchParams();
+    if (q) sp.set('q', q);
+    if (checkIn) sp.set('checkIn', checkIn);
+    if (checkOut) sp.set('checkOut', checkOut);
+    if (nearMe && lat && lng) {
+      sp.set('nearMe', 'true');
+      sp.set('lat', lat);
+      sp.set('lng', lng);
+      if (radiusKm) sp.set('radiusKm', String(radiusKm));
+    }
+    // Navigate to homepage so the list can react (or to a dedicated items page)
+    navigate(`/${sp.toString() ? `?${sp.toString()}` : ''}`);
+    setIsMenuOpen(false);
+  };
+
+  // Geolocation trigger
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setNearMe(true);
+        setLat(String(pos.coords.latitude));
+        setLng(String(pos.coords.longitude));
+      },
+      () => {
+        alert('Unable to retrieve your location. Please allow location access.');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -35,21 +105,18 @@ const Header: React.FC = () => {
   }, [isProfileOpen]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-platform-light-grey dark:border-gray-700 shadow-platform">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14 lg:h-16">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md dark:bg-gray-900/80 border-b border-platform-light-grey/80 dark:border-gray-700/60 shadow-sm">
+      <div className=" mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-3 lg:py-4">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-4 lg:space-x-8">
             <Link to="/" className="flex items-center space-x-2 lg:space-x-3">
-              <div className="flex items-center space-x-1.5 lg:space-x-2">
+              <div className="flex items-center">
                 <img 
-                  src="/assets/img/urutibz-logo.svg" 
+                  src="/assets/img/yacht/urutilogo2.png" 
                   alt="UrutiBz" 
-                  className="h-6 w-6 lg:h-8 lg:w-8" 
+                  className="h-24 w-52  lg:w-auto object-contain opacity-100 flex-shrink-0 drop-shadow-sm" 
                 />
-                <span className="text-lg lg:text-2xl font-bold text-platform-dark-grey dark:text-white tracking-tight font-outfit">
-                  UrutiBz
-                </span>
               </div>
               <div className="hidden md:flex items-center space-x-1 bg-gradient-to-r from-active/10 to-active/20 px-2 lg:px-3 py-1 rounded-full border border-active/20">
                 <Bot className="h-3 w-3 lg:h-4 lg:w-4 text-active" />
@@ -65,17 +132,36 @@ const Header: React.FC = () => {
               >
                 Browse Items
               </Link>
+              {/* Categories dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                  className="inline-flex items-center gap-1 nav-link text-sm xl:text-base"
+                >
+                  Categories
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+                {isCategoriesOpen && (
+                  <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-platform shadow-platform-lg border border-platform-light-grey dark:border-gray-600 py-2 z-30">
+                    {topCategories.map((c) => (
+                      <Link
+                        key={c.id}
+                        to={`/items?category=${c.id}`}
+                        onClick={() => setIsCategoriesOpen(false)}
+                        className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors"
+                      >
+                        {c.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Link 
                 to="/create-listing" 
-                className="nav-link text-sm xl:text-base"
+                className="inline-flex items-center gap-2 text-sm xl:text-base px-3 py-2 rounded-full border hover:border-[#01aaa7] text-[#01aaa7]"
               >
-                List Your Item
-              </Link>
-              <Link 
-                to="/how-it-works" 
-                className="nav-link text-sm xl:text-base"
-              >
-                How It Works
+                <PlusCircle className="w-4 h-4" />
+                List Item
               </Link>
             </nav>
           </div>
@@ -95,18 +181,15 @@ const Header: React.FC = () => {
               )}
             </button>
 
-            {/* Language Selector */}
+            {/* Language / Theme */}
             <div className="relative">
               <button
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className="flex items-center space-x-2 px-3 py-2 text-platform-grey dark:text-gray-300 hover:text-platform-dark-grey dark:hover:text-white hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 rounded-platform transition-colors duration-200"
+                className="flex items-center px-2 py-2 text-platform-grey dark:text-gray-300 hover:text-platform-dark-grey dark:hover:text-white hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 rounded-platform transition-colors duration-200"
                 aria-label="Select language"
               >
                 <Globe className="h-4 w-4" />
-                <span className="hidden sm:inline text-sm font-medium">
-                  {language.flag} {language.label}
-                </span>
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3 ml-1" />
               </button>
               
               {isLanguageOpen && (
@@ -124,6 +207,14 @@ const Header: React.FC = () => {
                       <span>{lang.label}</span>
                     </button>
                   ))}
+                  <hr className="my-1 border-platform-light-grey dark:border-gray-600" />
+                  <button
+                    onClick={() => { toggleDarkMode(); setIsLanguageOpen(false); }}
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
+                  >
+                    {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    <span>Toggle theme</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -131,13 +222,6 @@ const Header: React.FC = () => {
             {/* Authentication */}
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <Link 
-                  to="/dashboard" 
-                  className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium nav-link"
-                >
-                  Dashboard
-                </Link>
-                
                 {/* User Profile Dropdown */}
                 <div className="relative">
                   <button
@@ -151,8 +235,8 @@ const Header: React.FC = () => {
                         className="h-8 w-8 rounded-full object-cover border-2 border-platform-light-grey" 
                       />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-active to-active-dark flex items-center justify-center text-white font-semibold text-sm">
-                        {user?.name?.charAt(0)?.toUpperCase()}
+                      <div className="h-8 w-8 rounded-full bg-[#01aaa7] flex items-center justify-center text-white">
+                        <User className="h-4 w-4" />
                       </div>
                     )}
                     <ChevronDown className="h-4 w-4 text-platform-grey dark:text-gray-300" />
@@ -160,16 +244,10 @@ const Header: React.FC = () => {
                   
                   {isProfileOpen && (
                     <div ref={profileRef} className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-platform shadow-platform-lg border border-platform-light-grey dark:border-gray-600 py-2 z-20">
-                                              <div className="px-4 py-2 border-b border-platform-light-grey dark:border-gray-600">
+                      <div className="px-4 py-2 border-b border-platform-light-grey dark:border-gray-600">
                           <p className="text-sm font-medium text-platform-dark-grey dark:text-white">{user?.name}</p>
                           <p className="text-xs text-platform-grey dark:text-gray-300">{user?.email}</p>
                         </div>
-                      <Link 
-                        to="/dashboard" 
-                        className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
-                      >
-                        Dashboard
-                      </Link>
                       <Link 
                         to="/profile" 
                         className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
@@ -203,7 +281,7 @@ const Header: React.FC = () => {
                 </Link>
                 <Link 
                   to="/register" 
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium btn-primary"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium bg-[#01aaa7] text-white rounded-platform hover:opacity-90"
                 >
                   Sign Up
                 </Link>
@@ -221,28 +299,117 @@ const Header: React.FC = () => {
           </div>
         </div>
 
+        {/* Full-width Search Row (desktop) */}
+        <div className="hidden md:block pb-3">
+          <div className="flex items-center justify-center">
+            <div className="flex items-stretch divide-x divide-gray-200 border border-gray-200 rounded-full overflow-hidden bg-white w-full max-w-4xl">
+              {/* Where */}
+              <div className="px-5 py-3 text-left">
+                <div className="text-xs font-semibold text-gray-700">Where</div>
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Search destinations"
+                  className="mt-0.5 text-sm outline-none placeholder-gray-500 w-56"
+                />
+              </div>
+
+              {/* Check in */}
+              <div className="px-5 py-3 text-left">
+                <div className="text-xs font-semibold text-gray-700">Check in</div>
+                <input
+                  type="text"
+                  value={checkIn}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  placeholder="Add dates"
+                  className="mt-0.5 text-sm outline-none placeholder-gray-500 w-36"
+                  onFocus={(e) => { e.currentTarget.type = 'date'; }}
+                  onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
+                />
+              </div>
+
+              {/* Check out */}
+              <div className="px-5 py-3 text-left">
+                <div className="text-xs font-semibold text-gray-700">Check out</div>
+                <input
+                  type="text"
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  placeholder="Add dates"
+                  className="mt-0.5 text-sm outline-none placeholder-gray-500 w-36"
+                  onFocus={(e) => { e.currentTarget.type = 'date'; }}
+                  onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
+                />
+              </div>
+
+              {/* Near me */}
+              <div className="px-5 py-3 text-left">
+                <div className="text-xs font-semibold text-gray-700">Near me</div>
+                {nearMe && lat && lng ? (
+                  <div className="mt-0.5 flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">
+                      ✓ Using location
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={radiusKm}
+                      onChange={(e) => setRadiusKm(Number(e.target.value) || 25)}
+                      className="text-sm outline-none w-24 border border-gray-200 rounded-full px-3 py-1"
+                      placeholder="km"
+                      title="Radius in kilometers"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={detectLocation}
+                    className="mt-0.5 inline-flex items-center gap-1 text-sm text-[#01aaa7] hover:underline"
+                  >
+                    <span aria-hidden>📍</span>
+                    Use current location
+                  </button>
+                )}
+              </div>
+
+              {/* Search icon */}
+              <div className="flex items-center px-3">
+                <button
+                  onClick={submitSearch}
+                  aria-label="Search"
+                  className="h-10 w-10 rounded-full bg-[#01aaa7] text-white hover:opacity-90 flex items-center justify-center"
+                >
+                  <Search className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden border-t border-gray-200 dark:border-gray-600 py-4">
             <div className="space-y-2">
-                              <Link 
-                  to="/browse" 
-                  className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                >
-                  Browse
-                </Link>
-                <Link 
-                  to="/list-property" 
-                  className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                >
-                  List Your Item
-                </Link>
-                <Link 
-                  to="/how-it-works" 
-                  className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                >
-                  How It Works
-                </Link>
+              <Link 
+                to="/items" 
+                className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+              >
+                Browse Items
+              </Link>
+              {/* Top categories quick links */}
+              <div className="grid grid-cols-2 gap-2 px-2">
+                {topCategories.slice(0,6).map(c => (
+                  <Link key={c.id} to={`/items?category=${c.id}`} className="text-sm px-3 py-2 rounded-lg border hover:border-[#01aaa7] text-gray-700 dark:text-gray-300">
+                    {c.label}
+                  </Link>
+                ))}
+              </div>
+              <Link 
+                to="/list-property" 
+                className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+              >
+                List Your Item
+              </Link>
               
               {!isAuthenticated && (
                 <div className="pt-2 space-y-2">

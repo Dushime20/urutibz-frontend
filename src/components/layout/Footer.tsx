@@ -28,12 +28,12 @@ const languages = [
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-[#040509] dark:bg-gray-950 text-white dark:text-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="bg-[#0b0d0f] text-white">
+      <div className=" mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <Link to="/" className="inline-block mb-6">
-              <img src="/assets/img/urutibz-logo-white.svg" alt="UrutiBz" className="h-10" />
+              <img src="/assets/img/yacht/urutilogo2.png" alt="UrutiBz" className="h-10 w-auto object-contain drop-shadow" />
             </Link>
             <p className="text-white/80 mb-4">
               UrutiBz is your AI-powered, international rental platform. Rent anything, anytime—photography, electronics, tools, sports, home, vehicles, and more.
@@ -62,11 +62,13 @@ const Footer: React.FC = () => {
             </ul>
           </div>
           <div>
-            <h3 className="text-lg font-semibold mb-4 font-outfit">Popular Categories</h3>
+            <h3 className="text-lg font-semibold mb-4 font-outfit">Company</h3>
             <ul className="space-y-3">
-              {categories.map(cat => (
-                <li key={cat.name}><Link to={cat.path} className="text-white/80 hover:text-white transition-colors duration-200">{cat.name}</Link></li>
-              ))}
+              <li><Link to="/about" className="text-white/80 hover:text-white transition-colors duration-200">About</Link></li>
+              <li><Link to="/careers" className="text-white/80 hover:text-white transition-colors duration-200">Careers</Link></li>
+              <li><Link to="/contact" className="text-white/80 hover:text-white transition-colors duration-200">Contact</Link></li>
+              <li><Link to="/terms" className="text-white/80 hover:text-white transition-colors duration-200">Terms</Link></li>
+              <li><Link to="/privacy" className="text-white/80 hover:text-white transition-colors duration-200">Privacy</Link></li>
             </ul>
           </div>
           <div>
@@ -77,7 +79,7 @@ const Footer: React.FC = () => {
                 <span className="text-white/80">International: +250 788 123 456</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2">✉️</span>
+                <span className="mr-2">✉</span>
                 <span className="text-white/80">support@urutibz.com</span>
               </li>
               <li className="flex items-start">
@@ -102,8 +104,12 @@ const Footer: React.FC = () => {
           </div>
         </div>
         
-        <div className="border-t border-white/20 mt-12 pt-8 text-center text-white/80">
+        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between text-white/70 text-sm">
           <p>© {new Date().getFullYear()} UrutiBz. All rights reserved.</p>
+          <div className="mt-4 md:mt-0 flex items-center gap-3">
+            <img src="/assets/img/yacht/urutilogo2.png" alt="UrutiBz" className="h-6 w-auto opacity-90" />
+            <span className="hidden sm:inline">Rent anything near you</span>
+          </div>
         </div>
       </div>
     </footer>

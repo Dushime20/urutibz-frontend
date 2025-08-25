@@ -106,15 +106,12 @@ const RegisterPage: React.FC = () => {
 
         {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center items-center space-x-2 mb-6">
+          <div className="flex justify-center items-center mb-6">
             <img 
-              src="/assets/img/urutibz-logo.svg" 
+              src="/assets/img/yacht/urutilogo2.png" 
               alt="UrutiBz" 
-              className="h-8 w-8" 
+              className="h-24 w-56" 
             />
-            <span className="text-2xl font-bold text-platform-dark-grey font-outfit">
-              UrutiBz
-            </span>
           </div>
           
           <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-200 shadow-sm mb-6">
