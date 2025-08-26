@@ -15,20 +15,26 @@ type FormState = {
   description: string;
   category_id: string;
   condition: string;
+  brand?: string;
+  model?: string;
+  year_manufactured?: string;
   base_price_per_day: string;
   base_currency: string;
   base_price_per_week?: string;
   base_price_per_month?: string;
+  delivery_fee?: string;
   pickup_methods: string[];
   country_id: string;
   specifications: { [key: string]: string };
   features?: string[];
+  included_accessories?: string[];
   images?: File[];
   alt_text?: string;
   sort_order?: string;
   isPrimary?: string;
   product_id?: string;
   location?: { latitude: string; longitude: string };
+  address_line?: string;
 };
 
 const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, productId }) => {
@@ -146,14 +152,61 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     if (!form) return;
     
     try {
-      const productPayload = {
+      const productPayload: any = {
         ...form,
         features: Array.isArray(form.features) ? form.features : [],
       };
+      // Normalize certain fields
+      if (productPayload.year_manufactured) {
+        productPayload.year_manufactured = Number(productPayload.year_manufactured);
+      }
+      if (Array.isArray(productPayload.included_accessories)) {
+        productPayload.included_accessories = productPayload.included_accessories.filter((a: any) => typeof a === 'string' && a.trim() !== '');
+      }
+      // Compatibility key (camelCase)
+      if (Array.isArray(productPayload.included_accessories)) {
+        productPayload.includedAccessories = productPayload.included_accessories;
+      }
       
       if ('base_price' in productPayload) delete (productPayload as any).base_price;
       
-      await updateProduct(productId, productPayload);
+      try {
+        // Debug: log outgoing payload
+        try {
+          const { logger } = await import('../../../lib/logger');
+          logger.group('[DEBUG] Update Product Payload');
+          logger.debug('productId:', productId);
+          logger.debug('payload:', productPayload);
+          logger.groupEnd();
+        } catch {
+          console.log('[DEBUG] Update Product Payload', { productId, productPayload });
+        }
+
+        const updateRes = await updateProduct(productId, productPayload);
+
+        // Debug: log server response
+        try {
+          const { logger } = await import('../../../lib/logger');
+          logger.group('[DEBUG] Response from PUT /products/{id}');
+          logger.debug('response:', updateRes);
+          logger.groupEnd();
+        } catch {
+          console.log('[DEBUG] Response from PUT /products/{id}', updateRes);
+        }
+      } catch (err) {
+        // Also log error payload context
+        try {
+          const { logger } = await import('../../../lib/logger');
+          logger.group('[DEBUG] Update Product Error');
+          logger.error('error:', (err as any)?.response?.data || (err as any)?.message || err);
+          logger.error('sent payload:', productPayload);
+          logger.groupEnd();
+        } catch {
+          console.error('[DEBUG] Update Product Error', err);
+          console.log('[DEBUG] Sent payload', productPayload);
+        }
+        throw err;
+      }
       
       if (images && images.length > 0) {
         const imagePayload = {
@@ -247,6 +300,41 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
               </div>
             </div>
 
+            {/* New fields: brand, model, year manufactured */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="group">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+                <input
+                  name="brand"
+                  value={form.brand || ''}
+                  onChange={handleInputChange}
+                  placeholder="Canon"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <div className="group">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                <input
+                  name="model"
+                  value={form.model || ''}
+                  onChange={handleInputChange}
+                  placeholder="EOS R6"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <div className="group">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Year Manufactured</label>
+                <input
+                  name="year_manufactured"
+                  value={form.year_manufactured || ''}
+                  onChange={handleInputChange}
+                  placeholder="2022"
+                  type="number"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+            </div>
+
             <div className="group">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Country *
@@ -310,7 +398,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Price per Week
@@ -335,6 +423,22 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                   <input
                     name="base_price_per_month"
                     value={form.base_price_per_month || ''}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+
+                <div className="group">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Delivery Fee
+                    <span className="text-gray-500 text-xs ml-1">(optional)</span>
+                  </label>
+                  <input
+                    name="delivery_fee"
+                    value={form.delivery_fee || ''}
                     onChange={handleInputChange}
                     placeholder="0.00"
                     type="number"
@@ -423,6 +527,51 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 >
                   <Plus size={18} />
                   Add Feature
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
+              <h3 className="text-lg font-semibold text-teal-800 mb-4">Included Accessories</h3>
+
+              <div className="space-y-4">
+                {(Array.isArray(form.included_accessories) ? form.included_accessories : []).map((acc: string, idx: number) => (
+                  <div key={idx} className="flex gap-3 items-center">
+                    <input
+                      value={acc}
+                      onChange={e => {
+                        const accessories = Array.isArray(form.included_accessories) ? [...form.included_accessories] : [];
+                        accessories[idx] = e.target.value;
+                        setForm((f) => ({ ...f!, included_accessories: accessories }));
+                      }}
+                      placeholder="e.g., 2x batteries"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm((f) => ({ 
+                          ...f!, 
+                          included_accessories: (Array.isArray(f!.included_accessories) ? f!.included_accessories : []).filter((_: any, i: number) => i !== idx) 
+                        }));
+                      }}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ 
+                    ...f!, 
+                    included_accessories: [...(Array.isArray(f!.included_accessories) ? f!.included_accessories : []), ''] 
+                  }))}
+                  className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                >
+                  <Plus size={18} />
+                  Add Accessory
                 </button>
               </div>
             </div>
@@ -627,7 +776,17 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 <MapPin className="inline mr-2" size={20} />
                 Location
               </h3>
-              
+              <div className="group mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Address Line</label>
+                <input
+                  name="address_line"
+                  value={form.address_line || ''}
+                  onChange={handleInputChange}
+                  placeholder="KG 11 Ave, Kigali"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchCategories, createCategory, updateCategory, deleteCategory, type Category, type CreateCategoryInput } from '../service/api';
+import { fetchCategories, createCategory, updateCategory, deleteCategory } from '../service';
+import type { Category, CreateCategoryInput } from '../interfaces';
 import { Loader, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useToast } from '../../../contexts/ToastContext';
 

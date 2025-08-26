@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, CheckCircle, Calendar, Package, Filter, Plus, Eye, MoreVertical } from 'lucide-react';
 import type { AdminUser } from '../interfaces';
-import { fetchAdminUsers, fetchAdminUserById, moderateAdminUser } from '../service/api';
+import { fetchAdminUsers, fetchAdminUserById, moderateAdminUser } from '../service';
 import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';

@@ -6,7 +6,7 @@ import {
   DollarSign, 
   AlertTriangle 
 } from 'lucide-react';
-import { fetchAdminStats } from '../service/api';
+import { fetchAdminStats } from '../service';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import type { AdminStats } from '../interfaces';
 

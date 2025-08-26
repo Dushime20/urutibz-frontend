@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Heart, TrendingUp } from 'lucide-react';
 
-import { fetchAvailableProducts } from './admin/service/api'; // adjust path if needed
-import { fetchProductImages, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, logInteraction, getProductInteractions } from './admin/service/api';
+import { fetchAvailableProducts, fetchProductImages, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, getProductInteractions } from './admin/service';
+import { logInteraction } from './admin/service/ai';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 
 // Utility to normalize possible image shapes
@@ -373,7 +373,7 @@ const HomePage: React.FC = () => {
                       {item.title || item.name}
                     </h3>
                     <div className="flex items-center space-x-1 flex-shrink-0">
-                      <Star className="w-3 h-3 fill-current text-gray-900" />
+                      <Star className="w-3 h-3 fill-current text-yellow-400" />
                       <span className="text-sm text-gray-900">
                         {item.average_rating || '4.8'}
                       </span>

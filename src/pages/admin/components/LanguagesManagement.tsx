@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Languages, Filter, Plus, Search } from 'lucide-react';
-import { fetchCountries, fetchAdminSettings, updateAdminSettings } from '../service/api';
-import type { AdminSettings } from '../service/api';
+import { fetchCountries, fetchAdminSettings, updateAdminSettings } from '../service';
+import type { AdminSettings } from '../service';
 
 interface LanguagesManagementProps {}
 

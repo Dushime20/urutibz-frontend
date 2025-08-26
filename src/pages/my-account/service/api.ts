@@ -2,6 +2,22 @@ import axios from 'axios';
 import { logger } from '../../../lib/logger';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
+// Types
+export type UpdateUserPayload = {
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  date_of_birth?: string; // YYYY-MM-DD
+  gender?: 'male' | 'female' | 'other' | string;
+  province?: string;
+  address_line?: string;
+  district?: string;
+  sector?: string;
+  cell?: string;
+  village?: string;
+  location?: { lat: number; lng: number };
+};
+
 // Fetch current user profile
 export async function fetchUserProfile(token: string) {
   try {
@@ -24,8 +40,9 @@ export async function fetchUserProfile(token: string) {
       },
     });
     
+    const data = response.data.data || response.data;
     return {
-      data: response.data.data || response.data,
+      data,
       success: true,
       error: null
     };
@@ -36,6 +53,50 @@ export async function fetchUserProfile(token: string) {
       success: false,
       error: errorMsg
     };
+  }
+}
+
+// Upload/update user avatar
+export async function uploadUserAvatar(userId: string, file: File, token: string) {
+  try {
+    const formData = new FormData();
+    // Backend expects the field name to be 'file'
+    formData.append('file', file);
+
+    const response = await axios.post(`${API_BASE_URL}/users/${userId}/avatar`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return {
+      data: response.data?.data || response.data,
+      success: true,
+      error: null,
+    };
+  } catch (error: any) {
+    const errorMsg = error?.response?.data?.message || error?.message || 'Failed to upload avatar';
+    return { data: null, success: false, error: errorMsg };
+  }
+}
+
+// Update user profile (snake_case contract)
+export async function updateUser(userId: string, payload: UpdateUserPayload, token: string) {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/users/${userId}`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return { data: response.data?.data || response.data, success: true } as const;
+  } catch (error: any) {
+    const status = error?.response?.status;
+    if (status === 401 || status === 403) {
+      console.error('Unauthorized while updating user');
+    }
+    return { data: null, success: false, error: error?.response?.data?.message || error?.message } as const;
   }
 }
 
@@ -355,13 +416,27 @@ export async function fetchActiveDailyPrice(productId: string): Promise<{ priceP
 
 export async function updateProduct(productId: string, productData: any) {
   const token = localStorage.getItem('token');
-  const response = await axios.put(
-    `${API_BASE_URL}/products/${productId}`,
-    productData,
-    {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    }
-  );
+  // Debug outgoing payload
+  try {
+    logger.group('[DEBUG] Outgoing PUT /products/{id}');
+    logger.debug('url:', `${API_BASE_URL}/products/${productId}`);
+    logger.debug('payload keys:', Object.keys(productData || {}));
+    logger.debug('payload:', productData);
+    logger.groupEnd();
+  } catch {}
+
+  const response = await axios.put(`${API_BASE_URL}/products/${productId}`, productData, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  // Debug response
+  try {
+    logger.group('[DEBUG] Response from PUT /products/{id}');
+    logger.debug('status:', response.status);
+    logger.debug('data:', response.data);
+    logger.groupEnd();
+  } catch {}
+
   return response.data;
 }
 
@@ -446,6 +521,19 @@ export async function fetchReviewById(reviewId: string, token?: string) {
   } catch (error) {
     console.error('Error fetching review by ID:', error);
     return null;
+  }
+}
+
+// Fetch reviews by product ID
+export async function fetchProductReviews(productId: string, token?: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/review/product/${productId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching product reviews:', error);
+    return [];
   }
 }
 

@@ -88,6 +88,52 @@ const CreateListingPage: React.FC = () => {
                         />
                       </div>
                     </div>
+                    {/* Brand */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Brand
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="e.g., Canon"
+                      />
+                    </div>
+                    {/* Model */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Model
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="e.g., EOS R6"
+                      />
+                    </div>
+                    {/* Year Manufactured & Delivery Fee */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Year Manufactured
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="e.g., 2022"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Delivery Fee
+                      </label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input
+                          type="number"
+                          className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          placeholder="e.g., 2500"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Description */}
@@ -108,6 +154,14 @@ const CreateListingPage: React.FC = () => {
                       <MapPin className="w-4 h-4" />
                       Pickup Location *
                     </label>
+                    {/* Address Line */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Address line (e.g., KG 11 Ave, Kigali)"
+                      />
+                    </div>
                     <input
                       type="text"
                       className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchRecentPaymentTransactions } from '../service/api';
+import { fetchRecentPaymentTransactions } from '../service';
 import type { PaymentTransaction } from '../interfaces';
 import { Loader, Filter, Search, ArrowUpDown } from 'lucide-react';
 

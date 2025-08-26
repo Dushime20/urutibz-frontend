@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchPaymentMethods } from '../service/api';
+import { fetchPaymentMethods } from '../service';
 import type { PaymentMethod } from '../interfaces';
 import { Loader } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { updateBooking } from '../service/api';
+import { updateBooking } from '../service';
 
 interface BookingEditModalProps {
   open: boolean;

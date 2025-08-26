@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Clock, AlertTriangle, CheckCircle, XCircle, Flag, Eye, Package } from 'lucide-react';
-import { fetchProductModerationActions } from '../service/api';
+import { fetchProductModerationActions } from '../service';
 import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';

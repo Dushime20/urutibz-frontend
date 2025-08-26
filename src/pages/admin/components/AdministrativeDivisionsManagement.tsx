@@ -12,7 +12,7 @@ import {
   updateAdministrativeDivision,
   deleteAdministrativeDivision,
   toggleAdministrativeDivisionStatus
-} from '../service/api';
+} from '../service';
 
 type DivisionForm = CreateAdministrativeDivisionInput;
 
@@ -105,7 +105,7 @@ export default function AdministrativeDivisionsManagement() {
     // fetch countries for dropdowns - using the same pattern as PaymentProvidersManagement
     (async () => {
       try {
-        const list = await (await import('../service/api')).fetchCountries();
+        const list = await (await import('../service')).fetchCountries();
         setCountries(list);
       } catch (e) {
         // silently ignore

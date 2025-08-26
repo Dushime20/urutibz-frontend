@@ -9,7 +9,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { formatPrice, getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { getProductById, fetchProductImages, fetchProductPricesByProductId, getProductInteractions } from './admin/service/api'; // adjust path as needed
+import { getProductById, fetchProductImages, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
+import { fetchProductReviews } from './my-account/service/api';
+import { logInteraction } from './admin/service/ai';
 import { UserProfileService } from './admin/service/userProfileService';
 
 // Define an interface for image objects
@@ -83,6 +85,7 @@ const ItemDetailsPage: React.FC = () => {
   const [productPrices, setProductPrices] = useState<any>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [productInteractions, setProductInteractions] = useState<any[]>([]);
+  const [productReviews, setProductReviews] = useState<any[]>([]);
 
   useEffect(() => {
 
@@ -176,6 +179,20 @@ const ItemDetailsPage: React.FC = () => {
     loadInteractions();
   }, [item?.id]);
 
+  // Fetch product reviews
+  useEffect(() => {
+    if (!item?.id) return;
+    (async () => {
+      try {
+        const token = localStorage.getItem('token') || undefined;
+        const reviews = await fetchProductReviews(item.id, token);
+        setProductReviews(Array.isArray(reviews) ? reviews : []);
+      } catch {
+        setProductReviews([]);
+      }
+    })();
+  }, [item?.id]);
+
   // Fetch location data
   useEffect(() => {
     if (!item) return;
@@ -236,6 +253,29 @@ const ItemDetailsPage: React.FC = () => {
     
     loadLocation();
   }, [item]);
+
+  // Load user's favorites and check if current item is favorited
+  useEffect(() => {
+    if (!id || !isAuthenticated) return;
+    
+    const token = localStorage.getItem('token') || undefined;
+    if (!token) return;
+    
+    (async () => {
+      try {
+        const favs = await getUserFavorites(token);
+        if (Array.isArray(favs)) {
+          const isFav = favs.some((f: any) => {
+            const productId = f?.product_id || f?.productId || f?.id;
+            return productId === id;
+          });
+          setIsFavorited(isFav);
+        }
+      } catch {
+        // ignore favorites loading errors silently
+      }
+    })();
+  }, [id, isAuthenticated]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -411,7 +451,30 @@ const ItemDetailsPage: React.FC = () => {
                 {/* Action Buttons */}
                 <div className="absolute top-4 right-4 flex space-x-2">
                   <button
-                    onClick={() => setIsFavorited(!isFavorited)}
+                    onClick={async () => {
+                      if (!isAuthenticated) {
+                        setShowAuthModal(true);
+                        return;
+                      }
+                      
+                      const token = localStorage.getItem('token') || undefined;
+                      if (!token) return;
+                      
+                      const currentlyFav = isFavorited;
+                      // optimistic update
+                      setIsFavorited(!currentlyFav);
+                      
+                      try {
+                        if (currentlyFav) {
+                          await removeUserFavorite(id!, token);
+                        } else {
+                          await addUserFavorite(id!, token);
+                        }
+                      } catch {
+                        // revert on failure
+                        setIsFavorited(currentlyFav);
+                      }
+                    }}
                     className="bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
                   >
                     <Heart className={`w-5 h-5 ${isFavorited ? 'text-red-500 fill-current' : 'text-gray-600'}`} />
@@ -572,15 +635,81 @@ const ItemDetailsPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Included Items */}
-              {item.length > 0 && (
-                <div>
+              {/* Product Meta */}
+              {(item.brand || item.model || item.year_manufactured || item.address_line || item.delivery_fee) && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Product Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {item.brand && (
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Brand</span>
+                        <span className="font-medium text-gray-900">{item.brand}</span>
+                      </div>
+                    )}
+                    {item.model && (
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Model</span>
+                        <span className="font-medium text-gray-900">{item.model}</span>
+                      </div>
+                    )}
+                    {item.year_manufactured != null && (
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Year</span>
+                        <span className="font-medium text-gray-900">{item.year_manufactured}</span>
+                      </div>
+                    )}
+                    {item.address_line && (
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Address</span>
+                        <span className="font-medium text-gray-900">{item.address_line}</span>
+                      </div>
+                    )}
+                    {item.delivery_fee && (
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Delivery Fee</span>
+                        <span className="font-medium text-gray-900">{formatPrice(Number(item.delivery_fee))}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Included Accessories */}
+              {Array.isArray(item.included_accessories) && item.included_accessories.length > 0 && (
+                <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">What's Included</h3>
                   <div className="space-y-2">
-                    {item.includedItems.map((includedItem: string, index: number) => (
+                    {item.included_accessories.map((acc: string, index: number) => (
                       <div key={index} className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-blue-500" />
-                        <span className="text-gray-700">{includedItem}</span>
+                        <span className="text-gray-700">{acc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews */}
+              {productReviews.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Reviews</h3>
+                  <div className="space-y-4">
+                    {productReviews.map((rev: any, idx: number) => (
+                      <div key={rev.id || idx} className="border rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <User className="w-4 h-4" />
+                            <span>{rev.user_name || rev.reviewer || 'Anonymous'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                            <span className="text-sm font-medium">{rev.rating || rev.overallRating || 0}</span>
+                          </div>
+                        </div>
+                        <p className="text-gray-700 text-sm">{rev.comment || rev.text || ''}</p>
+                        <div className="mt-2 text-xs text-gray-500">
+                          {rev.created_at ? new Date(rev.created_at).toLocaleDateString() : ''}
+                        </div>
                       </div>
                     ))}
                   </div>

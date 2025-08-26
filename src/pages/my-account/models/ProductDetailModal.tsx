@@ -268,6 +268,47 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
                             }
                           </div>
                         </div>
+
+                        {(product.brand || product.model || product.year_manufactured != null || product.address_line || product.delivery_fee) && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                            <div className="flex items-center mb-3">
+                              <Package className="text-gray-500 mr-2" size={20} />
+                              <span className="font-semibold text-gray-700">Product Details</span>
+                            </div>
+                            <div className="space-y-2">
+                              {product.brand && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Brand</span>
+                                  <span className="font-medium text-gray-900">{product.brand}</span>
+                                </div>
+                              )}
+                              {product.model && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Model</span>
+                                  <span className="font-medium text-gray-900">{product.model}</span>
+                                </div>
+                              )}
+                              {product.year_manufactured != null && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Year</span>
+                                  <span className="font-medium text-gray-900">{product.year_manufactured}</span>
+                                </div>
+                              )}
+                              {product.address_line && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Address</span>
+                                  <span className="font-medium text-gray-900">{product.address_line}</span>
+                                </div>
+                              )}
+                              {product.delivery_fee && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Delivery Fee</span>
+                                  <span className="font-medium text-gray-900">{product.delivery_fee}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Enhanced Features */}
@@ -301,6 +342,21 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
                                     ? value
                                     : JSON.stringify(value)}
                                 </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Included Accessories */}
+                      {Array.isArray(product.included_accessories) && product.included_accessories.length > 0 && (
+                        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                          <h3 className="text-lg font-bold text-gray-900 mb-4">What's Included</h3>
+                          <div className="space-y-2">
+                            {product.included_accessories.map((acc: string, idx: number) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <Package className="w-4 h-4 text-blue-500" />
+                                <span className="text-gray-700">{acc}</span>
                               </div>
                             ))}
                           </div>

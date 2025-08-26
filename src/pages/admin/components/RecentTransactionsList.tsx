@@ -1,6 +1,6 @@
 import type { PaymentTransaction } from '../interfaces';
 import React, { useEffect, useState } from 'react';
-import { fetchRecentPaymentTransactions } from '../service/api';
+import { fetchRecentPaymentTransactions } from '../service';
 import { Loader } from 'lucide-react';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 

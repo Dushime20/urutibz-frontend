@@ -42,7 +42,7 @@ import {
   type SecuritySettings,
   type NotificationSettings,
   type SystemSettings
-} from '../service/api';
+} from '../service';
 
 interface SettingsManagementProps {
   // Add props for settings data as needed

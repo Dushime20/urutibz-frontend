@@ -12,7 +12,7 @@ import {
 	fetchCategoryRegulationById,
 	fetchCategoryRegulationStats,
 	checkCompliance
-} from '../service/api';
+} from '../service';
 
 type RegulationForm = CreateCategoryRegulationInput;
 

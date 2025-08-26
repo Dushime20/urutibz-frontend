@@ -55,7 +55,21 @@ const VerificationGuard: React.FC<VerificationGuardProps> = ({
 
   // Default verification prompt
   const getVerificationPrompt = () => {
-    const { verification } = user;
+    // Safely access verification object with fallbacks
+    const verification = user?.verification || {
+      isProfileComplete: false,
+      isEmailVerified: false,
+      isPhoneVerified: false,
+      isIdVerified: false,
+      isAddressVerified: false,
+      isFullyVerified: false,
+      verificationStep: 'profile'
+    };
+
+    // Check KYC status if available
+    const kycStatus = user?.kyc_status || 'pending';
+    const isKycApproved = kycStatus === 'approved';
+    const isKycVerified = kycStatus === 'verified';
 
     if (action === 'rent') {
       return {
@@ -71,6 +85,21 @@ const VerificationGuard: React.FC<VerificationGuardProps> = ({
             text: 'Verify email address', 
             completed: verification.isEmailVerified,
             action: '/verify/email'
+          }
+        ]
+      };
+    }
+
+    // If KYC is verified, show simplified requirements
+    if (isKycVerified) {
+      return {
+        title: 'KYC Verified - Ready to List Items!',
+        description: 'Your KYC verification is complete. You can now list items for rent.',
+        requirements: [
+          { 
+            text: 'KYC verification', 
+            completed: true,
+            action: '/verify/kyc'
           }
         ]
       };
@@ -104,6 +133,11 @@ const VerificationGuard: React.FC<VerificationGuardProps> = ({
           text: 'Verify address', 
           completed: verification.isAddressVerified,
           action: '/verify/address'
+        },
+        { 
+          text: 'KYC approval', 
+          completed: isKycApproved,
+          action: '/verify/kyc'
         }
       ]
     };

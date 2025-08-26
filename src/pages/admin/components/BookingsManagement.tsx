@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { type AdminBooking, fetchAdminBookings, overrideBooking } from '../service/api';
+import { type AdminBooking, fetchAdminBookings, overrideBooking } from '../service';
 import BookingEditModal from './BookingEditModal';
 import { Eye, MoreVertical, Edit, RefreshCw } from 'lucide-react';
 import BookingDetailsModal from './BookingDetailsModal';

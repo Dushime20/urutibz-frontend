@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { 
-  Filter, MapPin, Star, 
-  Grid, List, Heart,
-  Camera, Laptop, Car, Gamepad2, Headphones, Watch,
-  Package, Truck, AlertCircle, ChevronDown, X
-} from 'lucide-react';
-import { itemCategories } from '../data/mockRentalData';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { Star, Heart, MapPin, Calendar, Clock, Shield, TrendingUp, Eye, MousePointer, ThumbsUp, Search, Filter, X, Camera, Laptop, Car, Gamepad2, Headphones, Watch, Package, Grid, List, ChevronDown, AlertCircle, Truck } from 'lucide-react';
+
+import { fetchAvailableProducts, fetchProductImages, fetchActiveDailyPrice, fetchCategories, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
+import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
+import { formatCurrency } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { fetchAvailableProducts, fetchProductImages, fetchActiveDailyPrice } from './admin/service/api';
 
 // Product type definition with better typing
 type Product = {
@@ -65,92 +62,13 @@ function extractImageUrl(img: unknown): string | null {
   return null;
 }
 
-// WKB Hex to LatLng conversion
-function wkbHexToLatLng(wkbHex: string) {
-  if (!wkbHex || wkbHex.length < 50) return null;
-  function hexToDouble(hex: string) {
-    const buffer = new ArrayBuffer(8);
-    const view = new DataView(buffer);
-    for (let i = 0; i < 8; i++) {
-      view.setUint8(i, parseInt(hex.substr(i * 2, 2), 16));
-    }
-    return view.getFloat64(0, true);
-  }
-  const lng = hexToDouble(wkbHex.substr(18, 16));
-  const lat = hexToDouble(wkbHex.substr(34, 16));
-  return { lat, lng };
-}
+// Note: wkbHexToLatLng and getCityFromCoordinates are imported from ../lib/utils
 
-// Get city from coordinates
-async function getCityFromCoordinates(lat: number, lng: number): Promise<{ city: string | null, country: string | null }> {
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
-    );
-    const data = await response.json();
-    if (!data.address) return { city: null, country: null };
-    return {
-      city: data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.county || null,
-      country: data.address.country || null
-    };
-  } catch (error) {
-    console.error('Error fetching location:', error);
-    return { city: null, country: null };
-  }
-}
 
-// Process item locations
-const processItemLocations = async (items: any[]) => {
-  const processedItems = await Promise.all(items.map(async (item) => {
-    let city = null;
-    let country = null;
-
-    try {
-      let lat, lng;
-      if (typeof item.location === 'string') {
-        const coords = wkbHexToLatLng(item.location);
-        if (coords) {
-          lat = coords.lat;
-          lng = coords.lng;
-        }
-      } else if (
-        item.location &&
-        typeof item.location === 'object' &&
-        ('lat' in item.location || 'latitude' in item.location) &&
-        ('lng' in item.location || 'longitude' in item.location)
-      ) {
-        lat = (item.location as any).lat ?? (item.location as any).latitude;
-        lng = (item.location as any).lng ?? (item.location as any).longitude;
-      }
-
-      if (lat !== undefined && lng !== undefined) {
-        const locationData = await getCityFromCoordinates(lat, lng);
-        city = locationData.city;
-        country = locationData.country;
-      } else if (
-        item.location &&
-        typeof item.location === 'object' &&
-        'city' in item.location
-      ) {
-        city = (item.location as any).city;
-      }
-    } catch (error) {
-      console.error(`Error processing location for item ${item.id}:`, error);
-    }
-
-    return {
-      ...item,
-      city,
-      country
-    };
-  }));
-
-  return processedItems;
-};
 
 const ItemSearchPage: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -161,13 +79,18 @@ const ItemSearchPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   
-  // Results state
-  const [items, setItems] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [totalResults, setTotalResults] = useState(0);
-  const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
-  const [itemLocations, setItemLocations] = useState<{ [id: string]: { city: string | null, country: string | null } }>({});
+     // Results state
+   const [items, setItems] = useState<Product[]>([]);
+   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+   const [totalResults, setTotalResults] = useState(0);
+   const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
+   const [itemLocations, setItemLocations] = useState<{ [id: string]: { city: string | null, country: string | null } }>({});
+   const [locationsLoading, setLocationsLoading] = useState<Record<string, boolean>>({});
+   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
+   
+   // Categories state
+   const [itemCategories, setItemCategories] = useState<Array<{ id: string; name: string; icon?: string }>>([]);
 
   // Filter and search logic
   useEffect(() => {
@@ -187,11 +110,11 @@ const ItemSearchPage: React.FC = () => {
         const productList = result.data || [];
         setTotalResults(result.total || productList.length);
         
-        // Process item locations
-        const processedItems = await processItemLocations(productList);
+                 // Process item locations - will be handled by separate useEffect
+         const processedItems = productList;
 
         // Enrich with active daily price and currency
-        const enrichedItems = await Promise.all(processedItems.map(async (item) => {
+        const enrichedItems = await Promise.all(processedItems.map(async (item: Product) => {
           try {
             const { pricePerDay, currency } = await fetchActiveDailyPrice(item.id);
             return {
@@ -207,7 +130,7 @@ const ItemSearchPage: React.FC = () => {
         // Fetch images for each product with proper error handling
         const imagesMap: { [productId: string]: string[] } = {};
         
-        await Promise.all(enrichedItems.map(async (item) => {
+        await Promise.all(enrichedItems.map(async (item: Product) => {
           try {
             const images = await fetchProductImages(item.id, token);
             
@@ -243,8 +166,160 @@ const ItemSearchPage: React.FC = () => {
       }
     };
 
-    fetchItems();
-  }, []);
+         fetchItems();
+   }, []);
+
+   // Resolve city/country from product.location or product.geometry
+   // Note: Locations load sequentially to avoid overwhelming the geocoding API
+   useEffect(() => {
+     let isMounted = true;
+     async function loadLocations() {
+       const map: Record<string, { city: string | null; country: string | null }> = {};
+       const loadingMap: Record<string, boolean> = {};
+       
+       // Process only the first batch of products to reduce API load
+       const productsToProcess = items.slice(0, 8); // Limit to first 8 items for initial display
+       
+       // Set loading state for all products that will be processed
+       productsToProcess.forEach(item => {
+         loadingMap[item.id] = true;
+       });
+       setLocationsLoading(loadingMap);
+       
+       const tasks = productsToProcess.map(async (item: Product) => {
+         let lat: number | undefined; let lng: number | undefined;
+         
+         // Try to extract coordinates from different possible fields
+         const locationSources = [item.location, (item as any).geometry];
+         
+         for (const source of locationSources) {
+           if (!source) continue;
+           
+           // Handle string format (WKB hex)
+           if (typeof source === 'string') {
+             const coords = wkbHexToLatLng(source);
+             if (coords) { 
+               lat = coords.lat; 
+               lng = coords.lng; 
+               break;
+             }
+           } 
+           // Handle object format
+           else if (source && typeof source === 'object') {
+             // Try different property names
+             lat = (source as any).lat ?? (source as any).latitude ?? (source as any).y;
+             lng = (source as any).lng ?? (source as any).longitude ?? (source as any).x;
+             
+             // Handle nested coordinates array [lng, lat] or [lat, lng]
+             if ((source as any).coordinates && Array.isArray((source as any).coordinates)) {
+               const coords = (source as any).coordinates;
+               if (coords.length >= 2) {
+                 // GeoJSON format is [longitude, latitude]
+                 lng = coords[0];
+                 lat = coords[1];
+               }
+             }
+             
+             if (lat != null && lng != null) break;
+           }
+         }
+         
+         if (lat != null && lng != null) {
+           try {
+             const { city, country } = await getCityFromCoordinates(lat, lng);
+             map[item.id] = { city, country };
+           } catch {
+             map[item.id] = { city: null, country: null };
+           }
+         } else {
+           map[item.id] = { city: null, country: null };
+         }
+         
+         // Clear loading state for this item
+         if (isMounted) {
+           setLocationsLoading(prev => {
+             const updated = { ...prev };
+             delete updated[item.id];
+             return updated;
+           });
+         }
+       });
+       
+       await Promise.allSettled(tasks);
+       if (isMounted) {
+         setItemLocations(map);
+         // Clear any remaining loading states
+         setLocationsLoading({});
+       }
+     }
+     if (items.length) loadLocations();
+     return () => { isMounted = false; };
+   }, [items]);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategoriesData = async () => {
+      try {
+        const categories = await fetchCategories();
+        
+        if (Array.isArray(categories) && categories.length > 0) {
+          setItemCategories(categories.map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            icon: cat.iconName || '📦'
+          })));
+        } else {
+          // Set default categories if API returns empty array
+          setItemCategories([
+            { id: 'photography', name: 'Photography', icon: '📷' },
+            { id: 'electronics', name: 'Electronics', icon: '💻' },
+            { id: 'vehicles', name: 'Vehicles', icon: '🚗' },
+            { id: 'gaming', name: 'Gaming', icon: '🎮' },
+            { id: 'music', name: 'Music', icon: '🎧' },
+            { id: 'tools', name: 'Tools', icon: '🔧' },
+            { id: 'outdoor', name: 'Outdoor', icon: '🏕️' },
+            { id: 'other', name: 'Other', icon: '📦' }
+          ]);
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+        // Set default categories if API fails
+        setItemCategories([
+          { id: 'photography', name: 'Photography', icon: '📷' },
+          { id: 'electronics', name: 'Electronics', icon: '💻' },
+          { id: 'vehicles', name: 'Vehicles', icon: '🚗' },
+          { id: 'gaming', name: 'Gaming', icon: '🎮' },
+          { id: 'music', name: 'Music', icon: '🎧' },
+          { id: 'tools', name: 'Tools', icon: '🔧' },
+          { id: 'outdoor', name: 'Outdoor', icon: '🏕️' },
+          { id: 'other', name: 'Other', icon: '📦' }
+        ]);
+      }
+    };
+
+         fetchCategoriesData();
+   }, []);
+
+   // Load user's favorites and map by product id
+   useEffect(() => {
+     const token = localStorage.getItem('token') || undefined;
+     if (!token) return; // require auth for favorites
+     (async () => {
+       try {
+         const favs = await getUserFavorites(token);
+         const map: Record<string, boolean> = {};
+         if (Array.isArray(favs)) {
+           favs.forEach((f: any) => {
+             const productId = f?.product_id || f?.productId || f?.id;
+             if (typeof productId === 'string') map[productId] = true;
+           });
+         }
+         setFavoriteMap(map);
+       } catch {
+         // ignore favorites loading errors silently
+       }
+     })();
+   }, []);
 
   // Update URL params
   useEffect(() => {
@@ -291,9 +366,9 @@ const ItemSearchPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Enhanced Search Header */}
-      <div className="bg-white shadow-sm border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+             {/* Enhanced Search Header */}
+       <div className="bg-white shadow-sm border-b sticky top-0 z-40">
+         <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 py-6">
           {/* Main Search Section */}
           <div className="flex flex-col gap-6">
             {/* Search Bar */}
@@ -448,8 +523,8 @@ const ItemSearchPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+             {/* Main Content */}
+       <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 py-8">
         {/* Error Handling */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-2xl mb-8 animate-in fade-in duration-200">
@@ -497,10 +572,10 @@ const ItemSearchPage: React.FC = () => {
             <p className="text-gray-600 font-medium">Finding the perfect items for you...</p>
           </div>
         ) : items.length > 0 ? (
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-            : 'space-y-6'
-          }>
+                     <div className={viewMode === 'grid' 
+             ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'
+             : 'space-y-6'
+           }>
             {items.map((item) => {
               if (!item.id || typeof item.id !== 'string') return null;
               const id = item.id as string;
@@ -508,109 +583,100 @@ const ItemSearchPage: React.FC = () => {
               
               return viewMode === 'grid' ? (
                 // Enhanced Grid View
-                <div
-                  key={id}
-                  onClick={() => handleItemClick(id)}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer group"
-                >
-                  <div className="relative">
-                    <img
-                      src={productImages[item.id]?.[0] || '/assets/img/placeholder-image.png'}
-                      alt={item.title || item.name}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
-                      }}
-                    />
-                    <div className="absolute top-3 left-3">
-                      <div className="bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-sm">
-                        <IconComponent className="w-4 h-4 text-gray-600" />
-                      </div>
-                    </div>
-                    <div className="absolute top-3 right-3 flex gap-2">
-                      {item.featured && (
-                        <div className="bg-[#00aaa9] text-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
-                          Featured
+                                 <div
+                   key={id}
+                   onClick={() => handleItemClick(id)}
+                   className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                 >
+                   {/* Image Container */}
+                   <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+                     <img
+                       src={productImages[item.id]?.[0] || '/assets/img/placeholder-image1.png'}
+                       alt={item.title || item.name}
+                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                       onError={(e) => {
+                         (e.target as HTMLImageElement).src = '/assets/img/placeholder-image1.png';
+                       }}
+                     />
+                     {/* Heart Icon */}
+                     <button
+                       type="button"
+                       aria-label="Add to favorites"
+                       className="absolute top-3 right-3 w-8 h-8 bg-black/20 hover:bg-black/40 rounded-full flex items-center justify-center transition-colors"
+                       onClick={async (e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         const token = localStorage.getItem('token') || undefined;
+                         if (!token) return; // optionally prompt login
+                         const currentlyFav = Boolean(favoriteMap[item.id]);
+                         // optimistic update
+                         setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
+                         try {
+                           if (currentlyFav) {
+                             await removeUserFavorite(item.id, token);
+                           } else {
+                             await addUserFavorite(item.id, token);
+                           }
+                         } catch {
+                           // revert on failure
+                           setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
+                         }
+                       }}
+                     >
+                       <Heart className={`w-4 h-4 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-white'}`} />
+                     </button>
+                   </div>
+
+                   {/* Content */}
+                   <div className="p-3 space-y-1">
+                     {/* Title and Rating */}
+                     <div className="flex items-start justify-between">
+                       <h3 className="font-medium text-gray-900 text-sm leading-tight flex-1 pr-2">
+                         {item.title || item.name}
+                       </h3>
+                                               <div className="flex items-center space-x-1 flex-shrink-0">
+                          <Star className="w-3 h-3 fill-current text-yellow-400" />
+                          <span className="text-sm text-gray-900">
+                            {item.average_rating || '4.8'}
+                          </span>
                         </div>
-                      )}
-                      <button className="bg-white/90 backdrop-blur-sm rounded-full p-2.5 hover:bg-white transition-colors shadow-sm group/heart">
-                        <Heart className="w-4 h-4 text-gray-600 group-hover/heart:text-red-500 transition-colors" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-5">
-                    {/* Title and Condition */}
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-bold text-gray-900 line-clamp-2 text-lg leading-tight">
-                        {item.title || item.name}
-                      </h3>
-                      {item.condition && (
-                        <span className="ml-2 text-xs px-2.5 py-1 bg-green-100 text-green-700 rounded-full capitalize font-medium">
-                          {item.condition}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">{item.description}</p>
-
-                    {/* Rating and Reviews */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="text-sm font-semibold text-gray-900">{item.average_rating || '0.00'}</span>
-                      <span className="text-xs text-gray-500">({item.review_count || 0} reviews)</span>
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-xl font-bold text-[#00aaa9]">
-                        {item.base_price_per_day != null && item.base_currency ? `${item.base_price_per_day}` : 'No price'}
-                      </span>
-                      <span className="text-sm text-gray-600 font-medium">{item.base_price_per_day != null && item.base_currency ? `/${item.base_currency}` : ''}</span>
-                    </div>
-
-                    {/* Features */}
-                    {item.features && item.features.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-3">
-                        {item.features.slice(0, 2).map((feature, idx) => (
-                          <span key={idx} className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">
-                            {feature}
-                          </span>
-                        ))}
-                        {item.features.length > 2 && (
-                          <span className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                            +{item.features.length - 2} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Pickup Methods */}
-                    <div className="flex gap-2 mb-4">
-                      {item.pickup_methods?.includes('delivery') && (
-                        <span className="text-xs px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full font-medium flex items-center gap-1">
-                          <Truck className="w-3 h-3" />
-                          Delivery
-                        </span>
-                      )}
-                      {item.pickup_methods?.includes('pickup') && (
-                        <span className="text-xs px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full font-medium flex items-center gap-1">
-                          <Package className="w-3 h-3" />
-                          Pickup
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Location */}
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="w-4 h-4" />
-                      <span className="truncate">
-                        {itemLocations[item.id]?.city || 'Unknown'}{itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                     </div>
+                     
+                     {/* Location */}
+                     <p className="text-gray-600 text-sm">
+                       {locationsLoading[item.id] ? (
+                         <span className="flex items-center gap-1">
+                           <div className="w-3 h-3 border border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                           Loading location...
+                         </span>
+                       ) : (
+                         <>
+                           {itemLocations[item.id]?.city || 'Unknown Location'}
+                           {itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
+                         </>
+                       )}
+                     </p>
+                     
+                     {/* Price */}
+                     <div className="text-gray-900 pt-1">
+                       {item.base_price_per_day != null && item.base_currency ? (
+                         <>
+                           <span className="font-semibold">
+                             {item.base_currency === 'USD' ? '$' : item.base_currency} {item.base_price_per_day}
+                           </span>
+                           <span className="text-sm"> / day</span>
+                         </>
+                       ) : item.base_price_per_day != null ? (
+                         <>
+                           <span className="font-semibold">${item.base_price_per_day}</span>
+                           <span className="text-sm"> / day</span>
+                         </>
+                       ) : (
+                         <span className="font-semibold">Price on request</span>
+                       )}
+                     </div>
+                   </div>
+                 </div>
               ) : (
                 // Enhanced List View
                 <div
@@ -641,9 +707,30 @@ const ItemSearchPage: React.FC = () => {
                           <h3 className="font-bold text-gray-900 text-lg mb-1">{item.title || item.name}</h3>
                           <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{item.description}</p>
                         </div>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors ml-4">
-                          <Heart className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors" />
-                        </button>
+                                                 <button 
+                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors ml-4"
+                           onClick={async (e) => {
+                             e.preventDefault();
+                             e.stopPropagation();
+                             const token = localStorage.getItem('token') || undefined;
+                             if (!token) return; // optionally prompt login
+                             const currentlyFav = Boolean(favoriteMap[item.id]);
+                             // optimistic update
+                             setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
+                             try {
+                               if (currentlyFav) {
+                                 await removeUserFavorite(item.id, token);
+                               } else {
+                                 await addUserFavorite(item.id, token);
+                               }
+                             } catch {
+                               // revert on failure
+                               setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
+                             }
+                           }}
+                         >
+                           <Heart className={`w-5 h-5 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-gray-600'} hover:text-red-500 transition-colors`} />
+                         </button>
                       </div>
                       
                       <div className="flex items-center gap-6 mb-3">

@@ -11,7 +11,7 @@ import {
   compareProvidersForCountry,
   bulkUpdatePaymentProviders,
   updatePaymentProvider
-} from '../service/api';
+} from '../service';
 import type { CreatePaymentProviderInput, PaymentProvider, PaymentProviderStats, FeeCalculationResult, Country } from '../interfaces';
 import { Dialog } from '@headlessui/react';
 
@@ -97,7 +97,7 @@ export default function PaymentProvidersManagement() {
     // fetch countries for dropdowns
     (async () => {
       try {
-        const list = await (await import('../service/api')).fetchCountries();
+        const list = await (await import('../service')).fetchCountries();
         setCountries(list);
       } catch (e) {
         // silently ignore

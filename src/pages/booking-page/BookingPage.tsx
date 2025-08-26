@@ -13,7 +13,7 @@ import {
   Shield,
 } from 'react-feather';
 import { createBooking } from './service/api';
-import { fetchProductImages, getProductById } from '../admin/service/api';
+import { fetchProductImages, getProductById } from '../admin/service';
 import { useToast } from '../../contexts/ToastContext';
 import ReviewForm from './components/ReviewForm';
 import PaymentStepper from './components/PaymentStepper';

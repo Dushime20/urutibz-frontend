@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Filter, MoreHorizontal, X, Package, Check, Shield } from 'lucide-react';
 import type { Product, Owner, ItemCategory } from '../types';
-import { fetchProductImages, getProductById, fetchUserById } from '../service/api';
-import { fetchProductAvailability } from '../service/api';
+import { fetchProductImages, getProductById, fetchUserById } from '../service';
+import { fetchProductAvailability } from '../service';
 import { type ProductAvailability } from '../interfaces';
 import { filterCurrentAndFutureAvailability } from '../../../lib/utils';
-import { fetchCategoryById } from '../service/api';
-import { fetchCategories } from '../service/api';
+import { fetchCategoryById } from '../service';
+import { fetchCategories } from '../service';
 import type { Category } from '../interfaces';
 import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
-import { moderateAdminProduct } from '../service/api';
+import { moderateAdminProduct } from '../service';
 import ProductModerationHistory from './ProductModerationHistory';
 
 interface ItemsManagementProps {

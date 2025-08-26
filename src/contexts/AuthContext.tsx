@@ -29,6 +29,7 @@ export interface User {
   verification: VerificationStatus;
   joinedDate: string;
   kyc_status?: string;
+  role?: 'user' | 'admin' | 'moderator';
 }
 
 // Define context type
@@ -43,6 +44,7 @@ interface AuthContextType {
   updateVerificationStatus: (updates: Partial<VerificationStatus>) => void;
   canListItems: () => boolean;
   canRentItems: () => boolean;
+  isAdmin: () => boolean;
   error: string | null;
   setAuthenticatedUser: (user: User) => void;
 }
@@ -59,6 +61,7 @@ const AuthContext = createContext<AuthContextType>({
   updateVerificationStatus: () => {},
   canListItems: () => false,
   canRentItems: () => false,
+  isAdmin: () => false,
   error: null,
   setAuthenticatedUser: () => {},
 });
@@ -84,6 +87,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
+          
+          // Ensure verification object has all required properties
+          if (parsedUser.verification) {
+            const verification = parsedUser.verification;
+            
+            // Set default values for missing verification properties
+            verification.isProfileComplete = verification.isProfileComplete ?? false;
+            verification.isEmailVerified = verification.isEmailVerified ?? false;
+            verification.isPhoneVerified = verification.isPhoneVerified ?? false;
+            verification.isIdVerified = verification.isIdVerified ?? false;
+            verification.isAddressVerified = verification.isAddressVerified ?? false;
+            
+            // Calculate isFullyVerified if not present
+            if (verification.isFullyVerified === undefined) {
+              verification.isFullyVerified = (
+                verification.isProfileComplete &&
+                verification.isEmailVerified &&
+                verification.isPhoneVerified &&
+                verification.isIdVerified &&
+                verification.isAddressVerified
+              );
+            }
+            
+            // Set default verification step if not present
+            if (!verification.verificationStep) {
+              if (verification.isFullyVerified) {
+                verification.verificationStep = 'complete';
+              } else if (!verification.isProfileComplete) {
+                verification.verificationStep = 'profile';
+              } else if (!verification.isEmailVerified) {
+                verification.verificationStep = 'email';
+              } else if (!verification.isPhoneVerified) {
+                verification.verificationStep = 'phone';
+              } else if (!verification.isIdVerified) {
+                verification.verificationStep = 'id';
+              } else if (!verification.isAddressVerified) {
+                verification.verificationStep = 'address';
+              } else {
+                verification.verificationStep = 'profile';
+              }
+            }
+          }
+          
+          // Ensure KYC status is set
+          if (!parsedUser.kyc_status) {
+            parsedUser.kyc_status = 'pending';
+          }
+          
           setUser(parsedUser);
         }
       } catch (error) {
@@ -108,33 +159,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       
       // Multiple mock users with different verification statuses
-      if (email === 'verified@example.com' && password === 'password') {
-        // Fully verified user
-        const mockUser: User = {
-          id: '1',
-          name: 'John Doe',
-          email: 'verified@example.com',
-          avatar: '/assets/img/profiles/avatar-01.jpg',
-          phone: '+256 712 345 678',
-          dateOfBirth: '1990-05-15',
-          address: {
-            street: '123 Main Street',
-            city: 'Kampala',
-            state: 'Central Region',
-            country: 'Uganda',
-            zipCode: '00000'
-          },
-          verification: {
-            isProfileComplete: true,
-            isEmailVerified: true,
-            isPhoneVerified: true,
-            isIdVerified: true,
-            isAddressVerified: true,
-            isFullyVerified: true,
-            verificationStep: 'complete'
-          },
-          joinedDate: '2023-01-15'
-        };
+             if (email === 'verified@example.com' && password === 'password') {
+         // Fully verified user (admin)
+         const mockUser: User = {
+           id: '1',
+           name: 'John Doe',
+           email: 'verified@example.com',
+           avatar: '/assets/img/profiles/avatar-01.jpg',
+           phone: '+256 712 345 678',
+           dateOfBirth: '1990-05-15',
+           address: {
+             street: '123 Main Street',
+             city: 'Kampala',
+             state: 'Central Region',
+             country: 'Uganda',
+             zipCode: '00000'
+           },
+           verification: {
+             isProfileComplete: true,
+             isEmailVerified: true,
+             isPhoneVerified: true,
+             isIdVerified: true,
+             isAddressVerified: true,
+             isFullyVerified: true,
+             verificationStep: 'complete'
+           },
+           role: 'admin',
+           joinedDate: '2023-01-15'
+         };
         
         localStorage.setItem('user', JSON.stringify(mockUser));
         setUser(mockUser);
@@ -185,29 +237,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(mockUser));
         setUser(mockUser);
         return true;
-      } else if (email === 'user@example.com' && password === 'password') {
-        // Original user (keeping for backward compatibility)
-        const mockUser: User = {
-          id: '4',
-          name: 'John Smith',
-          email: 'user@example.com',
-          avatar: '/assets/img/profiles/avatar-04.jpg',
-          verification: {
-            isProfileComplete: false,
-            isEmailVerified: false,
-            isPhoneVerified: false,
-            isIdVerified: false,
-            isAddressVerified: false,
-            isFullyVerified: false,
-            verificationStep: 'profile'
-          },
-          joinedDate: new Date().toISOString()
-        };
-        
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        setUser(mockUser);
-        return true;
-      }
+             } else if (email === 'user@example.com' && password === 'password') {
+         // Original user (keeping for backward compatibility)
+         const mockUser: User = {
+           id: '4',
+           name: 'John Smith',
+           email: 'user@example.com',
+           avatar: '/assets/img/profiles/avatar-04.jpg',
+           verification: {
+             isProfileComplete: false,
+             isEmailVerified: false,
+             isPhoneVerified: false,
+             isIdVerified: false,
+             isAddressVerified: false,
+             isFullyVerified: false,
+             verificationStep: 'profile'
+           },
+           joinedDate: new Date().toISOString()
+         };
+         
+         localStorage.setItem('user', JSON.stringify(mockUser));
+         setUser(mockUser);
+         return true;
+       } else if (email === 'kycverified@example.com' && password === 'password') {
+         // KYC verified user - can list items immediately
+         const mockUser: User = {
+           id: '5',
+           name: 'KYC Verified User',
+           email: 'kycverified@example.com',
+           avatar: '/assets/img/profiles/avatar-05.jpg',
+           verification: {
+             isProfileComplete: false,
+             isEmailVerified: false,
+             isPhoneVerified: false,
+             isIdVerified: false,
+             isAddressVerified: false,
+             isFullyVerified: false,
+             verificationStep: 'profile'
+           },
+           kyc_status: 'verified',
+           joinedDate: new Date().toISOString()
+         };
+         
+         localStorage.setItem('user', JSON.stringify(mockUser));
+         setUser(mockUser);
+         return true;
+       }
       
       setError('Invalid email or password');
       return false;
@@ -312,15 +387,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Check if user can list items (requires full verification)
+  // Check if user can list items (KYC verified users can list immediately, others need full verification)
   const canListItems = (): boolean => {
-    return user?.verification.isFullyVerified || false;
+    if (!user || !user.verification) return false;
+    
+    // Check KYC status first - if verified, allow listing immediately
+    const kycStatus = user.kyc_status || 'pending';
+    if (kycStatus === 'verified') return true;
+    
+    // For non-verified KYC users, require full verification
+    if (kycStatus !== 'approved') return false;
+    
+    // Check if isFullyVerified exists, otherwise calculate it
+    if (user.verification.isFullyVerified !== undefined) {
+      return user.verification.isFullyVerified;
+    }
+    
+    // Calculate verification status if not explicitly set
+    return (
+      user.verification.isProfileComplete &&
+      user.verification.isEmailVerified &&
+      user.verification.isPhoneVerified &&
+      user.verification.isIdVerified &&
+      user.verification.isAddressVerified
+    );
   };
 
   // Check if user can rent items (requires basic verification: profile + email)
   const canRentItems = (): boolean => {
-    if (!user) return false;
+    if (!user || !user.verification) return false;
     return user.verification.isProfileComplete && user.verification.isEmailVerified;
+  };
+
+  // Check if user is an admin
+  const isAdmin = (): boolean => {
+    return user?.role === 'admin';
   };
 
   const setAuthenticatedUser = (user: User) => {
@@ -339,6 +440,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateVerificationStatus,
     canListItems,
     canRentItems,
+    isAdmin,
     error,
     setAuthenticatedUser,
   };

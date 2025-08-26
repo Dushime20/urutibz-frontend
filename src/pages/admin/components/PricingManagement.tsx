@@ -6,7 +6,7 @@ import PricingTable from './PricingTable';
 import ProductPricingForm from './ProductPricingForm';
 import { usePricing } from '../hooks/usePricing';
 import PricingService from '../service/pricingService';
-import { fetchPricingStats, fetchCountries } from '../service/api';
+import { fetchPricingStats, fetchCountries } from '../service';
 import type { ProductPrice, CreateProductPriceRequest, UpdateProductPriceRequest, PriceFilters, RentalPriceCalculationRequest, RentalPriceCalculationResponse, PriceComparisonResponse } from '../types/pricing';
 
 const PricingManagement: React.FC = () => {

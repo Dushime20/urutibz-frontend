@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import AdminRoute from './components/auth/AdminRoute';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
@@ -40,6 +41,18 @@ function App() {
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />
             
+            {/* My Account routes - handle their own layout */}
+            <Route path="dashboard" element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="my-account" element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } />
+            
             {/* Main app routes with layout */}
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
@@ -65,15 +78,10 @@ function App() {
                   <CreateListingPage />
                 </ProtectedRoute>
               } />
-              <Route path="dashboard" element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              } />
               <Route path="admin" element={
-                <ProtectedRoute>
+                <AdminRoute>
                   <AdminDashboardPage />
-                </ProtectedRoute>
+                </AdminRoute>
               } />
               <Route path="booking" element={
                 <BookingPage />

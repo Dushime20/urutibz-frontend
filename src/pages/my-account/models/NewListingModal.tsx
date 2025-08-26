@@ -8,12 +8,17 @@ type FormState = {
   description: string;
   category_id: string;
   condition: string;
+  // New product meta
+  brand?: string;
+  model?: string;
+  year_manufactured?: string;
   // Pricing fields - moved from product to separate pricing system
   price_per_hour: string;
   price_per_day: string;
   price_per_week: string;
   price_per_month: string;
   security_deposit: string;
+  delivery_fee?: string;
   currency: string;
   market_adjustment_factor: string;
   weekly_discount_percentage: string;
@@ -28,12 +33,15 @@ type FormState = {
   country_id: string;
   specifications: { [key: string]: string };
   features?: string[];
+  included_accessories?: string[];
   images: File[];
   alt_text: string;
   sort_order: string;
   isPrimary: string;
   product_id: string;
   location: { latitude: string; longitude: string };
+  // Address details
+  address_line?: string;
 };
 
 interface NewListingModalProps {
@@ -181,6 +189,41 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               </div>
             </div>
 
+            {/* New fields: brand, model, year manufactured */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="group">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+                <input
+                  name="brand"
+                  value={form.brand || ''}
+                  onChange={handleInputChange}
+                  placeholder="Canon"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <div className="group">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                <input
+                  name="model"
+                  value={form.model || ''}
+                  onChange={handleInputChange}
+                  placeholder="EOS R6"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <div className="group">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Year Manufactured</label>
+                <input
+                  name="year_manufactured"
+                  value={form.year_manufactured || ''}
+                  onChange={handleInputChange}
+                  placeholder="2022"
+                  type="number"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+            </div>
+
             <div className="group">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Country *
@@ -302,6 +345,20 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     value={form.security_deposit}
                     onChange={handleInputChange}
                     placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+                <div className="group">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Delivery Fee
+                  </label>
+                  <input
+                    name="delivery_fee"
+                    value={form.delivery_fee || ''}
+                    onChange={handleInputChange}
+                    placeholder="2500"
                     type="number"
                     step="0.01"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
@@ -459,6 +516,51 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 </button>
               </div>
             </div>
+
+            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
+              <h3 className="text-lg font-semibold text-teal-800 mb-4">Included Accessories</h3>
+
+              <div className="space-y-4">
+                {(Array.isArray(form.included_accessories) ? form.included_accessories : []).map((acc: string, idx: number) => (
+                  <div key={idx} className="flex gap-3 items-center">
+                    <input
+                      value={acc}
+                      onChange={e => {
+                        const accessories = Array.isArray(form.included_accessories) ? [...form.included_accessories] : [];
+                        accessories[idx] = e.target.value;
+                        setForm((f: FormState) => ({ ...f, included_accessories: accessories }));
+                      }}
+                      placeholder="e.g., 2x batteries"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm((f: FormState) => ({ 
+                          ...f, 
+                          included_accessories: (Array.isArray(f.included_accessories) ? f.included_accessories : []).filter((_: any, i: number) => i !== idx) 
+                        }));
+                      }}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => setForm((f: FormState) => ({ 
+                    ...f, 
+                    included_accessories: [...(Array.isArray(f.included_accessories) ? f.included_accessories : []), ''] 
+                  }))}
+                  className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                >
+                  <Plus size={18} />
+                  Add Accessory
+                </button>
+              </div>
+            </div>
           </div>
         );
 
@@ -556,6 +658,17 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 Location
               </h3>
               
+              <div className="group mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Address Line</label>
+                <input
+                  name="address_line"
+                  value={form.address_line || ''}
+                  onChange={handleInputChange}
+                  placeholder="KG 11 Ave, Kigali"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 mb-2">

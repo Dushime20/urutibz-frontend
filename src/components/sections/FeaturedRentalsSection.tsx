@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, MapPin, Star, Shield, Heart, TrendingUp } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchProductImages } from '../../pages/admin/service/api'; // adjust path if needed
+import { fetchProductImages } from '../../pages/admin/service'; // adjust path if needed
 import type { Product } from '../../pages/admin/types';
 import user from '../../../public/assets/img/profiles/user.jpg'
 import { wkbHexToLatLng, getCityFromCoordinates } from '../../lib/utils';

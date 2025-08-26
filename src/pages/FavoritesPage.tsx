@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Star } from 'lucide-react';
-import { getUserFavorites, removeUserFavorite, fetchProductImages } from './admin/service/api';
+import { getUserFavorites, removeUserFavorite, fetchProductImages } from './admin/service';
+import { fetchProductPricesByProductId } from './admin/service';
+import { getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
+import { formatCurrency } from '../lib/utils';
 
 // Utility to normalize possible image shapes
 function extractImageUrl(img: unknown): string | null {
@@ -155,7 +158,7 @@ const FavoritesPage: React.FC = () => {
                       </Link>
                     </h3>
                     <div className="flex items-center space-x-1 flex-shrink-0">
-                      <Star className="w-3 h-3 fill-current text-gray-900" />
+                      <Star className="w-3 h-3 fill-current text-yellow-400" />
                       <span className="text-sm text-gray-900">{product?.average_rating || '4.8'}</span>
                     </div>
                   </div>

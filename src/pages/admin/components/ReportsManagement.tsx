@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
-  Filter, 
   Plus, 
   Download, 
   Calendar,
@@ -11,22 +10,12 @@ import {
   Package,
   CreditCard,
   Activity,
-  Settings,
   Eye,
   Edit,
   Trash2,
-  Clock,
-  Mail,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  Search,
   Filter as FilterIcon,
   X,
-  CheckCircle,
-  AlertCircle,
-  Info
-} from 'lucide-react';
+  CheckCircle} from 'lucide-react';
 import { Button } from '../../../components/ui/DesignSystem';
 import {
   generateRevenueReport,
@@ -38,16 +27,104 @@ import {
   fetchCustomReports,
   createCustomReport,
   deleteCustomReport,
-  exportReport,
-  type ReportFilters,
-  type RevenueReport,
-  type UserReport,
-  type BookingReport,
-  type ProductReport,
-  type TransactionReport,
-  type PerformanceReport,
-  type CustomReport
-} from '../service/api';
+  exportReport
+} from '../service';
+
+// Define types for reports since they're not exported from service yet
+interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  category?: string;
+}
+
+interface RevenueReport {
+  totalRevenue: number;
+  totalBookings: number;
+  averageBookingValue: number;
+  period: string;
+  revenueByCategory: Array<{
+    category: string;
+    revenue: number;
+    bookings: number;
+  }>;
+}
+
+interface UserReport {
+  totalUsers: number;
+  newUsers: number;
+  activeUsers: number;
+  verifiedUsers: number;
+  period: string;
+  topUsers: Array<{
+    userId: string;
+    name: string;
+    email: string;
+    bookings: number;
+    revenue: number;
+  }>;
+}
+
+interface BookingReport {
+  totalBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  period: string;
+  bookingsByStatus: Array<{
+    status: string;
+    count: number;
+    percentage: number;
+  }>;
+}
+
+interface ProductReport {
+  totalProducts: number;
+  activeProducts: number;
+  rentedProducts: number;
+  period: string;
+  topProducts: Array<{
+    name: string;
+    category: string;
+    bookings: number;
+    revenue: number;
+  }>;
+}
+
+interface TransactionReport {
+  totalTransactions: number;
+  totalAmount: number;
+  successfulTransactions: number;
+  period: string;
+  transactionsByType: Array<{
+    type: string;
+    count: number;
+    amount: number;
+  }>;
+}
+
+interface PerformanceReport {
+  totalRevenue: number;
+  totalBookings: number;
+  averageRating: number;
+  period: string;
+  performanceMetrics: Array<{
+    metric: string;
+    value: number;
+    target: number;
+    status: 'good' | 'warning' | 'poor';
+  }>;
+}
+
+interface CustomReport {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  filters: ReportFilters;
+  schedule: string;
+  recipients: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface ReportsManagementProps {
   // Add props for reports data as needed
@@ -246,27 +323,27 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
 
   const renderRevenueReport = () => (
     <div className="space-y-6">
-      {revenueReport && (
+      {revenueReport ? (
         <>
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <StatCard
               title="Total Revenue"
-              value={`$${revenueReport.totalRevenue.toLocaleString()}`}
-              subtitle={revenueReport.period}
+              value={`$${(revenueReport.totalRevenue || 0).toLocaleString()}`}
+              subtitle={revenueReport.period || 'Current Period'}
               icon={TrendingUp}
               color="bg-green-500"
             />
             <StatCard
               title="Total Bookings"
-              value={revenueReport.totalBookings.toLocaleString()}
-              subtitle={revenueReport.period}
+              value={(revenueReport.totalBookings || 0).toLocaleString()}
+              subtitle={revenueReport.period || 'Current Period'}
               icon={Calendar}
               color="bg-my-primary"
             />
             <StatCard
               title="Average Booking Value"
-              value={`$${revenueReport.averageBookingValue.toLocaleString()}`}
+              value={`$${(revenueReport.averageBookingValue || 0).toLocaleString()}`}
               subtitle="Per booking"
               icon={BarChart3}
               color="bg-purple-500"
@@ -284,25 +361,45 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Category</h4>
             <div className="space-y-3">
-              {revenueReport.revenueByCategory.map((category, index) => (
-                <div key={category.category} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-semibold">
-                      {index + 1}
+              {revenueReport.revenueByCategory && revenueReport.revenueByCategory.length > 0 ? (
+                revenueReport.revenueByCategory.map((category, index) => (
+                  <div key={category.category} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-semibold">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{category.category}</div>
+                        <div className="text-sm text-gray-500">{category.bookings} bookings</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-gray-900">{category.category}</div>
-                      <div className="text-sm text-gray-500">{category.bookings} bookings</div>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900">${(category.revenue || 0).toLocaleString()}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-gray-900">${category.revenue.toLocaleString()}</div>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No revenue data available for the selected period.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </>
+      ) : (
+        <div className="text-center py-12">
+          {isLoading ? (
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#01aaa7]"></div>
+              <p className="text-gray-600">Loading revenue report...</p>
+            </div>
+          ) : (
+            <div className="text-gray-500">
+              <p>No revenue data available.</p>
+              <p className="text-sm mt-2">Try adjusting your filters or check back later.</p>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

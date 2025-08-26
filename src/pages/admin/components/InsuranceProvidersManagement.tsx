@@ -7,8 +7,8 @@ import {
   deleteInsuranceProvider,
   updateInsuranceProvider,
   fetchInsuranceProviderById
-} from '../service/api';
-import { fetchCountries } from '../service/api';
+} from '../service';
+import { fetchCountries } from '../service';
 import type { Country, CreateInsuranceProviderInput, InsuranceProvider } from '../interfaces';
 
 const emptyForm: CreateInsuranceProviderInput = {

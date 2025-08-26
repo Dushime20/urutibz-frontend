@@ -14,7 +14,7 @@ import {
   fetchAdminAnalytics,
   fetchAdminRealtimeMetrics,
   fetchPricingStats
-} from './service/api';
+} from './service';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
 import AdminStatCards from './components/AdminStatCards';
@@ -42,6 +42,7 @@ import AdministrativeDivisionsManagement from './components/AdministrativeDivisi
 import PricingManagement from './components/PricingManagement';
 import ProductCategoriesChart from './components/ProductCategoriesChart';
 import ModerationDashboardPage from './ModerationDashboardPage';
+import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
@@ -74,7 +75,7 @@ interface Owner {
 }
 
 const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -770,6 +771,8 @@ const AdminDashboardPage: React.FC = () => {
                     return <NotificationsManagement />;
                   case 'moderation':
                     return <ModerationDashboardPage />;
+                  case 'ai-analytics':
+                    return <AIAnalyticsDashboard token={localStorage.getItem('token') || undefined} />;
                   case 'settings':
                     return <SettingsManagement />;
                   default:

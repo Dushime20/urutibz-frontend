@@ -230,6 +230,18 @@ const Header: React.FC = () => {
             {/* Authentication */}
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
+                {/* My Account Button */}
+                <Link 
+                  to={user?.role === 'admin' ? '/admin' : '/dashboard'}
+                  className={`hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                    user?.role === 'admin' 
+                      ? 'btn-outline hover:bg-[#01aaa7] hover:text-white' 
+                      : 'btn-outline hover:bg-[#01aaa7] hover:text-white'
+                  }`}
+                >
+                  {user?.role === 'admin' ? 'Admin Dashboard' : 'My Account'}
+                </Link>
+                
                 {/* User Profile Dropdown */}
                 <div className="relative">
                   <button
@@ -255,12 +267,31 @@ const Header: React.FC = () => {
                       <div className="px-4 py-2 border-b border-platform-light-grey dark:border-gray-600">
                           <p className="text-sm font-medium text-platform-dark-grey dark:text-white">{user?.name}</p>
                           <p className="text-xs text-platform-grey dark:text-gray-300">{user?.email}</p>
+                          {user?.role && (
+                            <div className="mt-2">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                user.role === 'admin' 
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' 
+                                  : user.role === 'moderator'
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                              }`}>
+                                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       <Link 
                         to="/profile" 
                         className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
                       >
                         Profile Settings
+                      </Link>
+                      <Link 
+                        to={user?.role === 'admin' ? '/admin' : '/dashboard'}
+                        className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
+                      >
+                        {user?.role === 'admin' ? 'Admin Dashboard' : 'My Account'}
                       </Link>
                       <Link 
                         to="/my-rentals" 
@@ -419,12 +450,27 @@ const Header: React.FC = () => {
                 List Your Item
               </Link>
               {isAuthenticated && (
-                <Link 
-                  to="/favorites" 
-                  className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                >
-                  Favorites
-                </Link>
+                <>
+                  <Link 
+                    to={user?.role === 'admin' ? '/admin' : '/dashboard'}
+                    className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{user?.role === 'admin' ? 'Admin Dashboard' : 'My Account'}</span>
+                      {user?.role === 'admin' && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/favorites" 
+                    className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                  >
+                    Favorites
+                  </Link>
+                </>
               )}
               
               {!isAuthenticated && (

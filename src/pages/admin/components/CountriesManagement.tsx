@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchCountries, createCountry, fetchCountryById, updateCountry, deleteCountry } from '../service/api';
+import { fetchCountries, createCountry, fetchCountryById, updateCountry, deleteCountry } from '../service';
 import type { Country, CreateCountryInput } from '../interfaces';
 import { Loader, Plus, Check, X, MoreVertical, Eye, Globe, MapPin, Clock, CreditCard, Phone, Flag, Edit, Trash, AlertTriangle } from 'lucide-react';
 import { useToast } from '../../../contexts/ToastContext';
