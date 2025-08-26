@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { UpdateUserPayload } from '../service/api';
 import { fetchUserProfile, updateUser, uploadUserAvatar } from '../service/api';
+import { useToast } from '../../../contexts/ToastContext';
+import { UserCircle } from 'lucide-react';
 
 type Props = { userId: string; token: string; onUpdated?: (u: any) => void; formId?: string };
 
@@ -21,13 +23,8 @@ const schema = z.object({
   village: z.string().max(100).optional(),
   location: z
     .object({
-      lat: z.preprocess((v) => (v === '' || v === undefined ? undefined : Number(v)), z.number().min(-90).max(90)),
-      lng: z.preprocess((v) => (v === '' || v === undefined ? undefined : Number(v)), z.number().min(-180).max(180)),
-    })
-    .partial()
-    .refine((v) => !v || (v.lat !== undefined && v.lng !== undefined), {
-      message: 'Both latitude and longitude are required together',
-      path: ['lat'],
+      lat: z.number().min(-90).max(90).optional(),
+      lng: z.number().min(-180).max(180).optional(),
     })
     .optional(),
 });
@@ -157,7 +154,13 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
       </div>
       <div className="flex items-start gap-6">
         <div className="flex flex-col items-center gap-2">
-          <img src={avatarUrl || '/assets/img/placeholder-image.png'} className="w-28 h-28 rounded-2xl object-cover" />
+          {avatarUrl ? (
+            <img src={avatarUrl} className="w-28 h-28 rounded-2xl object-cover" />
+          ) : (
+            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <UserCircle className="w-16 h-16 text-gray-400" />
+            </div>
+          )}
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) {

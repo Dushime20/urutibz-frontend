@@ -56,12 +56,17 @@ export interface AdminUser {
   email: string;
   first_name: string;
   last_name: string;
+  firstName?: string; // Backend response field
+  lastName?: string; // Backend response field
   phone?: string;
   role: string;
   status: string;
   created_at: string;
   updated_at: string;
+  createdAt?: string; // Backend response field
+  updatedAt?: string; // Backend response field
   profile_image?: string;
+  profileImageUrl?: string; // Backend response field
   kyc_status: string;
   last_login?: string;
 }

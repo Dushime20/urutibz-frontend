@@ -42,7 +42,7 @@ export const twoFactorService = {
   async verify(code: string): Promise<TwoFactorVerifyResponse> {
     const response = await axios.post(
       `${API_BASE_URL}/2fa/verify`,
-      { code },
+      { token: code }, // Changed from { code } to { token: code }
       { headers: createAuthHeaders() }
     );
     return response.data;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Shield, User, LogOut, ChevronDown, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Search, Bell, Shield, User, LogOut, ChevronDown, CheckCircle, Clock, AlertCircle, UserCircle, RefreshCw, Upload, X } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
-import type { UserProfile } from '../../../types/user';
+import { adminService, type AdminUserProfile } from '../service';
 
 interface AdminHeaderProps {
   selectedLocation: string;
@@ -13,59 +13,63 @@ interface AdminHeaderProps {
 const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelectedLocation, selectedLanguage, setSelectedLanguage }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarUploadLoading, setAvatarUploadLoading] = useState(false);
+  const [avatarUploadError, setAvatarUploadError] = useState<string | null>(null);
+  const [avatarUploadSuccess, setAvatarUploadSuccess] = useState<string | null>(null);
 
-  // Fetch current user data
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.error('No authentication token found');
-          return;
-        }
-
-        // For now, we'll use the user data structure you provided
-        // In a real implementation, you'd make an API call here
-        const mockUserData: UserProfile = {
-          id: "6cc890f2-7169-44e1-b0f1-dc13d797d4e0",
-          email: "nzayisengaemmy2001@gmail.com",
-          firstName: "Emmy",
-          lastName: "Keen",
-          role: "admin",
-          status: "pending",
-          countryId: null,
-          emailVerified: false,
-          phoneVerified: true,
-          createdAt: "2025-07-10T15:10:52.356Z",
-          updatedAt: "2025-07-28T09:51:14.530Z",
-          kyc_status: "verified",
-          verifications: [
-            {
-              verification_type: "National ID",
-              verification_status: "pending",
-              created_at: "2025-07-18T12:27:14.610Z",
-              updated_at: "2025-07-18T12:27:50.393Z"
-            }
-          ],
-          kycProgress: {
-            required: ["national_id", "selfie", "address"],
-            verified: [],
-            pending: ["National ID", "national_id"],
-            rejected: [],
-            completionRate: 0
-          }
-        };
-
-        setUser(mockUserData);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
+    // Fetch current user data
+  const fetchCurrentUser = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
       }
-    };
 
+      // Fetch real user data from backend
+      const userData = await adminService.getCurrentUserProfile();
+      setUser(userData);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setError('Failed to load profile. Using default data.');
+      // Set a minimal user object for display
+      setUser({
+        id: 'unknown',
+        email: 'admin@example.com',
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'admin',
+        status: 'active',
+        countryId: null,
+        emailVerified: false,
+        phoneVerified: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        kyc_status: 'verified',
+        verifications: [],
+        kycProgress: {
+          required: [],
+          verified: [],
+          pending: [],
+          rejected: [],
+          completionRate: 100
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCurrentUser();
   }, []);
 
@@ -103,6 +107,51 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
     }
   };
 
+  const handleAvatarUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !avatarFile) return;
+
+    try {
+      setAvatarUploadLoading(true);
+      setAvatarUploadError(null);
+      setAvatarUploadSuccess(null);
+
+      const result = await adminService.uploadUserAvatar(user.id, avatarFile);
+      
+      // Update the user in local state
+      setUser(prevUser => prevUser ? { ...prevUser, profileImageUrl: result.profileImageUrl } : null);
+      
+      setAvatarUploadSuccess('Avatar uploaded successfully!');
+      setTimeout(() => {
+        setShowAvatarUpload(false);
+        setAvatarFile(null);
+        setAvatarUploadSuccess(null);
+      }, 2000);
+    } catch (error: any) {
+      setAvatarUploadError(error.message || 'Failed to upload avatar');
+    } finally {
+      setAvatarUploadLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setAvatarUploadError('Please select an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setAvatarUploadError('File size must be less than 5MB');
+        return;
+      }
+      setAvatarFile(file);
+      setAvatarUploadError(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm">
@@ -131,9 +180,23 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <select
+                      {error && (
+              <div className="flex items-center space-x-2 text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg text-sm">
+                <AlertCircle className="w-4 h-4" />
+                <span>{error}</span>
+                <button
+                  onClick={fetchCurrentUser}
+                  disabled={loading}
+                  className="ml-2 p-1 hover:bg-yellow-100 rounded transition-colors disabled:opacity-50"
+                  title="Retry loading profile"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            )}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 className="bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
@@ -178,11 +241,23 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 tabIndex={0}
                 onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
               >
-                <img
-                  src="/assets/img/profiles/avatar-01.jpg"
-                  alt={`${user?.firstName} ${user?.lastName}`}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
+                {user?.profileImageUrl ? (
+                  <img
+                    src={user.profileImageUrl}
+                    alt={`${user.firstName} ${user.lastName}`}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      // Fallback to empty user icon if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                {!user?.profileImageUrl && (
+                  <UserCircle className="w-8 h-8 text-gray-400" />
+                )}
+                <UserCircle className="w-8 h-8 text-gray-400 hidden" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                   {user ? `${user.firstName} ${user.lastName}` : 'Loading...'}
                 </span>
@@ -296,7 +371,22 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
               {/* Basic Information */}
               <div className="space-y-4">
                 <div className="flex flex-col items-center">
-                  <img src="/assets/img/profiles/avatar-01.jpg" alt={`${user.firstName} ${user.lastName}`} className="w-24 h-24 rounded-full object-cover mb-4" />
+                  {user.profileImageUrl ? (
+                    <img 
+                      src={user.profileImageUrl} 
+                      alt={`${user.firstName} ${user.lastName}`} 
+                      className="w-24 h-24 rounded-full object-cover mb-4" 
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  {!user.profileImageUrl && (
+                    <UserCircle className="w-24 h-24 text-gray-400 mb-4" />
+                  )}
+                  <UserCircle className="w-24 h-24 text-gray-400 mb-4 hidden" />
                   <div className="text-xl font-semibold mb-1 text-gray-900 dark:text-gray-100">
                     {user.firstName} {user.lastName}
                   </div>
@@ -317,6 +407,14 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                       {user.role}
                     </span>
                   </div>
+                  {/* Avatar Upload Button */}
+                  <button
+                    onClick={() => setShowAvatarUpload(true)}
+                    className="mt-3 px-4 py-2 bg-my-primary text-white rounded-lg hover:bg-my-primary/80 transition-colors flex items-center text-sm"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {user.profileImageUrl ? 'Change Avatar' : 'Upload Avatar'}
+                  </button>
                 </div>
               </div>
 
@@ -350,9 +448,82 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                       {new Date(user.createdAt).toLocaleDateString()}
                     </span>
                   </div>
+                  {user.dateOfBirth && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Date of Birth:</span>
+                      <span className="text-gray-900 dark:text-gray-100">
+                        {new Date(user.dateOfBirth).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {user.gender && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Gender:</span>
+                      <span className="text-gray-900 dark:text-gray-100 capitalize">
+                        {user.gender}
+                      </span>
+                    </div>
+                  )}
+                  {user.bio && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Bio:</span>
+                      <span className="text-gray-900 dark:text-gray-100 text-sm max-w-xs">
+                        {user.bio}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
+
+            {/* Location Information */}
+            {(user.province || user.district || user.sector || user.cell || user.village || user.addressLine) && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Location Information</h3>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {user.province && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Province:</span>
+                        <span className="text-gray-900 dark:text-gray-100">{user.province}</span>
+                      </div>
+                    )}
+                    {user.district && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">District:</span>
+                        <span className="text-gray-900 dark:text-gray-100">{user.district}</span>
+                      </div>
+                    )}
+                    {user.sector && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Sector:</span>
+                        <span className="text-gray-900 dark:text-gray-100">{user.sector}</span>
+                      </div>
+                    )}
+                    {user.cell && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Cell:</span>
+                        <span className="text-gray-900 dark:text-gray-100">{user.cell}</span>
+                      </div>
+                    )}
+                    {user.village && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Village:</span>
+                        <span className="text-gray-900 dark:text-gray-100">{user.village}</span>
+                      </div>
+                    )}
+                    {user.addressLine && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Address:</span>
+                        <span className="text-gray-900 dark:text-gray-100 text-sm max-w-xs">
+                          {user.addressLine}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* KYC Progress Section */}
             {user.kycProgress && (
@@ -396,6 +567,87 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 Close
               </button>
             </div>
+          </div>
+        </Dialog>
+      )}
+
+      {/* Avatar Upload Modal */}
+      {showAvatarUpload && user && (
+        <Dialog open={showAvatarUpload} onClose={() => setShowAvatarUpload(false)} className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 w-full max-w-md mx-auto z-50">
+            <Dialog.Title className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+              Upload Avatar
+            </Dialog.Title>
+            
+            <form onSubmit={handleAvatarUpload} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  required
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Max size: 5MB. Supported formats: JPG, PNG, GIF</p>
+              </div>
+              
+              {avatarFile && (
+                <div className="flex items-center space-x-3">
+                  <img
+                    src={URL.createObjectURL(avatarFile)}
+                    alt="Preview"
+                    className="w-16 h-16 rounded-full object-cover border"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{avatarFile.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {(avatarFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {avatarUploadError && (
+                <div className="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                  {avatarUploadError}
+                </div>
+              )}
+              
+              {avatarUploadSuccess && (
+                <div className="text-green-600 text-sm bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  {avatarUploadSuccess}
+                </div>
+              )}
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarUpload(false)}
+                  className="px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={avatarUploadLoading || !avatarFile}
+                  className="px-4 py-2 rounded bg-my-primary text-white hover:bg-my-primary/80 disabled:opacity-50 flex items-center transition-colors"
+                >
+                  {avatarUploadLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Avatar
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </Dialog>
       )}

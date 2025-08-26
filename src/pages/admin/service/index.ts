@@ -34,3 +34,5 @@ export * from './messagingService';
 
 // Re-export types that might be needed
 export type { AdminBooking } from '../interfaces';
+export { adminService } from './adminService';
+export type { AdminUserProfile } from './adminService';

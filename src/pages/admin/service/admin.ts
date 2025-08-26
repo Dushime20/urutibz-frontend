@@ -67,6 +67,16 @@ export async function fetchAdminUsers(
       headers: createAuthHeaders(token),
     });
     console.log('Raw API Response:', response.data); // Debug log
+    
+    // Log the first user to see what fields are available
+    if (response.data?.data?.items && response.data.data.items.length > 0) {
+      console.log('First user from list:', response.data.data.items[0]);
+      console.log('Profile image fields:', {
+        profile_image: response.data.data.items[0].profile_image,
+        profileImageUrl: response.data.data.items[0].profileImageUrl
+      });
+    }
+    
     return response.data?.data || { items: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 1 } };
   } catch (error) {
     console.error('Error fetching admin users:', error);
@@ -146,7 +156,7 @@ export async function fetchRecentUsers(limit: number = 5, token?: string): Promi
         id: user.id,
         name: `${user.first_name} ${user.last_name}`,
         email: user.email,
-        avatar: user.profile_image || defaultAvatar,
+        avatar: user.profile_image || user.profileImageUrl || defaultAvatar,
         role: user.role,
         status: user.status,
         joinDate: new Date(user.created_at).toLocaleDateString('en-US', {

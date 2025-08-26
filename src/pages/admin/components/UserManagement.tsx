@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, CheckCircle, Calendar, Package, Filter, Plus, Eye, MoreVertical } from 'lucide-react';
+import { Users, CheckCircle, Calendar, Package, Filter, Plus, Eye, MoreVertical, UserCircle } from 'lucide-react';
 import type { AdminUser } from '../interfaces';
 import { fetchAdminUsers, fetchAdminUserById, moderateAdminUser } from '../service';
 import SkeletonTable from './SkeletonTable';
@@ -41,15 +41,25 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         const response = await fetchAdminUsers(1, 50, token || undefined);
         if (response.items) {
           setUsers(response.items);
+          
+          // Debug: Log the first user to see what fields are available
+          if (response.items.length > 0) {
+            console.log('First user in UserManagement:', response.items[0]);
+            console.log('Profile image fields:', {
+              profile_image: response.items[0].profile_image,
+              profileImageUrl: response.items[0].profileImageUrl
+            });
+          }
+          
           // Calculate stats
           const total = response.pagination.total;
           // Use kyc_status for verified
           const verified = response.items.filter(user => user.kyc_status?.toLowerCase() === 'verified').length;
           const pending = response.items.filter(user => user.status?.toLowerCase() === 'pending').length;
           const hosts = response.items.filter(user =>
-            user.role?.toLowerCase() === 'host' ||
-            user.role?.toLowerCase() === 'owner' ||
-            user.role?.toLowerCase() === 'vendor'
+            (user.role?.toLowerCase() === 'host') ||
+            (user.role?.toLowerCase() === 'owner') ||
+            (user.role?.toLowerCase() === 'vendor')
           ).length;
           setStats({
             total,
@@ -226,10 +236,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
-                      <img className="h-10 w-10 rounded-full object-cover" src={user.profile_image || '/assets/img/profiles/avatar-01.jpg'} alt="" />
+                      {(user.profile_image || user.profileImageUrl) ? (
+                        <img 
+                          className="h-10 w-10 rounded-full object-cover" 
+                          src={user.profile_image || user.profileImageUrl} 
+                          alt={`${user.first_name || user.firstName} ${user.last_name || user.lastName}`}
+                          onError={(e) => {
+                            // Fallback to empty user icon if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      {!(user.profile_image || user.profileImageUrl) && (
+                        <UserCircle className="h-10 w-10 text-gray-400" />
+                      )}
+                      <UserCircle className="h-10 w-10 text-gray-400 hidden" />
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{user.first_name} {user.last_name}</div>
+                      <div className="text-sm font-medium text-gray-900">{user.first_name || user.firstName} {user.last_name || user.lastName}</div>
                     </div>
                   </div>
                 </td>
@@ -247,7 +273,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(user.created_at)}
+                  {formatDate(user.created_at || user.createdAt || '')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
                   <button
@@ -315,7 +341,24 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             ) : (
               <div className="space-y-2">
                 <div className="flex items-center gap-4 mb-4">
-                  <img src={viewUser.profile_image_url || '/assets/img/profiles/avatar-01.jpg'} alt={viewUser.first_name} className="w-16 h-16 rounded-full" />
+                  <div className="relative">
+                    {(viewUser.profile_image_url || viewUser.profile_image || viewUser.profileImageUrl) ? (
+                      <img 
+                        src={viewUser.profile_image_url || viewUser.profile_image || viewUser.profileImageUrl} 
+                        alt={`${viewUser.first_name} ${viewUser.last_name}`} 
+                        className="w-16 h-16 rounded-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    {!(viewUser.profile_image_url || viewUser.profile_image || viewUser.profileImageUrl) && (
+                      <UserCircle className="w-16 h-16 text-gray-400" />
+                    )}
+                    <UserCircle className="w-16 h-16 text-gray-400 hidden" />
+                  </div>
                   <div>
                     <div className="font-bold text-lg">{viewUser.first_name} {viewUser.last_name}</div>
                     <div className="text-gray-500">{viewUser.email}</div>
