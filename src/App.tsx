@@ -22,6 +22,9 @@ import FavoritesPage from './pages/FavoritesPage';
 import UrutiBzVerification from './pages/verification2/urutibiziVerification';
 // import AddressVerificationPage from './pages/verification/AddressVerificationPage';
 import DemoPage from './pages/DemoPage';
+import RoleAwareInspections from './pages/inspections/RoleAwareInspections';
+import InspectorDashboardPage from './pages/inspections/InspectorDashboardPage';
+import InspectionDetailsPage from './pages/inspections/InspectionDetailsPage';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ui/ToastContainer';
 import { DarkModeProvider } from './contexts/DarkModeContext';
@@ -50,6 +53,23 @@ function App() {
             <Route path="my-account" element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Inspection routes - protected, standalone (no header/footer) */}
+            <Route path="inspections" element={
+              <ProtectedRoute>
+                <RoleAwareInspections />
+              </ProtectedRoute>
+            } />
+            <Route path="inspector" element={
+              <ProtectedRoute>
+                <InspectorDashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="inspections/:id" element={
+              <ProtectedRoute>
+                <InspectionDetailsPage />
               </ProtectedRoute>
             } />
             
@@ -118,6 +138,9 @@ function App() {
                   <UrutiBzVerification />
                 </ProtectedRoute>
               } />
+              
+
+              
               {/* <Route path="verify/address" element={
                 <ProtectedRoute>
                   <AddressVerificationPage />

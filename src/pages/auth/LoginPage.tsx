@@ -92,12 +92,13 @@ const LoginPage: React.FC = () => {
         showToast('Login successful!', 'success');
       }
       setTimeout(() => {
-      if (data.user.role==="admin"){
-        navigate("/admin");
-      }
-      else{
-        navigate("/dashboard");
-      }
+        if (data.user.role === "admin") {
+          navigate("/admin");
+        } else if (data.user.role === "inspector") {
+          navigate("/inspector");
+        } else {
+          navigate("/dashboard");
+        }
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Invalid email or password. Please try again.');

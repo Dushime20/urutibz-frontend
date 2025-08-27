@@ -29,7 +29,7 @@ export interface User {
   verification: VerificationStatus;
   joinedDate: string;
   kyc_status?: string;
-  role?: 'user' | 'admin' | 'moderator';
+  role?: 'user' | 'admin' | 'moderator' | 'inspector';
 }
 
 // Define context type
