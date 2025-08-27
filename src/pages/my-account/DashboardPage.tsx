@@ -4,12 +4,12 @@ import {
   DollarSign, Star,
   Shield, MessageCircle, TrendingUp,
   BarChart3, Package, Settings,
-  Calendar, Heart,
+  Calendar, 
   Car, Wallet, BookOpen, ArrowUpRight,
   Bell, Search, 
   MoreHorizontal, User, 
   Lock, Eye, 
-  Save, Edit2, Trash2, Upload,
+  Edit2, Trash2, 
   Mail, Phone, MapPin,
   CreditCard, Languages, Moon, Sun,
   XCircle
@@ -36,6 +36,8 @@ import {
 } from './service/api';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
+import CreateInspectionModal from '../../components/inspections/CreateInspectionModal';
+import { inspectionService } from '../../services/inspectionService';
 import { useNavigate } from 'react-router-dom';
 import NewListingModal from './models/NewListingModal';
 import ProfileSettingsForm from './components/ProfileSettingsForm';
@@ -43,6 +45,8 @@ import ProductDetailModal from './models/ProductDetailModal';
 import EditProductModal from './models/EditProductModal';
 import { TwoFactorManagement } from '../../components/2fa';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
+import { disputeService } from '../../services/inspectionService';
+import { Inspection, DisputeType } from '../../types/inspection';
 
 // TypeScript interfaces for component props
 interface StatCardProps {
@@ -107,80 +111,11 @@ type FormState = {
 // Add this utility function at the top or in a utils file
 
 // Helper function to truncate text intelligently
-const truncateText = (text: string, maxLength: number): string => {
-  if (!text || text.length <= maxLength) return text;
-  
-  // Try to break at word boundaries
-  const truncated = text.substring(0, maxLength);
-  const lastSpace = truncated.lastIndexOf(' ');
-  
-  // If we found a space and it's not too close to the beginning, break there
-  if (lastSpace > maxLength * 0.6) {
-    return truncated.substring(0, lastSpace) + '...';
-  }
-  
-  // Otherwise, just truncate with ellipsis
-  return truncated + '...';
-};
 
 // Helper component for user avatar display
-const UserAvatar: React.FC<{ 
-  avatar: string | null; 
-  verified: boolean; 
-  className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-}> = ({ avatar, verified, className = '', size = 'lg' }) => {
-  const sizeClasses = {
-    sm: 'w-10 h-10',
-    md: 'w-16 h-16', 
-    lg: 'w-20 h-20',
-    xl: 'w-28 h-28'
-  };
-  
-  const iconSizes = {
-    sm: 'w-5 h-5',
-    md: 'w-8 h-8',
-    lg: 'w-10 h-10',
-    xl: 'w-14 h-14'
-  };
-
-  return (
-    <div className={`relative inline-block ${className}`}>
-      {avatar ? (
-        <img
-          src={avatar}
-          alt="User"
-          className={`${sizeClasses[size]} rounded-2xl object-cover object-center ring-4 ring-white shadow-lg`}
-          onError={(e) => {
-            // If image fails to load, replace with icon placeholder
-            const parent = (e.target as HTMLImageElement).parentElement;
-            if (parent) {
-              parent.innerHTML = `
-                <div class="${sizeClasses[size]} rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 ring-4 ring-white shadow-lg flex items-center justify-center">
-                  <svg class="${iconSizes[size]} text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                  </svg>
-                </div>
-              `;
-            }
-          }}
-        />
-      ) : (
-        <div className={`${sizeClasses[size]} rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 ring-4 ring-white shadow-lg flex items-center justify-center`}>
-          <User className={`${iconSizes[size]} text-gray-500`} />
-        </div>
-      )}
-      {verified && (
-        <div className="absolute -bottom-2 -right-2 bg-primary-500 rounded-xl p-2 shadow-lg">
-          <Shield className="w-4 h-4 text-white" />
-        </div>
-      )}
-    </div>
-  );
-};
 
 const DashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'wishlist' | 'reviews' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'settings'>('overview');
   const { showToast } = useToast();
   const { user: authUser, logout } = useAuth();
   const navigate = useNavigate();
@@ -251,6 +186,15 @@ const DashboardPage: React.FC = () => {
   const [myListings, setMyListings] = useState<any[]>([]);
   const [productImages, setProductImages] = useState<{ [productId: string]: any[] }>({});
   const [loadingListings, setLoadingListings] = useState(false);
+  const [showInspectionModal, setShowInspectionModal] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(null);
+  const [disputeForm, setDisputeForm] = useState({
+    disputeType: DisputeType.DAMAGE_ASSESSMENT,
+    reason: '',
+    evidence: '',
+    photos: [] as File[]
+  });
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -260,12 +204,14 @@ const DashboardPage: React.FC = () => {
   const [bookingProducts, setBookingProducts] = useState<{ [bookingId: string]: any }>({});
   const [bookingImages, setBookingImages] = useState<{ [bookingId: string]: any[] }>({});
   const [loadingBookings, setLoadingBookings] = useState(false);
-  const [dashboardStats, setDashboardStats] = useState({
-    activeBookings: 0,
-    totalEarnings: 0,
-    totalTransactions: 0,
-    wishlistItems: 0
-  });
+     const [dashboardStats, setDashboardStats] = useState({
+     activeBookings: 0,
+     totalEarnings: 0,
+     totalTransactions: 0,
+     activeInspections: 0,
+     totalInspections: 0,
+     completedInspections: 0
+   });
   const [recentDashboardBookings, setRecentDashboardBookings] = useState<any[]>([]);
   const [recentDashboardTransactions, setRecentDashboardTransactions] = useState<any[]>([]);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
@@ -283,6 +229,11 @@ const DashboardPage: React.FC = () => {
   // 2FA state
   const [show2FAModal, setShow2FAModal] = useState(false);
   const { status: twoFactorStatus } = useTwoFactor();
+
+  const [userInspections, setUserInspections] = useState<Inspection[]>([]);
+  const [inspectionsLoading, setInspectionsLoading] = useState(false);
+  const [userDisputes, setUserDisputes] = useState<any[]>([]);
+  const [disputesLoading, setDisputesLoading] = useState(false);
 
   // Fetch real user profile data
   useEffect(() => {
@@ -392,7 +343,14 @@ const DashboardPage: React.FC = () => {
         
         // Fetch dashboard stats
         const stats = await fetchDashboardStats(token);
-        setDashboardStats(stats);
+        setDashboardStats({
+          activeBookings: stats.activeBookings || 0,
+          totalEarnings: stats.totalEarnings || 0,
+          totalTransactions: stats.totalTransactions || 0,
+          activeInspections: 0,
+          totalInspections: 0,
+          completedInspections: 0
+        });
 
         // Fetch recent bookings
         const bookings = await fetchRecentBookings(token);
@@ -912,6 +870,123 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  const handleOpenDisputeModal = (inspectionId: string) => {
+    setSelectedInspectionId(inspectionId);
+    setShowDisputeModal(true);
+  };
+
+  const handleRaiseDispute = async () => {
+    if (!selectedInspectionId || !disputeForm.reason.trim()) {
+      showToast('Please provide a reason for the dispute', 'error');
+      return;
+    }
+    
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('disputeType', disputeForm.disputeType);
+      formData.append('reason', disputeForm.reason);
+      formData.append('evidence', disputeForm.evidence);
+      
+      // Append photos if any
+      disputeForm.photos.forEach((photo) => {
+        formData.append('photos', photo);
+      });
+      
+      await disputeService.raiseDispute(selectedInspectionId, formData as any);
+      
+      // Reset form and close modal
+      setDisputeForm({
+        disputeType: DisputeType.DAMAGE_ASSESSMENT,
+        reason: '',
+        evidence: '',
+        photos: []
+      });
+      setShowDisputeModal(false);
+      setSelectedInspectionId(null);
+      showToast('Dispute raised successfully', 'success');
+    } catch (error) {
+      console.error('Failed to raise dispute:', error);
+      showToast('Failed to raise dispute', 'error');
+    }
+  };
+
+  // Fetch user's inspections
+  const fetchUserInspections = async () => {
+    if (!authUser?.id) return;
+    
+    setInspectionsLoading(true);
+    try {
+      const response = await inspectionService.getInspectionsByOwner(authUser.id);
+      setUserInspections(response.data || []);
+      
+      // Update dashboard stats with inspection data
+      const totalInspections = response.total || 0;
+      const activeInspections = (response.data || [])?.filter((inspection: Inspection) => 
+        inspection.status === 'pending' || inspection.status === 'in_progress'
+      ).length || 0;
+      const completedInspections = (response.data || [])?.filter((inspection: Inspection) => 
+        inspection.status === 'completed'
+      ).length || 0;
+      
+      setDashboardStats(prev => ({
+        ...prev,
+        activeInspections,
+        totalInspections,
+        completedInspections
+      }));
+    } catch (error) {
+      console.error('Error fetching user inspections:', error);
+      showToast('Failed to load inspections', 'error');
+      // Ensure userInspections is always an array even on error
+      setUserInspections([]);
+      // Reset inspection stats on error
+      setDashboardStats(prev => ({
+        ...prev,
+        activeInspections: 0,
+        totalInspections: 0,
+        completedInspections: 0
+      }));
+    } finally {
+      setInspectionsLoading(false);
+    }
+  };
+
+  // Fetch user's disputes
+  const fetchUserDisputes = async () => {
+    if (!authUser?.id) return;
+    
+    setDisputesLoading(true);
+    try {
+      console.log('Fetching user disputes...');
+      const response = await disputeService.getAllDisputes();
+      console.log('Disputes response:', response);
+      console.log('Disputes array:', response.disputes);
+      setUserDisputes(response.disputes || []);
+    } catch (error) {
+      console.error('Error fetching user disputes:', error);
+      showToast('Failed to load disputes', 'error');
+      setUserDisputes([]);
+    } finally {
+      setDisputesLoading(false);
+    }
+  };
+
+  // Load inspections when inspections tab is active
+  useEffect(() => {
+    if (activeTab === 'inspections' && authUser?.id) {
+      fetchUserInspections();
+      fetchUserDisputes();
+    }
+  }, [activeTab, authUser?.id]);
+
+  // Initialize userInspections as empty array when component mounts
+  useEffect(() => {
+    if (!userInspections) {
+      setUserInspections([]);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-my-primary/10 to-indigo-50/30">
       {/* Top Navigation Bar */}
@@ -975,12 +1050,12 @@ const DashboardPage: React.FC = () => {
               active={activeTab === 'wallet'}
               onClick={() => setActiveTab('wallet')}
             />
-            <NavigationItem
-              icon={Heart}
-              label="Wishlist"
-              active={activeTab === 'wishlist'}
-              onClick={() => setActiveTab('wishlist')}
-            />
+                         <NavigationItem
+               icon={Shield}
+               label="Inspections"
+               active={activeTab === 'inspections'}
+               onClick={() => setActiveTab('inspections')}
+             />
             <NavigationItem
               icon={BookOpen}
               label="Reviews"
@@ -1052,15 +1127,15 @@ const DashboardPage: React.FC = () => {
                       color="text-purple-600"
                       bgColor="bg-purple-50"
                     />
-                    <StatCard
-                      icon={Heart}
-                      title="Wishlist Items"
-                      value={dashboardStats.wishlistItems}
-                      subtitle="Items saved"
-                      trend={false}
-                      color="text-pink-600"
-                      bgColor="bg-pink-50"
-                    />
+                                         <StatCard
+                       icon={Shield}
+                       title="Active Inspections"
+                       value={dashboardStats.activeInspections}
+                       subtitle="In progress"
+                       trend={true}
+                       color="text-emerald-600"
+                       bgColor="bg-emerald-50"
+                     />
                   </div>
 
                   {/* Content Grid */}
@@ -1385,7 +1460,10 @@ const DashboardPage: React.FC = () => {
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-gray-900">My Listings</h3>
-                  <Button onClick={handleOpenModal} className="mb-4 bg-primary-500 text-white px-2 py-2">Add New Listing</Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setShowInspectionModal(true)} className="mb-4 bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700">Request Inspection</Button>
+                    <Button onClick={handleOpenModal} className="mb-4 bg-primary-500 text-white px-2 py-2">Add New Listing</Button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {myListings.map((listing) => (
@@ -1439,127 +1517,475 @@ const DashboardPage: React.FC = () => {
             )
           )}
 
-          {activeTab === 'wallet' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Available Balance Card */}
-                <div className="bg-gradient-to-br from-active via-active to-active-dark rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-active/25">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
-                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                        <Wallet className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">
-                        Available
-                      </div>
-                    </div>
-                    <h4 className="text-lg font-semibold mb-2 text-white/90">Wallet Balance</h4>
-                    <p className="text-4xl font-bold mb-6 text-white">${dashboardStats.totalEarnings.toLocaleString()}</p>
-                    <button className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm hover:scale-105 border border-white/20">
-                      Withdraw Funds
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Total Transactions Card */}
-                <div className="bg-gradient-to-br from-platform-grey via-platform-dark-grey to-platform-dark-grey rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-platform-dark-grey/25">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
-                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4">
-                      {/* <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                        <DollarSign className="w-6 h-6 text-white" />
-                      </div> */}
-                      <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">
-                        Total
-                      </div>
-                    </div>
-                    <h4 className="text-lg font-semibold mb-2 text-white/90">Transaction Volume</h4>
-                    <p className="text-4xl font-bold mb-6 text-white">${dashboardStats.totalTransactions.toLocaleString()}</p>
-                    <button
-                      onClick={() => setActiveTab('wallet')}
-                      className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm hover:scale-105 border border-white/20"
-                    >
-                      View All Transactions
-                    </button>
-                  </div>
-                </div>
-              </div>
+          
 
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-6">
-                  <h4 className="text-lg font-bold text-gray-900">Payment Transactions</h4>
-                  {userTransactions.length > 0 && (
-                    <span className="text-sm text-gray-500">{userTransactions.length} total</span>
-                  )}
-                </div>
+          {/* Request Inspection Modal */}
+          {showInspectionModal && (
+            <CreateInspectionModal
+              isOpen={showInspectionModal}
+              onClose={() => setShowInspectionModal(false)}
+              onSubmit={async (data) => {
+                try {
+                  await inspectionService.createInspection(data as any);
+                  setShowInspectionModal(false);
+                  showToast('Inspection requested successfully!', 'success');
+                } catch (e: any) {
+                  showToast(e?.message || 'Failed to request inspection', 'error');
+                }
+              }}
+            />
+          )}
+
+          {/* Dispute Modal */}
+          {showDisputeModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowDisputeModal(false)} />
+              <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Raise Dispute</h3>
                 
-                {loadingWallet ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-                    <span className="ml-3 text-gray-600">Loading transactions...</span>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Dispute Type *</label>
+                    <select
+                      value={disputeForm.disputeType}
+                      onChange={(e) => setDisputeForm(prev => ({ ...prev, disputeType: e.target.value as DisputeType }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    >
+                      <option value={DisputeType.DAMAGE_ASSESSMENT}>Damage Assessment</option>
+                      <option value={DisputeType.COST_DISPUTE}>Cost Dispute</option>
+                      <option value={DisputeType.PROCEDURE_VIOLATION}>Procedure Violation</option>
+                      <option value={DisputeType.OTHER}>Other</option>
+                    </select>
                   </div>
-                ) : userTransactions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg font-medium">No transactions found</p>
-                    <p className="text-gray-400 text-sm">Your payment history will appear here</p>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                    <textarea
+                      value={disputeForm.reason}
+                      onChange={(e) => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                      placeholder="Describe the reason for this dispute..."
+                    />
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {userTransactions.map((transaction) => (
-                      <div key={transaction.id} className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-                        {/* <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                          <DollarSign className="w-6 h-6 text-primary-600" />
-                        </div> */}
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="font-semibold text-gray-900 capitalize">
-                              {transaction.transaction_type?.replace(/_/g, ' ') || 'Payment'}
-                            </h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              transaction.status === 'completed' 
-                                ? 'bg-green-100 text-green-700' 
-                                : transaction.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              {transaction.status}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-500">
-                            {new Date(transaction.created_at).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                          {transaction.metadata?.description && (
-                            <p className="text-xs text-gray-400 mt-1">{transaction.metadata.description}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-lg text-gray-900">
-                            {parseFloat(transaction.amount).toLocaleString()} {transaction.currency}
-                          </p>
-                          <p className="text-xs text-gray-500">via {transaction.provider}</p>
-                          {transaction.metadata?.is_converted && (
-                            <p className="text-xs text-my-primary">
-                              Originally {transaction.metadata.original_amount} {transaction.metadata.original_currency}
-                            </p>
-                          )}
-                        </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Evidence</label>
+                    <textarea
+                      value={disputeForm.evidence}
+                      onChange={(e) => setDisputeForm(prev => ({ ...prev, evidence: e.target.value }))}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                      placeholder="Provide any supporting evidence or additional details..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Supporting Photos</label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setDisputeForm(prev => ({ ...prev, photos: files }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                    <p className="mt-1 text-sm text-gray-500">Upload photos to support your dispute (optional)</p>
+                    {disputeForm.photos.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600">Selected files:</p>
+                        <ul className="mt-1 text-sm text-gray-500">
+                          {disputeForm.photos.map((file, index) => (
+                            <li key={index}>{file.name}</li>
+                          ))}
+                        </ul>
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowDisputeModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                  >
+                    Cancel
+                  </button>
+                  
+                  <button
+                    onClick={handleRaiseDispute}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    Raise Dispute
+                  </button>
+                </div>
               </div>
             </div>
           )}
+
+                     {activeTab === 'wallet' && (
+             <div className="space-y-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 {/* Available Balance Card */}
+                 <div className="bg-gradient-to-br from-active via-active to-active-dark rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-active/25">
+                   <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
+                   <div className="relative z-10">
+                     <div className="flex items-center justify-between mb-4">
+                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                         <Wallet className="w-6 h-6 text-white" />
+                       </div>
+                       <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">
+                         Available
+                       </div>
+                     </div>
+                     <h4 className="text-lg font-semibold mb-2 text-white/90">Wallet Balance</h4>
+                     <p className="text-4xl font-bold mb-6 text-white">${dashboardStats.totalEarnings.toLocaleString()}</p>
+                     <button className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm hover:scale-105 border border-white/20">
+                       Withdraw Funds
+                     </button>
+                   </div>
+                 </div>
+                 
+                 {/* Total Transactions Card */}
+                 <div className="bg-gradient-br from-platform-grey via-platform-dark-grey to-platform-dark-grey rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-platform-dark-grey/25">
+                   <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
+                   <div className="relative z-10">
+                     <div className="flex items-center justify-between mb-4">
+                       {/* <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                         <DollarSign className="w-6 h-6 text-primary-600" />
+                         </div> */}
+                       <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">
+                         Total
+                       </div>
+                     </div>
+                     <h4 className="text-lg font-semibold mb-2 text-white/90">Transaction Volume</h4>
+                     <p className="text-4xl font-bold mb-6 text-white">${dashboardStats.totalTransactions.toLocaleString()}</p>
+                     <button
+                       onClick={() => setActiveTab('wallet')}
+                       className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm hover:scale-105 border border-white/20"
+                     >
+                       View All Transactions
+                     </button>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                 <div className="flex items-center justify-between mb-6">
+                   <h4 className="text-lg font-bold text-gray-900">Payment Transactions</h4>
+                   {userTransactions.length > 0 && (
+                     <span className="text-sm text-gray-500">{userTransactions.length} total</span>
+                   )}
+                 </div>
+                 
+                 {loadingWallet ? (
+                   <div className="flex items-center justify-center py-12">
+                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                     <span className="ml-3 text-gray-600">Loading transactions...</span>
+                   </div>
+                 ) : userTransactions.length === 0 ? (
+                   <div className="text-center py-12">
+                     <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                     <p className="text-gray-500 text-lg font-medium">No transactions found</p>
+                     <p className="text-gray-500 text-sm">Your payment history will appear here</p>
+                   </div>
+                 ) : (
+                   <div className="space-y-4">
+                     {userTransactions.map((transaction) => (
+                       <div key={transaction.id} className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
+                         {/* <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                           <DollarSign className="w-6 h-6 text-primary-600" />
+                         </div> */}
+                         <div className="flex-1">
+                           <div className="flex items-center space-x-2">
+                             <h4 className="font-semibold text-gray-900 capitalize">
+                               {transaction.transaction_type?.replace(/_/g, ' ') || 'Payment'}
+                             </h4>
+                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                               transaction.status === 'completed' 
+                                 ? 'bg-green-100 text-green-700' 
+                                 : transaction.status === 'pending'
+                                 ? 'bg-yellow-100 text-yellow-700'
+                                 : 'bg-red-100 text-red-700'
+                             }`}>
+                               {transaction.status}
+                             </span>
+                           </div>
+                           <p className="text-sm text-gray-500">
+                             {new Date(transaction.created_at).toLocaleDateString('en-US', {
+                               year: 'numeric',
+                               month: 'short',
+                               day: 'numeric',
+                               hour: '2-digit',
+                               minute: '2-digit'
+                             })}
+                           </p>
+                           {transaction.metadata?.description && (
+                             <p className="text-xs text-gray-400 mt-1">{transaction.metadata.description}</p>
+                           )}
+                         </div>
+                         <div className="text-right">
+                           <p className="font-bold text-lg text-gray-900">
+                             {parseFloat(transaction.amount).toLocaleString()} {transaction.currency}
+                             </p>
+                           <p className="text-xs text-gray-500">via {transaction.provider}</p>
+                           {transaction.metadata?.is_converted && (
+                             <p className="text-xs text-my-primary">
+                               Originally {transaction.metadata.original_amount} {transaction.metadata.original_currency}
+                             </p>
+                           )}
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+               </div>
+             </div>
+           )}
+
+           {activeTab === 'inspections' && (
+             <div className="space-y-6">
+               {/* Overview Cards */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <StatCard
+                   icon={Shield}
+                   title="Total Inspections"
+                   value={dashboardStats.totalInspections}
+                   subtitle="All time"
+                   trend={false}
+                   color="text-emerald-600"
+                   bgColor="bg-emerald-50"
+                 />
+                 <StatCard
+                   icon={Calendar}
+                   title="Active Inspections"
+                   value={dashboardStats.activeInspections}
+                   subtitle="Currently pending"
+                   trend={true}
+                   color="text-blue-600"
+                   bgColor="bg-blue-50"
+                 />
+                 <StatCard
+                   icon={BookOpen}
+                   title="Completed Inspections"
+                   value={dashboardStats.completedInspections}
+                   subtitle="Successfully finished"
+                   trend={true}
+                   color="text-green-600"
+                   bgColor="bg-green-50"
+                 />
+               </div>
+
+               {/* Inspections Management */}
+               <div className="bg-white rounded-lg shadow p-6">
+                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                   <div>
+                     <h3 className="text-lg font-semibold text-gray-900">Inspections Management</h3>
+                     <p className="text-sm text-gray-600">Manage your product inspections and disputes</p>
+                   </div>
+                   <div className="flex flex-col sm:flex-row gap-3">
+                     <Button
+                       onClick={() => setShowInspectionModal(true)}
+                       className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-2"
+                     >
+                       Request New Inspection
+                     </Button>
+                     <Button
+                       onClick={() => setShowDisputeModal(true)}
+                       variant="outline"
+                       className="border-red-300 text-red-700 hover:bg-red-50"
+                     >
+                       Raise Dispute
+                     </Button>
+                   </div>
+                 </div>
+
+                 {/* Inspections List */}
+                 <div className="space-y-4">
+                   {inspectionsLoading ? (
+                     <div className="text-center py-8">
+                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+                       <p className="mt-2 text-gray-600">Loading inspections...</p>
+                     </div>
+                   ) : (userInspections || []).length > 0 ? (
+                     <div className="space-y-3">
+                       {(userInspections || []).map((inspection) => (
+                         <div
+                           key={inspection.id}
+                           className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                         >
+                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                             <div className="flex-1">
+                               <div className="flex items-center gap-3 mb-2">
+                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                   inspection.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                   inspection.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                   inspection.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                   'bg-gray-100 text-gray-800'
+                                 }`}>
+                                   {inspection.status.replace('_', ' ').toUpperCase()}
+                                 </span>
+                                 <span className="text-sm text-gray-500">
+                                   {inspection.inspectionType.replace('_', ' ').toUpperCase()}
+                                 </span>
+                               </div>
+                               <p className="text-sm text-gray-600 mb-1">
+                                 <strong>Location:</strong> {inspection.location}
+                               </p>
+                               <p className="text-sm text-gray-600 mb-1">
+                                 <strong>Scheduled:</strong> {new Date(inspection.scheduledAt).toLocaleDateString()}
+                               </p>
+                               {inspection.notes && (
+                                 <p className="text-sm text-gray-600">
+                                   <strong>Notes:</strong> {inspection.notes}
+                                 </p>
+                               )}
+                             </div>
+                             <div className="flex flex-col sm:flex-row gap-2">
+                               <Button
+                                 onClick={() => handleOpenDisputeModal(inspection.id)}
+                                 variant="outline"
+                                 size="sm"
+                                 className="border-red-300 text-red-700 hover:bg-red-50"
+                               >
+                                 Raise Dispute
+                               </Button>
+                             </div>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   ) : (
+                     <div className="text-center py-8">
+                       <Shield className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                       <h3 className="text-lg font-medium text-gray-900 mb-2">No inspections yet</h3>
+                       <p className="text-gray-600 mb-4">You haven't requested any inspections yet.</p>
+                       <Button
+                         onClick={() => setShowInspectionModal(true)}
+                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                       >
+                         Request Your First Inspection
+                       </Button>
+                     </div>
+                   )}
+                 </div>
+               </div>
+
+               {/* Recent Activity */}
+               <div className="bg-white rounded-lg shadow p-6">
+                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                 <div className="space-y-3">
+                   {(userInspections || []).slice(0, 3).map((inspection) => (
+                     <div key={inspection.id} className="flex items-center gap-3 text-sm">
+                       <div className={`w-2 h-2 rounded-full ${
+                         inspection.status === 'completed' ? 'bg-green-500' :
+                         inspection.status === 'in_progress' ? 'bg-blue-500' :
+                         'bg-yellow-500'
+                       }`}></div>
+                       <span className="text-gray-600">
+                         {inspection.status === 'completed' ? 'Inspection completed' :
+                          inspection.status === 'in_progress' ? 'Inspection in progress' :
+                          'Inspection scheduled'} for {inspection.inspectionType.replace('_', ' ')}
+                       </span>
+                       <span className="text-gray-400 ml-auto">
+                         {new Date(inspection.updatedAt || inspection.createdAt).toLocaleDateString()}
+                       </span>
+                     </div>
+                   ))}
+                   {(userInspections || []).length === 0 && (
+                     <p className="text-gray-500 text-center py-4">No recent activity</p>
+                   )}
+                 </div>
+               </div>
+
+               {/* Disputes Section */}
+               <div className="bg-white rounded-lg shadow p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold text-gray-900">Disputes</h3>
+                   <Button
+                     onClick={() => setShowDisputeModal(true)}
+                     variant="outline"
+                     size="sm"
+                     className="border-red-300 text-red-700 hover:bg-red-50"
+                   >
+                     Raise New Dispute
+                   </Button>
+                 </div>
+                 
+                 {disputesLoading ? (
+                   <div className="text-center py-8">
+                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+                     <p className="mt-2 text-gray-600">Loading disputes...</p>
+                   </div>
+                 ) : (userDisputes || []).length > 0 ? (
+                   <div className="space-y-3">
+                     {(userDisputes || []).map((dispute) => (
+                       <div
+                         key={dispute.id}
+                         className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                       >
+                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                           <div className="flex-1">
+                             <div className="flex items-center gap-3 mb-2">
+                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                 dispute.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                 dispute.status === 'under_review' ? 'bg-blue-100 text-blue-800' :
+                                 'bg-red-100 text-red-800'
+                               }`}>
+                                 {dispute.status.replace('_', ' ').toUpperCase()}
+                               </span>
+                               <span className="text-sm text-gray-500">
+                                 {dispute.disputeType?.replace('_', ' ').toUpperCase() || 'DISPUTE'}
+                               </span>
+                             </div>
+                             <p className="text-sm text-gray-600 mb-1">
+                               <strong>Reason:</strong> {dispute.reason}
+                             </p>
+                             {dispute.evidence && (
+                               <p className="text-sm text-gray-600 mb-1">
+                                 <strong>Evidence:</strong> {dispute.evidence}
+                               </p>
+                             )}
+                             <p className="text-sm text-gray-600">
+                               <strong>Raised:</strong> {new Date(dispute.createdAt).toLocaleDateString()}
+                             </p>
+                           </div>
+                           <div className="flex flex-col sm:flex-row gap-2">
+                             {dispute.status === 'open' && (
+                               <Button
+                                 onClick={() => handleOpenDisputeModal(dispute.inspectionId)}
+                                 variant="outline"
+                                 size="sm"
+                                 className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                               >
+                                 View Details
+                               </Button>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 ) : (
+                   <div className="text-center py-8">
+                     <Shield className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                     <h3 className="text-lg font-medium text-gray-900 mb-2">No disputes yet</h3>
+                     <p className="text-gray-600 mb-4">You haven't raised any disputes yet.</p>
+                     <Button
+                       onClick={() => setShowDisputeModal(true)}
+                       className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                     >
+                       Raise Your First Dispute
+                     </Button>
+                   </div>
+                 )}
+               </div>
+             </div>
+           )}
 
           {activeTab === 'settings' && (
             <div className="space-y-6">
