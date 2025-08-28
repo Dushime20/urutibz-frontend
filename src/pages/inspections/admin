@@ -1,0 +1,10 @@
+<script>start("d:\\my project\\e-rental\\urutibz-frontend\\src\\pages\\admin\\");</script>
+<script>onHasParentDirectory();</script>
+<script>addRow("components","components",1,0,"0 B",1756312887,"8/27/25, 6:41:27 PM");</script>
+<script>addRow("hooks","hooks",1,0,"0 B",1755625980,"8/19/25, 7:53:00 PM");</script>
+<script>addRow("interfaces","interfaces",1,0,"0 B",1755625980,"8/19/25, 7:53:00 PM");</script>
+<script>addRow("service","service",1,0,"0 B",1756229739,"8/26/25, 7:35:39 PM");</script>
+<script>addRow("types","types",1,0,"0 B",1755625980,"8/19/25, 7:53:00 PM");</script>
+<script>addRow("AdminDashboardPage.tsx","AdminDashboardPage.tsx",0,63083,"61.6 kB",1756319137,"8/27/25, 8:25:37 PM");</script>
+<script>addRow("ModerationDashboardPage.tsx","ModerationDashboardPage.tsx",0,11393,"11.1 kB",1755857475,"8/22/25, 12:11:15 PM");</script>
+<script>addRow("types.ts","types.ts",0,1003,"1003 B",1755625980,"8/19/25, 7:53:00 PM");</script>
