@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, Eye, EyeOff, Bot, Sparkles, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { registerUser } from './service/api';
 
 function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
   const [isVisible, setIsVisible] = useState(false);
@@ -96,7 +97,6 @@ const RegisterPage: React.FC = () => {
   const [toastType, setToastType] = useState<'error' | 'success'>('error');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const { register,error } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +117,7 @@ const RegisterPage: React.FC = () => {
   };
 
   const handleLogoClick = () => {
-    navigate('/dashboard');
+    navigate('/login');
   };
 
 
@@ -185,26 +185,48 @@ const RegisterPage: React.FC = () => {
 
     try {
       const { firstName, lastName, email, password } = formData;
-      const name = `${firstName} ${lastName}`;
-      await register(name, email, password);
-      setToast('Account created successfully! Welcome to UrutiBz!');
-      setToastType('success');
+      
+      // Call the API directly
+      console.log('Calling registration API...');
+      const response = await registerUser({
+        firstName,
+        lastName,
+        email,
+        password
+      });
+      
+      console.log('Registration API response:', response);
+      
+      if (response.success) {
+        setToast('Account created successfully! Welcome to UrutiBz!');
+        setToastType('success');
 
-      setTimeout(() => {
-        navigate('/dashboard');
-        setFormData({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          agreeToTerms: false,
-        });
-        setTouched({});
-        setErrors({});
-      }, 2000);
+        // Store user data if returned
+        if (response.data && response.data.token) {
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('access_token', response.data.token);
+        }
+
+        setTimeout(() => {
+          navigate('/login');
+          setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            agreeToTerms: false,
+          });
+          setTouched({});
+          setErrors({});
+        }, 2000);
+      } else {
+        setToast(response.message || 'Registration failed. Please try again.');
+        setToastType('error');
+      }
 
     } catch (err: any) {
+      console.error('Registration error:', err);
       const errorMessage = err.message || 'Registration failed. Please try again.';
       setToast(errorMessage);
       setToastType('error');

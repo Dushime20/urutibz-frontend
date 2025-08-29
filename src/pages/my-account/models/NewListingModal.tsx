@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, MapPin, Plus, Trash2, Camera, DollarSign, Package, Info } from 'lucide-react';
+import { X, Upload, MapPin, Plus, Trash2, Camera, DollarSign, Package, Info, AlertCircle } from 'lucide-react';
 import { fetchCategories, fetchCountries } from '../service/api';
 
 type FormState = {
@@ -44,6 +44,18 @@ type FormState = {
   address_line?: string;
 };
 
+interface ValidationErrors {
+  title?: string;
+  description?: string;
+  condition?: string;
+  currency?: string;
+  price_per_day?: string;
+  images?: string;
+  category_id?: string;
+  country_id?: string;
+  pickup_methods?: string;
+}
+
 interface NewListingModalProps {
   open: boolean;
   onClose: () => void;
@@ -67,6 +79,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   useEffect(() => {
     async function fetchData() {
@@ -86,6 +99,11 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
     fetchData();
   }, []);
 
+  // Clear validation errors when form changes
+  useEffect(() => {
+    setValidationErrors({});
+  }, [form]);
+
   if (!open) return null;
 
   const steps = [
@@ -94,6 +112,165 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
     { id: 3, title: 'Details', icon: Package },
     { id: 4, title: 'Images & Location', icon: Camera },
   ];
+
+  // Validation function
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+
+    // Title validation
+    if (!form.title.trim()) {
+      errors.title = 'Product title is required';
+    } else if (form.title.trim().length < 5) {
+      errors.title = 'Product title must be at least 5 characters long';
+    }
+
+    // Description validation
+    if (!form.description.trim()) {
+      errors.description = 'Product description is required';
+    } else if (form.description.trim().length < 20) {
+      errors.description = 'Product description must be at least 20 characters long';
+    }
+
+    // Category validation
+    if (!form.category_id) {
+      errors.category_id = 'Please select a category';
+    }
+
+    // Condition validation
+    if (!form.condition) {
+      errors.condition = 'Please select a condition';
+    }
+
+    // Country validation
+    if (!form.country_id) {
+      errors.country_id = 'Please select a country';
+    }
+
+    // Currency validation
+    if (!form.currency) {
+      errors.currency = 'Please select a currency';
+    }
+
+    // Price per day validation
+    if (!form.price_per_day) {
+      errors.price_per_day = 'Price per day is required';
+    } else if (parseFloat(form.price_per_day) <= 0) {
+      errors.price_per_day = 'Price per day must be greater than 0';
+    }
+
+    // Images validation
+    if (!form.images || form.images.length === 0) {
+      errors.images = 'At least one product image is required';
+    }
+
+    // Pickup methods validation
+    if (!form.pickup_methods || form.pickup_methods.length === 0) {
+      errors.pickup_methods = 'Please select at least one pickup method';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Enhanced input change handler with validation
+  const handleInputChangeWithValidation = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    handleInputChange(e);
+    
+    // Clear specific validation error when user starts typing
+    const fieldName = e.target.name as keyof ValidationErrors;
+    if (validationErrors[fieldName]) {
+      setValidationErrors(prev => ({ ...prev, [fieldName]: undefined }));
+    }
+  };
+
+  // Enhanced form submission with validation
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      // Find the first step with errors and navigate to it
+      const errorFields = Object.keys(validationErrors);
+      if (errorFields.includes('title') || errorFields.includes('description') || errorFields.includes('category_id') || errorFields.includes('condition') || errorFields.includes('country_id')) {
+        setCurrentStep(1);
+      } else if (errorFields.includes('currency') || errorFields.includes('price_per_day') || errorFields.includes('pickup_methods')) {
+        setCurrentStep(2);
+      } else if (errorFields.includes('images')) {
+        setCurrentStep(4);
+      }
+      return;
+    }
+
+    // If validation passes, submit the form
+    onSubmit(e);
+  };
+
+  // Validate current step before allowing next
+  const validateCurrentStep = (): boolean => {
+    const errors: ValidationErrors = {};
+    
+    switch (currentStep) {
+      case 1:
+        if (!form.title.trim()) errors.title = 'Product title is required';
+        else if (form.title.trim().length < 5) errors.title = 'Product title must be at least 5 characters long';
+        
+        if (!form.description.trim()) errors.description = 'Product description is required';
+        else if (form.description.trim().length < 20) errors.description = 'Product description must be at least 20 characters long';
+        
+        if (!form.category_id) errors.category_id = 'Please select a category';
+        if (!form.condition) errors.condition = 'Please select a condition';
+        if (!form.country_id) errors.country_id = 'Please select a country';
+        break;
+        
+      case 2:
+        if (!form.currency) errors.currency = 'Please select a currency';
+        if (!form.price_per_day) errors.price_per_day = 'Price per day is required';
+        else if (parseFloat(form.price_per_day) <= 0) errors.price_per_day = 'Price per day must be greater than 0';
+        if (!form.pickup_methods || form.pickup_methods.length === 0) errors.pickup_methods = 'Please select at least one pickup method';
+        break;
+        
+      case 3:
+        // Step 3 has no required fields, so always valid
+        break;
+        
+      case 4:
+        if (!form.images || form.images.length === 0) errors.images = 'At least one product image is required';
+        break;
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Handle next step with validation
+  const handleNextStep = () => {
+    if (validateCurrentStep()) {
+      setCurrentStep(Math.min(steps.length, currentStep + 1));
+      setValidationErrors({}); // Clear errors when moving to next step
+    }
+  };
+
+  // Handle previous step
+  const handlePreviousStep = () => {
+    setCurrentStep(Math.max(1, currentStep - 1));
+    setValidationErrors({}); // Clear errors when moving to previous step
+  };
+
+  // Helper function to render error message
+  const renderErrorMessage = (fieldName: keyof ValidationErrors) => {
+    const error = validationErrors[fieldName];
+    if (!error) return null;
+    
+    return (
+      <div className="flex items-center gap-2 mt-1 text-red-600 text-sm">
+        <AlertCircle size={14} />
+        <span>{error}</span>
+      </div>
+    );
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -117,6 +294,11 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
         const filteredNew = newFiles.filter(f => !existingNames.includes(f.name));
         return { ...prev, images: [...prev.images, ...filteredNew] };
       });
+      
+      // Clear images validation error when files are added
+      if (validationErrors.images) {
+        setValidationErrors(prev => ({ ...prev, images: undefined }));
+      }
     }
   };
 
@@ -132,11 +314,14 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               <input
                 name="title"
                 value={form.title}
-                onChange={handleInputChange}
+                onChange={handleInputChangeWithValidation}
                 required
                 placeholder="Enter a descriptive title for your product"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 ${
+                  validationErrors.title ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                }`}
               />
+              {renderErrorMessage('title')}
             </div>
 
             <div className="group">
@@ -146,12 +331,15 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               <textarea
                 name="description"
                 value={form.description}
-                onChange={handleInputChange}
+                onChange={handleInputChangeWithValidation}
                 required
                 placeholder="Describe your product in detail. Include key features, condition, and any important information."
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 resize-none"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 resize-none ${
+                  validationErrors.description ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                }`}
               />
+              {renderErrorMessage('description')}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -162,15 +350,18 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 <select
                   name="category_id"
                   value={form.category_id}
-                  onChange={handleInputChange}
+                  onChange={handleInputChangeWithValidation}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
+                    validationErrors.category_id ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                  }`}
                 >
                   <option value="">Select a category</option>
                   {categories.map((cat: any) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
+                {renderErrorMessage('category_id')}
               </div>
 
               <div className="group">
@@ -180,12 +371,15 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 <select
                   name="condition"
                   value={form.condition}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  onChange={handleInputChangeWithValidation}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
+                    validationErrors.condition ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                  }`}
                 >
                   <option value="new">New</option>
                   <option value="used">Used</option>
                 </select>
+                {renderErrorMessage('condition')}
               </div>
             </div>
 
@@ -231,15 +425,18 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               <select
                 name="country_id"
                 value={form.country_id}
-                onChange={handleInputChange}
+                onChange={handleInputChangeWithValidation}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
+                  validationErrors.country_id ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                }`}
               >
                 <option value="">Select country</option>
                 {countries.map((c: any) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+              {renderErrorMessage('country_id')}
             </div>
           </div>
         );
@@ -258,9 +455,11 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                   <select
                     name="currency"
                     value={form.currency}
-                    onChange={handleInputChange}
+                    onChange={handleInputChangeWithValidation}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
+                      validationErrors.currency ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                    }`}
                   >
                     <option value="">Select currency</option>
                     <option value="USD">USD ($)</option>
@@ -269,6 +468,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     <option value="GBP">GBP (£)</option>
                     <option value="CAD">CAD ($)</option>
                   </select>
+                  {renderErrorMessage('currency')}
                 </div>
 
                 <div className="group">
@@ -278,13 +478,16 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                   <input
                     name="price_per_day"
                     value={form.price_per_day}
-                    onChange={handleInputChange}
+                    onChange={handleInputChangeWithValidation}
                     required
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
+                      validationErrors.price_per_day ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {renderErrorMessage('price_per_day')}
                 </div>
               </div>
 
@@ -389,6 +592,11 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                             pickup_methods: prev.pickup_methods.filter(m => m !== method)
                           }));
                         }
+                        
+                        // Clear pickup methods validation error when user makes selection
+                        if (validationErrors.pickup_methods) {
+                          setValidationErrors(prev => ({ ...prev, pickup_methods: undefined }));
+                        }
                       }}
                       className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                     />
@@ -396,6 +604,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                   </label>
                 ))}
               </div>
+              {renderErrorMessage('pickup_methods')}
             </div>
           </div>
         );
@@ -574,6 +783,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
                   dragActive 
                     ? 'border-teal-500 bg-teal-50' 
+                    : validationErrors.images
+                    ? 'border-red-300 bg-red-50'
                     : 'border-gray-300 hover:border-gray-400'
                 }`}
                 onDragEnter={handleDrag}
@@ -598,6 +809,11 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                           const filteredNew = newFiles.filter(f => !existingNames.includes(f.name));
                           return { ...prev, images: [...prev.images, ...filteredNew] };
                         });
+                        
+                        // Clear images validation error when files are added
+                        if (validationErrors.images) {
+                          setValidationErrors(prev => ({ ...prev, images: undefined }));
+                        }
                       }}
                       className="hidden"
                     />
@@ -605,6 +821,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 </p>
                 <p className="text-sm text-gray-500">PNG, JPG, GIF up to 10MB each</p>
               </div>
+
+              {renderErrorMessage('images')}
 
               {form.images && form.images.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
@@ -622,6 +840,11 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                           onClick={() => {
                             const newImages = form.images.filter((_: File, i: number) => i !== idx);
                             setForm((prev: FormState) => ({ ...prev, images: newImages }));
+                            
+                            // Check if we still have images after removal
+                            if (newImages.length === 0 && validationErrors.images) {
+                              setValidationErrors(prev => ({ ...prev, images: 'At least one product image is required' }));
+                            }
                           }}
                         >
                           <Trash2 size={16} />
@@ -759,36 +982,231 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
           
           {/* Step indicator */}
           <div className="flex items-center justify-between mt-2">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 ${
-                    step.id === currentStep
-                      ? 'bg-white text-teal-600 border-white'
-                      : step.id < currentStep
-                      ? 'bg-teal-500 text-white border-teal-500'
-                      : 'bg-transparent text-white border-white border-opacity-50'
-                  }`}
-                >
-                  <step.icon size={18} />
+            {steps.map((step, index) => {
+              // Check if this step has validation errors
+              const hasErrors = (() => {
+                switch (step.id) {
+                  case 1:
+                    return !!(validationErrors.title || validationErrors.description || validationErrors.category_id || validationErrors.condition || validationErrors.country_id);
+                  case 2:
+                    return !!(validationErrors.currency || validationErrors.price_per_day || validationErrors.pickup_methods);
+                  case 3:
+                    return false; // Step 3 has no required fields
+                  case 4:
+                    return !!validationErrors.images;
+                  default:
+                    return false;
+                }
+              })();
+              
+              return (
+                <div key={step.id} className="flex items-center">
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 ${
+                      step.id === currentStep
+                        ? hasErrors 
+                          ? 'bg-red-100 text-red-600 border-red-500' 
+                          : 'bg-white text-teal-600 border-white'
+                        : step.id < currentStep
+                        ? hasErrors
+                          ? 'bg-red-500 text-white border-red-500'
+                          : 'bg-teal-500 text-white border-teal-500'
+                        : hasErrors
+                        ? 'bg-red-100 text-red-600 border-red-500'
+                        : 'bg-transparent text-white border-white border-opacity-50'
+                    }`}
+                  >
+                    {hasErrors ? (
+                      <AlertCircle size={18} />
+                    ) : (
+                      <step.icon size={18} />
+                    )}
+                  </div>
+                  <span className={`ml-3 text-sm font-medium ${
+                    step.id <= currentStep 
+                      ? hasErrors 
+                        ? 'text-red-200' 
+                        : 'text-white' 
+                      : hasErrors 
+                        ? 'text-red-200' 
+                        : 'text-white text-opacity-70'
+                  }`}>
+                    {step.title}
+                  </span>
+                  {index < steps.length - 1 && (
+                    <div className={`w-16 h-0.5 mx-4 ${
+                      step.id < currentStep 
+                        ? hasErrors 
+                          ? 'bg-red-500' 
+                          : 'bg-white' 
+                        : hasErrors 
+                        ? 'bg-red-500' 
+                        : 'bg-white bg-opacity-30'
+                    }`} />
+                  )}
                 </div>
-                <span className={`ml-3 text-sm font-medium ${
-                  step.id <= currentStep ? 'text-white' : 'text-white text-opacity-70'
-                }`}>
-                  {step.title}
+              );
+            })}
+          </div>
+
+          {/* Step completion status */}
+          <div className="flex items-center justify-between mt-3 text-xs">
+            {steps.map((step) => {
+              const isCompleted = step.id < currentStep;
+              const hasErrors = (() => {
+                switch (step.id) {
+                  case 1:
+                    return !!(validationErrors.title || validationErrors.description || validationErrors.category_id || validationErrors.condition || validationErrors.country_id);
+                  case 2:
+                    return !!(validationErrors.currency || validationErrors.price_per_day || validationErrors.pickup_methods);
+                  case 3:
+                    return false;
+                  case 4:
+                    return !!validationErrors.images;
+                  default:
+                    return false;
+                }
+              })();
+              
+              let status = 'Pending';
+              let statusColor = 'text-white text-opacity-70';
+              
+              if (step.id === currentStep) {
+                status = hasErrors ? 'Has Errors' : 'In Progress';
+                statusColor = hasErrors ? 'text-red-200' : 'text-white';
+              } else if (isCompleted) {
+                status = hasErrors ? 'Has Errors' : 'Completed';
+                statusColor = hasErrors ? 'text-red-200' : 'text-green-200';
+              }
+              
+              return (
+                <span key={step.id} className={`${statusColor} font-medium`}>
+                  {status}
                 </span>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-4 ${
-                    step.id < currentStep ? 'bg-white' : 'bg-white bg-opacity-30'
-                  }`} />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* Content */}
-        <form onSubmit={onSubmit} className="flex flex-col h-full">
+        <form onSubmit={handleFormSubmit} className="flex flex-col h-full">
+          {/* Validation Summary */}
+          {/* {Object.keys(validationErrors).length > 0 && (
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 mx-8 mt-4">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Please fix the following validation errors:
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <ul className="list-disc list-inside space-y-1">
+                      {validationErrors.title && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(1)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Title: {validationErrors.title}
+                          </button>
+                        </li>
+                      )}
+                      {validationErrors.description && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(1)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Description: {validationErrors.description}
+                          </button>
+                        </li>
+                      )}
+                      {validationErrors.category_id && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(1)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Category: {validationErrors.category_id}
+                          </button>
+                        </li>
+                      )}
+                      {validationErrors.condition && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(1)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Condition: {validationErrors.condition}
+                          </button>
+                        </li>
+                      )}
+                      {validationErrors.country_id && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(1)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Country: {validationErrors.country_id}
+                          </button>
+                        </li>
+                      )}
+                      {validationErrors.currency && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(2)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Currency: {validationErrors.currency}
+                          </button>
+                        </li>
+                      )}
+                      {validationErrors.price_per_day && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(2)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Price per Day: {validationErrors.price_per_day}
+                          </button>
+                        </li>
+                      )}
+                      {validationErrors.pickup_methods && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(2)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Pickup Methods: {validationErrors.pickup_methods}
+                          </button>
+                        </li>
+                      )}
+                      {validationErrors.images && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(4)}
+                            className="text-red-600 hover:text-red-800 underline"
+                          >
+                            Images: {validationErrors.images}
+                          </button>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )} */}
+
           <div className="flex-1 overflow-y-auto px-8 py-6 max-h-[73vh]">
             {renderStepContent()}
           </div>
@@ -798,7 +1216,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
               <button
                 type="button"
-                onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+                onClick={handlePreviousStep}
                 disabled={currentStep === 1}
                 className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                   currentStep === 1
@@ -817,7 +1235,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 {currentStep < steps.length ? (
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(Math.min(steps.length, currentStep + 1))}
+                    onClick={handleNextStep}
                     className="w-full sm:w-auto px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-all duration-200"
                   >
                     Next →

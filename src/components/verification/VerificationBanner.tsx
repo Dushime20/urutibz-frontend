@@ -5,13 +5,13 @@ import { Link } from 'react-router-dom';
 import { 
   AlertTriangle, 
   CheckCircle, 
-  Mail, 
   Phone, 
   IdCard, 
   MapPin, 
   User, 
   Clock,
-  ArrowRight
+  ArrowRight,
+  Camera
 } from 'lucide-react';
 
 // Helper function to fetch real user profile for verification status
@@ -142,26 +142,6 @@ const VerificationBanner: React.FC = () => {
   // Get verification requirements with real user data context
   const requirements = [
     {
-      key: 'profile',
-      label: 'Complete Profile',
-      icon: User,
-      completed: verification.isProfileComplete,
-      link: '/verify/profile',
-      description: realUserData ? 
-        `${realUserData.first_name ? '✓' : '✗'} First name, ${realUserData.last_name ? '✓' : '✗'} Last name` :
-        'Add your personal information'
-    },
-    {
-      key: 'email',
-      label: 'Verify Email',
-      icon: Mail,
-      completed: verification.isEmailVerified,
-      link: '/verify/email',
-      description: realUserData ? 
-        `${realUserData.email || 'No email'} ${realUserData.email_verified_at ? '(Verified)' : '(Unverified)'}` :
-        'Confirm your email address'
-    },
-    {
       key: 'phone',
       label: 'Verify Phone',
       icon: Phone,
@@ -182,14 +162,12 @@ const VerificationBanner: React.FC = () => {
         'Government-issued ID'
     },
     {
-      key: 'address',
-      label: 'Verify Address',
-      icon: MapPin,
-      completed: verification.isAddressVerified,
-      link: '/verify/address',
-      description: realUserData ? 
-        `${realUserData.city || realUserData.address || 'No address set'}` :
-        'Confirm your location'
+      key: 'selfie',
+      label: 'Selfie Verification',
+      icon: Camera,
+      completed: verification.isFullyVerified,
+      link: '/verify/id',
+      description: 'Take a selfie to match your ID'
     }
   ];
 
@@ -232,8 +210,8 @@ const VerificationBanner: React.FC = () => {
             </div>
             
             {nextStep && (
-              <Link to={nextStep.link}>
-                <Button variant="primary" className="bg-amber-600 hover:bg-amber-700">
+              <Link to="/verify/id">
+                <Button variant="primary" className="bg-amber-600 hover:bg-amber-700 px-1 py-1">
                   Continue Setup
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>

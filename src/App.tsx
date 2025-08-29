@@ -28,6 +28,7 @@ import InspectionDetailsPage from './pages/inspections/InspectionDetailsPage';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ui/ToastContainer';
 import { DarkModeProvider } from './contexts/DarkModeContext';
+import NotificationsPage from './features/notifications/pages/NotificationsPage';
 
 
 function App() {
@@ -48,6 +49,11 @@ function App() {
             <Route path="dashboard" element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="dashboard/notifications" element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             } />
             <Route path="my-account" element={
