@@ -329,6 +329,20 @@ export interface BulkUpdatePaymentProvidersPayload {
   updates: Partial<CreatePaymentProviderInput>;
 }
 
+// Country-specific Payment Providers Response Interface
+export interface CountryPaymentProvidersResponse {
+  country_id: string;
+  country_name: string;
+  country_code: string;
+  providers: PaymentProvider[];
+  mobile_money_providers: PaymentProvider[];
+  card_providers: PaymentProvider[];
+  bank_transfer_providers: PaymentProvider[];
+  digital_wallet_providers: PaymentProvider[];
+  active_providers: PaymentProvider[];
+  supported_currencies: string[];
+}
+
 // Product Availability Interface
 export interface ProductAvailability {
   id?: string;
@@ -691,4 +705,77 @@ export interface AdministrativeDivisionStats {
 export interface ToggleStatusPayload {
   is_active: boolean;
   reason?: string;
+}
+
+// Verification Management Interfaces
+export interface UserVerification {
+  id: string;
+  user_id: string;
+  verification_type: string;
+  document_number?: string;
+  document_image_url?: string;
+  verification_status: 'pending' | 'verified' | 'rejected';
+  verified_by?: string;
+  verified_at?: string;
+  notes?: string;
+  created_at: string;
+  country_id?: string;
+  document_type_id?: string;
+  address_line?: string;
+  ai_processing_status: 'queued' | 'processing' | 'completed' | 'failed';
+  city?: string;
+  country?: string;
+  district?: string;
+  selfie_image_url?: string;
+  ocr_data?: any;
+  liveness_score?: number;
+  ai_profile_score?: string;
+  updated_at: string;
+  phone_number?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+export interface VerificationUpdatePayload {
+  verification_status: 'verified' | 'rejected';
+  notes?: string;
+}
+
+export interface VerificationFilters {
+  status?: 'pending' | 'verified' | 'rejected';
+  verification_type?: string;
+  ai_processing_status?: 'queued' | 'processing' | 'completed' | 'failed';
+  date_from?: string;
+  date_to?: string;
+  search?: string;
+}
+
+// Verification Statistics Interface
+export interface VerificationStats {
+  statusBreakdown: {
+    verified: string;
+    pending: string;
+    rejected: string;
+  };
+  typeBreakdown: {
+    [key: string]: string;
+  };
+  totalUsers: string;
+  verifiedUsers: string;
+  verificationRate: string;
+  recentActivity: string;
+}
+
+// Bulk Verification Interface
+export interface BulkVerificationPayload {
+  verificationIds: string[];
+  status: 'verified' | 'rejected';
+  notes?: string;
+}
+
+// KYC Status Update Interface
+export interface KycStatusUpdatePayload {
+  kycStatus: 'verified' | 'rejected' | 'pending';
+  notes?: string;
 } 

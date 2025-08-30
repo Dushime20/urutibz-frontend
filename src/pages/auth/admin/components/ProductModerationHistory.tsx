@@ -77,6 +77,12 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
         return <Flag className="w-5 h-5 text-yellow-600" />;
       case 'quarantine':
         return <AlertTriangle className="w-5 h-5 text-orange-600" />;
+      case 'activate':
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'ban':
+        return <XCircle className="w-5 h-5 text-red-600" />;
+      case 'suspend':
+        return <AlertTriangle className="w-5 h-5 text-orange-600" />;
       default:
         return <Shield className="w-5 h-5 text-gray-600" />;
     }
@@ -85,12 +91,15 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
   const getActionColor = (action: string) => {
     switch (action) {
       case 'approve':
+      case 'activate':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'reject':
+      case 'ban':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'flag':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'quarantine':
+      case 'suspend':
         return 'bg-orange-100 text-orange-800 border-orange-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';

@@ -111,11 +111,17 @@ export async function bulkUpdatePaymentProviders(payload: BulkUpdatePaymentProvi
   }
 }
 
-export async function fetchPaymentProvidersByCountry(countryId: string, token?: string): Promise<PaymentProvider[]> {
-  const response = await axios.get(`${API_BASE_URL}/payment-providers/country/${countryId}`, { 
-    headers: createAuthHeaders(token) 
-  });
-  return response.data?.data ?? response.data ?? [];
+export async function fetchPaymentProvidersByCountry(countryId: string, token?: string): Promise<CountryPaymentProvidersResponse> {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/payment-providers/country/${countryId}`, { 
+      headers: createAuthHeaders(token) 
+    });
+    
+    return processApiResponse(response);
+  } catch (err: any) {
+    console.error('Error fetching payment providers by country:', err);
+    throw new Error(handleApiError(err, 'Failed to fetch payment providers for country'));
+  }
 }
 
 export async function calculateFeesForCountry(options: { countryId: string; amount: number; currency: string; provider_type?: string }, token?: string): Promise<FeeCalculationResult[]> {

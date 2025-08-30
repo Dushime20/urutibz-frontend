@@ -6,10 +6,10 @@ import {
   Smartphone,
   User,
   FileText,
-  Zap,
   ArrowRight,
   ArrowLeft,
-  Award
+  Award,
+  Home
 } from 'lucide-react';
 import WelcomeStep from './components/WelcomeStep';
 import DocumentTypeStep from './components/DocumentTypeStep';
@@ -18,6 +18,7 @@ import SelfieStep from './components/SelfieStep';
 import PhoneStep from './components/PhoneStep';
 import CompletionStep from './components/CompletionStep';
 import { useToast } from '../../contexts/ToastContext';
+import { Link } from 'react-router-dom';
 
 import Tesseract from 'tesseract.js';
 import { submitDocumentStep, submitSelfieStep, requestPhoneOtp, verifyPhoneOtp } from './service/api';
@@ -451,6 +452,8 @@ const UrutiBzVerification = () => {
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           {/* Personalized Greeting */}
+
+          
           {/* <div className="mb-4">
             <h1 className="text-2xl font-bold text-gray-900">
               {verificationData.ocrResults?.extractedData?.name
@@ -458,13 +461,23 @@ const UrutiBzVerification = () => {
                 : 'Let’s verify your identity.'}
             </h1>
           </div> */}
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Step {currentStep + 1} of {steps.length}
-            </span>
-            <span className="text-sm text-gray-500">
-              {Math.round(((currentStep + 1) / steps.length) * 100)}% Complete
-            </span>
+          {/* Back to Home Button */}
+          <div className="flex items-center justify-between mb-4">
+            <Link
+              to="/"
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              <span>Back to Home</span>
+            </Link>
+            <div className="text-right">
+              <span className="text-sm font-medium text-gray-700">
+                Step {currentStep + 1} of {steps.length}
+              </span>
+              <div className="text-sm text-gray-500">
+                {Math.round(((currentStep + 1) / steps.length) * 100)}% Complete
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">

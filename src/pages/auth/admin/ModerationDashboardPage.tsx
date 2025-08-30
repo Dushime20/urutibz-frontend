@@ -1,11 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, XCircle, Flag, Clock, TrendingUp, Users } from 'lucide-react';
 import ModerationActionsManagement from './components/ModerationActionsManagement';
 import ProductModerationHistory from './components/ProductModerationHistory';
+import { fetchModerationStats, fetchModerationActions } from './service';
 
 const ModerationDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'actions' | 'history'>('overview');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [stats, setStats] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [recentActions, setRecentActions] = useState<any[]>([]);
+  const [loadingActions, setLoadingActions] = useState(true);
+
+  useEffect(() => {
+    loadModerationStats();
+    loadRecentActions();
+  }, []);
+
+  const loadModerationStats = async () => {
+    try {
+      setLoadingStats(true);
+      const token = localStorage.getItem('token');
+      if (token) {
+        const statsData = await fetchModerationStats(token);
+        const statsObject = statsData?.data || statsData || null;
+        setStats(statsObject);
+        console.log('Moderation stats loaded:', statsObject);
+      }
+    } catch (error) {
+      console.error('Error loading moderation stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const loadRecentActions = async () => {
+    try {
+      setLoadingActions(true);
+      const token = localStorage.getItem('token');
+      if (token) {
+        const actionsData = await fetchModerationActions(token);
+        const actionsArray = actionsData?.data || actionsData || [];
+        // Get the 5 most recent actions
+        const recent = actionsArray.slice(0, 5);
+        setRecentActions(recent);
+        console.log('Recent actions loaded:', recent);
+      }
+    } catch (error) {
+      console.error('Error loading recent actions:', error);
+    } finally {
+      setLoadingActions(false);
+    }
+  };
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: <Shield className="w-5 h-5" /> },
@@ -68,7 +114,9 @@ const ModerationDashboardPage: React.FC = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Actions</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loading...</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {loadingStats ? 'Loading...' : (stats?.totalActions || 0)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -80,7 +128,9 @@ const ModerationDashboardPage: React.FC = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Approved</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loading...</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {loadingStats ? 'Loading...' : (stats?.actionsByType?.approve || 0)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -92,7 +142,9 @@ const ModerationDashboardPage: React.FC = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Rejected</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loading...</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {loadingStats ? 'Loading...' : (stats?.actionsByType?.reject || 0)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -102,10 +154,12 @@ const ModerationDashboardPage: React.FC = () => {
                     <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
                       <Flag className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                     </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Flagged</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loading...</p>
-                    </div>
+                                         <div className="ml-4">
+                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Flagged</p>
+                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                         {loadingStats ? 'Loading...' : (stats?.actionsByType?.flag || 0)}
+                       </p>
+                     </div>
                   </div>
                 </div>
               </div>
@@ -121,12 +175,35 @@ const ModerationDashboardPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="p-6">
-                  <div className="text-center py-8">
-                    <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Click on "All Actions" to view recent moderation activity
-                    </p>
-                  </div>
+                  {loadingActions ? (
+                    <div className="text-center py-8">
+                      <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400">Loading recent actions...</p>
+                    </div>
+                  ) : recentActions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400">No recent moderation actions found.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentActions.map((action, index) => (
+                        <div key={index} className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400">
+                            <Clock className="w-5 h-5" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {action.actionType} on {new Date(action.timestamp).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {action.productId} - {action.reason}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

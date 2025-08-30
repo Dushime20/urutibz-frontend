@@ -37,127 +37,101 @@ function App() {
       <ToastProvider>
         <ToastContainer />
         <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Auth routes - handle their own layout */}
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
-            <Route path="forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="reset-password" element={<ResetPasswordPage />} />
-            
-            {/* My Account routes - handle their own layout */}
-            <Route path="dashboard" element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } />
-            <Route path="dashboard/notifications" element={
-              <ProtectedRoute>
-                <NotificationsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="my-account" element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Inspection routes - protected, standalone (no header/footer) */}
-            <Route path="inspections" element={
-              <ProtectedRoute>
-                <RoleAwareInspections />
-              </ProtectedRoute>
-            } />
-            <Route path="inspector" element={
-              <ProtectedRoute>
-                <InspectorDashboardPage />
-              </ProtectedRoute>
-            } />
-            <Route path="inspections/:id" element={
-              <ProtectedRoute>
-                <InspectionDetailsPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Main app routes with layout */}
-            <Route path="/" element={<Layout />}>
-              <Route index element={<HomePage />} />
-              <Route path="cars" element={<ItemSearchPage />} />
-              <Route path="items" element={<ItemSearchPage />} />
-              <Route path="browse" element={<ItemSearchPage />} />
-              <Route path="favorites" element={
+          <Router>
+            <Routes>
+              {/* Auth routes - handle their own layout */}
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
+              <Route path="forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="reset-password" element={<ResetPasswordPage />} />
+
+              {/* My Account routes - handle their own layout */}
+              <Route path="dashboard" element={
                 <ProtectedRoute>
-                  <FavoritesPage />
+                  <DashboardPage />
                 </ProtectedRoute>
               } />
-              {/* <Route path="cars/:id" element={<ItemDetailsPage />} /> */}
-              {/* <Route path="items/:id" element={<ItemDetailsPage />} /> */}
-              <Route path="it/:id" element={<ItemDetailsPage />} />
+              <Route path="dashboard/notifications" element={
+                <ProtectedRoute>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="my-account" element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Inspection routes - protected, standalone (no header/footer) */}
+              <Route path="inspections" element={
+                <ProtectedRoute>
+                  <RoleAwareInspections />
+                </ProtectedRoute>
+              } />
+              <Route path="inspector" element={
+                <ProtectedRoute>
+                  <InspectorDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="inspections/:id" element={
+                <ProtectedRoute>
+                  <InspectionDetailsPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Main app routes with layout */}
+              <Route path="/" element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="cars" element={<ItemSearchPage />} />
+                <Route path="items" element={<ItemSearchPage />} />
+                <Route path="browse" element={<ItemSearchPage />} />
+                <Route path="favorites" element={
+                  <ProtectedRoute>
+                    <FavoritesPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="it/:id" element={<ItemDetailsPage />} />
 
 
-              <Route path="demo" element={<DemoPage />} />
-              <Route path="faq" element={<FaqPage />} />
-              
-              {/* Protected routes */}
-              <Route path="create-listing" element={
-                <ProtectedRoute>
-                  <CreateListingPage />
-                </ProtectedRoute>
-              } />
-              <Route path="admin" element={
-                <AdminRoute>
-                  <AdminDashboardPage />
-                </AdminRoute>
-              } />
-              <Route path="booking" element={
-                <BookingPage />
-              } />
-              <Route path="booking/:carId" element={
-                <ProtectedRoute>
+                <Route path="demo" element={<DemoPage />} />
+                <Route path="faq" element={<FaqPage />} />
+
+                {/* Protected routes */}
+                <Route path="create-listing" element={
+                  <ProtectedRoute>
+                    <CreateListingPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="admin" element={
+                  <AdminRoute>
+                    <AdminDashboardPage />
+                  </AdminRoute>
+                } />
+                <Route path="booking" element={
                   <BookingPage />
-                </ProtectedRoute>
-              } />
-              <Route path="booking/item/:itemId" element={
-                <ProtectedRoute>
-                  <BookingPage />
-                </ProtectedRoute>
-              } />
-              
-              {/* Verification routes - protected */}
-              {/* <Route path="verify/profile" element={
-                <ProtectedRoute>
-                  <ProfileVerificationPage />
-                </ProtectedRoute>
-              } /> */}
-              {/* <Route path="verify/email" element={
-                <ProtectedRoute>
-                  <EmailVerificationPage />
-                </ProtectedRoute>
-              } /> */}
-              {/* <Route path="verify/phone" element={
-                <ProtectedRoute>
-                  <PhoneVerificationPage />
-                </ProtectedRoute>
-              } /> */}
+                } />
+                <Route path="booking/:carId" element={
+                  <ProtectedRoute>
+                    <BookingPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="booking/item/:itemId" element={
+                  <ProtectedRoute>
+                    <BookingPage />
+                  </ProtectedRoute>
+                } />
+              </Route>
               <Route path="verify/id" element={
                 <ProtectedRoute>
                   <UrutiBzVerification />
                 </ProtectedRoute>
               } />
-              
+            </Routes>
 
-              
-              {/* <Route path="verify/address" element={
-                <ProtectedRoute>
-                  <AddressVerificationPage />
-                </ProtectedRoute>
-              } /> */}
-            </Route>
-          </Routes>
-          
-        </Router>
-      </AuthProvider>
-    </ToastProvider>
+          </Router>
+        </AuthProvider>
+      </ToastProvider>
     </DarkModeProvider>
   );
 }

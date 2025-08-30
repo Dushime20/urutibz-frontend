@@ -12,7 +12,7 @@ import {
   bulkUpdatePaymentProviders,
   updatePaymentProvider
 } from '../service';
-import type { CreatePaymentProviderInput, PaymentProvider, PaymentProviderStats, FeeCalculationResult, Country } from '../interfaces';
+import type { CreatePaymentProviderInput, PaymentProvider, PaymentProviderStats, FeeCalculationResult, Country, CountryPaymentProvidersResponse } from '../interfaces';
 import { Dialog } from '@headlessui/react';
 
 const emptyForm: CreatePaymentProviderInput = {
@@ -62,16 +62,22 @@ export default function PaymentProvidersManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [countries, setCountries] = useState<Country[]>([]);
   const [supportedCurrenciesInput, setSupportedCurrenciesInput] = useState('');
+  const [countryProviders, setCountryProviders] = useState<CountryPaymentProvidersResponse | null>(null);
 
   const token = useMemo(() => localStorage.getItem('token') ?? undefined, []);
 
   const loadProviders = async () => {
     try {
       setLoading(true);
-      const data = countryFilter
-        ? await fetchPaymentProvidersByCountry(countryFilter, token)
-        : await fetchPaymentProviders(token);
-      setProviders(data);
+      if (countryFilter) {
+        const countryData = await fetchPaymentProvidersByCountry(countryFilter, token);
+        setCountryProviders(countryData);
+        setProviders(countryData.providers || []);
+      } else {
+        const data = await fetchPaymentProviders(token);
+        setProviders(data);
+        setCountryProviders(null);
+      }
     } catch (e: any) {
       setError(e?.message || 'Failed to load payment providers');
     } finally {
@@ -156,10 +162,29 @@ export default function PaymentProvidersManagement() {
       await loadProviders();
       return;
     }
+    
     try {
       setLoading(true);
-      const results = await searchPaymentProviders(searchQuery.trim(), token);
-      setProviders(results);
+      
+      if (countryFilter) {
+        // If country is selected, search within that country's providers
+        const countryData = await fetchPaymentProvidersByCountry(countryFilter, token);
+        const filteredProviders = countryData.providers?.filter((provider: PaymentProvider) => 
+          provider.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          provider.provider_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          provider.supported_currencies?.some((currency: string) => 
+            currency.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        ) || [];
+        
+        setProviders(filteredProviders);
+        setCountryProviders(countryData);
+      } else {
+        // If no country selected, search across all providers
+        const results = await searchPaymentProviders(searchQuery.trim(), token);
+        setProviders(results);
+        setCountryProviders(null);
+      }
     } catch (e: any) {
       setError(e?.message || 'Search failed');
     } finally {
@@ -255,6 +280,18 @@ export default function PaymentProvidersManagement() {
           <button onClick={handleCountryFilter} className="inline-flex items-center px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800">
             <RefreshCw className="w-4 h-4 mr-2" /> Filter
           </button>
+          {countryFilter && (
+            <button 
+              onClick={() => {
+                setCountryFilter('');
+                setCountryProviders(null);
+                loadProviders();
+              }} 
+              className="inline-flex items-center px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-800"
+            >
+              Clear Filter
+            </button>
+          )}
           <button onClick={() => setShowCreateModal(true)} className="inline-flex items-center px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90">Create Provider</button>
         </div>
       </div>
@@ -282,6 +319,109 @@ export default function PaymentProvidersManagement() {
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">{error}</div>
+      )}
+
+      {/* Search context indicator */}
+      {countryFilter && searchQuery.trim() && (
+        <div className="mb-4 p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+          <div className="flex items-center">
+            <span className="mr-2">🔍</span>
+            <span>
+              Searching for "{searchQuery}" within {countries.find(c => c.id === countryFilter)?.name || 'selected country'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Country-specific Payment Providers Information */}
+      {countryProviders && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-lg font-semibold text-blue-900">
+              Payment Providers for {countryProviders.country_name || 'Selected Country'}
+            </h4>
+            <div className="text-sm text-blue-700">
+              Country Code: {countryProviders.country_code}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-lg p-4 border border-blue-200">
+              <div className="text-sm font-medium text-blue-900">Total Providers</div>
+              <div className="text-2xl font-bold text-blue-700">{countryProviders.providers?.length || 0}</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-blue-200">
+              <div className="text-sm font-medium text-blue-900">Mobile Money</div>
+              <div className="text-2xl font-bold text-blue-700">{countryProviders.mobile_money_providers?.length || 0}</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-blue-200">
+              <div className="text-sm font-medium text-blue-900">Card Providers</div>
+              <div className="text-2xl font-bold text-blue-700">{countryProviders.card_providers?.length || 0}</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-blue-200">
+              <div className="text-sm font-medium text-blue-900">Active Providers</div>
+              <div className="text-2xl font-bold text-blue-700">{countryProviders.active_providers?.length || 0}</div>
+            </div>
+          </div>
+
+          {countryProviders.supported_currencies && countryProviders.supported_currencies.length > 0 && (
+            <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
+              <div className="text-sm font-medium text-blue-900 mb-2">Supported Currencies</div>
+              <div className="flex flex-wrap gap-2">
+                {countryProviders.supported_currencies.map((currency, index) => (
+                  <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    {currency}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Provider Type Breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {countryProviders.mobile_money_providers && countryProviders.mobile_money_providers.length > 0 && (
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h5 className="font-medium text-blue-900 mb-3">Mobile Money Providers</h5>
+                <div className="space-y-2">
+                  {countryProviders.mobile_money_providers.map((provider) => (
+                    <div key={provider.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        {provider.logo_url && (
+                          <img src={provider.logo_url} alt={provider.display_name} className="w-6 h-6 rounded" />
+                        )}
+                        <span className="font-medium">{provider.display_name}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {provider.fee_percentage}% + {provider.fee_fixed}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {countryProviders.card_providers && countryProviders.card_providers.length > 0 && (
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h5 className="font-medium text-blue-900 mb-3">Card Providers</h5>
+                <div className="space-y-2">
+                  {countryProviders.card_providers.map((provider) => (
+                    <div key={provider.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        {provider.logo_url && (
+                          <img src={provider.logo_url} alt={provider.display_name} className="w-6 h-6 rounded" />
+                        )}
+                        <span className="font-medium">{provider.display_name}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {provider.fee_percentage}% + {provider.fee_fixed}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       <Dialog open={showCreateModal} onClose={() => setShowCreateModal(false)} className="fixed inset-0 z-50 flex items-center justify-center">
@@ -453,11 +593,38 @@ export default function PaymentProvidersManagement() {
       </div>
 
       <div>
-        <h4 className="text-lg font-semibold text-gray-900 mb-3">Existing Providers</h4>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-lg font-semibold text-gray-900">
+            {countryFilter ? `Payment Providers for ${countries.find(c => c.id === countryFilter)?.name || 'Selected Country'}` : 'All Payment Providers'}
+          </h4>
+          {countryFilter && (
+            <span className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+              Filtered by Country
+            </span>
+          )}
+        </div>
+        
+        {/* Provider count summary */}
+        {!loading && (
+          <div className="mb-4 text-sm text-gray-600">
+            {countryFilter ? (
+              <span>
+                Showing <strong>{providers.length}</strong> payment providers for {countries.find(c => c.id === countryFilter)?.name || 'selected country'}
+              </span>
+            ) : (
+              <span>
+                Showing <strong>{providers.length}</strong> payment providers
+              </span>
+            )}
+          </div>
+        )}
+        
         {loading ? (
           <div className="text-gray-500">Loading...</div>
         ) : providers.length === 0 ? (
-          <div className="text-gray-500">No payment providers found.</div>
+          <div className="text-gray-500">
+            {countryFilter ? `No payment providers found for ${countries.find(c => c.id === countryFilter)?.name || 'selected country'}` : 'No payment providers found.'}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {providers.map(p => (

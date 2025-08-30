@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Users, CheckCircle, Calendar, Package, Filter, Plus, Eye, MoreVertical, UserCircle } from 'lucide-react';
-import type { AdminUser } from '../interfaces';
-import { fetchAdminUsers, fetchAdminUserById, moderateAdminUser } from '../service';
+import { Users, CheckCircle, Calendar, Package, Filter, Plus, Eye, MoreVertical, UserCircle, Shield, FileText } from 'lucide-react';
+import type { AdminUser, UserVerification, VerificationStats } from '../interfaces';
+import { fetchAdminUsers, fetchAdminUserById, moderateAdminUser, fetchAllVerifications, updateVerificationStatus, fetchPendingVerifications, fetchVerificationStats, bulkReviewVerifications, updateUserKycStatus } from '../service';
 import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
+import VerificationDetailsModal from './VerificationDetailsModal';
 import { Users as UsersIcon } from 'lucide-react';
 
 interface UserManagementProps {
@@ -32,6 +33,48 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
   const [moderateError, setModerateError] = useState<string | null>(null);
   const [moderateSuccess, setModerateSuccess] = useState<string | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'users' | 'verifications' | 'pending'>('users');
+  const [verifications, setVerifications] = useState<UserVerification[]>([]);
+  const [verificationsLoading, setVerificationsLoading] = useState(false);
+  const [verificationsError, setVerificationsError] = useState<string | null>(null);
+  const [pendingVerifications, setPendingVerifications] = useState<UserVerification[]>([]);
+  const [pendingVerificationsLoading, setPendingVerificationsLoading] = useState(false);
+  const [pendingVerificationsError, setPendingVerificationsError] = useState<string | null>(null);
+  const [verificationFilters, setVerificationFilters] = useState({
+    status: '',
+    verification_type: '',
+    ai_processing_status: '',
+    date_from: '',
+    date_to: '',
+    search: ''
+  });
+  const [verificationStats, setVerificationStats] = useState<VerificationStats | null>(null);
+  const [verificationStatsLoading, setVerificationStatsLoading] = useState(false);
+  const [verificationStatsError, setVerificationStatsError] = useState<string | null>(null);
+  
+  // Bulk verification states
+  const [selectedVerifications, setSelectedVerifications] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<'verified' | 'rejected'>('verified');
+  const [bulkNotes, setBulkNotes] = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkSuccess, setBulkSuccess] = useState<string | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+
+  // Verification details modal states
+  const [verificationDetailsModal, setVerificationDetailsModal] = useState<{
+    isOpen: boolean;
+    verificationId: string | null;
+  }>({
+    isOpen: false,
+    verificationId: null
+  });
+
+  // KYC Status Update State
+  const [kycUpdateUser, setKycUpdateUser] = useState<AdminUser | null>(null);
+  const [kycStatus, setKycStatus] = useState<'verified' | 'rejected' | 'pending'>('verified');
+  const [kycNotes, setKycNotes] = useState('');
+  const [kycUpdating, setKycUpdating] = useState(false);
+  const [kycMessage, setKycMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -90,6 +133,159 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [actionMenuOpen]);
 
+  useEffect(() => {
+    if (activeTab === 'verifications') {
+      fetchVerifications();
+      fetchVerificationStatsData();
+    } else if (activeTab === 'pending') {
+      fetchPendingVerificationsData();
+    }
+  }, [activeTab, verificationFilters]);
+
+  const fetchVerifications = async () => {
+    try {
+      setVerificationsLoading(true);
+      setVerificationsError(null);
+      const token = localStorage.getItem('token');
+      const response = await fetchAllVerifications(1, 50, verificationFilters, token || undefined);
+      if (response.verifications) {
+        setVerifications(response.verifications);
+      }
+    } catch (err) {
+      console.error('Error fetching verifications:', err);
+      setVerificationsError('Failed to fetch verifications');
+    } finally {
+      setVerificationsLoading(false);
+    }
+  };
+
+  const fetchPendingVerificationsData = async () => {
+    try {
+      setPendingVerificationsLoading(true);
+      setPendingVerificationsError(null);
+      const token = localStorage.getItem('token');
+      const response = await fetchPendingVerifications(1, 50, token || undefined);
+      setPendingVerifications(response || []);
+    } catch (err) {
+      console.error('Error fetching pending verifications:', err);
+      setPendingVerificationsError('Failed to fetch pending verifications');
+    } finally {
+      setPendingVerificationsLoading(false);
+    }
+  };
+
+  const fetchVerificationStatsData = async () => {
+    try {
+      setVerificationStatsLoading(true);
+      setVerificationStatsError(null);
+      const token = localStorage.getItem('token');
+      const response = await fetchVerificationStats(token || undefined);
+      setVerificationStats(response);
+    } catch (err) {
+      console.error('Error fetching verification stats:', err);
+      setVerificationStatsError('Failed to fetch verification stats');
+    } finally {
+      setVerificationStatsLoading(false);
+    }
+  };
+
+  // Bulk verification functions
+  const handleVerificationSelect = (verificationId: string) => {
+    setSelectedVerifications(prev => 
+      prev.includes(verificationId) 
+        ? prev.filter(id => id !== verificationId)
+        : [...prev, verificationId]
+    );
+  };
+
+  const handleSelectAllVerifications = () => {
+    if (selectedVerifications.length === (activeTab === 'pending' ? pendingVerifications.length : verifications.length)) {
+      setSelectedVerifications([]);
+    } else {
+      const allIds = activeTab === 'pending' 
+        ? pendingVerifications.map(v => v.id)
+        : verifications.map(v => v.id);
+      setSelectedVerifications(allIds);
+    }
+  };
+
+  const handleBulkVerification = async () => {
+    if (selectedVerifications.length === 0) return;
+
+    try {
+      setBulkLoading(true);
+      setBulkError(null);
+      setBulkSuccess(null);
+      
+      const token = localStorage.getItem('token');
+      await bulkReviewVerifications(selectedVerifications, bulkAction, bulkNotes, token || undefined);
+      
+      setBulkSuccess(`Successfully ${bulkAction} ${selectedVerifications.length} verification(s)`);
+      setSelectedVerifications([]);
+      setBulkNotes('');
+      
+      // Refresh the data
+      if (activeTab === 'pending') {
+        fetchPendingVerificationsData();
+      } else {
+        fetchVerifications();
+      }
+      if (activeTab === 'verifications') {
+        fetchVerificationStatsData();
+      }
+    } catch (err) {
+      console.error('Error performing bulk verification:', err);
+      setBulkError('Failed to perform bulk verification');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleKycStatusUpdate = async () => {
+    if (!kycUpdateUser) return;
+    
+    setKycUpdating(true);
+    setKycMessage(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      await updateUserKycStatus(kycUpdateUser.id, { kycStatus, notes: kycNotes }, token || undefined);
+      
+      setKycMessage({ type: 'success', text: `KYC status updated to ${kycStatus} successfully` });
+      setKycUpdateUser(null);
+      setKycStatus('verified');
+      setKycNotes('');
+      
+      // Refresh users data by calling the useEffect logic
+      const token2 = localStorage.getItem('token');
+      const response = await fetchAdminUsers(1, 50, token2 || undefined);
+      if (response.items) {
+        setUsers(response.items);
+      }
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setKycMessage(null), 3000);
+    } catch (err: any) {
+      setKycMessage({ type: 'error', text: err.message || 'Failed to update KYC status' });
+    } finally {
+      setKycUpdating(false);
+    }
+  };
+
+  const openVerificationDetails = (verificationId: string) => {
+    setVerificationDetailsModal({
+      isOpen: true,
+      verificationId
+    });
+  };
+
+  const closeVerificationDetails = () => {
+    setVerificationDetailsModal({
+      isOpen: false,
+      verificationId: null
+    });
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -128,6 +324,19 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
     }
   };
 
+  const getKycStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'verified':
+        return 'bg-green-100 text-green-700';
+      case 'rejected':
+        return 'bg-red-100 text-red-700';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
@@ -161,14 +370,57 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Button className="bg-my-primary hover:bg-my-primary/80 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
-            <Plus className="w-4 h-4 mr-2" />
-            Add User
-          </Button>
+          {activeTab === 'users' && (
+            <Button className="bg-my-primary hover:bg-my-primary/80 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+              <Plus className="w-4 h-4 mr-2" />
+              Add User
+            </Button>
+          )}
         </div>
       </div>
-      {/* User Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-xl">
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === 'users'
+              ? 'bg-white text-my-primary shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Users</span>
+        </button>
+                 <button
+           onClick={() => setActiveTab('verifications')}
+           className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+             activeTab === 'verifications'
+               ? 'bg-white text-my-primary shadow-sm'
+               : 'text-gray-600 hover:text-gray-900'
+           }`}
+         >
+           <Shield className="w-4 h-4" />
+           <span>Verifications</span>
+         </button>
+         <button
+           onClick={() => setActiveTab('pending')}
+           className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+             activeTab === 'pending'
+               ? 'bg-white text-my-primary shadow-sm'
+               : 'text-gray-600 hover:text-gray-900'
+           }`}
+         >
+           <Calendar className="w-4 h-4" />
+           <span>Pending</span>
+         </button>
+      </div>
+
+      {/* Content based on active tab */}
+      {activeTab === 'users' ? (
+        <>
+          {/* User Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-my-primary/10 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -223,6 +475,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 Status
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                KYC Status
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Joined
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -271,6 +526,25 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(user.status)}`}>
                     {user.status}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getKycStatusColor(user.kyc_status)}`}>
+                      {user.kyc_status || 'pending'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setKycUpdateUser(user);
+                        setKycStatus(user.kyc_status as 'verified' | 'rejected' | 'pending' || 'pending');
+                        setKycNotes('');
+                        setKycMessage(null);
+                      }}
+                      className="text-xs text-my-primary hover:text-my-primary/80 font-medium"
+                      title="Update KYC Status"
+                    >
+                      Update
+                    </button>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(user.created_at || user.createdAt || '')}
@@ -327,6 +601,512 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           </tbody>
         </table>
       </div>
+        </>
+      ) : activeTab === 'verifications' ? (
+        <>
+          {/* Verification Stats */}
+          {verificationStatsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-gray-50 rounded-2xl p-4 animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-6 bg-gray-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : verificationStatsError ? (
+            <div className="bg-red-50 rounded-2xl p-4 mb-6">
+              <p className="text-red-600 text-center">{verificationStatsError}</p>
+              <button 
+                onClick={fetchVerificationStatsData}
+                className="mt-2 text-red-600 hover:text-red-800 underline"
+              >
+                Retry
+              </button>
+            </div>
+          ) : verificationStats ? (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-blue-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-600 font-medium">Total Users</p>
+                    <p className="text-2xl font-bold text-blue-700">{verificationStats.totalUsers}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-blue-600" />
+                </div>
+              </div>
+              <div className="bg-green-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">Verified</p>
+                    <p className="text-2xl font-bold text-green-700">{verificationStats.statusBreakdown.verified}</p>
+                  </div>
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+              </div>
+              <div className="bg-yellow-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-yellow-600 font-medium">Pending</p>
+                    <p className="text-2xl font-bold text-yellow-700">{verificationStats.statusBreakdown.pending}</p>
+                  </div>
+                  <Calendar className="w-8 h-8 text-yellow-600" />
+                </div>
+              </div>
+              <div className="bg-red-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-red-600 font-medium">Rejected</p>
+                    <p className="text-2xl font-bold text-red-700">{verificationStats.statusBreakdown.rejected}</p>
+                  </div>
+                  <Shield className="w-8 h-8 text-red-600" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-blue-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-600 font-medium">Total Verifications</p>
+                    <p className="text-2xl font-bold text-blue-700">{verifications.length}</p>
+                  </div>
+                  <FileText className="w-8 h-8 text-blue-600" />
+                </div>
+              </div>
+              <div className="bg-green-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">Verified</p>
+                    <p className="text-2xl font-bold text-green-700">{verifications.filter(v => v.verification_status === 'verified').length}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+            <div className="bg-yellow-50 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-yellow-600 font-medium">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-700">{verifications.filter(v => v.verification_status === 'pending').length}</p>
+                </div>
+                <Calendar className="w-8 h-8 text-yellow-600" />
+              </div>
+            </div>
+            <div className="bg-red-50 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-red-600 font-medium">Rejected</p>
+                  <p className="text-2xl font-bold text-red-700">{verifications.filter(v => v.verification_status === 'rejected').length}</p>
+                </div>
+                <Shield className="w-8 h-8 text-red-600" />
+              </div>
+            </div>
+          </div>
+                  )}
+
+          {/* Additional Verification Stats */}
+          {verificationStats && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-purple-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-purple-600 font-medium">Verification Rate</p>
+                    <p className="text-2xl font-bold text-purple-700">{verificationStats.verificationRate}%</p>
+                  </div>
+                  <CheckCircle className="w-8 h-8 text-purple-600" />
+                </div>
+              </div>
+              <div className="bg-indigo-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-indigo-600 font-medium">Verified Users</p>
+                    <p className="text-2xl font-bold text-indigo-700">{verificationStats.verifiedUsers}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-indigo-600" />
+                </div>
+              </div>
+              <div className="bg-orange-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-orange-600 font-medium">Recent Activity</p>
+                    <p className="text-2xl font-bold text-orange-700">{verificationStats.recentActivity}</p>
+                  </div>
+                  <Calendar className="w-8 h-8 text-orange-600" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Verification Type Breakdown */}
+          {verificationStats && verificationStats.typeBreakdown && Object.keys(verificationStats.typeBreakdown).length > 0 && (
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Verification Type Breakdown</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Object.entries(verificationStats.typeBreakdown).map(([type, count]) => (
+                  <div key={type} className="bg-white rounded-lg p-3 text-center">
+                    <p className="text-sm text-gray-600 font-medium capitalize">{type}</p>
+                    <p className="text-xl font-bold text-gray-900">{count}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Verification Filters */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={verificationFilters.status}
+                  onChange={(e) => setVerificationFilters(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="verified">Verified</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Verification Type</label>
+                <select
+                  value={verificationFilters.verification_type}
+                  onChange={(e) => setVerificationFilters(prev => ({ ...prev, verification_type: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">All Types</option>
+                  <option value="National ID">National ID</option>
+                  <option value="Passport">Passport</option>
+                  <option value="Driver License">Driver License</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">AI Processing</label>
+                <select
+                  value={verificationFilters.ai_processing_status}
+                  onChange={(e) => setVerificationFilters(prev => ({ ...prev, ai_processing_status: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="queued">Queued</option>
+                  <option value="processing">Processing</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Verifications Table */}
+          {verificationsLoading ? (
+            <SkeletonTable columns={6} rows={6} />
+          ) : verificationsError ? (
+            <ErrorState message={verificationsError} onRetry={fetchVerifications} />
+          ) : verifications.length === 0 ? (
+            <EmptyState icon={<Shield />} title="No verifications found" message="There are currently no verifications in the system." />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      AI Score
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {verifications.map((verification) => (
+                    <tr key={verification.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <UserCircle className="h-10 w-10 text-gray-400" />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {verification.first_name} {verification.last_name}
+                            </div>
+                            <div className="text-sm text-gray-500">{verification.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{verification.verification_type}</div>
+                        {verification.document_number && (
+                          <div className="text-xs text-gray-500">{verification.document_number}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(verification.verification_status)}`}>
+                          {verification.verification_status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {verification.ai_profile_score ? (
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              parseFloat(verification.ai_profile_score) >= 0.7 ? 'bg-green-100 text-green-700' :
+                              parseFloat(verification.ai_profile_score) >= 0.5 ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {parseFloat(verification.ai_profile_score).toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">{verification.ai_processing_status}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(verification.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => openVerificationDetails(verification.id)}
+                          className="text-my-primary hover:text-my-primary/80 font-medium"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      ) : activeTab === 'pending' ? (
+        <>
+          {/* Pending Verifications Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-50 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-600 font-medium">Total Pending</p>
+                  <p className="text-2xl font-bold text-blue-700">{pendingVerifications.length}</p>
+                </div>
+                <Calendar className="w-8 h-8 text-blue-600" />
+              </div>
+            </div>
+            <div className="bg-yellow-50 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-yellow-600 font-medium">AI Processing</p>
+                  <p className="text-2xl font-bold text-yellow-700">{pendingVerifications.filter(v => v.ai_processing_status === 'queued').length}</p>
+                </div>
+                <Package className="w-8 h-8 text-yellow-600" />
+              </div>
+            </div>
+            <div className="bg-purple-50 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-600 font-medium">Passport</p>
+                  <p className="text-2xl font-bold text-purple-700">{pendingVerifications.filter(v => v.verification_type === 'passport').length}</p>
+                </div>
+                <FileText className="w-8 h-8 text-purple-600" />
+              </div>
+            </div>
+            <div className="bg-green-50 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600 font-medium">National ID</p>
+                  <p className="text-2xl font-bold text-green-700">{pendingVerifications.filter(v => v.verification_type === 'national_id').length}</p>
+                </div>
+                <Shield className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+                     </div>
+
+           {/* Bulk Verification Actions */}
+           {pendingVerifications.length > 0 && (
+             <div className="bg-gray-50 rounded-xl p-4 mb-6">
+               <div className="flex items-center justify-between mb-4">
+                 <h4 className="text-lg font-semibold text-gray-900">Bulk Actions</h4>
+                 <div className="text-sm text-gray-600">
+                   {selectedVerifications.length} of {pendingVerifications.length} selected
+                 </div>
+               </div>
+               
+               <div className="flex items-center space-x-4 mb-4">
+                 <div className="flex items-center space-x-2">
+                   <input
+                     type="checkbox"
+                     checked={selectedVerifications.length === pendingVerifications.length}
+                     onChange={handleSelectAllVerifications}
+                     className="rounded border-gray-300 text-my-primary focus:ring-my-primary"
+                   />
+                   <span className="text-sm text-gray-700">Select All</span>
+                 </div>
+                 
+                 <select
+                   value={bulkAction}
+                   onChange={(e) => setBulkAction(e.target.value as 'verified' | 'rejected')}
+                   className="rounded-lg border-gray-300 text-sm focus:ring-my-primary focus:border-my-primary"
+                 >
+                   <option value="verified">Verify</option>
+                   <option value="rejected">Reject</option>
+                 </select>
+                 
+                 <input
+                   type="text"
+                   placeholder="Optional notes..."
+                   value={bulkNotes}
+                   onChange={(e) => setBulkNotes(e.target.value)}
+                   className="flex-1 rounded-lg border-gray-300 text-sm focus:ring-my-primary focus:border-my-primary"
+                 />
+                 
+                 <button
+                   onClick={handleBulkVerification}
+                   disabled={selectedVerifications.length === 0 || bulkLoading}
+                   className="bg-my-primary hover:bg-my-primary/80 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
+                 >
+                   {bulkLoading ? 'Processing...' : `Bulk ${bulkAction === 'verified' ? 'Verify' : 'Reject'}`}
+                 </button>
+               </div>
+               
+               {/* Success/Error Messages */}
+               {bulkSuccess && (
+                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-800 text-sm">
+                   {bulkSuccess}
+                 </div>
+               )}
+               {bulkError && (
+                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm">
+                   {bulkError}
+                 </div>
+               )}
+             </div>
+           )}
+
+           {/* Pending Verifications Table */}
+          {pendingVerificationsLoading ? (
+            <SkeletonTable columns={6} rows={6} />
+          ) : pendingVerificationsError ? (
+            <ErrorState message={pendingVerificationsError} onRetry={fetchPendingVerificationsData} />
+          ) : pendingVerifications.length === 0 ? (
+            <EmptyState icon={<Calendar />} title="No pending verifications" message="There are currently no pending verifications in the system." />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={pendingVerifications.length > 0 && selectedVerifications.length === pendingVerifications.length}
+                        onChange={handleSelectAllVerifications}
+                        className="rounded border-gray-300 text-my-primary focus:ring-my-primary"
+                      />
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      AI Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {pendingVerifications.map((verification) => (
+                    <tr key={verification.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedVerifications.includes(verification.id)}
+                          onChange={() => handleVerificationSelect(verification.id)}
+                          className="rounded border-gray-300 text-my-primary focus:ring-my-primary"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <UserCircle className="h-10 w-10 text-gray-400" />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {verification.first_name} {verification.last_name}
+                            </div>
+                            <div className="text-sm text-gray-500">{verification.email}</div>
+                            <div className="text-xs text-gray-400">{verification.phone_number}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 capitalize">{verification.verification_type}</div>
+                        {verification.document_number && (
+                          <div className="text-xs text-gray-500">{verification.document_number}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          verification.ai_processing_status === 'completed' ? 'bg-green-100 text-green-700' :
+                          verification.ai_processing_status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                          verification.ai_processing_status === 'failed' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {verification.ai_processing_status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {verification.city && verification.country ? (
+                            <>
+                              <div>{verification.city}</div>
+                              <div className="text-xs text-gray-500">{verification.country}</div>
+                            </>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(verification.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => openVerificationDetails(verification.id)}
+                          className="text-my-primary hover:text-my-primary/80 font-medium"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      ) : null}
+
       {viewUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl p-8 max-w-lg w-full">
@@ -455,6 +1235,73 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           </div>
         </div>
       )}
+
+      {/* KYC Status Update Modal */}
+      {kycUpdateUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="text-lg font-bold">Update KYC Status</h4>
+              <button onClick={() => setKycUpdateUser(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Update KYC status for <span className="font-medium">{kycUpdateUser.first_name || kycUpdateUser.firstName} {kycUpdateUser.last_name || kycUpdateUser.lastName}</span>
+              </p>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await handleKycStatusUpdate();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium mb-1">KYC Status</label>
+                <select
+                  value={kycStatus}
+                  onChange={e => setKycStatus(e.target.value as 'verified' | 'rejected' | 'pending')}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                >
+                  <option value="verified">Verified</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Notes (optional)</label>
+                <input
+                  type="text"
+                  value={kycNotes}
+                  onChange={e => setKycNotes(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="Optional notes for the status update"
+                />
+              </div>
+              {kycMessage && (
+                <div className={`text-sm ${kycMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                  {kycMessage.text}
+                </div>
+              )}
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setKycUpdateUser(null)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Cancel</button>
+                <button type="submit" disabled={kycUpdating} className="px-4 py-2 rounded bg-my-primary text-white hover:bg-my-primary/90 disabled:opacity-50">
+                  {kycUpdating ? 'Updating...' : 'Update Status'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Details Modal */}
+      <VerificationDetailsModal
+        isOpen={verificationDetailsModal.isOpen}
+        verificationId={verificationDetailsModal.verificationId}
+        onClose={closeVerificationDetails}
+        token={localStorage.getItem('token') || undefined}
+      />
     </div>
   );
 };

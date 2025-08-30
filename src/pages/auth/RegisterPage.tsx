@@ -120,7 +120,6 @@ const RegisterPage: React.FC = () => {
     navigate('/login');
   };
 
-
   const validateField = (field: string, value: any) => {
     let error = '';
     
@@ -236,57 +235,50 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="h-screen bg-gray-50 flex items-center justify-center p-4 overflow-hidden">
       {toast && <Toast message={toast} onClose={() => setToast(null)} type={toastType} />}
       
-      <div className="w-full max-w-4xl mx-auto">
-        {/* Compact Header */}
-        <div className="text-center mb-6">
-          {/* Logo Section - Smaller and clickable */}
-          <div className="flex justify-center mb-4">
+      <div className="w-full max-w-md mx-auto">
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          {/* Logo and AI Badge in One Row */}
+          <div className="flex justify-center items-center space-x-4 mb-2 mt-8">
             <button
               onClick={handleLogoClick}
-              className="transition-all duration-300 hover:scale-105 hover:drop-shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-200 rounded-lg p-1"
+              className="transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-200 rounded-lg p-1"
               aria-label="Go to Dashboard"
             >
-              <img 
-                src="/assets/img/yacht/urutilogo2.png" 
-                alt="UrutiBz" 
-                className="h-16 w-40 sm:h-20 sm:w-48 object-contain cursor-pointer" 
-              />
+              <div className="bg-white px-6 py-3 rounded-lg shadow-sm border border-gray-200">
+                <span className="text-2xl font-bold text-gray-800">UrutiBiz</span>
+              </div>
             </button>
-          </div>
 
-          {/* Compact AI Badge */}
-          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-200/60 shadow-md mb-4 hover:shadow-lg transition-all duration-300">
-            <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full">
-              <Bot className="w-3 h-3 text-blue-600" />
+            {/* AI Platform Badge */}
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 rounded-full text-sm font-medium">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered Platform</span>
             </div>
-           <span className="text-sm font-semibold text-active font-outfit">AI-Powered Platform</span>
-            <div className="flex items-center justify-center w-6 h-6 bg-yellow-100 rounded-full">
-              <Sparkles className="w-3 h-3 text-yellow-600" />
-            </div>
-          </div>
-
-          {/* Compact Main Heading */}
-          <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-platform-dark-grey font-outfit">
-              Create Your Account
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto leading-relaxed">
-              Join UrutiBz to start renting and listing items with ease
-            </p>
           </div>
         </div>
 
-        {/* Compact Form */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
-          <div className="p-4 sm:p-6 lg:p-8">
-            <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Main Form Card */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 mt-[-10px]">
+          <div className="px-8 py-4">
+            {/* Form Header */}
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Create Your Account
+              </h1>
+              <p className="text-gray-600 text-sm">
+                Join UrutiBiz to start renting and listing items with ease
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
                     First Name
                   </label>
                   <div className="relative">
@@ -298,11 +290,11 @@ const RegisterPage: React.FC = () => {
                       value={formData.firstName}
                       onChange={handleChange}
                       onBlur={() => handleBlur('firstName')}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
-                        errors.firstName && touched.firstName
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
-                          : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                      }`}
+                                             className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm ${
+                         errors.firstName && touched.firstName
+                           ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                           : ''
+                       }`}
                       placeholder="First name"
                     />
                   </div>
@@ -315,23 +307,26 @@ const RegisterPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name
                   </label>
-                  <input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    onBlur={() => handleBlur('lastName')}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
-                      errors.lastName && touched.lastName
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
-                        : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
-                    placeholder="Last name"
-                  />
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur('lastName')}
+                                             className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm ${
+                         errors.lastName && touched.lastName
+                           ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                           : ''
+                       }`}
+                      placeholder="Last name"
+                    />
+                  </div>
                   {errors.lastName && touched.lastName && (
                     <p className="mt-1 text-xs text-red-600 flex items-center">
                       <AlertCircle className="w-3 h-3 mr-1" />
@@ -343,7 +338,7 @@ const RegisterPage: React.FC = () => {
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -356,11 +351,11 @@ const RegisterPage: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                     onBlur={() => handleBlur('email')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
-                      errors.email && touched.email
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
-                        : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
+                                         className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm ${
+                       errors.email && touched.email
+                         ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                         : ''
+                     }`}
                     placeholder="Enter your email"
                   />
                 </div>
@@ -373,10 +368,10 @@ const RegisterPage: React.FC = () => {
               </div>
 
               {/* Password Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 {/* Password */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                     Password
                   </label>
                   <div className="relative">
@@ -388,11 +383,11 @@ const RegisterPage: React.FC = () => {
                       value={formData.password}
                       onChange={handleChange}
                       onBlur={() => handleBlur('password')}
-                      className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
-                        errors.password && touched.password
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
-                          : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                      }`}
+                                             className={`w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm ${
+                         errors.password && touched.password
+                           ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                           : ''
+                       }`}
                       placeholder="Create password"
                     />
                     <button
@@ -414,7 +409,7 @@ const RegisterPage: React.FC = () => {
 
                 {/* Confirm Password */}
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
                     Confirm Password
                   </label>
                   <div className="relative">
@@ -426,11 +421,11 @@ const RegisterPage: React.FC = () => {
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       onBlur={() => handleBlur('confirmPassword')}
-                      className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
-                        errors.confirmPassword && touched.confirmPassword
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
-                          : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                      }`}
+                                             className={`w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm ${
+                         errors.confirmPassword && touched.confirmPassword
+                           ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                           : ''
+                       }`}
                       placeholder="Confirm password"
                     />
                     <button
@@ -450,40 +445,38 @@ const RegisterPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Compact Terms Agreement */}
-              <div className="bg-gray-50 rounded-lg p-3">
-                <div className="flex items-start space-x-3">
-                  <input
-                    id="agreeToTerms"
-                    name="agreeToTerms"
-                    type="checkbox"
-                    checked={formData.agreeToTerms}
-                    onChange={handleChange}
-                    onBlur={() => handleBlur('agreeToTerms')}
-                    className={`w-4 h-4 mt-0.5 rounded focus:ring-2 transition-colors ${
-                      errors.agreeToTerms && touched.agreeToTerms
-                        ? 'border-red-300 text-red-600 focus:ring-red-500'
-                        : 'border-gray-300 text-blue-600 focus:ring-blue-500'
-                    }`}
-                  />
-                  <div className="text-xs leading-relaxed">
-                    <label htmlFor="agreeToTerms" className="text-gray-700 cursor-pointer">
-                      I agree to the{' '}
-                      <button type="button" className="text-blue-600 hover:text-blue-800 font-medium underline">
-                        Terms of Service
-                      </button>
-                      {' '}and{' '}
-                      <button type="button" className="text-blue-600 hover:text-blue-800 font-medium underline">
-                        Privacy Policy
-                      </button>
-                    </label>
-                    {errors.agreeToTerms && touched.agreeToTerms && (
-                      <p className="mt-1 text-red-600 flex items-center">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        {errors.agreeToTerms}
-                      </p>
-                    )}
-                  </div>
+              {/* Terms Agreement */}
+              <div className="flex items-start space-x-3">
+                <input
+                  id="agreeToTerms"
+                  name="agreeToTerms"
+                  type="checkbox"
+                  checked={formData.agreeToTerms}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur('agreeToTerms')}
+                                     className={`w-4 h-4 mt-0.5 rounded focus:ring-2 transition-colors ${
+                     errors.agreeToTerms && touched.agreeToTerms
+                       ? 'border-red-300 text-red-600 focus:ring-red-500'
+                       : 'border-gray-300 text-teal-600 focus:ring-teal-500'
+                   }`}
+                />
+                <div className="text-sm leading-relaxed">
+                  <label htmlFor="agreeToTerms" className="text-gray-700 cursor-pointer">
+                    I agree to the{' '}
+                                         <button type="button" className="text-teal-600 hover:text-teal-800 font-medium underline">
+                       Terms of Service
+                     </button>
+                     {' '}and{' '}
+                     <button type="button" className="text-teal-600 hover:text-teal-800 font-medium underline">
+                       Privacy Policy
+                     </button>
+                  </label>
+                  {errors.agreeToTerms && touched.agreeToTerms && (
+                    <p className="mt-1 text-red-600 flex items-center text-xs">
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      {errors.agreeToTerms}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -491,7 +484,7 @@ const RegisterPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full btn-primary py-4 px-6 text-base font-outfit shadow-lg hover:from-blue-700 hover:to-indigo-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white py-3 px-6 rounded-lg font-medium transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
               >
                 {isLoading ? (
                   <>
@@ -508,18 +501,19 @@ const RegisterPage: React.FC = () => {
             </form>
           </div>
         </div>
-        {/* login link */}
-                  <div className="text-center pt-4 border-t border-gray-200">
-                <p className="text-platform-grey font-inter">
-                Already have an account?{' '}
-                  <Link 
-                    to={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} 
-                    className="text-active hover:text-active-dark font-semibold transition-colors duration-200"
-                  >
-                  Sign in here
-                  </Link>
-                </p>
-              </div>
+
+        {/* Sign In Link */}
+        <div className="text-center mt-2">
+          <p className="text-gray-600 text-sm">
+            Already have an account?{' '}
+                         <Link 
+               to={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} 
+               className="text-teal-600 hover:text-teal-800 font-medium underline transition-colors duration-200"
+             >
+               Sign in here
+             </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Package } from 'lucide-react';
-import { API_BASE_URL, createAuthHeaders, handleApiError } from './config';
+import { API_BASE_URL, createAuthHeaders, handleApiError, processApiResponse } from './config';
 import type { 
   AdminStats, 
   RecentUser, 
@@ -108,27 +108,18 @@ export async function fetchAllDisputes(
   token?: string
 ): Promise<any> {
   try {
-    const response = await axios.get(`${API_BASE_URL}/inspections/disputes`, {
+    const response = await axios.get(`${API_BASE_URL}/inspections/admin/disputes`, {
       params: { page, limit },
       headers: createAuthHeaders(token),
     });
     
-    // Check if we have the nested structure
-    if (response.data?.data?.data?.disputes) {
-      return response.data.data.data;
-    }
-    
-    // Check if we have the direct structure
-    if (response.data?.data?.disputes) {
+    // Handle the API response structure: { success, message, data: { disputes, pagination } }
+    if (response.data?.success && response.data?.data) {
       return response.data.data;
     }
     
-    // Check if we have disputes at the root level
-    if (response.data?.disputes) {
-      return response.data;
-    }
-    
-    return { disputes: [], pagination: { page: 1, limit: 20, total: 0 } };
+    // Fallback to empty structure if API response is unexpected
+    return { disputes: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 1 } };
   } catch (error) {
     console.error('Error fetching disputes:', error);
     throw error;
@@ -142,12 +133,77 @@ export async function resolveDispute(
   token?: string
 ): Promise<any> {
   try {
-    const response = await axios.put(`${API_BASE_URL}/inspections/${inspectionId}/disputes/${disputeId}/resolve`, data, {
+    const response = await axios.put(`${API_BASE_URL}/inspections/admin/disputes/${disputeId}/resolve`, data, {
       headers: createAuthHeaders(token),
     });
     return response.data;
   } catch (error) {
     console.error('Error resolving dispute:', error);
+    throw error;
+  }
+}
+
+// Add item to inspection (Admin function)
+export async function addInspectionItem(
+  inspectionId: string,
+  data: {
+    itemName: string;
+    description: string;
+    condition: string;
+    notes: string;
+    repairCost: number;
+    replacementCost: number;
+  },
+  token?: string
+): Promise<any> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/inspections/admin/${inspectionId}/items`, data, {
+      headers: createAuthHeaders(token),
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding inspection item:', error);
+    throw error;
+  }
+}
+
+// Update inspection item (Admin function)
+export async function updateInspectionItem(
+  inspectionId: string,
+  itemId: string,
+  data: Partial<{
+    itemName: string;
+    description: string;
+    condition: string;
+    notes: string;
+    repairCost: number;
+    replacementCost: number;
+  }>,
+  token?: string
+): Promise<any> {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/inspections/admin/${inspectionId}/items/${itemId}`, data, {
+      headers: createAuthHeaders(token),
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating inspection item:', error);
+    throw error;
+  }
+}
+
+// Delete inspection item (Admin function)
+export async function deleteInspectionItem(
+  inspectionId: string,
+  itemId: string,
+  token?: string
+): Promise<void> {
+  try {
+    await axios.delete(`${API_BASE_URL}/inspections/admin/${inspectionId}/items/${itemId}`, {
+      headers: createAuthHeaders(token),
+    });
+  } catch (error) {
+    console.error('Error deleting inspection item:', error);
     throw error;
   }
 }
@@ -326,20 +382,54 @@ export async function fetchAdminRealtimeMetrics(token?: string) {
   }
 }
 
-// Moderation Functions (Stub implementations)
+// Moderation Functions
 export async function fetchModerationActions(token?: string): Promise<any> {
-  console.warn('fetchModerationActions: Function not implemented yet');
-  return { data: [] };
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/moderation/actions`, {
+      headers: createAuthHeaders(token)
+    });
+    return processApiResponse(response);
+  } catch (err: any) {
+    console.error('Error fetching moderation actions:', err);
+    throw new Error(handleApiError(err, 'Failed to fetch moderation actions'));
+  }
 }
 
 export async function fetchModerationStats(token?: string): Promise<any> {
-  console.warn('fetchModerationStats: Function not implemented yet');
-  return { data: { totalActions: 0, actionsByType: {}, actionsByResource: {}, recentActions: 0 } };
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/moderation/stats`, {
+      headers: createAuthHeaders(token)
+    });
+    return processApiResponse(response);
+  } catch (err: any) {
+    console.error('Error fetching moderation stats:', err);
+    throw new Error(handleApiError(err, 'Failed to fetch moderation stats'));
+  }
 }
 
 export async function fetchProductModerationActions(productId: string, token?: string): Promise<any> {
-  console.warn('fetchProductModerationActions: Function not implemented yet');
-  return { data: [] };
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/moderation/products/${productId}/actions`, {
+      headers: createAuthHeaders(token)
+    });
+    return processApiResponse(response);
+  } catch (err: any) {
+    console.error('Error fetching product moderation actions:', err);
+    throw new Error(handleApiError(err, 'Failed to fetch product moderation actions'));
+  }
+}
+
+export async function fetchModeratorDetails(moderatorId: string, token?: string): Promise<any> {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/users/${moderatorId}`, {
+      headers: createAuthHeaders(token)
+    });
+    return processApiResponse(response);
+  } catch (err: any) {
+    console.error('Error fetching moderator details:', err);
+    // Return a fallback object if moderator details can't be fetched
+    return { data: { id: moderatorId, name: 'Unknown Moderator', email: 'unknown@example.com' } };
+  }
 }
 
 // Report Generation Functions (Stub implementations)
@@ -393,4 +483,230 @@ export async function exportReport(reportType: string, format: string, filters?:
   // Return a mock blob for now
   const mockData = `Mock ${reportType} report in ${format} format`;
   return new Blob([mockData], { type: 'text/plain' });
+}
+
+// Verification Management Functions
+export async function fetchAllVerifications(
+  page: number = 1,
+  limit: number = 20,
+  filters?: any,
+  token?: string
+): Promise<any> {
+  try {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.verification_type) params.append('verification_type', filters.verification_type);
+    if (filters?.ai_processing_status) params.append('ai_processing_status', filters.ai_processing_status);
+    if (filters?.date_from) params.append('date_from', filters.date_from);
+    if (filters?.date_to) params.append('date_to', filters.date_to);
+    if (filters?.search) params.append('search', filters.search);
+
+    const response = await axios.get(`${API_BASE_URL}/admin/verifications`, {
+      params,
+      headers: createAuthHeaders(token),
+    });
+    
+    // Handle the API response structure: { success, message, data: { verifications, pagination } }
+    if (response.data?.success && response.data?.data) {
+      return response.data.data;
+    }
+    
+    // Fallback to empty structure if API response is unexpected
+    return { verifications: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 1 } };
+  } catch (error) {
+    console.error('Error fetching verifications:', error);
+    throw error;
+  }
+}
+
+export async function updateVerificationStatus(
+  verificationId: string,
+  data: { verification_status: 'verified' | 'rejected'; notes?: string },
+  token?: string
+): Promise<any> {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/admin/verifications/${verificationId}/status`, data, {
+      headers: createAuthHeaders(token),
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating verification status:', error);
+    throw error;
+  }
+}
+
+export async function getVerificationById(
+  verificationId: string,
+  token?: string
+): Promise<any> {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/verifications/${verificationId}`, {
+      headers: createAuthHeaders(token),
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching verification by ID:', error);
+    throw error;
+  }
+}
+
+export async function getVerificationStats(token?: string): Promise<any> {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/verifications/stats`, {
+      headers: createAuthHeaders(token),
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching verification stats:', error);
+    throw error;
+  }
+}
+
+export async function bulkUpdateVerifications(
+  verificationIds: string[],
+  data: { verification_status: 'verified' | 'rejected'; notes?: string },
+  token?: string
+): Promise<any> {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/admin/verifications/bulk-update`, {
+      verification_ids: verificationIds,
+      ...data
+    }, {
+      headers: createAuthHeaders(token),
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error bulk updating verifications:', error);
+    throw error;
+  }
+}
+
+// Bulk review verifications using the bulk-review endpoint
+export async function bulkReviewVerifications(
+  verificationIds: string[],
+  status: 'verified' | 'rejected',
+  notes?: string,
+  token?: string
+): Promise<any> {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/verifications/bulk-review`,
+      {
+        verificationIds,
+        status,
+        notes,
+      },
+      {
+        headers: createAuthHeaders(token),
+      }
+    );
+
+    return processApiResponse(response);
+  } catch (error) {
+    console.error('Error bulk reviewing verifications:', error);
+    throw error;
+  }
+}
+
+// Reject a specific verification
+export async function rejectVerification(
+  verificationId: string,
+  notes: string,
+  token?: string
+): Promise<any> {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/verifications/${verificationId}/reject`,
+      {
+        notes,
+      },
+      {
+        headers: createAuthHeaders(token),
+      }
+    );
+    return processApiResponse(response);
+  } catch (error) {
+    console.error('Error rejecting verification:', error);
+    throw error;
+  }
+}
+
+// Fetch pending verifications specifically
+export async function fetchPendingVerifications(
+  page: number = 1,
+  limit: number = 20,
+  token?: string
+): Promise<any> {
+  try {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+
+    const response = await axios.get(`${API_BASE_URL}/admin/verifications/pending`, {
+      params,
+      headers: createAuthHeaders(token),
+    });
+
+    // Handle the API response structure: { success, message, data }
+    if (response.data?.success && response.data?.data) {
+      return response.data.data;
+    }
+
+    // Fallback to empty array if API response is unexpected
+    return [];
+  } catch (error) {
+    console.error('Error fetching pending verifications:', error);
+    throw error;
+  }
+}
+
+// Fetch verification statistics
+export async function fetchVerificationStats(token?: string): Promise<any> {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/verifications/stats`, {
+      headers: createAuthHeaders(token),
+    });
+
+    // Handle the API response structure: { success, message, data }
+    if (response.data?.success && response.data?.data) {
+      return response.data.data;
+    }
+
+    // Fallback to empty stats if API response is unexpected
+    return {
+      statusBreakdown: { verified: 0, pending: 0, rejected: 0 },
+      typeBreakdown: {},
+      totalUsers: 0,
+      verifiedUsers: 0,
+      verificationRate: 0,
+      recentActivity: 0
+    };
+  } catch (error) {
+    console.error('Error fetching verification stats:', error);
+    throw error;
+  }
+}
+
+// Update user KYC status
+export async function updateUserKycStatus(
+  userId: string,
+  data: { kycStatus: 'verified' | 'rejected' | 'pending'; notes?: string },
+  token?: string
+): Promise<any> {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/admin/users/${userId}/kyc-status`,
+      data,
+      {
+        headers: createAuthHeaders(token),
+      }
+    );
+    return processApiResponse(response);
+  } catch (error) {
+    console.error('Error updating user KYC status:', error);
+    throw error;
+  }
 }

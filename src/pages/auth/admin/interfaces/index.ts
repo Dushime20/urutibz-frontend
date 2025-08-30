@@ -329,6 +329,20 @@ export interface BulkUpdatePaymentProvidersPayload {
   updates: Partial<CreatePaymentProviderInput>;
 }
 
+// Country-specific Payment Providers Response Interface
+export interface CountryPaymentProvidersResponse {
+  country_id: string;
+  country_name: string;
+  country_code: string;
+  providers: PaymentProvider[];
+  mobile_money_providers: PaymentProvider[];
+  card_providers: PaymentProvider[];
+  bank_transfer_providers: PaymentProvider[];
+  digital_wallet_providers: PaymentProvider[];
+  active_providers: PaymentProvider[];
+  supported_currencies: string[];
+}
+
 // Product Availability Interface
 export interface ProductAvailability {
   id?: string;
@@ -691,4 +705,66 @@ export interface AdministrativeDivisionStats {
 export interface ToggleStatusPayload {
   is_active: boolean;
   reason?: string;
+}
+
+// User Verification Interface
+export interface UserVerification {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  verification_type: string;
+  verification_status: string;
+  ai_processing_status: string;
+  ai_profile_score?: string;
+  document_number?: string;
+  city?: string;
+  country?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Verification Update Payload Interface
+export interface VerificationUpdatePayload {
+  verification_status: string;
+  rejection_reason?: string;
+  admin_notes?: string;
+}
+
+// Verification Filters Interface
+export interface VerificationFilters {
+  status: string;
+  verification_type: string;
+  ai_processing_status: string;
+}
+
+// Verification Statistics Interface
+export interface VerificationStats {
+  statusBreakdown: {
+    verified: string;
+    pending: string;
+    rejected: string;
+  };
+  typeBreakdown: {
+    [key: string]: string;
+  };
+  totalUsers: string;
+  verifiedUsers: string;
+  verificationRate: string;
+  recentActivity: string;
+}
+
+// Bulk Verification Interface
+export interface BulkVerificationPayload {
+  verificationIds: string[];
+  status: 'verified' | 'rejected';
+  notes?: string;
+}
+
+// KYC Status Update Interface
+export interface KycStatusUpdatePayload {
+  kycStatus: 'verified' | 'rejected' | 'pending';
+  notes?: string;
 } 

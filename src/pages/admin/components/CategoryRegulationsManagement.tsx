@@ -75,10 +75,10 @@ export default function CategoryRegulationsManagement() {
 		try {
 			setLoading(true);
 			setError(null);
-			const params: any = { limit: 100 };
-			if (search.trim()) params.q = search.trim();
-			if (countryFilter) params.country_id = countryFilter;
-			if (categoryFilter) params.category_id = categoryFilter;
+					const params: any = { limit: 100 };
+		if (search.trim()) params.search = search.trim();
+		if (countryFilter) params.country_id = countryFilter;
+		if (categoryFilter) params.category_id = categoryFilter;
 			const res = await fetchCategoryRegulations(params, token);
 			setItems(normalizeList(res));
 		} catch (e: any) {
@@ -106,7 +106,7 @@ export default function CategoryRegulationsManagement() {
 		setShowDetail(true);
 		setLastDetailId(id);
 		try {
-			const res = await fetchCategoryRegulationById(id, {}, token);
+			const res = await fetchCategoryRegulationById(id, token);
 			const data = res?.data || res;
 			setDetail(data || null);
 		} catch (e: any) {
@@ -198,7 +198,10 @@ export default function CategoryRegulationsManagement() {
 	const doCheckCompliance = async () => {
 		if (!compCategory || !compCountry) return;
 		try {
-			const res = await checkCompliance(compCategory, compCountry, token);
+			const res = await checkCompliance({
+				category_id: compCategory,
+				country_id: compCountry
+			}, token);
 			setCompResult(res?.data || res || null);
 		} catch (e) {
 			setCompResult(null);

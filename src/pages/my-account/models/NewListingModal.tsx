@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, MapPin, Plus, Trash2, Camera, DollarSign, Package, Info, AlertCircle } from 'lucide-react';
+import { X, Upload, MapPin, Plus, Trash2, Camera, DollarSign, Package, Info, AlertCircle, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { fetchCategories, fetchCountries } from '../service/api';
 
 type FormState = {
@@ -967,294 +967,109 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-md shadow-2xl max-w-5xl w-full mx-4 h-[98vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-cyan-600 px-8 py-2 text-white">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold ">Create New Listing</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-all duration-200"
-            >
-              <X size={24} />
-            </button>
-          </div>
-          
-          {/* Step indicator */}
-          <div className="flex items-center justify-between mt-2">
-            {steps.map((step, index) => {
-              // Check if this step has validation errors
-              const hasErrors = (() => {
-                switch (step.id) {
-                  case 1:
-                    return !!(validationErrors.title || validationErrors.description || validationErrors.category_id || validationErrors.condition || validationErrors.country_id);
-                  case 2:
-                    return !!(validationErrors.currency || validationErrors.price_per_day || validationErrors.pickup_methods);
-                  case 3:
-                    return false; // Step 3 has no required fields
-                  case 4:
-                    return !!validationErrors.images;
-                  default:
-                    return false;
-                }
-              })();
-              
-              return (
+      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full mx-4 h-[95vh] overflow-hidden">
+        {/* Content with Sidebar */}
+        <form onSubmit={handleFormSubmit} className="flex flex-1 h-full">
+          {/* Sidebar with Steps */}
+          <div className="w-64 bg-gray-50 border-r border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Steps</h3>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
-                  <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 ${
-                      step.id === currentStep
-                        ? hasErrors 
-                          ? 'bg-red-100 text-red-600 border-red-500' 
-                          : 'bg-white text-teal-600 border-white'
-                        : step.id < currentStep
-                        ? hasErrors
-                          ? 'bg-red-500 text-white border-red-500'
-                          : 'bg-teal-500 text-white border-teal-500'
-                        : hasErrors
-                        ? 'bg-red-100 text-red-600 border-red-500'
-                        : 'bg-transparent text-white border-white border-opacity-50'
-                    }`}
-                  >
-                    {hasErrors ? (
-                      <AlertCircle size={18} />
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
+                    currentStep >= step.id
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {currentStep > step.id ? (
+                      <CheckCircle size={18} />
                     ) : (
-                      <step.icon size={18} />
+                      step.id
                     )}
                   </div>
-                  <span className={`ml-3 text-sm font-medium ${
-                    step.id <= currentStep 
-                      ? hasErrors 
-                        ? 'text-red-200' 
-                        : 'text-white' 
-                      : hasErrors 
-                        ? 'text-red-200' 
-                        : 'text-white text-opacity-70'
-                  }`}>
-                    {step.title}
-                  </span>
+                  <div className="ml-3 flex-1">
+                    <div className={`text-sm font-medium ${
+                      currentStep >= step.id ? 'text-teal-600' : 'text-gray-500'
+                    }`}>
+                      {step.title}
+                    </div>
+                    <div className={`text-xs ${
+                      currentStep >= step.id ? 'text-teal-500' : 'text-gray-400'
+                    }`}>
+                      {step.id === 1 && 'Product details & category'}
+                      {step.id === 2 && 'Pricing & pickup options'}
+                      {step.id === 3 && 'Features & specifications'}
+                      {step.id === 4 && 'Images & location'}
+                    </div>
+                  </div>
                   {index < steps.length - 1 && (
-                    <div className={`w-16 h-0.5 mx-4 ${
-                      step.id < currentStep 
-                        ? hasErrors 
-                          ? 'bg-red-500' 
-                          : 'bg-white' 
-                        : hasErrors 
-                        ? 'bg-red-500' 
-                        : 'bg-white bg-opacity-30'
+                    <div className={`w-8 h-0.5 ml-4 transition-all duration-200 ${
+                      currentStep > step.id ? 'bg-teal-600' : 'bg-gray-200'
                     }`} />
                   )}
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Step completion status */}
-          <div className="flex items-center justify-between mt-3 text-xs">
-            {steps.map((step) => {
-              const isCompleted = step.id < currentStep;
-              const hasErrors = (() => {
-                switch (step.id) {
-                  case 1:
-                    return !!(validationErrors.title || validationErrors.description || validationErrors.category_id || validationErrors.condition || validationErrors.country_id);
-                  case 2:
-                    return !!(validationErrors.currency || validationErrors.price_per_day || validationErrors.pickup_methods);
-                  case 3:
-                    return false;
-                  case 4:
-                    return !!validationErrors.images;
-                  default:
-                    return false;
-                }
-              })();
-              
-              let status = 'Pending';
-              let statusColor = 'text-white text-opacity-70';
-              
-              if (step.id === currentStep) {
-                status = hasErrors ? 'Has Errors' : 'In Progress';
-                statusColor = hasErrors ? 'text-red-200' : 'text-white';
-              } else if (isCompleted) {
-                status = hasErrors ? 'Has Errors' : 'Completed';
-                statusColor = hasErrors ? 'text-red-200' : 'text-green-200';
-              }
-              
-              return (
-                <span key={step.id} className={`${statusColor} font-medium`}>
-                  {status}
-                </span>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Content */}
-        <form onSubmit={handleFormSubmit} className="flex flex-col h-full">
-          {/* Validation Summary */}
-          {/* {Object.keys(validationErrors).length > 0 && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 mx-8 mt-4">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-red-800">
-                    Please fix the following validation errors:
-                  </h3>
-                  <div className="mt-2 text-sm text-red-700">
-                    <ul className="list-disc list-inside space-y-1">
-                      {validationErrors.title && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(1)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Title: {validationErrors.title}
-                          </button>
-                        </li>
-                      )}
-                      {validationErrors.description && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(1)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Description: {validationErrors.description}
-                          </button>
-                        </li>
-                      )}
-                      {validationErrors.category_id && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(1)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Category: {validationErrors.category_id}
-                          </button>
-                        </li>
-                      )}
-                      {validationErrors.condition && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(1)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Condition: {validationErrors.condition}
-                          </button>
-                        </li>
-                      )}
-                      {validationErrors.country_id && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(1)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Country: {validationErrors.country_id}
-                          </button>
-                        </li>
-                      )}
-                      {validationErrors.currency && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(2)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Currency: {validationErrors.currency}
-                          </button>
-                        </li>
-                      )}
-                      {validationErrors.price_per_day && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(2)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Price per Day: {validationErrors.price_per_day}
-                          </button>
-                        </li>
-                      )}
-                      {validationErrors.pickup_methods && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(2)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Pickup Methods: {validationErrors.pickup_methods}
-                          </button>
-                        </li>
-                      )}
-                      {validationErrors.images && (
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => setCurrentStep(4)}
-                            className="text-red-600 hover:text-red-800 underline"
-                          >
-                            Images: {validationErrors.images}
-                          </button>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
-          )} */}
-
-          <div className="flex-1 overflow-y-auto px-8 py-6 max-h-[73vh]">
-            {renderStepContent()}
           </div>
 
-          {/* Footer */}
-          <div className="border-t border-gray-200 px-4 sm:px-8 py-2 bg-gray-50 flex-shrink-0">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <button
-                type="button"
-                onClick={handlePreviousStep}
-                disabled={currentStep === 1}
-                className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  currentStep === 1
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Previous
-              </button>
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-8 py-6 min-h-0">
+              {renderStepContent()}
+            </div>
 
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                Step {currentStep} of {steps.length}
-              </div>
+            {/* Footer - Always Visible */}
+            <div className="border-t border-gray-200 px-8 py-3 bg-gray-50 flex-shrink-0">
+              <div className="flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={handlePreviousStep}
+                  disabled={currentStep === 1}
+                  className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                    currentStep === 1
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Previous
+                </button>
 
-              <div className="w-full sm:w-auto">
-                {currentStep < steps.length ? (
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    className="w-full sm:w-auto px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-all duration-200"
-                  >
-                    Next →
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full sm:w-auto px-8 py-3 bg-cyan-600 text-white rounded-lg font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting && (
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                      </svg>
-                    )}
-                    {isSubmitting ? 'Creating Listing...' : 'Create Listing'}
-                  </button>
-                )}
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500">
+                    Step {currentStep} of {steps.length}
+                  </span>
+                  
+                  {currentStep < steps.length ? (
+                    <button
+                      type="button"
+                      onClick={handleNextStep}
+                      className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-all duration-200 flex items-center gap-2"
+                    >
+                      Continue
+                      <ArrowLeft className="w-4 h-4 rotate-180" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting && (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      )}
+                      {isSubmitting ? 'Creating Listing...' : 'Create Listing'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
