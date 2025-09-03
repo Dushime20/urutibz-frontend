@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Filter, MoreHorizontal, X, Package, Check, Shield } from 'lucide-react';
+import { Plus, Filter, MoreHorizontal, X, Package, Check, Shield, DollarSign } from 'lucide-react';
 import type { Product, Owner, ItemCategory } from '../types';
 import { fetchProductImages, getProductById, fetchUserById } from '../service';
 import { fetchProductAvailability } from '../service';
@@ -13,6 +13,8 @@ import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
 import { moderateAdminProduct } from '../service';
 import ProductModerationHistory from './ProductModerationHistory';
+import { PricingService } from '../service/pricingService';
+import type { ProductPrice } from '../types/pricing';
 
 interface ItemsManagementProps {
   products: Product[];
@@ -33,7 +35,8 @@ const AdminProductDetailModal: React.FC<{
   onClose: () => void;
   productId: string;
   onApproved?: () => void;
-}> = ({ open, onClose, productId }) => {
+  productPrices: { [productId: string]: ProductPrice[] };
+}> = ({ open, onClose, productId, onApproved, productPrices }) => {
   const [product, setProduct] = useState<any>(null);
   const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -331,25 +334,40 @@ const AdminProductDetailModal: React.FC<{
               <div>
                 <div className="text-xs text-gray-500 uppercase mb-1">Pricing</div>
                 <div className="font-semibold text-my-primary space-y-1">
-                  <div>
-                    <span className="text-gray-600 font-medium mr-2">Daily:</span>
-                    <span>
-                      {product?.base_price_per_day != null && product?.base_currency
-                        ? `${product.base_price_per_day} ${product.base_currency}`
-                        : 'No price'}
-                    </span>
-                  </div>
-                  {product?.base_price_per_week != null && (
-                    <div>
-                      <span className="text-gray-600 font-medium mr-2">Weekly:</span>
-                      <span>{product.base_price_per_week} {product.base_currency}</span>
-                    </div>
-                  )}
-                  {product?.base_price_per_month != null && (
-                    <div>
-                      <span className="text-gray-600 font-medium mr-2">Monthly:</span>
-                      <span>{product.base_price_per_month} {product.base_currency}</span>
-                    </div>
+                  {productPrices[productId]?.length > 0 ? (
+                    <>
+                      <div>
+                        <span className="text-gray-600 font-medium mr-2">Daily:</span>
+                        <span>
+                          {productPrices[productId][0].price_per_day} {productPrices[productId][0].currency}
+                        </span>
+                      </div>
+                      {productPrices[productId][0].price_per_week && (
+                        <div>
+                          <span className="text-gray-600 font-medium mr-2">Weekly:</span>
+                          <span>{productPrices[productId][0].price_per_week} {productPrices[productId][0].currency}</span>
+                        </div>
+                      )}
+                      {productPrices[productId][0].price_per_month && (
+                        <div>
+                          <span className="text-gray-600 font-medium mr-2">Monthly:</span>
+                          <span>{productPrices[productId][0].price_per_month} {productPrices[productId][0].currency}</span>
+                        </div>
+                      )}
+                      {productPrices[productId][0].security_deposit > 0 && (
+                        <div>
+                          <span className="text-gray-600 font-medium mr-2">Deposit:</span>
+                          <span className="text-orange-600">{productPrices[productId][0].security_deposit} {productPrices[productId][0].currency}</span>
+                        </div>
+                      )}
+                      {productPrices[productId].length > 1 && (
+                        <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full mt-2">
+                          Available in {productPrices[productId].length} countries
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-gray-500 italic">No pricing data available</div>
                   )}
                 </div>
               </div>
@@ -500,6 +518,9 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   // Add moderation history modal state
   const [moderationHistoryProductId, setModerationHistoryProductId] = useState<string | null>(null);
+  // Add pricing state
+  const [productPrices, setProductPrices] = useState<{ [productId: string]: ProductPrice[] }>({});
+  const [pricesLoading, setPricesLoading] = useState(false);
 
   useEffect(() => {
     console.log('Products received:', products);
@@ -689,10 +710,45 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
     };
   }, []);
 
+  // Fetch pricing for all products
+  useEffect(() => {
+    async function loadProductPrices() {
+      if (!products.length) return;
+      
+      setPricesLoading(true);
+      const token = localStorage.getItem('token') || undefined;
+      const pricesMap: { [productId: string]: ProductPrice[] } = {};
+      
+      try {
+        await Promise.all(products.map(async (product) => {
+          try {
+            const { data } = await PricingService.getProductPricesByProductId(
+              product.id,
+              { page: 1, limit: 10 },
+              token
+            );
+            pricesMap[product.id] = data || [];
+          } catch (error) {
+            console.warn(`Failed to fetch pricing for product ${product.id}:`, error);
+            pricesMap[product.id] = [];
+          }
+        }));
+        
+        setProductPrices(pricesMap);
+      } catch (error) {
+        console.error('Error loading product prices:', error);
+      } finally {
+        setPricesLoading(false);
+      }
+    }
+    
+    loadProductPrices();
+  }, [products]);
+
   // Optionally, you can manage error state here if not passed as prop
   // const [error, setError] = useState<string | null>(null);
 
-  if (loading || imagesLoading) {
+  if (loading || imagesLoading || pricesLoading) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
         <SkeletonTable columns={6} rows={6} />
@@ -921,27 +977,30 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                     </td>
                                           <td className="px-6 py-4 text-gray-900 dark:text-gray-100 text-md">
                         <div className="space-y-1">
-                          {/* Daily Rate */}
-                          <div className="font-semibold">
-                            {(item.price_per_day != null && item.currency)
-                              ? `${item.price_per_day} ${item.currency}/day`
-                              : (item.base_price_per_day != null && item.base_currency)
-                              ? `${item.base_price_per_day} ${item.base_currency}/day`
-                              : 'No price'}
-                          </div>
-                          
-                          {/* Weekly Rate */}
-                          {(item.price_per_week != null && item.currency) && (
-                            <div className="text-sm text-gray-600">
-                              {item.price_per_week} {item.currency}/week
+                          {pricesLoading ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-my-primary"></div>
+                              <span className="text-sm text-gray-500">Loading prices...</span>
                             </div>
-                          )}
-                          
-                          {/* Monthly Rate */}
-                          {(item.price_per_month != null && item.currency) && (
-                            <div className="text-sm text-gray-600">
-                              {item.price_per_month} {item.currency}/month
-                            </div>
+                          ) : productPrices[item.id]?.length > 0 ? (
+                            <>
+                              {/* Primary Price (Daily) */}
+                              <div className="font-semibold flex items-center space-x-2">
+                                <DollarSign className="w-4 h-4 text-green-600" />
+                                <span>
+                                  {productPrices[item.id][0].price_per_day} {productPrices[item.id][0].currency}/day
+                                </span>
+                              </div>
+                              
+                              {/* Multiple Countries Indicator */}
+                              {productPrices[item.id].length > 1 && (
+                                <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                                  +{productPrices[item.id].length - 1} more countries
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-gray-500 italic">No pricing data</div>
                           )}
                         </div>
                       </td>
@@ -1039,6 +1098,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
           open={!!viewProductId} 
           onClose={() => setViewProductId(null)} 
           productId={viewProductId || ''} 
+          productPrices={productPrices}
           onApproved={() => {
             // Refresh the product list after successful moderation
             // This will trigger a re-render of the component

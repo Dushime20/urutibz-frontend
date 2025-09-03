@@ -216,7 +216,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                   <option value={InspectionType.PRE_RENTAL}>Pre-Rental</option>
                   <option value={InspectionType.POST_RENTAL}>Post-Rental</option>
                   <option value={InspectionType.DAMAGE_ASSESSMENT}>Damage Assessment</option>
-                  <option value={InspectionType.MAINTENANCE_CHECK}>Maintenance Check</option>
+                  {/* <option value={InspectionType.MAINTENANCE_CHECK}>Maintenance Check</option> */}
                   <option value={InspectionType.QUALITY_VERIFICATION}>Quality Verification</option>
                 </select>
                 {errors.inspectionType && (

@@ -339,7 +339,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <SkeletonTable columns={6} rows={6} />
       </div>
     );
@@ -347,7 +347,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <ErrorState message={error} onRetry={() => window.location.reload()} />
       </div>
     );
@@ -355,16 +355,16 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
 
   if (users.length === 0) {
     return (
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <EmptyState icon={<UsersIcon />} title="No users found" message="There are currently no users in the system. New users will appear here as they register." />
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">User Management</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">User Management</h3>
         <div className="flex items-center space-x-3">
           <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
             <Filter className="w-4 h-4 mr-2" />
@@ -380,13 +380,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-xl">
+      <div className="flex space-x-1 mb-6 bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
         <button
           onClick={() => setActiveTab('users')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
             activeTab === 'users'
-              ? 'bg-white text-my-primary shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-white dark:bg-gray-600 text-my-primary shadow-sm'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -396,8 +396,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            onClick={() => setActiveTab('verifications')}
            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
              activeTab === 'verifications'
-               ? 'bg-white text-my-primary shadow-sm'
-               : 'text-gray-600 hover:text-gray-900'
+               ? 'bg-white dark:bg-gray-600 text-my-primary shadow-sm'
+               : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
            }`}
          >
            <Shield className="w-4 h-4" />
@@ -407,8 +407,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            onClick={() => setActiveTab('pending')}
            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
              activeTab === 'pending'
-               ? 'bg-white text-my-primary shadow-sm'
-               : 'text-gray-600 hover:text-gray-900'
+               ? 'bg-white dark:bg-gray-600 text-my-primary shadow-sm'
+               : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
            }`}
          >
            <Calendar className="w-4 h-4" />
@@ -605,133 +605,133 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       ) : activeTab === 'verifications' ? (
         <>
           {/* Verification Stats */}
-          {verificationStatsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-gray-50 rounded-2xl p-4 animate-pulse">
-                  <div className="h-8 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-6 bg-gray-200 rounded"></div>
-                </div>
-              ))}
-            </div>
-          ) : verificationStatsError ? (
-            <div className="bg-red-50 rounded-2xl p-4 mb-6">
-              <p className="text-red-600 text-center">{verificationStatsError}</p>
-              <button 
-                onClick={fetchVerificationStatsData}
-                className="mt-2 text-red-600 hover:text-red-800 underline"
-              >
-                Retry
-              </button>
-            </div>
-          ) : verificationStats ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-blue-600 font-medium">Total Users</p>
-                    <p className="text-2xl font-bold text-blue-700">{verificationStats.totalUsers}</p>
-                  </div>
-                  <Users className="w-8 h-8 text-blue-600" />
-                </div>
-              </div>
-              <div className="bg-green-50 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">Verified</p>
-                    <p className="text-2xl font-bold text-green-700">{verificationStats.statusBreakdown.verified}</p>
-                  </div>
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-              </div>
-              <div className="bg-yellow-50 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-yellow-600 font-medium">Pending</p>
-                    <p className="text-2xl font-bold text-yellow-700">{verificationStats.statusBreakdown.pending}</p>
-                  </div>
-                  <Calendar className="w-8 h-8 text-yellow-600" />
-                </div>
-              </div>
-              <div className="bg-red-50 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-red-600 font-medium">Rejected</p>
-                    <p className="text-2xl font-bold text-red-700">{verificationStats.statusBreakdown.rejected}</p>
-                  </div>
-                  <Shield className="w-8 h-8 text-red-600" />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-blue-600 font-medium">Total Verifications</p>
-                    <p className="text-2xl font-bold text-blue-700">{verifications.length}</p>
-                  </div>
-                  <FileText className="w-8 h-8 text-blue-600" />
-                </div>
-              </div>
-              <div className="bg-green-50 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">Verified</p>
-                    <p className="text-2xl font-bold text-green-700">{verifications.filter(v => v.verification_status === 'verified').length}</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            <div className="bg-yellow-50 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-yellow-600 font-medium">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-700">{verifications.filter(v => v.verification_status === 'pending').length}</p>
-                </div>
-                <Calendar className="w-8 h-8 text-yellow-600" />
-              </div>
-            </div>
-            <div className="bg-red-50 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-red-600 font-medium">Rejected</p>
-                  <p className="text-2xl font-bold text-red-700">{verifications.filter(v => v.verification_status === 'rejected').length}</p>
-                </div>
-                <Shield className="w-8 h-8 text-red-600" />
-              </div>
-            </div>
-          </div>
-                  )}
+                     {verificationStatsLoading ? (
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+               {[1, 2, 3, 4].map((i) => (
+                 <div key={i} className="bg-gray-50 dark:bg-gray-700 rounded-2xl p-4 animate-pulse">
+                   <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded mb-2"></div>
+                   <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                 </div>
+               ))}
+             </div>
+           ) : verificationStatsError ? (
+             <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 mb-6">
+               <p className="text-red-600 dark:text-red-400 text-center">{verificationStatsError}</p>
+               <button 
+                 onClick={fetchVerificationStatsData}
+                 className="mt-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline"
+               >
+                 Retry
+               </button>
+             </div>
+           ) : verificationStats ? (
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Users</p>
+                     <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{verificationStats.totalUsers}</p>
+                   </div>
+                   <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                 </div>
+               </div>
+               <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-sm text-green-600 dark:text-green-400 font-medium">Verified</p>
+                     <p className="text-2xl font-bold text-green-700 dark:text-green-400">{verificationStats.statusBreakdown.verified}</p>
+                   </div>
+                   <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                 </div>
+               </div>
+               <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl p-4">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">Pending</p>
+                     <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{verificationStats.statusBreakdown.pending}</p>
+                   </div>
+                   <Calendar className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                 </div>
+               </div>
+               <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-sm text-red-600 dark:text-red-400 font-medium">Rejected</p>
+                     <p className="text-2xl font-bold text-red-700 dark:text-red-400">{verificationStats.statusBreakdown.rejected}</p>
+                   </div>
+                   <Shield className="w-8 h-8 text-red-600 dark:text-red-400" />
+                 </div>
+               </div>
+             </div>
+           ) : (
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Verifications</p>
+                     <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{verifications.length}</p>
+                   </div>
+                   <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                 </div>
+               </div>
+               <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-sm text-green-600 dark:text-green-400 font-medium">Verified</p>
+                     <p className="text-2xl font-bold text-green-700 dark:text-green-400">{verifications.filter(v => v.verification_status === 'verified').length}</p>
+                   </div>
+                   <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                 </div>
+               </div>
+               <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl p-4">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">Pending</p>
+                     <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{verifications.filter(v => v.verification_status === 'pending').length}</p>
+                   </div>
+                   <Calendar className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                 </div>
+               </div>
+               <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-sm text-red-600 dark:text-red-400 font-medium">Rejected</p>
+                     <p className="text-2xl font-bold text-red-700 dark:text-red-400">{verifications.filter(v => v.verification_status === 'rejected').length}</p>
+                   </div>
+                   <Shield className="w-8 h-8 text-red-600 dark:text-red-400" />
+                 </div>
+               </div>
+             </div>
+                      )}
 
-          {/* Additional Verification Stats */}
+                      {/* Additional Verification Stats */}
           {verificationStats && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-purple-50 rounded-2xl p-4">
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-600 font-medium">Verification Rate</p>
-                    <p className="text-2xl font-bold text-purple-700">{verificationStats.verificationRate}%</p>
+                    <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Verification Rate</p>
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{verificationStats.verificationRate}%</p>
                   </div>
-                  <CheckCircle className="w-8 h-8 text-purple-600" />
+                  <CheckCircle className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
-              <div className="bg-indigo-50 rounded-2xl p-4">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-indigo-600 font-medium">Verified Users</p>
-                    <p className="text-2xl font-bold text-indigo-700">{verificationStats.verifiedUsers}</p>
+                    <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Verified Users</p>
+                    <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{verificationStats.verifiedUsers}</p>
                   </div>
-                  <Users className="w-8 h-8 text-indigo-600" />
+                  <Users className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                 </div>
               </div>
-              <div className="bg-orange-50 rounded-2xl p-4">
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-orange-600 font-medium">Recent Activity</p>
-                    <p className="text-2xl font-bold text-orange-700">{verificationStats.recentActivity}</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Recent Activity</p>
+                    <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{verificationStats.recentActivity}</p>
                   </div>
-                  <Calendar className="w-8 h-8 text-orange-600" />
+                  <Calendar className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
             </div>
@@ -739,28 +739,28 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
 
           {/* Verification Type Breakdown */}
           {verificationStats && verificationStats.typeBreakdown && Object.keys(verificationStats.typeBreakdown).length > 0 && (
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Verification Type Breakdown</h4>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Verification Type Breakdown</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(verificationStats.typeBreakdown).map(([type, count]) => (
-                  <div key={type} className="bg-white rounded-lg p-3 text-center">
-                    <p className="text-sm text-gray-600 font-medium capitalize">{type}</p>
-                    <p className="text-xl font-bold text-gray-900">{count}</p>
+                  <div key={type} className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 font-medium capitalize">{type}</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{count}</p>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Verification Filters */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                     {/* Verification Filters */}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                 <select
                   value={verificationFilters.status}
                   onChange={(e) => setVerificationFilters(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="">All Statuses</option>
                   <option value="pending">Pending</option>
@@ -769,11 +769,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Verification Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Verification Type</label>
                 <select
                   value={verificationFilters.verification_type}
                   onChange={(e) => setVerificationFilters(prev => ({ ...prev, verification_type: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="">All Types</option>
                   <option value="National ID">National ID</option>
@@ -782,11 +782,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">AI Processing</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">AI Processing</label>
                 <select
                   value={verificationFilters.ai_processing_status}
                   onChange={(e) => setVerificationFilters(prev => ({ ...prev, ai_processing_status: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="">All Statuses</option>
                   <option value="queued">Queued</option>
@@ -807,30 +807,30 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             <EmptyState icon={<Shield />} title="No verifications found" message="There are currently no verifications in the system." />
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       User
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Type
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Status
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       AI Score
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Created
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {verifications.map((verification) => (
                     <tr key={verification.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -839,17 +839,17 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                             <UserCircle className="h-10 w-10 text-gray-400" />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {verification.first_name} {verification.last_name}
                             </div>
-                            <div className="text-sm text-gray-500">{verification.email}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{verification.email}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{verification.verification_type}</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">{verification.verification_type}</div>
                         {verification.document_number && (
-                          <div className="text-xs text-gray-500">{verification.document_number}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{verification.document_number}</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -858,7 +858,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {verification.ai_profile_score ? (
                             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                               parseFloat(verification.ai_profile_score) >= 0.7 ? 'bg-green-100 text-green-700' :
@@ -871,9 +871,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                             <span className="text-gray-400">N/A</span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500">{verification.ai_processing_status}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{verification.ai_processing_status}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(verification.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -893,52 +893,52 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         </>
       ) : activeTab === 'pending' ? (
         <>
-          {/* Pending Verifications Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-blue-50 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-600 font-medium">Total Pending</p>
-                  <p className="text-2xl font-bold text-blue-700">{pendingVerifications.length}</p>
-                </div>
-                <Calendar className="w-8 h-8 text-blue-600" />
-              </div>
-            </div>
-            <div className="bg-yellow-50 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-yellow-600 font-medium">AI Processing</p>
-                  <p className="text-2xl font-bold text-yellow-700">{pendingVerifications.filter(v => v.ai_processing_status === 'queued').length}</p>
-                </div>
-                <Package className="w-8 h-8 text-yellow-600" />
-              </div>
-            </div>
-            <div className="bg-purple-50 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-purple-600 font-medium">Passport</p>
-                  <p className="text-2xl font-bold text-purple-700">{pendingVerifications.filter(v => v.verification_type === 'passport').length}</p>
-                </div>
-                <FileText className="w-8 h-8 text-purple-600" />
-              </div>
-            </div>
-            <div className="bg-green-50 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-600 font-medium">National ID</p>
-                  <p className="text-2xl font-bold text-green-700">{pendingVerifications.filter(v => v.verification_type === 'national_id').length}</p>
-                </div>
-                <Shield className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-                     </div>
+                     {/* Pending Verifications Stats */}
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Pending</p>
+                   <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{pendingVerifications.length}</p>
+                 </div>
+                 <Calendar className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+               </div>
+             </div>
+             <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl p-4">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">AI Processing</p>
+                   <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{pendingVerifications.filter(v => v.ai_processing_status === 'queued').length}</p>
+                 </div>
+                 <Package className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+               </div>
+             </div>
+             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Passport</p>
+                   <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{pendingVerifications.filter(v => v.verification_type === 'passport').length}</p>
+                 </div>
+                 <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+               </div>
+             </div>
+             <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <p className="text-sm text-green-600 dark:text-green-400 font-medium">National ID</p>
+                   <p className="text-2xl font-bold text-green-700 dark:text-green-400">{pendingVerifications.filter(v => v.verification_type === 'national_id').length}</p>
+                 </div>
+                 <Shield className="w-8 h-8 text-green-600 dark:text-green-400" />
+               </div>
+             </div>
+           </div>
 
            {/* Bulk Verification Actions */}
            {pendingVerifications.length > 0 && (
-             <div className="bg-gray-50 rounded-xl p-4 mb-6">
+             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
                <div className="flex items-center justify-between mb-4">
-                 <h4 className="text-lg font-semibold text-gray-900">Bulk Actions</h4>
-                 <div className="text-sm text-gray-600">
+                 <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Bulk Actions</h4>
+                 <div className="text-sm text-gray-600 dark:text-gray-400">
                    {selectedVerifications.length} of {pendingVerifications.length} selected
                  </div>
                </div>
@@ -951,13 +951,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                      onChange={handleSelectAllVerifications}
                      className="rounded border-gray-300 text-my-primary focus:ring-my-primary"
                    />
-                   <span className="text-sm text-gray-700">Select All</span>
+                   <span className="text-sm text-gray-700 dark:text-gray-300">Select All</span>
                  </div>
                  
                  <select
                    value={bulkAction}
                    onChange={(e) => setBulkAction(e.target.value as 'verified' | 'rejected')}
-                   className="rounded-lg border-gray-300 text-sm focus:ring-my-primary focus:border-my-primary"
+                   className="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm focus:ring-my-primary focus:border-my-primary"
                  >
                    <option value="verified">Verify</option>
                    <option value="rejected">Reject</option>
@@ -968,7 +968,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                    placeholder="Optional notes..."
                    value={bulkNotes}
                    onChange={(e) => setBulkNotes(e.target.value)}
-                   className="flex-1 rounded-lg border-gray-300 text-sm focus:ring-my-primary focus:border-my-primary"
+                   className="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm focus:ring-my-primary focus:border-my-primary"
                  />
                  
                  <button
@@ -982,12 +982,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                
                {/* Success/Error Messages */}
                {bulkSuccess && (
-                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-800 text-sm">
+                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-green-800 dark:text-green-200 text-sm">
                    {bulkSuccess}
                  </div>
                )}
                {bulkError && (
-                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm">
+                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-red-800 dark:text-red-200 text-sm">
                    {bulkError}
                  </div>
                )}
@@ -1003,10 +1003,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             <EmptyState icon={<Calendar />} title="No pending verifications" message="There are currently no pending verifications in the system." />
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       <input
                         type="checkbox"
                         checked={pendingVerifications.length > 0 && selectedVerifications.length === pendingVerifications.length}
@@ -1014,27 +1014,27 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                         className="rounded border-gray-300 text-my-primary focus:ring-my-primary"
                       />
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       User
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Type
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       AI Status
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Location
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Created
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {pendingVerifications.map((verification) => (
                     <tr key={verification.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1050,21 +1050,21 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                           <div className="flex-shrink-0 h-10 w-10">
                             <UserCircle className="h-10 w-10 text-gray-400" />
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {verification.first_name} {verification.last_name}
-                            </div>
-                            <div className="text-sm text-gray-500">{verification.email}</div>
-                            <div className="text-xs text-gray-400">{verification.phone_number}</div>
-                          </div>
+                                                     <div className="ml-4">
+                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                               {verification.first_name} {verification.last_name}
+                             </div>
+                             <div className="text-sm text-gray-500 dark:text-gray-400">{verification.email}</div>
+                             <div className="text-xs text-gray-400">{verification.phone_number}</div>
+                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 capitalize">{verification.verification_type}</div>
-                        {verification.document_number && (
-                          <div className="text-xs text-gray-500">{verification.document_number}</div>
-                        )}
-                      </td>
+                                             <td className="px-6 py-4 whitespace-nowrap">
+                         <div className="text-sm text-gray-900 dark:text-gray-100 capitalize">{verification.verification_type}</div>
+                         {verification.document_number && (
+                           <div className="text-xs text-gray-500 dark:text-gray-400">{verification.document_number}</div>
+                         )}
+                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           verification.ai_processing_status === 'completed' ? 'bg-green-100 text-green-700' :
@@ -1075,21 +1075,21 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                           {verification.ai_processing_status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {verification.city && verification.country ? (
-                            <>
-                              <div>{verification.city}</div>
-                              <div className="text-xs text-gray-500">{verification.country}</div>
-                            </>
-                          ) : (
-                            <span className="text-gray-400">N/A</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(verification.created_at)}
-                      </td>
+                                             <td className="px-6 py-4 whitespace-nowrap">
+                         <div className="text-sm text-gray-900 dark:text-gray-100">
+                           {verification.city && verification.country ? (
+                             <>
+                               <div>{verification.city}</div>
+                               <div className="text-xs text-gray-500 dark:text-gray-400">{verification.country}</div>
+                             </>
+                           ) : (
+                             <span className="text-gray-400">N/A</span>
+                           )}
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                         {formatDate(verification.created_at)}
+                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => openVerificationDetails(verification.id)}
@@ -1109,9 +1109,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
 
       {viewUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl p-8 max-w-lg w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 max-w-lg w-full">
             <div className="flex justify-between items-center mb-4">
-              <h4 className="text-lg font-bold">User Details</h4>
+              <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">User Details</h4>
               <button onClick={() => setViewUser(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
             </div>
             {viewUserLoading ? (
@@ -1140,17 +1140,17 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                     <UserCircle className="w-16 h-16 text-gray-400 hidden" />
                   </div>
                   <div>
-                    <div className="font-bold text-lg">{viewUser.first_name} {viewUser.last_name}</div>
-                    <div className="text-gray-500">{viewUser.email}</div>
+                    <div className="font-bold text-lg text-gray-900 dark:text-gray-100">{viewUser.first_name} {viewUser.last_name}</div>
+                    <div className="text-gray-500 dark:text-gray-400">{viewUser.email}</div>
                     <div className="text-xs mt-1"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${viewUser.kyc_status === 'verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{viewUser.kyc_status}</span></div>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500">Role: {viewUser.role}</div>
-                <div className="text-xs text-gray-500">Status: {viewUser.status}</div>
-                <div className="text-xs text-gray-500">Created: {viewUser.created_at ? new Date(viewUser.created_at).toLocaleString() : ''}</div>
-                <div className="text-xs text-gray-500">Total Bookings: {viewUser.total_bookings}</div>
-                <div className="text-xs text-gray-500">Total Products: {viewUser.total_products}</div>
-                <div className="text-xs text-gray-500">Total Reviews: {viewUser.total_reviews}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Role: {viewUser.role}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Status: {viewUser.status}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Created: {viewUser.created_at ? new Date(viewUser.created_at).toLocaleString() : ''}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Total Bookings: {viewUser.total_bookings}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Total Products: {viewUser.total_products}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Total Reviews: {viewUser.total_reviews}</div>
               </div>
             )}
           </div>
@@ -1158,9 +1158,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       )}
       {moderateUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
-              <h4 className="text-lg font-bold">Moderate User</h4>
+              <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">Moderate User</h4>
               <button onClick={() => setModerateUser(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
             </div>
             <form
@@ -1186,11 +1186,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium mb-1">Action</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
                 <select
                   value={moderateAction}
                   onChange={e => setModerateAction(e.target.value as any)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2"
                   required
                 >
                   <option value="ban">Ban</option>
@@ -1200,24 +1200,24 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Reason (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason (optional)</label>
                 <input
                   type="text"
                   value={moderateReason}
                   onChange={e => setModerateReason(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2"
                   placeholder="Reason for moderation"
                 />
               </div>
               {moderateAction === 'suspend' && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">Duration (days)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration (days)</label>
                   <input
                     type="number"
                     min={1}
                     value={moderateDuration}
                     onChange={e => setModerateDuration(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2"
                     placeholder="Duration in days"
                     required={moderateAction === 'suspend'}
                   />
@@ -1226,7 +1226,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
               {moderateError && <div className="text-red-500 text-sm">{moderateError}</div>}
               {moderateSuccess && <div className="text-green-600 text-sm">{moderateSuccess}</div>}
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setModerateUser(null)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Cancel</button>
+                <button type="button" onClick={() => setModerateUser(null)} className="px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300">Cancel</button>
                 <button type="submit" disabled={moderateLoading} className="px-4 py-2 rounded bg-my-primary text-white hover:bg-my-primary/90 disabled:opacity-50">
                   {moderateLoading ? 'Processing...' : 'Submit'}
                 </button>
@@ -1239,13 +1239,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       {/* KYC Status Update Modal */}
       {kycUpdateUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
-              <h4 className="text-lg font-bold">Update KYC Status</h4>
+              <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">Update KYC Status</h4>
               <button onClick={() => setKycUpdateUser(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
             </div>
             <div className="mb-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Update KYC status for <span className="font-medium">{kycUpdateUser.first_name || kycUpdateUser.firstName} {kycUpdateUser.last_name || kycUpdateUser.lastName}</span>
               </p>
             </div>
@@ -1257,11 +1257,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium mb-1">KYC Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">KYC Status</label>
                 <select
                   value={kycStatus}
                   onChange={e => setKycStatus(e.target.value as 'verified' | 'rejected' | 'pending')}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2"
                   required
                 >
                   <option value="verified">Verified</option>
@@ -1270,12 +1270,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Notes (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (optional)</label>
                 <input
                   type="text"
                   value={kycNotes}
                   onChange={e => setKycNotes(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2"
                   placeholder="Optional notes for the status update"
                 />
               </div>
@@ -1285,7 +1285,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 </div>
               )}
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setKycUpdateUser(null)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Cancel</button>
+                <button type="button" onClick={() => setKycUpdateUser(null)} className="px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300">Cancel</button>
                 <button type="submit" disabled={kycUpdating} className="px-4 py-2 rounded bg-my-primary text-white hover:bg-my-primary/90 disabled:opacity-50">
                   {kycUpdating ? 'Updating...' : 'Update Status'}
                 </button>

@@ -576,3 +576,50 @@ export async function fetchUserTransactions(userId: string, token: string) {
     };
   }
 }
+
+// Fetch user-specific inspections
+export async function fetchUserInspections(userId: string, token: string) {
+  try {
+    // Try the user-specific endpoint first
+    const response = await axios.get(`${API_BASE_URL}/inspections/user/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    
+    return {
+      data: response.data?.data || [],
+      count: response.data?.count || 0,
+      success: response.data?.success || false
+    };
+  } catch (error: any) {
+    // If the user-specific endpoint fails, try the general inspections endpoint with user filter
+    if (error.response?.status === 404 || error.response?.status === 401) {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/inspections?userId=${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        return {
+          data: response.data?.data || [],
+          count: response.data?.count || 0,
+          success: response.data?.success || false
+        };
+      } catch (fallbackError) {
+        console.error('Error fetching user inspections (fallback):', fallbackError);
+        return {
+          data: [],
+          count: 0,
+          success: false,
+          error: fallbackError
+        };
+      }
+    }
+    
+    console.error('Error fetching user inspections:', error);
+    return {
+      data: [],
+      count: 0,
+      success: false,
+      error: error
+    };
+  }
+}

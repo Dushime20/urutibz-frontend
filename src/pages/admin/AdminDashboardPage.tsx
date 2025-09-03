@@ -48,6 +48,8 @@ import ProductCategoriesChart from './components/ProductCategoriesChart';
 import ModerationDashboardPage from './ModerationDashboardPage';
 import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import InspectionsManagement from './components/InspectionsManagement';
+import SkeletonMetrics from './components/SkeletonMetrics';
+import SkeletonPricingStats from './components/SkeletonPricingStats';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
@@ -363,7 +365,7 @@ const AdminDashboardPage: React.FC = () => {
         selectedLanguage={selectedLanguage}
         setSelectedLanguage={setSelectedLanguage}
       />
-      <div className="py-10 px-4 sm:px-8 bg-gray-50 min-h-screen">
+      <div className="py-10 px-4 sm:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="grid grid-cols-1 xl:grid-cols-6 gap-2">
           <div className="xl:col-span-1">
             <AdminSidebar
@@ -381,69 +383,69 @@ const AdminDashboardPage: React.FC = () => {
                       <>
                         {/* Real-time Metrics Card */}
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 mb-4">Real-Time Metrics</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Real-Time Metrics</h2>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                             {loadingRealtime ? (
-                              <div className="col-span-6 flex items-center justify-center h-20 text-gray-500">Loading real-time metrics...</div>
+                              <SkeletonMetrics />
                             ) : realtimeError ? (
                               <div className="col-span-6 flex items-center justify-center h-20 text-red-500">{realtimeError}</div>
                             ) : realtimeMetrics ? (
                               <>
                                 {/* Active Users */}
-                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-my-primary/10 mb-2"><Users className="w-6 h-6 text-my-primary" aria-label="Active Users" /></div>
-                                  <div className="text-2xl font-bold text-gray-900">{realtimeMetrics.activeUsers}</div>
-                                  <div className="text-xs text-gray-500 mt-1">Active Users</div>
+                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-my-primary/10 dark:bg-my-primary/20 mb-2"><Users className="w-6 h-6 text-my-primary" aria-label="Active Users" /></div>
+                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.activeUsers}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active Users</div>
                                 </div>
                                 {/* Current Bookings */}
-                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-purple-50 mb-2"><Calendar className="w-6 h-6 text-purple-600" aria-label="Current Bookings" /></div>
-                                  <div className="text-2xl font-bold text-gray-900">{realtimeMetrics.currentBookings}</div>
-                                  <div className="text-xs text-gray-500 mt-1">Current Bookings</div>
+                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-purple-50 dark:bg-purple-900/20 mb-2"><Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" aria-label="Current Bookings" /></div>
+                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.currentBookings}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Current Bookings</div>
                                 </div>
                                 {/* System Load */}
-                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-orange-50 mb-2"><Cpu className="w-6 h-6 text-orange-600" aria-label="System Load" /></div>
-                                  <div className="text-2xl font-bold text-gray-900">{(realtimeMetrics.systemLoad * 100).toFixed(1)}<span className="text-base font-normal text-gray-400">%</span></div>
-                                  <div className="text-xs text-gray-500 mt-1">System Load</div>
+                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-orange-50 dark:bg-orange-900/20 mb-2"><Cpu className="w-6 h-6 text-orange-600 dark:text-orange-400" aria-label="System Load" /></div>
+                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{(realtimeMetrics.systemLoad * 100).toFixed(1)}<span className="text-base font-normal text-gray-400 dark:text-gray-500">%</span></div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">System Load</div>
                                 </div>
                                 {/* Response Time */}
-                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-my-primary/10 mb-2"><Clock className="w-6 h-6 text-my-primary" aria-label="Response Time" /></div>
-                                  <div className="text-2xl font-bold text-gray-900">{Math.round(realtimeMetrics.responseTime)}<span className="text-base font-normal text-gray-400"> ms</span></div>
-                                  <div className="text-xs text-gray-500 mt-1">Response Time</div>
+                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-my-primary/10 dark:bg-my-primary/20 mb-2"><Clock className="w-6 h-6 text-my-primary" aria-label="Response Time" /></div>
+                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{Math.round(realtimeMetrics.responseTime)}<span className="text-base font-normal text-gray-400 dark:text-gray-500"> ms</span></div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Response Time</div>
                                 </div>
                                 {/* Uptime */}
-                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-green-50 mb-2"><CheckCircle className="w-6 h-6 text-green-600" aria-label="Uptime" /></div>
-                                  <div className="text-2xl font-bold text-gray-900">{realtimeMetrics.uptime}</div>
-                                  <div className="text-xs text-gray-500 mt-1">Uptime</div>
-                  </div>
+                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-green-50 dark:bg-green-900/20 mb-2"><CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" aria-label="Uptime" /></div>
+                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.uptime}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Uptime</div>
+                                </div>
                                 {/* Timestamp */}
-                                <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-gray-100 mb-2"><Activity className="w-6 h-6 text-gray-500" aria-label="Timestamp" /></div>
-                                  <div className="text-xs text-gray-500">Timestamp</div>
-                                  <div className="text-sm text-gray-700 mt-1">{new Date(realtimeMetrics.timestamp).toLocaleString()}</div>
-                  </div>
+                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                  <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 mb-2"><Activity className="w-6 h-6 text-gray-500 dark:text-gray-400" aria-label="Timestamp" /></div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">Timestamp</div>
+                                  <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">{new Date(realtimeMetrics.timestamp).toLocaleString()}</div>
+                                </div>
                               </>
                             ) : (
-                              <div className="col-span-6 flex items-center justify-center h-20 text-gray-500">No real-time metrics available.</div>
+                              <div className="col-span-6 flex items-center justify-center h-20 text-gray-500 dark:text-gray-400">No real-time metrics available.</div>
                             )}
                           </div>
                         </section>
                         {/* End Real-time Metrics Card */}
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 mb-4">Statistics</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Statistics</h2>
                           <div className="mb-6">
                     <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
                           </div>
                         </section>
                         {/* Analytics Section */}
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 mb-4">Analytics Overview</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Analytics Overview</h2>
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="bg-white rounded-xl shadow p-6 mb-8">
-                              <h3 className="text-lg font-bold mb-4">Booking Trends</h3>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
+                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Booking Trends</h3>
                               <ResponsiveContainer width="100%" height={320}>
                                 <AreaChart data={normalizedBookingTrends} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
                                   <defs>
@@ -471,8 +473,8 @@ const AdminDashboardPage: React.FC = () => {
                                 </AreaChart>
                               </ResponsiveContainer>
                             </div>
-                            <div className="bg-white rounded-xl shadow p-6 mb-8">
-                              <h3 className="text-lg font-bold mb-4">User Growth</h3>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
+                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">User Growth</h3>
                               <ResponsiveContainer width="100%" height={320}>
                                 <AreaChart data={normalizedUserGrowth} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
                                   <defs>
@@ -502,8 +504,8 @@ const AdminDashboardPage: React.FC = () => {
                             </div>
                           </div>
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-                            <div className="bg-white rounded-xl shadow p-6 mb-8">
-                              <h3 className="text-lg font-bold mb-4">Top Products</h3>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
+                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Top Products</h3>
                               <ResponsiveContainer width="100%" height={320}>
                                 <BarChart data={normalizedTopProducts} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -526,22 +528,22 @@ const AdminDashboardPage: React.FC = () => {
                         </section>
                         {/* Pricing Statistics */}
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 mb-4">Pricing Statistics</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Pricing Statistics</h2>
                           {loadingPricingStats ? (
-                            <div className="flex items-center justify-center h-32 text-gray-500">Loading pricing statistics...</div>
+                            <SkeletonPricingStats />
                           ) : pricingStatsError ? (
                             <div className="flex items-center justify-center h-32 text-red-500">{pricingStatsError}</div>
                           ) : pricingStats ? (
                             <>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {/* Total Price Records */}
-                                <div className="bg-white rounded-xl shadow p-6">
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-600">Total Price Records</p>
-                                      <p className="text-2xl font-bold text-gray-900">{pricingStats.total_price_records}</p>
+                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Price Records</p>
+                                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.total_price_records}</p>
                                     </div>
-                                                    <div className="p-3 rounded-full bg-my-primary/10">
+                                                    <div className="p-3 rounded-full bg-my-primary/10 dark:bg-my-primary/20">
                   <svg className="w-6 h-6 text-my-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                                       </svg>
@@ -550,14 +552,14 @@ const AdminDashboardPage: React.FC = () => {
                                 </div>
 
                                 {/* Active Price Records */}
-                                <div className="bg-white rounded-xl shadow p-6">
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-600">Active Price Records</p>
-                                      <p className="text-2xl font-bold text-gray-900">{pricingStats.active_price_records}</p>
+                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Price Records</p>
+                                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.active_price_records}</p>
                                     </div>
-                                    <div className="p-3 rounded-full bg-green-50">
-                                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="p-3 rounded-full bg-green-50 dark:bg-green-900/20">
+                                      <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
                                     </div>
@@ -565,14 +567,14 @@ const AdminDashboardPage: React.FC = () => {
                                 </div>
 
                                 {/* Countries with Pricing */}
-                                <div className="bg-white rounded-xl shadow p-6">
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-600">Countries with Pricing</p>
-                                      <p className="text-2xl font-bold text-gray-900">{pricingStats.countries_with_pricing}</p>
+                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Countries with Pricing</p>
+                                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.countries_with_pricing}</p>
                                     </div>
-                                    <div className="p-3 rounded-full bg-purple-50">
-                                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="p-3 rounded-full bg-purple-50 dark:bg-purple-900/20">
+                                      <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
                                     </div>
@@ -580,14 +582,14 @@ const AdminDashboardPage: React.FC = () => {
                                 </div>
 
                                 {/* Currencies Supported */}
-                                <div className="bg-white rounded-xl shadow p-6">
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-600">Currencies Supported</p>
-                                      <p className="text-2xl font-bold text-gray-900">{pricingStats.currencies_supported}</p>
+                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Currencies Supported</p>
+                                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.currencies_supported}</p>
                                     </div>
-                                    <div className="p-3 rounded-full bg-yellow-50">
-                                      <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="p-3 rounded-full bg-yellow-50 dark:bg-yellow-900/20">
+                                      <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                                       </svg>
                                     </div>
@@ -598,20 +600,20 @@ const AdminDashboardPage: React.FC = () => {
                               {/* Price Distribution Charts */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                               {/* Price Range Distribution */}
-                              <div className="bg-white rounded-xl shadow p-6">
-                                <h3 className="text-lg font-bold mb-4">Price Range Distribution</h3>
+                              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Price Range Distribution</h3>
                                 <div className="space-y-3">
                                   {Object.entries(pricingStats.price_distribution?.by_price_range || {}).map(([range, count]) => (
                                     <div key={range} className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600">{range}</span>
+                                      <span className="text-sm text-gray-600 dark:text-gray-400">{range}</span>
                                       <div className="flex items-center gap-2">
-                                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                                        <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                           <div 
                                             className="bg-my-primary h-2 rounded-full" 
                                             style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
                                           ></div>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-900">{count}</span>
+                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{String(count)}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -619,20 +621,20 @@ const AdminDashboardPage: React.FC = () => {
                               </div>
 
                               {/* Currency Distribution */}
-                              <div className="bg-white rounded-xl shadow p-6">
-                                <h3 className="text-lg font-bold mb-4">Currency Distribution</h3>
+                              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Currency Distribution</h3>
                                 <div className="space-y-3">
                                   {Object.entries(pricingStats.price_distribution?.by_currency || {}).map(([currency, count]) => (
                                     <div key={currency} className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600">{currency}</span>
+                                      <span className="text-sm text-gray-600 dark:text-gray-400">{currency}</span>
                                       <div className="flex items-center gap-2">
-                                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                                        <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                           <div 
                                             className="bg-my-primary h-2 rounded-full" 
                                             style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
                                           ></div>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-900">{count}</span>
+                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{String(count)}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -641,20 +643,20 @@ const AdminDashboardPage: React.FC = () => {
                             </div>
 
                             {/* Discount Analysis */}
-                            <div className="bg-white rounded-xl shadow p-6 mt-6">
-                              <h3 className="text-lg font-bold mb-4">Discount Analysis</h3>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6">
+                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Discount Analysis</h3>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="text-center">
                                   <div className="text-2xl font-bold text-my-primary">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
-                                  <div className="text-sm text-gray-600">Weekly Discounts</div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">Weekly Discounts</div>
                                 </div>
                                 <div className="text-center">
-                                  <div className="text-2xl font-bold text-green-600">{pricingStats.discount_analysis?.products_with_monthly_discount || 0}</div>
-                                  <div className="text-sm text-gray-600">Monthly Discounts</div>
+                                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{pricingStats.discount_analysis?.products_with_monthly_discount || 0}</div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">Monthly Discounts</div>
                                 </div>
                                 <div className="text-center">
-                                  <div className="text-2xl font-bold text-purple-600">{pricingStats.discount_analysis?.products_with_bulk_discount || 0}</div>
-                                  <div className="text-sm text-gray-600">Bulk Discounts</div>
+                                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{pricingStats.discount_analysis?.products_with_bulk_discount || 0}</div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">Bulk Discounts</div>
                                 </div>
                               </div>
                             </div>
@@ -668,17 +670,17 @@ const AdminDashboardPage: React.FC = () => {
                           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h2>
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Recent Users Card */}
-                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-5">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold dark:text-gray-100">Recent Users</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Users</h3>
                                 <a href="/admin/users" className="text-my-primary text-sm font-medium hover:underline">View All</a>
                               </div>
                               <div className="space-y-3">
                                 {recentUsers.slice(0, 3).map(user => (
-                                  <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer" onClick={() => setSelectedUser(user)}>
+                                  <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onClick={() => setSelectedUser(user)}>
                                     <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</div>
+                                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{user.name}</div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
                                     </div>
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${user.verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
@@ -696,41 +698,41 @@ const AdminDashboardPage: React.FC = () => {
                               {/* User Detail Modal */}
                               {selectedUser && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                  <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+                                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
                                     <div className="flex justify-between items-center mb-4">
-                                      <h4 className="text-lg font-semibold">User Details</h4>
+                                      <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">User Details</h4>
                                       <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-my-primary text-xl">&times;</button>
                                     </div>
                                     <div className="flex items-center gap-4 mb-4">
                                       <img src={selectedUser.avatar || '/assets/img/profiles/avatar-01.jpg'} alt={selectedUser.name || ''} className="w-16 h-16 rounded-full object-cover" />
                                       <div>
-                                        <div className="font-semibold text-lg">{selectedUser.name || ''}</div>
-                                        <div className="text-gray-500 text-sm">{selectedUser.email || ''}</div>
+                                        <div className="font-semibold text-lg text-gray-900 dark:text-gray-100">{selectedUser.name || ''}</div>
+                                        <div className="text-gray-500 dark:text-gray-400 text-sm">{selectedUser.email || ''}</div>
                                         <div className="mt-2">
-                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedUser.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedUser.verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
                                             {selectedUser.verified ? 'Verified' : 'Pending'}
                                           </span>
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="text-sm text-gray-500">Joined: {selectedUser.joinDate || ''}</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Joined: {selectedUser.joinDate || ''}</div>
                                   </div>
                                 </div>
                               )}
                             </div>
                             
                             {/* Recent Bookings Card */}
-                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-5">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold dark:text-gray-100">Recent Bookings</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Bookings</h3>
                                 <a href="/admin/bookings" className="text-my-primary text-sm font-medium hover:underline">View All</a>
                               </div>
                               <div className="space-y-3">
                                 {recentBookings.slice(0, 3).map(booking => (
-                                  <div key={booking.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer" onClick={() => setSelectedBooking(booking)}>
+                                  <div key={booking.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onClick={() => setSelectedBooking(booking)}>
                                     <img src={booking.itemImage} alt={booking.itemName} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{booking.itemName}</div>
+                                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{booking.itemName}</div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{booking.customerName}</div>
                                     </div>
                                     <div className="text-right flex-shrink-0">
@@ -751,24 +753,24 @@ const AdminDashboardPage: React.FC = () => {
                               {/* Booking Detail Modal */}
                               {selectedBooking && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                                  <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+                                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
                                     <div className="flex justify-between items-center mb-4">
-                                      <h4 className="text-lg font-semibold">Booking Details</h4>
+                                      <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Booking Details</h4>
                                       <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-my-primary text-xl">&times;</button>
                                     </div>
                                     <div className="flex items-center gap-4 mb-4">
                                       <img src={selectedBooking.itemImage || ''} alt={selectedBooking.itemName || ''} className="w-16 h-16 rounded-lg object-cover" />
                                       <div>
-                                        <div className="font-semibold text-lg">{selectedBooking.itemName || ''}</div>
-                                        <div className="text-gray-500 text-sm">{selectedBooking.customerName || ''}</div>
+                                        <div className="font-semibold text-lg text-gray-900 dark:text-gray-100">{selectedBooking.itemName || ''}</div>
+                                        <div className="text-gray-500 dark:text-gray-400 text-sm">{selectedBooking.customerName || ''}</div>
                                         <div className="mt-2">
-                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedBooking.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedBooking.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
                                             {selectedBooking.status}
                                           </span>
                                         </div>
                                       </div>
                                     </div>
-                                                                         <div className="text-sm text-gray-500">
+                                                                         <div className="text-sm text-gray-500 dark:text-gray-400">
                                        <div>Amount: ${selectedBooking.amount}</div>
                                        <div>Dates: {selectedBooking.startDate || ''} - {selectedBooking.endDate || ''}</div>
                                      </div>
@@ -778,9 +780,9 @@ const AdminDashboardPage: React.FC = () => {
                             </div>
                           </div>
                           {/* Recent Transactions Card */}
-                          <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6 mb-8 mt-8">
+                          <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8 mt-8">
                             <div className="flex items-center justify-between mb-4">
-                              <h3 className="text-lg font-bold dark:text-gray-100">Recent Transactions</h3>
+                              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Recent Transactions</h3>
                               <a href="/admin/transactions" className="text-my-primary text-sm font-medium hover:underline">View All</a>
                     </div>
                             <div className="overflow-x-auto">
@@ -892,12 +894,12 @@ const AdminDashboardPage: React.FC = () => {
       {showInspectionDetailsModal && selectedInspection && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowInspectionDetailsModal(false)} />
-          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Inspection Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Inspection Details</h3>
               <button
                 onClick={() => setShowInspectionDetailsModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -907,52 +909,52 @@ const AdminDashboardPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-medium text-gray-900 mb-2">Basic Information</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Basic Information</h4>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-500">ID:</span>
-                    <span className="ml-2 text-sm text-gray-900">{selectedInspection.id}</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">ID:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedInspection.id}</span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Status:</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status:</span>
                     <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedInspection.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      selectedInspection.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                      selectedInspection.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
+                      selectedInspection.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                      selectedInspection.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                      selectedInspection.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                     }`}>
                       {selectedInspection.status}
                     </span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Type:</span>
-                    <span className="ml-2 text-sm text-gray-900">{selectedInspection.inspectionType?.replace('_', ' ')}</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Type:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedInspection.inspectionType?.replace('_', ' ')}</span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Location:</span>
-                    <span className="ml-2 text-sm text-gray-900">{selectedInspection.location || selectedInspection.inspectionLocation}</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Location:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedInspection.location || selectedInspection.inspectionLocation}</span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-medium text-gray-900 mb-2">Timing</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Timing</h4>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Scheduled:</span>
-                    <span className="ml-2 text-sm text-gray-900">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Scheduled:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                       {selectedInspection.scheduledAt ? new Date(selectedInspection.scheduledAt).toLocaleString() : 'N/A'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Started:</span>
-                    <span className="ml-2 text-sm text-gray-900">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Started:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                       {selectedInspection.startedAt ? new Date(selectedInspection.startedAt).toLocaleString() : 'N/A'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Completed:</span>
-                    <span className="ml-2 text-sm text-gray-900">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Completed:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                       {selectedInspection.completedAt ? new Date(selectedInspection.completedAt).toLocaleString() : 'N/A'}
                     </span>
                   </div>
@@ -962,15 +964,15 @@ const AdminDashboardPage: React.FC = () => {
 
             {selectedInspection.notes && (
               <div className="mt-6">
-                <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
-                <p className="text-sm text-gray-700">{selectedInspection.notes || selectedInspection.generalNotes}</p>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Notes</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedInspection.notes || selectedInspection.generalNotes}</p>
               </div>
             )}
 
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setShowInspectionDetailsModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
               >
                 Close
               </button>
@@ -983,12 +985,12 @@ const AdminDashboardPage: React.FC = () => {
       {showDisputeDetailsModal && selectedDispute && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowDisputeDetailsModal(false)} />
-          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Dispute Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Dispute Details</h3>
               <button
                 onClick={() => setShowDisputeDetailsModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -998,53 +1000,53 @@ const AdminDashboardPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-medium text-gray-900 mb-2">Dispute Information</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Dispute Information</h4>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-500">ID:</span>
-                    <span className="ml-2 text-sm text-gray-900">{selectedDispute.id}</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">ID:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedDispute.id}</span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Type:</span>
-                    <span className="ml-2 text-sm text-gray-900">{selectedDispute.disputeType?.replace('_', ' ')}</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Type:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedDispute.disputeType?.replace('_', ' ')}</span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Status:</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status:</span>
                     <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedDispute.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                      selectedDispute.status === 'under_review' ? 'bg-blue-100 text-blue-800' :
-                      selectedDispute.status === 'open' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
+                      selectedDispute.status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                      selectedDispute.status === 'under_review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                      selectedDispute.status === 'open' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                     }`}>
                       {selectedDispute.status}
                     </span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Inspection ID:</span>
-                    <span className="ml-2 text-sm text-gray-900">{selectedDispute.inspectionId}</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Inspection ID:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedDispute.inspectionId}</span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-medium text-gray-900 mb-2">Timing</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Timing</h4>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Created:</span>
-                    <span className="ml-2 text-sm text-gray-900">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Created:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                       {selectedDispute.createdAt ? new Date(selectedDispute.createdAt).toLocaleString() : 'N/A'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Updated:</span>
-                    <span className="ml-2 text-sm text-gray-900">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Updated:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                       {selectedDispute.updatedAt ? new Date(selectedDispute.updatedAt).toLocaleString() : 'N/A'}
                     </span>
                   </div>
                   {selectedDispute.resolvedAt && (
                     <div>
-                      <span className="text-sm font-medium text-gray-500">Resolved:</span>
-                      <span className="ml-2 text-sm text-gray-900">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Resolved:</span>
+                      <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                         {new Date(selectedDispute.resolvedAt).toLocaleString()}
                       </span>
                     </div>
@@ -1054,35 +1056,35 @@ const AdminDashboardPage: React.FC = () => {
             </div>
 
             <div className="mt-6">
-              <h4 className="font-medium text-gray-900 mb-2">Reason</h4>
-              <p className="text-sm text-gray-700">{selectedDispute.reason}</p>
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Reason</h4>
+              <p className="text-sm text-gray-700 dark:text-gray-300">{selectedDispute.reason}</p>
             </div>
 
             {selectedDispute.evidence && (
               <div className="mt-6">
-                <h4 className="font-medium text-gray-900 mb-2">Evidence</h4>
-                <p className="text-sm text-gray-700">{selectedDispute.evidence}</p>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Evidence</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedDispute.evidence}</p>
               </div>
             )}
 
             {selectedDispute.resolutionNotes && (
               <div className="mt-6">
-                <h4 className="font-medium text-gray-900 mb-2">Resolution Notes</h4>
-                <p className="text-sm text-gray-700">{selectedDispute.resolutionNotes}</p>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Resolution Notes</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedDispute.resolutionNotes}</p>
               </div>
             )}
 
             {selectedDispute.agreedAmount && (
               <div className="mt-6">
-                <h4 className="font-medium text-gray-900 mb-2">Agreed Amount</h4>
-                <p className="text-sm text-gray-700">${selectedDispute.agreedAmount}</p>
+                <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Agreed Amount</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">${selectedDispute.agreedAmount}</p>
               </div>
             )}
 
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setShowDisputeDetailsModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
               >
                 Close
               </button>

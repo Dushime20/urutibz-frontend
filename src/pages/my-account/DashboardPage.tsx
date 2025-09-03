@@ -765,7 +765,7 @@ const DashboardPage: React.FC = () => {
   };
 
   // Fetch user's inspections
-  const fetchUserInspections = async () => {
+  const loadUserInspections = async () => {
     if (!authUser?.id) return;
 
     setInspectionsLoading(true);
@@ -775,10 +775,10 @@ const DashboardPage: React.FC = () => {
 
       // Update dashboard stats with inspection data
       const totalInspections = response.total || 0;
-      const activeInspections = (response.data || [])?.filter((inspection: Inspection) =>
+      const activeInspections = (response.data || [])?.filter((inspection: any) =>
         inspection.status === 'pending' || inspection.status === 'in_progress'
       ).length || 0;
-      const completedInspections = (response.data || [])?.filter((inspection: Inspection) =>
+      const completedInspections = (response.data || [])?.filter((inspection: any) =>
         inspection.status === 'completed'
       ).length || 0;
 
@@ -818,7 +818,7 @@ const DashboardPage: React.FC = () => {
   // Load inspections when inspections tab is active
   useEffect(() => {
     if (activeTab === 'inspections' && authUser?.id) {
-      fetchUserInspections();
+      loadUserInspections();
       fetchUserDisputes();
     }
   }, [activeTab, authUser?.id]);
@@ -1014,11 +1014,10 @@ const DashboardPage: React.FC = () => {
           )}
           {activeTab === 'inspections' && (
             <InspectionsSection
-              dashboardStats={dashboardStats}
-              inspectionsLoading={inspectionsLoading}
+              loading={inspectionsLoading}
               userInspections={userInspections}
+              onViewInspection={(id: string) => navigate(`/inspections/${id}`)}
               onRequestInspection={() => setShowInspectionModal(true)}
-              onOpenDispute={(id) => handleOpenDisputeModal(id)}
             />
           )}
           {activeTab === 'settings' && (

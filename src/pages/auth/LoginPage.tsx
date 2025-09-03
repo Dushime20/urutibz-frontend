@@ -3,15 +3,38 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { loginUser, fetchUserProfile } from './service/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
 
-// Simple custom toast component
+// Toast component aligned with RegisterPage
 function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
-  const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(onClose, 300);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+  const icon = type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />;
+
   return (
-    <div className={`fixed top-6 right-6 z-50 ${bgColor} text-white px-6 py-3 rounded shadow-lg flex items-center space-x-4 animate-fadeIn`}>
-      <span>{message}</span>
-      <button onClick={onClose} className="ml-4 text-white font-bold">&times;</button>
+    <div className={`fixed top-4 right-4 z-50 ${bgColor} text-white px-4 py-3 rounded-lg shadow-xl flex items-center space-x-3 transition-all duration-300 transform ${
+      isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+    } max-w-sm`}>
+      {icon}
+      <span className="text-sm font-medium">{message}</span>
+      <button 
+        onClick={() => {
+          setIsVisible(false);
+          setTimeout(onClose, 300);
+        }} 
+        className="ml-2 text-white/80 hover:text-white transition-colors"
+      >
+        ×
+      </button>
     </div>
   );
 }
@@ -20,7 +43,6 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setAuthenticatedUser } = useAuth();
-  const { showToast } = useToast();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -57,7 +79,8 @@ const LoginPage: React.FC = () => {
           const userProfile = await fetchUserProfile(data.token);
           setAuthenticatedUser(userProfile);
         }
-        showToast('Login successful!', 'success');
+        setToast('Login successful! Welcome back.');
+        setToastType('success');
       }
       setTimeout(() => {
         if (data.user.role === "admin") {
@@ -69,8 +92,10 @@ const LoginPage: React.FC = () => {
         }
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password. Please try again.');
-      showToast('Login failed. Please check your credentials.', 'error');
+      const message = err?.message || 'Invalid email or password. Please try again.';
+      setError(message);
+      setToast(message);
+      setToastType('error');
     } finally {
       setIsLoading(false);
     }

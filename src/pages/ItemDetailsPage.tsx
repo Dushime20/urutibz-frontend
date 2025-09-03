@@ -88,6 +88,25 @@ const ItemDetailsPage: React.FC = () => {
   const [productReviews, setProductReviews] = useState<any[]>([]);
 
   useEffect(() => {
+    // Fetch latest KYC status from authoritative API using localStorage user.id
+    const token = localStorage.getItem('token');
+    const storedUserStr = localStorage.getItem('user');
+    if (!token || !storedUserStr) return;
+    try {
+      const storedUser = JSON.parse(storedUserStr);
+      const userId: string | undefined = storedUser?.id;
+      if (!userId) return;
+      (async () => {
+        const { data } = await UserProfileService.getUserProfile(userId, token);
+        const status: string | null = data?.kyc_status ?? null;
+        setLatestKycStatus(status);
+      })();
+    } catch {
+      // ignore
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
 
     if (!id) return;
     setLoading(true);
@@ -791,7 +810,7 @@ const ItemDetailsPage: React.FC = () => {
                   </div>
                 )}
 
-                {isAuthenticated && (user?.kyc_status !== 'verified') && (
+                {isAuthenticated && ((latestKycStatus ?? user?.kyc_status) !== 'verified') && (
                   <div className="mt-4 p-3 b border border-blue-200 rounded-lg">
                     <div className="flex items-center gap-2 text-blue-700">
                       <AlertCircle className="w-4 h-4 text-[#01aaa7]" />

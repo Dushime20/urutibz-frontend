@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Smartphone, Check, AlertCircle, CheckCircle, ArrowUpDown } from 'lucide-react';
 import Button from '../../../components/ui/Button';
-import { processPaymentTransaction, fetchPaymentMethods, convertCurrencyLive } from '../service/api';
+import { processPaymentTransaction, fetchPaymentMethods, convertCurrencyLive, fetchPaymentProvidersByCountry, CountryPaymentProvidersResponse, fetchPaymentProviders, fetchDefaultPaymentMethods, PaymentMethodRecord } from '../service/api';
 import axios from 'axios';
 import { API_BASE_URL } from '../service/api';
 import { 
@@ -22,6 +22,7 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
   const [step, setStep] = useState(1);
   const [type, setType] = useState<'card' | 'mobile_money' | ''>('');
   const [form, setForm] = useState<any>({});
+  const [phoneError, setPhoneError] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
@@ -33,6 +34,9 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     exchangeRate: number;
     isConverted: boolean;
   } | null>(null);
+  const [countryProviders, setCountryProviders] = useState<CountryPaymentProvidersResponse | null>(null);
+  const [availableCardProviders, setAvailableCardProviders] = useState<string[]>([]);
+  const [availableMobileMoneyProviders, setAvailableMobileMoneyProviders] = useState<string[]>([]);
 
   const steps = [
     { id: 1, title: 'Choose Type', description: 'Select payment method' },
@@ -44,6 +48,11 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     const fetchInitialPaymentMethods = async () => {
       try {
         const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        let countryId: string | null = null;
+        try {
+          if (storedUser) countryId = JSON.parse(storedUser)?.countryId || null;
+        } catch {}
         const methodsResponse = await fetchPaymentMethods(token || undefined);
         
         const methods = methodsResponse.data?.data || methodsResponse.data || [];
@@ -54,6 +63,42 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
         if (methods.length > 0) {
           setSelectedMethod(methods[0]);
         }
+
+        // Fetch real providers by user's country if available; else fall back to global
+        let cards: string[] = [];
+        let momos: string[] = [];
+        if (countryId) {
+          const providers = await fetchPaymentProvidersByCountry(countryId, token || undefined);
+          setCountryProviders(providers);
+          if (providers) {
+            cards = (providers.card_providers || providers.providers || [])
+              .filter((p: any) => p.provider_type === 'card')
+              .map((p: any) => p.provider_name);
+            momos = (providers.mobile_money_providers || providers.providers || [])
+              .filter((p: any) => p.provider_type === 'mobile_money')
+              .map((p: any) => p.provider_name);
+          }
+        }
+
+        // Fallback to global providers if lists are empty
+        if (cards.length === 0 || momos.length === 0) {
+          const globalProviders = await fetchPaymentProviders(token || undefined);
+          if (Array.isArray(globalProviders)) {
+            if (cards.length === 0) {
+              cards = globalProviders
+                .filter((p: any) => p.provider_type === 'card')
+                .map((p: any) => p.provider_name);
+            }
+            if (momos.length === 0) {
+              momos = globalProviders
+                .filter((p: any) => p.provider_type === 'mobile_money')
+                .map((p: any) => p.provider_name);
+            }
+          }
+        }
+
+        setAvailableCardProviders(Array.from(new Set(cards)));
+        setAvailableMobileMoneyProviders(Array.from(new Set(momos)));
       } catch (error) {
         console.error('Error fetching initial payment methods:', error);
         setError('Failed to fetch payment methods');
@@ -73,9 +118,25 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     setError(null);
   };
 
+  const validatePhoneNumber = (phone: string): boolean => {
+    // Basic phone validation for common formats
+    const phoneRegex = /^(\+?[0-9]{1,4}[-.\s]?)?[0-9]{7,15}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError(null);
+    
+    // Validate phone number for mobile money
+    if (e.target.name === 'phone_number' && type === 'mobile_money') {
+      const phone = e.target.value;
+      if (phone && !validatePhoneNumber(phone)) {
+        setPhoneError('Please enter a valid phone number');
+      } else {
+        setPhoneError('');
+      }
+    }
     
     // Handle currency conversion when mobile money provider is selected
     if (e.target.name === 'provider' && type === 'mobile_money') {
@@ -87,6 +148,18 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
         needsConversion: needsCurrencyConversion(currency, provider)
       });
       
+      if (provider) {
+        // Try to auto-fill phone number from user's default payment methods
+        try {
+          const token = localStorage.getItem('token') || undefined;
+          const defaults: PaymentMethodRecord[] = await fetchDefaultPaymentMethods(token);
+          const match = defaults.find(m => m.type === 'mobile_money' && m.provider === provider && m.phone_number);
+          if (match?.phone_number) {
+            setForm((prev: any) => ({ ...prev, phone_number: match.phone_number }));
+          }
+        } catch {}
+      }
+
       if (provider && needsCurrencyConversion(currency, provider)) {
         const targetCurrency = getMobileMoneyProviderCurrency(provider);
         const token = localStorage.getItem('token') || undefined;
@@ -111,6 +184,15 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
+    // Validate phone number for mobile money
+    if (type === 'mobile_money' && form.phone_number) {
+      if (!validatePhoneNumber(form.phone_number)) {
+        setError('Please enter a valid phone number');
+        setLoading(false);
+        return;
+      }
+    }
     
     const token = localStorage.getItem('token');
     let payload: any = { 
@@ -220,6 +302,9 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
         amount: finalAmount,
         currency: finalCurrency,
         transaction_type: 'booking_payment',
+        // Explicitly include channel/type so not all are treated as Stripe
+        payment_method_type: selectedMethod?.type || type,
+        provider: selectedMethod?.provider || selectedMethod?.provider_name || undefined,
         metadata: {
           description: `Payment for booking #${bookingId}`,
           original_amount: amount,
@@ -389,9 +474,17 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200"
                     >
                       <option value="">Select Provider</option>
-                      <option value="visa">Visa</option>
-                      <option value="mastercard">MasterCard</option>
-                      <option value="amex">American Express</option>
+                      {availableCardProviders.length > 0 ? (
+                        availableCardProviders.map((p) => (
+                          <option key={p} value={p}>{p.replace(/_/g,' ').toUpperCase()}</option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="visa">Visa</option>
+                          <option value="mastercard">MasterCard</option>
+                          <option value="amex">American Express</option>
+                        </>
+                      )}
                     </select>
                   </div>
 
@@ -477,10 +570,14 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200"
                   >
                     <option value="">Select Provider</option>
-                    <option value="mtn_momo">MTN Mobile Money (RWF)</option>
-                    <option value="airtel_money">Airtel Money (RWF)</option>
-                    <option value="mpesa">M-PESA (KES)</option>
-                    <option value="mtn_uganda">MTN Uganda (UGX)</option>
+                    {(availableMobileMoneyProviders.length > 0
+                      ? availableMobileMoneyProviders
+                      : ['mtn_momo','airtel_money','mpesa','mtn_uganda']
+                    ).map((p) => (
+                      <option key={p} value={p}>
+                        {p.replace(/_/g,' ').toUpperCase()}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -515,12 +612,17 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                     value={form.phone_number || ''} 
                     onChange={handleChange} 
                     required 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200" 
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-primary-500 outline-none transition-all duration-200 ${
+                      phoneError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                    }`}
                     placeholder="e.g. +250781234567" 
                   />
+                  {phoneError && (
+                    <p className="mt-1 text-sm text-red-600">{phoneError}</p>
+                  )}
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Description (Optional)</label>
                   <input 
                     name="description" 
@@ -529,7 +631,7 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200" 
                     placeholder="e.g. My MTN MoMo" 
                   />
-                </div>
+                </div> */}
               </>
             )}
 

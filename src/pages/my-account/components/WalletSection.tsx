@@ -9,6 +9,7 @@ interface Props {
 }
 
 const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTransactions, onViewAll }) => {
+  console.log(loadingWallet,'all user transactions')
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -61,6 +62,7 @@ const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTra
         ) : (
           <div className="space-y-4">
             {userTransactions.map((transaction) => (
+
               <div key={transaction.id} className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">

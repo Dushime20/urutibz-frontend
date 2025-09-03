@@ -48,6 +48,8 @@ import ProductCategoriesChart from './components/ProductCategoriesChart';
 import ModerationDashboardPage from './ModerationDashboardPage';
 import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import InspectionsManagement from './components/InspectionsManagement';
+import SkeletonMetrics from './components/SkeletonMetrics';
+import SkeletonPricingStats from './components/SkeletonPricingStats';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
@@ -384,7 +386,7 @@ const AdminDashboardPage: React.FC = () => {
                           <h2 className="text-2xl font-bold text-gray-900 mb-4">Real-Time Metrics</h2>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                             {loadingRealtime ? (
-                              <div className="col-span-6 flex items-center justify-center h-20 text-gray-500">Loading real-time metrics...</div>
+                              <SkeletonMetrics />
                             ) : realtimeError ? (
                               <div className="col-span-6 flex items-center justify-center h-20 text-red-500">{realtimeError}</div>
                             ) : realtimeMetrics ? (
@@ -528,7 +530,7 @@ const AdminDashboardPage: React.FC = () => {
                         <section className="mb-8">
                           <h2 className="text-2xl font-bold text-gray-900 mb-4">Pricing Statistics</h2>
                           {loadingPricingStats ? (
-                            <div className="flex items-center justify-center h-32 text-gray-500">Loading pricing statistics...</div>
+                            <SkeletonPricingStats />
                           ) : pricingStatsError ? (
                             <div className="flex items-center justify-center h-32 text-red-500">{pricingStatsError}</div>
                           ) : pricingStats ? (

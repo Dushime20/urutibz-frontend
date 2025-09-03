@@ -320,23 +320,66 @@ export const disputeService = {
     return response.data;
   },
 
-        // Get all disputes with pagination
-      async getAllDisputes(page = 1, limit = 20): Promise<{
-        disputes: Dispute[];
-        pagination: {
-          page: number;
-          limit: number;
-          total: number;
-          totalPages: number;
-        };
-      }> {
-        const response = await inspectionApi.get(`/disputes?page=${page}&limit=${limit}`);
-        console.log('Raw disputes API response:', response);
-        console.log('Response data:', response.data);
-        console.log('Response data.data:', response.data?.data);
-        console.log('Response data.data.disputes:', response.data?.data?.disputes);
-        
-        // Handle nested response structure: response.data.data.disputes
+  // Get all disputes with pagination
+  async getAllDisputes(page = 1, limit = 20): Promise<{
+    disputes: Dispute[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    const response = await inspectionApi.get(`/disputes?page=${page}&limit=${limit}`);
+    console.log('Raw disputes API response:', response);
+    console.log('Response data:', response.data);
+    console.log('Response data.data:', response.data?.data);
+    console.log('Response data.data.disputes:', response.data?.data?.disputes);
+    
+    // Handle nested response structure: response.data.data.disputes
+    const disputes = response.data?.data?.disputes || response.data?.disputes || [];
+    const pagination = response.data?.data?.pagination || response.data?.pagination || {
+      page: 1,
+      limit: 20,
+      total: disputes.length,
+      totalPages: 1
+    };
+    
+    console.log('Extracted disputes:', disputes);
+    console.log('Extracted pagination:', pagination);
+    
+    return {
+      disputes,
+      pagination
+    };
+  },
+
+  // Get user-specific disputes
+  async getUserDisputes(userId: string, page = 1, limit = 20): Promise<{
+    disputes: Dispute[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    try {
+      // Try user-specific endpoint first
+      const response = await inspectionApi.get(`/disputes/user/${userId}?page=${page}&limit=${limit}`);
+      const disputes = response.data?.data?.disputes || response.data?.disputes || [];
+      const pagination = response.data?.data?.pagination || response.data?.pagination || {
+        page: 1,
+        limit: 20,
+        total: disputes.length,
+        totalPages: 1
+      };
+      
+      return { disputes, pagination };
+    } catch (error: any) {
+      // If user-specific endpoint fails, try filtering by user ID
+      if (error.response?.status === 404 || error.response?.status === 401) {
+        const response = await inspectionApi.get(`/disputes?userId=${userId}&page=${page}&limit=${limit}`);
         const disputes = response.data?.data?.disputes || response.data?.disputes || [];
         const pagination = response.data?.data?.pagination || response.data?.pagination || {
           page: 1,
@@ -345,14 +388,11 @@ export const disputeService = {
           totalPages: 1
         };
         
-        console.log('Extracted disputes:', disputes);
-        console.log('Extracted pagination:', pagination);
-        
-        return {
-          disputes,
-          pagination
-        };
-      },
+        return { disputes, pagination };
+      }
+      throw error;
+    }
+  },
 
   // Update dispute
   async updateDispute(inspectionId: string, disputeId: string, data: Partial<CreateDisputeRequest>): Promise<Dispute> {

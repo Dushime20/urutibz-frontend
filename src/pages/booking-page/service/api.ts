@@ -113,6 +113,34 @@ export async function fetchPaymentMethods(token?: string) {
   }
 }
 
+// Fetch user's default payment methods (e.g., for auto-fill)
+export interface PaymentMethodRecord {
+  id: string;
+  type: 'card' | 'mobile_money' | string;
+  provider?: string;
+  last_four?: string | null;
+  card_brand?: string | null;
+  exp_month?: number | null;
+  exp_year?: number | null;
+  phone_number?: string | null;
+  is_default?: boolean;
+  currency?: string | null;
+  metadata?: Record<string, any> | null;
+}
+
+export async function fetchDefaultPaymentMethods(token?: string): Promise<PaymentMethodRecord[]> {
+  const url = `${API_BASE_URL}/payment-methods?is_default=true`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(url, { headers });
+    const data = response.data?.data?.data ?? response.data?.data ?? response.data ?? [];
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    return [];
+  }
+}
+
 export async function addPaymentMethod(paymentData: any, token: string) {
   const response = await axios.post(
     `${API_BASE_URL}/payment-methods`,
@@ -161,6 +189,47 @@ export async function fetchPaymentProviders(token?: string): Promise<BookingPaym
     return Array.isArray(data) ? data : [];
   } catch (error) {
     return [];
+  }
+}
+
+// Fetch payment providers by country (same shape used in admin)
+export interface CountryPaymentProvidersResponse {
+  country_id?: string;
+  country_name?: string;
+  country_code?: string;
+  providers: BookingPaymentProvider[];
+  mobile_money_providers?: BookingPaymentProvider[];
+  card_providers?: BookingPaymentProvider[];
+  bank_transfer_providers?: BookingPaymentProvider[];
+  digital_wallet_providers?: BookingPaymentProvider[];
+  active_providers?: BookingPaymentProvider[];
+  supported_currencies?: string[];
+}
+
+export async function fetchPaymentProvidersByCountry(countryId: string, token?: string): Promise<CountryPaymentProvidersResponse | null> {
+  if (!countryId) return null;
+  const url = `${API_BASE_URL}/payment-providers/country/${countryId}`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await axios.get(url, { headers });
+    const data = response.data?.data ?? response.data ?? null;
+    if (!data) return null;
+    // Normalize to ensure providers array exists
+    return {
+      providers: Array.isArray(data.providers) ? data.providers : [],
+      mobile_money_providers: Array.isArray(data.mobile_money_providers) ? data.mobile_money_providers : undefined,
+      card_providers: Array.isArray(data.card_providers) ? data.card_providers : undefined,
+      bank_transfer_providers: Array.isArray(data.bank_transfer_providers) ? data.bank_transfer_providers : undefined,
+      digital_wallet_providers: Array.isArray(data.digital_wallet_providers) ? data.digital_wallet_providers : undefined,
+      active_providers: Array.isArray(data.active_providers) ? data.active_providers : undefined,
+      supported_currencies: Array.isArray(data.supported_currencies) ? data.supported_currencies : undefined,
+      country_id: data.country_id,
+      country_name: data.country_name,
+      country_code: data.country_code,
+    };
+  } catch (error) {
+    return null;
   }
 }
 

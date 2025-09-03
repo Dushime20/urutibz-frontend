@@ -49,7 +49,7 @@ const ListingsSection: React.FC<Props> = ({
         </svg>
         <div className="text-2xl font-bold text-gray-400 mb-2">No listings yet</div>
         <div className="text-gray-500 mb-6">You haven't created any product listings. Click below to get started!</div>
-        <button onClick={onAddListing} className="bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors">Add New Listing</button>
+        <button onClick={onAddListing} className="bg-teal-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors">Add New Listing</button>
       </div>
     );
   }
