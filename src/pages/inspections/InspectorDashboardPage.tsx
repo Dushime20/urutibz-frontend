@@ -17,7 +17,10 @@ import {
   Shield,
   HelpCircle,
   FileText,
-  BarChart3
+  BarChart3,
+  List,
+  Play,
+  Eye
 } from 'lucide-react';
 import type { Inspection, Inspector } from '../../types/inspection';
 import { DisputeType } from '../../types/inspection';
@@ -31,9 +34,27 @@ const InspectorDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { showToast } = useToast();
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'overview' | 'inspections' | 'disputes'>('overview');
+  
+  // Data states
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [inspector, setInspector] = useState<Inspector | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inspectorDisputes, setInspectorDisputes] = useState<any[]>([]);
+  const [disputesLoading, setDisputesLoading] = useState(false);
+  
+  // Stats state
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    disputed: 0
+  });
+
+  // Modal states
   const [showReschedule, setShowReschedule] = useState<{ open: boolean; id: string | null; value: string }>(() => ({ open: false, id: null, value: '' }));
   const [showComplete, setShowComplete] = useState<{ open: boolean; id: string | null; notes: string; items: Array<{ itemName: string; condition: string; notes: string; repairCost: number; replacementCost: number; requiresRepair: boolean; requiresReplacement: boolean }> }>(() => ({
     open: false,
@@ -132,17 +153,6 @@ const InspectorDashboardPage: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    inProgress: 0,
-    completed: 0,
-    disputed: 0
-  });
-
-  const [inspectorDisputes, setInspectorDisputes] = useState<any[]>([]);
-  const [disputesLoading, setDisputesLoading] = useState(false);
 
   useEffect(() => {
     loadInspectorData();
@@ -253,7 +263,7 @@ const InspectorDashboardPage: React.FC = () => {
       id: inspectionId,
       notes: '',
       items: [
-        { itemName: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }
+        { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false, photos: [] }
       ]
     });
   };
@@ -342,7 +352,7 @@ const InspectorDashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Professional Header */}
-      <div className="bg-white  border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
@@ -530,309 +540,89 @@ const InspectorDashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          {/* Subtitle */}
-          
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Enhanced Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <QuickStatsCard
-            title="Total Assigned"
-            value={stats.total}
-            icon={TrendingUp}
-            color="blue"
-          />
-          <QuickStatsCard
-            title="Pending"
-            value={stats.pending}
-            icon={Clock}
-            color="yellow"
-          />
-          <QuickStatsCard
-            title="In Progress"
-            value={stats.inProgress}
-            icon={Clock}
-            color="blue"
-          />
-          <QuickStatsCard
-            title="Completed"
-            value={stats.completed}
-            icon={CheckCircle}
-            color="green"
-          />
-          <QuickStatsCard
-            title="Disputed"
-            value={stats.disputed}
-            icon={AlertTriangle}
-            color="red"
-          />
-        </div>
-
-        {/* Today's Schedule - Enhanced */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
-          <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-blue-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">Today's Schedule</h3>
-                  <p className="text-sm text-gray-600">Your upcoming inspections and tasks</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{inspections.length}</p>
-                <p className="text-sm text-gray-500">Total Inspections</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            {inspections.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No inspections scheduled</h3>
-                <p className="text-gray-600 max-w-sm mx-auto">
-                  You have no inspections scheduled for today. Check back later for new assignments.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {inspections.slice(0, 5).map((inspection) => (
-                  <div
-                    key={inspection.id}
-                    className="group relative bg-gray-50 hover:bg-white border border-gray-200 rounded-lg p-5 transition-all duration-200 hover:shadow-md cursor-pointer"
-                    onClick={() => handleInspectionClick(inspection.id)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <div className="flex-shrink-0">
-                            <StatusBadge status={inspection.status} size="sm" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-base font-semibold text-gray-900 truncate">
-                              {inspection.product?.name || `Product ${inspection.productId}`}
-                            </h4>
-                            <p className="text-sm text-gray-500">
-                              {getTypeLabel(inspection.inspectionType)}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center text-gray-600">
-                            <Clock className="w-4 h-4 mr-2 text-gray-400" />
-                            <span>{formatDate(inspection.scheduledAt)}</span>
-                          </div>
-                          <div className="flex items-center text-gray-600">
-                            <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                            <span className="truncate">{inspection.location}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 ml-4">
-                        {inspection.status === 'pending' && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleStart(inspection.id); }}
-                            className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors font-medium text-sm"
-                          >
-                            Start
-                          </button>
-                        )}
-                        {inspection.status === 'in_progress' && (
-                          <>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleAddItem(inspection.id); }}
-                              className="px-3 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors font-medium text-sm"
-                            >
-                              Add Item
-                            </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleComplete(inspection.id); }}
-                              className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors font-medium text-sm"
-                            >
-                              Complete
-                            </button>
-                          </>
-                        )}
-                        {(inspection.status === 'pending' || inspection.status === 'in_progress') && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleReschedule(inspection.id); }}
-                            className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors font-medium text-sm"
-                          >
-                            Reschedule
-                          </button>
-                        )}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleRaiseDispute(inspection.id); }}
-                          className="px-3 py-2 rounded-lg border border-red-300 bg-white text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors font-medium text-sm"
-                        >
-                          Raise Dispute
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
+                activeTab === 'overview'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Overview</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('inspections')}
+              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
+                activeTab === 'inspections'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span>Inspections</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('disputes')}
+              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
+                activeTab === 'disputes'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span>Disputes</span>
+            </button>
           </div>
         </div>
 
-        {/* Recent Activity - Enhanced */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
-          <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">Recent Activity</h3>
-                <p className="text-sm text-gray-600">Latest inspection updates and actions</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            <div className="space-y-4">
-              {inspections.slice(0, 10).map((inspection) => (
-                <div
-                  key={inspection.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 hover:bg-white border border-gray-200 rounded-lg transition-colors cursor-pointer group"
-                  onClick={() => handleInspectionClick(inspection.id)}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                      <Calendar className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                        {inspection.product?.name || `Product ${inspection.productId}`}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {getTypeLabel(inspection.inspectionType)} • {inspection.location}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <StatusBadge status={inspection.status} size="sm" />
-                    <span className="text-xs text-gray-400">
-                      {formatDate(inspection.updatedAt)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <OverviewTab 
+            stats={stats}
+            inspections={inspections}
+            inspector={inspector}
+            inspectorDisputes={inspectorDisputes}
+            disputesLoading={disputesLoading}
+            onInspectionClick={handleInspectionClick}
+            formatDate={formatDate}
+            getTypeLabel={getTypeLabel}
+          />
+        )}
 
-        {/* Disputes Section - Enhanced */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-pink-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">Active Disputes</h3>
-                  <p className="text-sm text-gray-600">Manage and resolve inspection disputes</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{inspectorDisputes.length}</p>
-                <p className="text-sm text-gray-500">Open Cases</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            {disputesLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-                <p className="text-gray-600 font-medium">Loading disputes...</p>
-              </div>
-            ) : (inspectorDisputes || []).length > 0 ? (
-              <div className="space-y-4">
-                {(inspectorDisputes || []).map((dispute) => (
-                  <div
-                    key={dispute.id}
-                    className="bg-gray-50 hover:bg-white border border-gray-200 rounded-lg p-5 transition-all duration-200 hover:shadow-md"
-                  >
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                            dispute.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                            dispute.status === 'under_review' ? 'bg-blue-100 text-blue-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {dispute.status.replace('_', ' ').toUpperCase()}
-                          </span>
-                          <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                            {dispute.disputeType?.replace('_', ' ').toUpperCase() || 'DISPUTE'}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <p className="text-sm text-gray-900">
-                            <span className="font-semibold">Reason:</span> {dispute.reason}
-                          </p>
-                          {dispute.evidence && (
-                            <p className="text-sm text-gray-700">
-                              <span className="font-semibold">Evidence:</span> {dispute.evidence}
-                            </p>
-                          )}
-                          <p className="text-sm text-gray-500">
-                            <span className="font-medium">Raised:</span> {new Date(dispute.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                        {dispute.status === 'open' && (
-                          <>
-                            <button
-                              onClick={() => handleRaiseDispute(dispute.inspectionId)}
-                              className="w-full sm:w-auto px-4 py-2 rounded-lg border border-blue-300 bg-white text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors font-medium text-sm"
-                            >
-                              View Details
-                            </button>
-                            <button
-                              onClick={() => handleResolveDispute(dispute.inspectionId, dispute.id)}
-                              className="w-full sm:w-auto px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors font-medium text-sm"
-                            >
-                              Resolve Dispute
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No disputes yet</h3>
-                <p className="text-gray-600 max-w-sm mx-auto">
-                  You haven't been involved in any disputes yet. Keep up the good work!
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        {activeTab === 'inspections' && (
+          <InspectionsTab 
+            inspections={inspections}
+            onInspectionClick={handleInspectionClick}
+            onStart={handleStart}
+            onComplete={handleComplete}
+            onReschedule={handleReschedule}
+            onAddItem={handleAddItem}
+            onRaiseDispute={handleRaiseDispute}
+            onResolveDispute={handleResolveDispute}
+            formatDate={formatDate}
+            getTypeLabel={getTypeLabel}
+          />
+        )}
+
+        {activeTab === 'disputes' && (
+          <DisputesTab 
+            inspectorDisputes={inspectorDisputes}
+            disputesLoading={disputesLoading}
+            onResolveDispute={handleResolveDispute}
+            formatDate={formatDate}
+          />
+        )}
       </div>
 
+      {/* Modals */}
       {/* Reschedule Modal */}
       {showReschedule.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1377,5 +1167,510 @@ const InspectorDashboardPage: React.FC = () => {
      </div>
    );
  };
+
+// Overview Tab Component
+const OverviewTab: React.FC<{
+  stats: any;
+  inspections: Inspection[];
+  inspector: Inspector | null;
+  inspectorDisputes: any[];
+  disputesLoading: boolean;
+  onInspectionClick: (id: string) => void;
+  formatDate: (date: string) => string;
+  getTypeLabel: (type: string) => string;
+}> = ({ stats, inspections, inspector, inspectorDisputes, disputesLoading, onInspectionClick, formatDate, getTypeLabel }) => {
+  return (
+    <div className="space-y-8">
+      {/* Enhanced Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <QuickStatsCard
+          title="Total Assigned"
+          value={stats.total}
+          icon={TrendingUp}
+          color="blue"
+        />
+        <QuickStatsCard
+          title="Pending"
+          value={stats.pending}
+          icon={Clock}
+          color="yellow"
+        />
+        <QuickStatsCard
+          title="In Progress"
+          value={stats.inProgress}
+          icon={Clock}
+          color="blue"
+        />
+        <QuickStatsCard
+          title="Completed"
+          value={stats.completed}
+          icon={CheckCircle}
+          color="green"
+        />
+        <QuickStatsCard
+          title="Disputed"
+          value={stats.disputed}
+          icon={AlertTriangle}
+          color="red"
+        />
+      </div>
+
+      {/* Today's Schedule */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-blue-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Today's Schedule</h3>
+                <p className="text-sm text-gray-600">Your upcoming inspections and tasks</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gray-900">{inspections.length}</p>
+              <p className="text-sm text-gray-500">Total Inspections</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {inspections.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No inspections scheduled</h3>
+              <p className="text-gray-500">You're all caught up! New inspections will appear here.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {inspections.slice(0, 5).map((inspection) => (
+                <div
+                  key={inspection.id}
+                  className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
+                  onClick={() => onInspectionClick(inspection.id)}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h4 className="font-semibold text-gray-900">
+                        {getTypeLabel(inspection.inspectionType || '')}
+                      </h4>
+                      <StatusBadge status={inspection.status} />
+                    </div>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      {inspection.scheduledAt && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatDate(inspection.scheduledAt)}</span>
+                        </div>
+                      )}
+                      {inspection.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>{inspection.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-gray-400" />
+                      <span className="text-xs text-gray-500">View Details</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent Disputes */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Recent Disputes</h3>
+                <p className="text-sm text-gray-600">Disputes requiring attention</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gray-900">
+                {inspectorDisputes.length}
+              </p>
+              <p className="text-sm text-gray-500">Active Disputes</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {disputesLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+            </div>
+          ) : inspectorDisputes.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No active disputes</h3>
+              <p className="text-gray-500">All inspections are proceeding smoothly.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {inspectorDisputes.slice(0, 3).map((dispute) => (
+                <div key={dispute.id} className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h4 className="font-semibold text-gray-900">
+                        {dispute.disputeType?.replace(/_/g, ' ') || 'Dispute'}
+                      </h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        dispute.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                        dispute.status === 'under_review' ? 'bg-blue-100 text-blue-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {dispute.status?.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 truncate">{dispute.reason}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">
+                      {dispute.createdAt && formatDate(dispute.createdAt)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Inspections Tab Component
+const InspectionsTab: React.FC<{
+  inspections: Inspection[];
+  onInspectionClick: (id: string) => void;
+  onStart: (id: string) => void;
+  onComplete: (id: string) => void;
+  onReschedule: (id: string) => void;
+  onAddItem: (id: string) => void;
+  onRaiseDispute: (id: string) => void;
+  onResolveDispute: (inspectionId: string, disputeId: string) => void;
+  formatDate: (date: string) => string;
+  getTypeLabel: (type: string) => string;
+}> = ({ inspections, onInspectionClick, onStart, onComplete, onReschedule, onAddItem, onRaiseDispute, formatDate, getTypeLabel }) => {
+  return (
+    <div className="space-y-8">
+      {/* Active Inspections */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <List className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Active Inspections</h3>
+                <p className="text-sm text-gray-600">Continue your ongoing inspections</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gray-900">
+                {inspections.filter(i => i.status === 'pending' || i.status === 'in_progress').length}
+              </p>
+              <p className="text-sm text-gray-500">Active</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {inspections.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <List className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No active inspections</h3>
+              <p className="text-gray-500">All inspections are completed or not yet started.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {inspections
+                .filter(inspection => inspection.status === 'pending' || inspection.status === 'in_progress')
+                .map((inspection) => (
+                <div
+                  key={inspection.id}
+                  className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h4 className="font-semibold text-gray-900">
+                        {getTypeLabel(inspection.inspectionType || '')}
+                      </h4>
+                      <StatusBadge status={inspection.status} />
+                    </div>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                      {inspection.scheduledAt && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatDate(inspection.scheduledAt)}</span>
+                        </div>
+                      )}
+                      {inspection.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>{inspection.location}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => onInspectionClick(inspection.id)}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition-colors"
+                      >
+                        View Details
+                      </button>
+                      
+                      {inspection.status === 'pending' && (
+                        <button
+                          onClick={() => onStart(inspection.id)}
+                          className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full hover:bg-green-200 transition-colors"
+                        >
+                          Start
+                        </button>
+                      )}
+                      
+                      {inspection.status === 'in_progress' && (
+                        <>
+                          <button
+                            onClick={() => onComplete(inspection.id)}
+                            className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full hover:bg-emerald-200 transition-colors"
+                          >
+                            Complete
+                          </button>
+                          <button
+                            onClick={() => onAddItem(inspection.id)}
+                            className="px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full hover:bg-purple-200 transition-colors"
+                          >
+                            Add Item
+                          </button>
+                        </>
+                      )}
+                      
+                      <button
+                        onClick={() => onReschedule(inspection.id)}
+                        className="px-3 py-1 bg-orange-100 text-orange-700 text-xs rounded-full hover:bg-orange-200 transition-colors"
+                      >
+                        Reschedule
+                      </button>
+                      
+                      <button
+                        onClick={() => onRaiseDispute(inspection.id)}
+                        className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full hover:bg-red-200 transition-colors"
+                      >
+                        Raise Dispute
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Completed Inspections */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Completed Inspections</h3>
+                <p className="text-sm text-gray-600">Recently completed inspections</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gray-900">
+                {inspections.filter(i => i.status === 'completed').length}
+              </p>
+              <p className="text-sm text-gray-500">Completed</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {inspections.filter(i => i.status === 'completed').length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No completed inspections</h3>
+              <p className="text-gray-500">Complete your first inspection to see it here.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {inspections
+                .filter(inspection => inspection.status === 'completed')
+                .slice(0, 5)
+                .map((inspection) => (
+                <div
+                  key={inspection.id}
+                  className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
+                  onClick={() => onInspectionClick(inspection.id)}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h4 className="font-semibold text-gray-900">
+                        {getTypeLabel(inspection.inspectionType || '')}
+                      </h4>
+                      <StatusBadge status={inspection.status} />
+                    </div>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      {inspection.completedAt && (
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Completed {formatDate(inspection.completedAt)}</span>
+                        </div>
+                      )}
+                      {inspection.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>{inspection.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-gray-400" />
+                      <span className="text-xs text-gray-500">View Report</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Disputes Tab Component
+const DisputesTab: React.FC<{
+  inspectorDisputes: any[];
+  disputesLoading: boolean;
+  onResolveDispute: (inspectionId: string, disputeId: string) => void;
+  formatDate: (date: string) => string;
+}> = ({ inspectorDisputes, disputesLoading, onResolveDispute, formatDate }) => {
+  return (
+    <div className="space-y-8">
+      {/* Active Disputes */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Active Disputes</h3>
+                <p className="text-sm text-gray-600">Manage and resolve inspection disputes</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gray-900">{inspectorDisputes.length}</p>
+              <p className="text-sm text-gray-500">Open Cases</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {disputesLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium">Loading disputes...</p>
+            </div>
+          ) : inspectorDisputes.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No active disputes</h3>
+              <p className="text-gray-500">All inspections are proceeding smoothly.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {inspectorDisputes.map((dispute) => (
+                <div
+                  key={dispute.id}
+                  className="bg-gray-50 hover:bg-white border border-gray-200 rounded-lg p-5 transition-all duration-200 hover:shadow-md"
+                >
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          dispute.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                          dispute.status === 'under_review' ? 'bg-blue-100 text-blue-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {dispute.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                        <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                          {dispute.disputeType?.replace('_', ' ').toUpperCase() || 'DISPUTE'}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-900">
+                          <span className="font-semibold">Reason:</span> {dispute.reason}
+                        </p>
+                        {dispute.evidence && (
+                          <p className="text-sm text-gray-700">
+                            <span className="font-semibold">Evidence:</span> {dispute.evidence}
+                          </p>
+                        )}
+                        <p className="text-sm text-gray-500">
+                          <span className="font-medium">Raised:</span> {dispute.createdAt && formatDate(dispute.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                      {dispute.status === 'open' && (
+                        <>
+                          <button
+                            onClick={() => onResolveDispute(dispute.inspectionId, dispute.id)}
+                            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors font-medium text-sm"
+                          >
+                            Resolve Dispute
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default InspectorDashboardPage;

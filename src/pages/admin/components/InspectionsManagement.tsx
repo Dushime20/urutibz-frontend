@@ -14,6 +14,7 @@ import {
   Shield,
   MessageSquare
 } from 'lucide-react';
+import { useToast } from '../../../contexts/ToastContext';
 
 interface InspectionsManagementProps {
   inspections: any[];
@@ -38,6 +39,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
   onViewInspection,
   onViewDispute
 }) => {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'inspections' | 'disputes'>('overview');
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [selectedDispute, setSelectedDispute] = useState<any>(null);
@@ -52,7 +54,8 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
   };
 
   const submitResolveDispute = async () => {
-    if (!selectedDispute || !resolveForm.resolutionNotes || !resolveForm.agreedAmount) {
+    if (!selectedDispute || !resolveForm.resolutionNotes) {
+      showToast('Please provide resolution notes', 'error');
       return;
     }
 
@@ -62,14 +65,16 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
         selectedDispute.id,
         {
           resolutionNotes: resolveForm.resolutionNotes,
-          agreedAmount: parseFloat(resolveForm.agreedAmount)
+          agreedAmount: resolveForm.agreedAmount ? parseFloat(resolveForm.agreedAmount) : undefined
         }
       );
       setShowResolveModal(false);
       setSelectedDispute(null);
       setResolveForm({ resolutionNotes: '', agreedAmount: '' });
+      showToast('Dispute resolved successfully', 'success');
     } catch (error) {
       console.error('Failed to resolve dispute:', error);
+      showToast('Failed to resolve dispute', 'error');
     }
   };
 
@@ -496,7 +501,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
               
               <button
                 onClick={submitResolveDispute}
-                disabled={!resolveForm.resolutionNotes || !resolveForm.agreedAmount}
+                disabled={!resolveForm.resolutionNotes}
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Resolve Dispute

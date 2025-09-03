@@ -54,6 +54,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
 import { Users, Calendar, Cpu, Clock, CheckCircle, Activity } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -82,6 +83,7 @@ interface Owner {
 }
 
 const AdminDashboardPage: React.FC = () => {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
@@ -864,8 +866,10 @@ const AdminDashboardPage: React.FC = () => {
                               const disputesData = await fetchAllDisputes(disputePage, disputesPerPage, token || undefined);
                               const disputesArray = disputesData?.disputes || [];
                               setDisputes(disputesArray);
+                              showToast('Dispute resolved successfully', 'success');
                             } catch (error) {
                               console.error('Failed to resolve dispute:', error);
+                              showToast('Failed to resolve dispute', 'error');
                             }
                           }}
                           onViewInspection={(inspection: any) => {
