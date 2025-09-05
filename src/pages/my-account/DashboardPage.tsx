@@ -23,6 +23,7 @@ import {
 import MyAccountHeader from './components/MyAccountHeader';
 import MyAccountNavTabs from './components/MyAccountNavTabs';
 import OverviewSection from './components/OverviewSection';
+import SkeletonMyAccountOverview from '../../components/ui/SkeletonMyAccountOverview';
 import BookingsSection from './components/BookingsSection';
 import ListingsSection from './components/ListingsSection';
 import WalletSection from './components/WalletSection';
@@ -853,9 +854,7 @@ const DashboardPage: React.FC = () => {
         <div className="w-full">
           {activeTab === 'overview' && (
             loadingDashboard ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-              </div>
+              <SkeletonMyAccountOverview />
             ) : (
               <OverviewSection
                 dashboardStats={dashboardStats}
@@ -1016,7 +1015,7 @@ const DashboardPage: React.FC = () => {
             <InspectionsSection
               loading={inspectionsLoading}
               userInspections={userInspections}
-              onViewInspection={(id: string) => navigate(`/inspections/${id}`)}
+              onViewInspection={(id: string) => navigate(`/inspections/${id}`, { state: { from: 'my-account' } })}
               onRequestInspection={() => setShowInspectionModal(true)}
             />
           )}

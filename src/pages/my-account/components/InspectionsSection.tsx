@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Calendar, MapPin, Clock, Eye, CheckCircle, AlertTriangle, Play, AlertCircle, MessageSquare, Plus } from 'lucide-react';
-import { disputeService } from '../../../services/inspectionService';
+import { disputeService, inspectionService } from '../../../services/inspectionService';
 import { DisputeType } from '../../../types/inspection';
 
 interface Props {
@@ -16,7 +16,9 @@ const InspectionsSection: React.FC<Props> = ({
   onViewInspection,
   onRequestInspection,
 }) => {
-  const [activeTab, setActiveTab] = useState<'inspections' | 'disputes'>('inspections');
+  const [activeTab, setActiveTab] = useState<'my-items' | 'rented-items' | 'disputes'>('my-items');
+  const [rentedInspections, setRentedInspections] = useState<any[]>([]);
+  const [rentedLoading, setRentedLoading] = useState(false);
   const [userDisputes, setUserDisputes] = useState<any[]>([]);
   const [disputesLoading, setDisputesLoading] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -27,6 +29,20 @@ const InspectionsSection: React.FC<Props> = ({
     evidence: '',
     photos: [] as File[]
   });
+
+  // Fetch rented inspections
+  const loadRentedInspections = async () => {
+    setRentedLoading(true);
+    try {
+      const response = await inspectionService.getMyInspections();
+      setRentedInspections(response.data || []);
+    } catch (error) {
+      console.error('Error fetching rented inspections:', error);
+      setRentedInspections([]);
+    } finally {
+      setRentedLoading(false);
+    }
+  };
 
   // Fetch user disputes
   const loadUserDisputes = async () => {
@@ -60,9 +76,11 @@ const InspectionsSection: React.FC<Props> = ({
     }
   };
 
-  // Load disputes when disputes tab is active
+  // Load data when tabs are active
   useEffect(() => {
-    if (activeTab === 'disputes') {
+    if (activeTab === 'rented-items') {
+      loadRentedInspections();
+    } else if (activeTab === 'disputes') {
       loadUserDisputes();
     }
   }, [activeTab]);
@@ -154,7 +172,7 @@ const InspectionsSection: React.FC<Props> = ({
     setShowDisputeModal(true);
   };
 
-  if (loading && activeTab === 'inspections') {
+  if ((loading && activeTab === 'my-items') || (rentedLoading && activeTab === 'rented-items')) {
     return (
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-center py-8">
@@ -180,14 +198,24 @@ const InspectionsSection: React.FC<Props> = ({
       <div className="flex items-center justify-between mb-6">
         <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
           <button
-            onClick={() => setActiveTab('inspections')}
+            onClick={() => setActiveTab('my-items')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'inspections'
+              activeTab === 'my-items'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            Inspections ({userInspections.length})
+            My Items ({userInspections.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('rented-items')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'rented-items'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Rented Items ({rentedInspections.length})
           </button>
           <button
             onClick={() => setActiveTab('disputes')}
@@ -201,14 +229,14 @@ const InspectionsSection: React.FC<Props> = ({
           </button>
         </div>
         <div className="flex gap-2">
-          {activeTab === 'inspections' && (
+          {activeTab === 'my-items' && (
             <button onClick={onRequestInspection} className="bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 rounded">
               Request Inspection
             </button>
           )}
           {activeTab === 'disputes' && (
             <button 
-              onClick={() => setShowDisputeModal(true)} 
+              onClick={() => setShowDisputeModal(true)}
               className="bg-red-600 text-white px-3 py-2 hover:bg-red-700 rounded flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -218,8 +246,8 @@ const InspectionsSection: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Inspections Tab */}
-      {activeTab === 'inspections' && (
+      {/* My Items Tab */}
+      {activeTab === 'my-items' && (
         <div className="space-y-4">
           {userInspections.length === 0 ? (
             <div className="text-center py-8">
@@ -293,6 +321,76 @@ const InspectionsSection: React.FC<Props> = ({
                      Raise Dispute
                    </button>
                  </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Rented Items Tab */}
+      {activeTab === 'rented-items' && (
+        <div className="space-y-4">
+          {rentedInspections.length === 0 ? (
+            <div className="text-center py-8">
+              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Rented Item Inspections</h3>
+              <p className="text-gray-500 mb-4">You haven't rented any items that require inspections yet.</p>
+            </div>
+          ) : (
+            rentedInspections.map((inspection) => (
+              <div
+                key={inspection.id}
+                className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
+                onClick={() => onViewInspection(inspection.id)}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h4 className="font-semibold text-gray-900 capitalize">
+                      {inspection.inspectionType?.replace(/_/g, ' ') || 'Inspection'}
+                    </h4>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(inspection.status)}`}>
+                      {getStatusIcon(inspection.status)}
+                      {inspection.status?.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
+                    {inspection.scheduledAt && (
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatDate(inspection.scheduledAt)}</span>
+                      </div>
+                    )}
+                    {inspection.location && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        <span>{inspection.location}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {inspection.notes && (
+                    <p className="text-sm text-gray-600 mb-2">{inspection.notes}</p>
+                  )}
+
+                  {inspection.inspectorNotes && (
+                    <p className="text-sm text-gray-600 mb-2 italic">
+                      Inspector Notes: {inspection.inspectorNotes}
+                    </p>
+                  )}
+                </div>
+
+                <div className="text-right">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500">View Details</span>
+                  </div>
+                  {inspection.createdAt && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Created {formatDate(inspection.createdAt)}
+                    </p>
+                  )}
+                </div>
               </div>
             ))
           )}

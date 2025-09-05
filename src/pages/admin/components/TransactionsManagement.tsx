@@ -148,7 +148,7 @@ const TransactionsManagement: React.FC = () => {
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">
-                      {txn.payment_method ? txn.payment_method.replace(/_/g, ' ') : '-'}
+                      {txn.transaction_type ? txn.transaction_type.replace(/_/g, ' ') : '-'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -158,11 +158,11 @@ const TransactionsManagement: React.FC = () => {
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm font-semibold text-gray-900">
-                      {txn.amount.toLocaleString()} {txn.currency}
+                      {typeof txn.amount === 'string' ? parseFloat(txn.amount).toLocaleString() : txn.amount.toLocaleString()} {txn.currency}
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{txn.payment_method}</span>
+                    <span className="text-sm text-gray-600">{txn.provider || '-'}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">

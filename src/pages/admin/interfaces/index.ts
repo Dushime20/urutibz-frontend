@@ -371,18 +371,28 @@ export interface AdminStats {
 // Payment Transaction Interface
 export interface PaymentTransaction {
   id: string;
-  transaction_id: string;
-  amount: number;
-  currency: string;
-  status: string;
-  payment_method: string;
-  created_at: string;
-  processed_at?: string;
-  user_id?: string;
   booking_id?: string;
+  user_id?: string;
+  payment_method_id?: string;
+  transaction_type: string;
+  amount: string | number;
+  currency: string;
+  provider: string;
+  provider_transaction_id?: string | null;
+  provider_fee?: string | number;
+  status: string;
+  processed_at?: string | null;
+  metadata?: any;
+  failure_reason?: string | null;
+  created_at: string;
+  original_currency?: string | null;
+  original_amount?: string | number | null;
+  exchange_rate?: string | number | null;
+  exchange_rate_date?: string | null;
+  // Legacy fields for backward compatibility
+  transaction_id?: string;
+  payment_method?: string;
   description?: string;
-  transaction_type?: string; // For backward compatibility
-  provider?: string; // For backward compatibility
 }
 
 export interface PaymentTransactionResponse {

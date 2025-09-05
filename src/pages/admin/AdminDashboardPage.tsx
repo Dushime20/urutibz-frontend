@@ -48,8 +48,10 @@ import ProductCategoriesChart from './components/ProductCategoriesChart';
 import ModerationDashboardPage from './ModerationDashboardPage';
 import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import InspectionsManagement from './components/InspectionsManagement';
-import SkeletonMetrics from './components/SkeletonMetrics';
+
 import SkeletonPricingStats from './components/SkeletonPricingStats';
+import SkeletonAdminStats from '../../components/ui/SkeletonAdminStats';
+import SkeletonMetrics from '../../components/ui/SkeletonMetrics';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
@@ -142,7 +144,7 @@ const AdminDashboardPage: React.FC = () => {
   const [disputes, setDisputes] = useState<any[]>([]);
   const [loadingDisputes, setLoadingDisputes] = useState(false);
   const [disputesError, setDisputesError] = useState<string | null>(null);
-  const [disputePage, setDisputePage] = useState(1);
+  const [disputePage] = useState(1);
   const [disputesPerPage] = useState(10);
   const [selectedDispute, setSelectedDispute] = useState<any>(null);
 
@@ -152,7 +154,7 @@ const AdminDashboardPage: React.FC = () => {
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
   // Modal States
-  const [showResolveDisputeModal, setShowResolveDisputeModal] = useState(false);
+
   const [showInspectionDetailsModal, setShowInspectionDetailsModal] = useState(false);
   const [showDisputeDetailsModal, setShowDisputeDetailsModal] = useState(false);
 
@@ -383,15 +385,16 @@ const AdminDashboardPage: React.FC = () => {
                   case 'overview':
                     return (
                       <>
-                        {/* Real-time Metrics Card */}
+                                                {/* Real-time Metrics Card */}
                         <section className="mb-8">
                           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Real-Time Metrics</h2>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                            {loadingRealtime ? (
-                              <SkeletonMetrics />
-                            ) : realtimeError ? (
+                          {loadingRealtime ? (
+                            <SkeletonMetrics />
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                              {realtimeError ? (
                               <div className="col-span-6 flex items-center justify-center h-20 text-red-500">{realtimeError}</div>
-                            ) : realtimeMetrics ? (
+                              ) : realtimeMetrics ? (
                               <>
                                 {/* Active Users */}
                                 <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
@@ -430,16 +433,21 @@ const AdminDashboardPage: React.FC = () => {
                                   <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">{new Date(realtimeMetrics.timestamp).toLocaleString()}</div>
                                 </div>
                               </>
-                            ) : (
-                              <div className="col-span-6 flex items-center justify-center h-20 text-gray-500 dark:text-gray-400">No real-time metrics available.</div>
-                            )}
-                          </div>
+                              ) : (
+                                <div className="col-span-6 flex items-center justify-center h-20 text-gray-500 dark:text-gray-400">No real-time metrics available.</div>
+                              )}
+                            </div>
+                          )}
                         </section>
                         {/* End Real-time Metrics Card */}
                         <section className="mb-8">
                           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Statistics</h2>
                           <div className="mb-6">
-                    <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
+                            {loadingOverview ? (
+                              <SkeletonAdminStats />
+                            ) : (
+                              <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
+                            )}
                           </div>
                         </section>
                         {/* Analytics Section */}

@@ -125,7 +125,7 @@ const InspectionsDashboardPage: React.FC = () => {
   const handleInspectionAction = (inspection: Inspection, action: string) => {
     switch (action) {
       case 'view':
-        navigate(`/inspections/${inspection.id}`);
+        navigate(`/inspections/${inspection.id}`, { state: { from: 'inspections-dashboard' } });
         break;
       case 'edit':
         navigate(`/inspections/${inspection.id}/edit`);
@@ -376,7 +376,7 @@ const InspectionsDashboardPage: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
                   <RecentInspectionsTimeline
                     inspections={inspections?.slice(0, 5) || []}
-                    onInspectionClick={(id) => navigate(`/inspections/${id}`)}
+                    onInspectionClick={(id) => navigate(`/inspections/${id}`, { state: { from: 'inspections-dashboard' } })}
                   />
                 </div>
               </div>

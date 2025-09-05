@@ -3,11 +3,8 @@ import type {
   Inspection,
   InspectionFilters,
   InspectionStats,
-  InspectionStatus,
-  InspectionType,
   InspectionItem,
   InspectionPhoto,
-  CreateInspectionRequest,
   UpdateInspectionRequest,
   StartInspectionRequest,
   CompleteInspectionRequest,
@@ -16,7 +13,7 @@ import type {
   ResolveDisputeRequest,
   Inspector,
   Dispute
-} from '../../types/inspection';
+} from '../types/inspection';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 
@@ -97,10 +94,175 @@ export const inspectionService = {
     return response.data;
   },
 
-  // Get inspection by ID
-  async getInspection(id: string): Promise<Inspection> {
+  // Get inspection by ID with full details
+  async getInspection(id: string): Promise<{
+    inspection: Inspection;
+    items: InspectionItem[];
+    photos: InspectionPhoto[];
+    damageAssessment: {
+      totalRepairCost: number;
+      totalReplacementCost: number;
+      itemsRequiringRepair: number;
+      itemsRequiringReplacement: number;
+      damageDetails: any[];
+    };
+    timeline: {
+      scheduled: string;
+      started: string;
+      completed: string;
+      duration: number;
+    };
+    participants: {
+      inspector: {
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+      };
+      renter: {
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+      };
+      owner: {
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+      };
+    };
+  }> {
     const response = await inspectionApi.get(`/${id}`);
-    return response.data;
+    
+    // Handle the API response structure
+    const data = response.data?.data || response.data;
+    
+    // Map the API response to our expected structure
+    const inspection: Inspection = {
+      id: data.inspection.id,
+      productId: data.inspection.productId,
+      bookingId: data.inspection.bookingId,
+      inspectorId: data.inspection.inspectorId,
+      inspectionType: data.inspection.inspectionType,
+      status: data.inspection.status,
+      scheduledAt: data.inspection.scheduledAt,
+      location: data.inspection.inspectionLocation,
+      notes: data.inspection.generalNotes,
+      inspectorNotes: data.inspection.inspectorNotes,
+      createdAt: data.inspection.createdAt,
+      updatedAt: data.inspection.updatedAt,
+      completedAt: data.inspection.completedAt,
+      items: data.items || [],
+      photos: data.photos || [],
+      disputes: data.inspection.hasDispute ? [{
+        id: 'dispute-' + data.inspection.id,
+        inspectionId: data.inspection.id,
+        disputeType: 'CONDITION_DISAGREEMENT' as any,
+        reason: data.inspection.disputeReason || '',
+        evidence: '',
+        photos: [],
+        status: 'RESOLVED' as any,
+        raisedBy: data.inspection.resolvedBy || '',
+        raisedAt: data.inspection.createdAt,
+        resolvedAt: data.inspection.disputeResolvedAt,
+        resolutionNotes: '',
+        agreedAmount: 0,
+        resolvedBy: data.inspection.resolvedBy
+      }] : []
+    };
+
+    return {
+      inspection,
+      items: data.items || [],
+      photos: data.photos || [],
+      damageAssessment: data.damageAssessment || {
+        totalRepairCost: 0,
+        totalReplacementCost: 0,
+        itemsRequiringRepair: 0,
+        itemsRequiringReplacement: 0,
+        damageDetails: []
+      },
+      timeline: data.timeline || {
+        scheduled: data.inspection.scheduledAt,
+        started: data.inspection.startedAt || '',
+        completed: data.inspection.completedAt || '',
+        duration: 0
+      },
+      participants: data.participants || {
+        inspector: { id: '', name: '', email: '', role: '' },
+        renter: { id: '', name: '', email: '', role: '' },
+        owner: { id: '', name: '', email: '', role: '' }
+      }
+    };
+  },
+
+  // Get inspections for rented items (as renter)
+  async getMyInspections(page: number = 1, limit: number = 20): Promise<{
+    data: Inspection[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  }> {
+    const response = await inspectionApi.get(`/my-inspections?role=renter&page=${page}&limit=${limit}`);
+    
+    // The backend returns: { success, message, data: { data: [...], total, page, limit, totalPages, hasNext, hasPrev } }
+    const responseData = response.data;
+    
+    const extractArray = (): any[] => {
+      if (responseData?.data?.data && Array.isArray(responseData.data.data)) {
+        return responseData.data.data;
+      }
+      if (responseData?.data && Array.isArray(responseData.data)) {
+        return responseData.data;
+      }
+      return [];
+    };
+
+    // Map each item to our unified Inspection shape
+    const rawList = extractArray();
+    const mapped: Inspection[] = rawList.map((item: any) => ({
+      id: item.id,
+      productId: item.productId ?? item.product_id,
+      bookingId: item.bookingId ?? item.booking_id,
+      inspectorId: item.inspectorId ?? item.inspector_id,
+      inspectionType: item.inspectionType ?? item.inspection_type,
+      status: item.status,
+      scheduledAt: item.scheduledAt ?? item.scheduled_at,
+      location: item.inspectionLocation ?? item.inspection_location ?? item.location ?? '',
+      notes: item.generalNotes ?? item.general_notes ?? item.notes ?? '',
+      inspectorNotes: item.inspectorNotes ?? item.inspector_notes,
+      createdAt: item.createdAt ?? item.created_at,
+      updatedAt: item.updatedAt ?? item.updated_at,
+      completedAt: item.completedAt ?? item.completed_at ?? undefined,
+      items: Array.isArray(item.items) ? item.items : [],
+      photos: Array.isArray(item.photos) ? item.photos : [],
+      disputes: Array.isArray(item.disputes) ? item.disputes : [],
+      inspector: item.inspector,
+      product: item.product,
+      booking: item.booking,
+    }));
+
+    const meta = responseData?.data ?? responseData ?? {};
+    const total = Number(meta.total ?? mapped.length);
+    const currentPage = Number(meta.page ?? page);
+    const pageLimit = Number(meta.limit ?? limit);
+    const totalPages = Number(meta.totalPages ?? Math.max(1, Math.ceil(total / (pageLimit || 1))));
+    const hasNext = Boolean(meta.hasNext ?? currentPage < totalPages);
+    const hasPrev = Boolean(meta.hasPrev ?? currentPage > 1);
+
+    return {
+      data: mapped,
+      total,
+      page: currentPage,
+      limit: pageLimit,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
   },
 
   // Get inspections by owner ID
@@ -141,6 +303,7 @@ export const inspectionService = {
       scheduledAt: item.scheduledAt ?? item.scheduled_at,
       location: item.inspectionLocation ?? item.inspection_location ?? item.location ?? '',
       notes: item.generalNotes ?? item.general_notes ?? item.notes ?? '',
+      inspectorNotes: item.inspectorNotes ?? item.inspector_notes,
       createdAt: item.createdAt ?? item.created_at,
       updatedAt: item.updatedAt ?? item.updated_at,
       completedAt: item.completedAt ?? item.completed_at ?? undefined,
@@ -244,6 +407,7 @@ export const inspectionService = {
       scheduledAt: item.scheduledAt,
       location: item.inspectionLocation,
       notes: item.generalNotes,
+      inspectorNotes: item.inspectorNotes,
       // timestamps
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,

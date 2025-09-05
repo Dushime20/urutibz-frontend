@@ -56,12 +56,12 @@ const InspectorDashboardPage: React.FC = () => {
 
   // Modal states
   const [showReschedule, setShowReschedule] = useState<{ open: boolean; id: string | null; value: string }>(() => ({ open: false, id: null, value: '' }));
-  const [showComplete, setShowComplete] = useState<{ open: boolean; id: string | null; notes: string; items: Array<{ itemName: string; condition: string; notes: string; repairCost: number; replacementCost: number; requiresRepair: boolean; requiresReplacement: boolean }> }>(() => ({
+  const [showComplete, setShowComplete] = useState<{ open: boolean; id: string | null; notes: string; items: Array<{ itemName: string; description: string; condition: string; notes: string; repairCost: number; replacementCost: number; requiresRepair: boolean; requiresReplacement: boolean }> }>(() => ({
     open: false,
     id: null,
     notes: '',
     items: [
-      { itemName: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }
+      { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }
     ]
   }));
 
@@ -216,7 +216,7 @@ const InspectorDashboardPage: React.FC = () => {
   };
 
   const handleInspectionClick = (inspectionId: string) => {
-    navigate(`/inspections/${inspectionId}`);
+    navigate(`/inspections/${inspectionId}`, { state: { from: 'inspector' } });
   };
 
   const formatDate = (dateString: string) => {
@@ -263,7 +263,7 @@ const InspectorDashboardPage: React.FC = () => {
       id: inspectionId,
       notes: '',
       items: [
-        { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false, photos: [] }
+        { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }
       ]
     });
   };
@@ -547,7 +547,7 @@ const InspectorDashboardPage: React.FC = () => {
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-            <button
+                          <button 
               onClick={() => setActiveTab('overview')}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                 activeTab === 'overview'
@@ -557,8 +557,8 @@ const InspectorDashboardPage: React.FC = () => {
             >
               <BarChart3 className="w-4 h-4" />
               <span>Overview</span>
-            </button>
-            <button
+                          </button>
+                            <button 
               onClick={() => setActiveTab('inspections')}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                 activeTab === 'inspections'
@@ -568,8 +568,8 @@ const InspectorDashboardPage: React.FC = () => {
             >
               <List className="w-4 h-4" />
               <span>Inspections</span>
-            </button>
-            <button
+                            </button>
+                            <button 
               onClick={() => setActiveTab('disputes')}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                 activeTab === 'disputes'
@@ -579,9 +579,9 @@ const InspectorDashboardPage: React.FC = () => {
             >
               <AlertTriangle className="w-4 h-4" />
               <span>Disputes</span>
-            </button>
-          </div>
-        </div>
+                        </button>
+                      </div>
+                    </div>
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
@@ -665,7 +665,7 @@ const InspectorDashboardPage: React.FC = () => {
       {/* Complete Modal */}
       {showComplete.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowComplete({ open: false, id: null, notes: '', items: [{ itemName: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }] })} />
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowComplete({ open: false, id: null, notes: '', items: [{ itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }] })} />
           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Inspection</h3>
             <label className="block text-sm text-gray-700 mb-2">Completion notes</label>
@@ -688,7 +688,7 @@ const InspectorDashboardPage: React.FC = () => {
                       showToast('Please fill the current item name before adding another.', 'error');
                       return s;
                     }
-                    return { ...s, items: [...s.items, { itemName: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }] };
+                    return { ...s, items: [...s.items, { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }] };
                   })}
                   className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
                 >
@@ -702,6 +702,10 @@ const InspectorDashboardPage: React.FC = () => {
                       <div>
                         <label className="block text-xs text-gray-600 mb-1">Item name</label>
                         <input value={it.itemName} onChange={(e) => setShowComplete((s) => { const items = [...s.items]; items[idx].itemName = e.target.value; return { ...s, items }; })} className="w-full border border-gray-300 rounded px-2 py-1" placeholder="e.g., Camera Body" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Description</label>
+                        <input value={it.description} onChange={(e) => setShowComplete((s) => { const items = [...s.items]; items[idx].description = e.target.value; return { ...s, items }; })} className="w-full border border-gray-300 rounded px-2 py-1" placeholder="Item description" />
                       </div>
                       <div>
                         <label className="block text-xs text-gray-600 mb-1">Condition</label>
@@ -744,7 +748,7 @@ const InspectorDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setShowComplete({ open: false, id: null, notes: '', items: [ { itemName: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false } ] })} className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowComplete({ open: false, id: null, notes: '', items: [ { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false } ] })} className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Cancel</button>
               <button
                 onClick={async () => {
                   if (!showComplete.id) return;
@@ -758,15 +762,21 @@ const InspectorDashboardPage: React.FC = () => {
                     }
                     const itemsPayload = showComplete.items.map((i) => ({
                       itemName: i.itemName,
-                      condition: i.condition,
+                      description: i.description,
+                      condition: i.condition as any,
                       notes: i.notes,
                       repairCost: i.repairCost,
                       replacementCost: i.replacementCost,
                       requiresRepair: i.requiresRepair,
                       requiresReplacement: i.requiresReplacement,
+                      photos: [],
                     }));
-                    await inspectionService.completeInspection(showComplete.id, { generalNotes: showComplete.notes, items: itemsPayload } as any);
-                    setShowComplete({ open: false, id: null, notes: '', items: [ { itemName: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false } ] });
+                    await inspectionService.completeInspection(showComplete.id, { 
+                      description: showComplete.notes, 
+                      inspectorNotes: showComplete.notes,
+                      items: itemsPayload 
+                    });
+                    setShowComplete({ open: false, id: null, notes: '', items: [ { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false } ] });
                     await loadInspectorData();
                     showToast('Inspection completed', 'success');
                   } catch (e) {
@@ -786,7 +796,7 @@ const InspectorDashboardPage: React.FC = () => {
       {/* Add Item Modal */}
       {showAddItem.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowAddItem({ open: false, inspectionId: null, item: { itemName: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false } })} />
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowAddItem({ open: false, inspectionId: null, item: { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false, photos: [] } })} />
           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Inspection Item</h3>
             
@@ -919,7 +929,7 @@ const InspectorDashboardPage: React.FC = () => {
 
             <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={() => setShowAddItem({ open: false, inspectionId: null, item: { itemName: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false } })}
+                onClick={() => setShowAddItem({ open: false, inspectionId: null, item: { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false, photos: [] } })}
                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
               >
                 Cancel
@@ -1273,6 +1283,13 @@ const OverviewTab: React.FC<{
                         </div>
                       )}
                     </div>
+                    {inspection.inspectorNotes && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600 italic">
+                          Inspector Notes: {inspection.inspectorNotes}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="flex items-center gap-2">
@@ -1669,8 +1686,8 @@ const DisputesTab: React.FC<{
           )}
         </div>
       </div>
-    </div>
-  );
-};
+     </div>
+   );
+ };
 
 export default InspectorDashboardPage;

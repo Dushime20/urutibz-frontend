@@ -48,8 +48,10 @@ import ProductCategoriesChart from './components/ProductCategoriesChart';
 import ModerationDashboardPage from './ModerationDashboardPage';
 import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import InspectionsManagement from './components/InspectionsManagement';
-import SkeletonMetrics from './components/SkeletonMetrics';
-import SkeletonPricingStats from './components/SkeletonPricingStats';
+
+import SkeletonPricingStats from '../../../components/ui/SkeletonPricingStats';
+import SkeletonMetrics from '../../components/ui/SkeletonMetrics';
+import SkeletonAdminStats from '../../components/ui/SkeletonAdminStats';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
@@ -384,12 +386,13 @@ const AdminDashboardPage: React.FC = () => {
                         {/* Real-time Metrics Card */}
                         <section className="mb-8">
                           <h2 className="text-2xl font-bold text-gray-900 mb-4">Real-Time Metrics</h2>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                            {loadingRealtime ? (
-                              <SkeletonMetrics />
-                            ) : realtimeError ? (
-                              <div className="col-span-6 flex items-center justify-center h-20 text-red-500">{realtimeError}</div>
-                            ) : realtimeMetrics ? (
+                          {loadingRealtime ? (
+                            <SkeletonMetrics />
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                              {realtimeError ? (
+                                <div className="col-span-6 flex items-center justify-center h-20 text-red-500">{realtimeError}</div>
+                              ) : realtimeMetrics ? (
                               <>
                                 {/* Active Users */}
                                 <div className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
@@ -429,15 +432,20 @@ const AdminDashboardPage: React.FC = () => {
                   </div>
                               </>
                             ) : (
-                              <div className="col-span-6 flex items-center justify-center h-20 text-gray-500">No real-time metrics available.</div>
-                            )}
-                          </div>
+                                <div className="col-span-6 flex items-center justify-center h-20 text-gray-500">No real-time metrics available.</div>
+                              )}
+                            </div>
+                          )}
                         </section>
                         {/* End Real-time Metrics Card */}
                         <section className="mb-8">
                           <h2 className="text-2xl font-bold text-gray-900 mb-4">Statistics</h2>
                           <div className="mb-6">
-                    <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
+                            {loadingOverview ? (
+                              <SkeletonAdminStats />
+                            ) : (
+                              <AdminStatCards adminStats={adminStats} verifiedUsers={verifiedUsersCount} />
+                            )}
                           </div>
                         </section>
                         {/* Analytics Section */}

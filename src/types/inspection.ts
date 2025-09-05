@@ -8,6 +8,7 @@ export interface Inspection {
   scheduledAt: string;
   location: string;
   notes: string;
+  inspectorNotes?: string;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
@@ -206,7 +207,8 @@ export interface StartInspectionRequest {
 
 // Complete inspection request interface
 export interface CompleteInspectionRequest {
-  notes: string;
+  description: string;
+  inspectorNotes: string;
   items: Omit<InspectionItem, 'id' | 'inspectionId' | 'createdAt' | 'updatedAt'>[];
 }
 
