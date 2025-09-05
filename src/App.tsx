@@ -25,6 +25,7 @@ import DemoPage from './pages/DemoPage';
 import RoleAwareInspections from './pages/inspections/RoleAwareInspections';
 import InspectorDashboardPage from './pages/inspections/InspectorDashboardPage';
 import InspectionDetailsPage from './pages/inspections/InspectionDetailsPage';
+import RiskManagementPage from './pages/risk-management/RiskManagementPage';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ui/ToastContainer';
 import { DarkModeProvider } from './contexts/DarkModeContext';
@@ -107,6 +108,11 @@ function App() {
                   <AdminRoute>
                     <AdminDashboardPage />
                   </AdminRoute>
+                } />
+                <Route path="risk-management" element={
+                  <ProtectedRoute>
+                    <RiskManagementPage />
+                  </ProtectedRoute>
                 } />
                 <Route path="booking" element={
                   <BookingPage />

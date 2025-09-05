@@ -36,8 +36,8 @@ interface AdminNavigationItemProps {
 }
 
 interface AdminSidebarProps {
-  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections';
-  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections') => void;
+  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management';
+  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management') => void;
   AdminNavigationItem: React.FC<AdminNavigationItemProps>;
 }
 
@@ -118,6 +118,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         { icon: Users, label: 'Users', tab: 'users' },
         { icon: ShoppingCart, label: 'Bookings', tab: 'bookings' },
         { icon: Activity, label: 'Inspections', tab: 'inspections' },
+        { icon: Shield, label: 'Risk Management', tab: 'risk-management' },
         { icon: FileText, label: 'Categories', tab: 'categories' },
         { icon: Globe, label: 'Countries', tab: 'countries' },
         { icon: CreditCard, label: 'Payment Methods', tab: 'paymentMethods' },

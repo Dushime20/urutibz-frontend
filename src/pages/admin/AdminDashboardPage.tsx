@@ -48,6 +48,7 @@ import ProductCategoriesChart from './components/ProductCategoriesChart';
 import ModerationDashboardPage from './ModerationDashboardPage';
 import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import InspectionsManagement from './components/InspectionsManagement';
+import RiskManagementPage from '../risk-management/RiskManagementPage';
 
 import SkeletonPricingStats from './components/SkeletonPricingStats';
 import SkeletonAdminStats from '../../components/ui/SkeletonAdminStats';
@@ -891,6 +892,8 @@ const AdminDashboardPage: React.FC = () => {
                         />
                       </div>
                     );
+                  case 'risk-management':
+                    return <RiskManagementPage />;
                   case 'settings':
                     return <SettingsManagement />;
                   default:
