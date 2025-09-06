@@ -73,7 +73,7 @@ const MyAccountHeader: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-between h-16">
+    <div className="flex items-center justify-between w-full px-4 sm:px-6 lg:px-8">
       <div className="flex items-center space-x-4">
         <h1 className="text-xl font-bold text-gray-900">My Account</h1>
         <button

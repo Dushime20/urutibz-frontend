@@ -21,7 +21,7 @@ import {
 } from './service/api';
 // Notifications handled in MyAccountHeader
 import MyAccountHeader from './components/MyAccountHeader';
-import MyAccountNavTabs from './components/MyAccountNavTabs';
+import MyAccountSidebar from './components/MyAccountSidebar';
 import OverviewSection from './components/OverviewSection';
 import SkeletonMyAccountOverview from '../../components/ui/SkeletonMyAccountOverview';
 import BookingsSection from './components/BookingsSection';
@@ -34,6 +34,7 @@ import MessagesSection from './components/MessagesSection';
 import RiskAssessmentForm from '../risk-management/components/RiskAssessmentForm';
 import ComplianceChecker from '../risk-management/components/ComplianceChecker';
 import ProductRiskProfile from '../risk-management/components/ProductRiskProfile';
+import HandoverReturnPage from '../handover-return/HandoverReturnPage';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import CreateInspectionModal from '../../components/inspections/CreateInspectionModal';
@@ -55,7 +56,7 @@ import type { FormState } from './types';
 
 
 const DashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return'>('overview');
   const [riskAssessmentTab, setRiskAssessmentTab] = useState<'assessment' | 'compliance' | 'profile'>('assessment');
   const { showToast } = useToast();
   const { user: authUser } = useAuth();
@@ -838,17 +839,27 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-my-primary/10 to-indigo-50/30">
       {/* Top Navigation Bar */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <MyAccountHeader />
-
-          {/* Navigation Tabs */}
-          <MyAccountNavTabs activeTab={activeTab} onSelect={setActiveTab as any} />
+      <div className="sticky top-0 z-50  backdrop-blur-xl border-b border-gray-200 bg-white ">
+        <div className="flex h-16">
+          {/* Sidebar Space */}
+         
+          {/* Header Content - full width */}
+          <div className="flex-1 flex items-center  w-full">
+            <MyAccountHeader />
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Layout with Sidebar */}
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <div className="flex-shrink-0">
+          <MyAccountSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Verification Banner */}
         <div className="mb-8">
           <VerificationBanner />
@@ -1101,7 +1112,15 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'handover-return' && (
+            <div className="space-y-6">
+              <HandoverReturnPage />
+            </div>
+          )}
+          </div>
         </div>
+      </div>
       </div>
 
       {/* Modal for new listing */}

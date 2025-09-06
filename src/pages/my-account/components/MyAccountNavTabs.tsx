@@ -1,7 +1,7 @@
 import React from 'react';
-import { BarChart3, Calendar, Car, Wallet, Shield, BookOpen, Settings, MessageCircle, TrendingUp } from 'lucide-react';
+import { BarChart3, Calendar, Car, Wallet, Shield, BookOpen, Settings, MessageCircle, TrendingUp, ArrowRightLeft } from 'lucide-react';
 
-type TabKey = 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment';
+type TabKey = 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return';
 
 interface Props {
   activeTab: TabKey;
@@ -41,6 +41,7 @@ const MyAccountNavTabs: React.FC<Props> = ({ activeTab, onSelect }) => {
       <Item icon={Wallet} label="Wallet" active={activeTab === 'wallet'} onClick={() => onSelect('wallet')} />
       <Item icon={Shield} label="Inspections" active={activeTab === 'inspections'} onClick={() => onSelect('inspections')} />
       <Item icon={TrendingUp} label="Risk Assessment" active={activeTab === 'risk-assessment'} onClick={() => onSelect('risk-assessment')} />
+      <Item icon={ArrowRightLeft} label="Handover & Return" active={activeTab === 'handover-return'} onClick={() => onSelect('handover-return')} />
       <Item icon={BookOpen} label="Reviews" active={activeTab === 'reviews'} onClick={() => onSelect('reviews')} />
       <Item icon={MessageCircle} label="Messages" active={activeTab === 'messages'} onClick={() => onSelect('messages')} hasNotification={true} />
       <Item icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={() => onSelect('settings')} />

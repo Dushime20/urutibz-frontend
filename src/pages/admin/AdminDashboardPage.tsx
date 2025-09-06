@@ -49,6 +49,7 @@ import ModerationDashboardPage from './ModerationDashboardPage';
 import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import InspectionsManagement from './components/InspectionsManagement';
 import RiskManagementPage from '../risk-management/RiskManagementPage';
+import HandoverReturnPage from '../handover-return/HandoverReturnPage';
 
 import SkeletonPricingStats from './components/SkeletonPricingStats';
 import SkeletonAdminStats from '../../components/ui/SkeletonAdminStats';
@@ -87,7 +88,7 @@ interface Owner {
 
 const AdminDashboardPage: React.FC = () => {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -894,6 +895,8 @@ const AdminDashboardPage: React.FC = () => {
                     );
                   case 'risk-management':
                     return <RiskManagementPage />;
+                  case 'handover-return':
+                    return <HandoverReturnPage />;
                   case 'settings':
                     return <SettingsManagement />;
                   default:
