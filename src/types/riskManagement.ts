@@ -8,17 +8,16 @@ export enum RiskLevel {
 }
 
 export enum ViolationType {
-  SAFETY_VIOLATION = 'safety_violation',
-  COMPLIANCE_VIOLATION = 'compliance_violation',
-  QUALITY_VIOLATION = 'quality_violation',
-  PROCEDURAL_VIOLATION = 'procedural_violation',
-  DOCUMENTATION_VIOLATION = 'documentation_violation'
+  MISSING_INSURANCE = 'missing_insurance',
+  MISSING_INSPECTION = 'missing_inspection',
+  INADEQUATE_COVERAGE = 'inadequate_coverage',
+  EXPIRED_COMPLIANCE = 'expired_compliance'
 }
 
 export enum ViolationSeverity {
-  MINOR = 'minor',
-  MODERATE = 'moderate',
-  MAJOR = 'major',
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
   CRITICAL = 'critical'
 }
 
@@ -110,26 +109,37 @@ export interface ComplianceRule {
 
 export interface PolicyViolation {
   id: string;
+  bookingId: string;
+  productId: string;
+  violatorId: string; // API uses violatorId instead of renterId
   violationType: ViolationType;
   severity: ViolationSeverity;
-  status: ViolationStatus;
-  title: string;
   description: string;
-  affectedParties: string[];
-  affectedUserId: string; // Add this field
-  productId?: string;
-  bookingId?: string;
-  inspectorId?: string;
-  reportedBy: string;
-  reportedAt: string;
-  assignedTo?: string;
-  assignedAt?: string;
-  resolvedAt?: string;
-  resolutionNotes?: string;
-  evidence: ViolationEvidence[];
-  correctiveActions: CorrectiveAction[];
+  penaltyAmount?: string; // API returns as string
+  status: ViolationStatus;
+  resolutionActions: any[]; // API field
+  resolvedAt?: string | null;
+  detectedAt: string; // API field
   createdAt: string;
   updatedAt: string;
+  // Additional API fields
+  productName?: string;
+  productDescription?: string;
+  violatorName?: string;
+  violatorEmail?: string;
+  // Backward compatibility fields
+  renterId?: string; // Keep for backward compatibility
+  title?: string;
+  affectedParties?: string[];
+  affectedUserId?: string;
+  inspectorId?: string;
+  reportedBy?: string;
+  reportedAt?: string;
+  assignedTo?: string;
+  assignedAt?: string;
+  resolutionNotes?: string;
+  evidence?: ViolationEvidence[];
+  correctiveActions?: CorrectiveAction[];
 }
 
 export interface ViolationEvidence {
@@ -283,26 +293,45 @@ export interface CreateRiskProfileRequest {
   productId: string;
   categoryId: string;
   riskLevel: RiskLevel;
-  mandatoryRequirements: string[];
-  optionalRequirements?: string[];
-  riskFactors: Omit<RiskFactor, 'id'>[];
-  complianceRules: Omit<ComplianceRule, 'id'>[];
+  mandatoryRequirements: {
+    insurance: boolean;
+    inspection: boolean;
+    minCoverage: number;
+    inspectionTypes: string[];
+    complianceDeadlineHours: number;
+  };
+  riskFactors: string[];
+  mitigationStrategies: string[];
+  enforcementLevel: 'lenient' | 'moderate' | 'strict' | 'very_strict';
+  autoEnforcement: boolean;
+  gracePeriodHours: number;
 }
 
 export interface BulkCreateRiskProfileRequest {
   profiles: CreateRiskProfileRequest[];
 }
 
+export interface BulkCreateRiskProfileResponse {
+  success: boolean;
+  message: string;
+  data: {
+    successful: number;
+    failed: number;
+    results: RiskProfile[];
+    errors: Array<{
+      data: CreateRiskProfileRequest;
+      error: string;
+    }>;
+  };
+}
+
 export interface CreateViolationRequest {
+  bookingId: string;
+  productId: string;
+  renterId: string;
   violationType: ViolationType;
   severity: ViolationSeverity;
-  title: string;
   description: string;
-  affectedParties: string[];
-  productId?: string;
-  bookingId?: string;
-  inspectorId?: string;
-  evidence?: Omit<ViolationEvidence, 'id' | 'uploadedBy' | 'uploadedAt'>[];
 }
 
 export interface CreateEnforcementActionRequest {

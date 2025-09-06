@@ -354,7 +354,6 @@ export async function getMyProducts() {
 
 export async function getProductImagesByProductId(productId: string) {
   const response = await axios.get(`${API_BASE_URL}/product-images/product/${productId}`);
-
   return response.data.data;
 }
 

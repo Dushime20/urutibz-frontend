@@ -13,7 +13,8 @@ import {
   User,
   Calendar,
   Shield,
-  AlertCircle
+  AlertCircle,
+  DollarSign
 } from 'lucide-react';
 import { riskManagementService } from '../../../services/riskManagementService';
 import type { PolicyViolation, ViolationFilters } from '../../../types/riskManagement';
@@ -75,18 +76,14 @@ const ViolationsSection: React.FC = () => {
 
   const getViolationTypeColor = (type: string) => {
     switch (type) {
-      case 'insurance':
+      case 'missing_insurance':
         return 'bg-blue-100 text-blue-800';
-      case 'inspection':
+      case 'missing_inspection':
         return 'bg-purple-100 text-purple-800';
-      case 'safety':
-        return 'bg-red-100 text-red-800';
-      case 'payment':
+      case 'inadequate_coverage':
         return 'bg-orange-100 text-orange-800';
-      case 'documentation':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'usage':
-        return 'bg-pink-100 text-pink-800';
+      case 'expired_compliance':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -111,7 +108,11 @@ const ViolationsSection: React.FC = () => {
     const matchesSearch = !searchTerm || 
       violation.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       violation.violationType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      violation.affectedUserId.toLowerCase().includes(searchTerm.toLowerCase());
+      (violation.violatorName && violation.violatorName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (violation.violatorEmail && violation.violatorEmail.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (violation.productName && violation.productName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (violation.affectedUserId && violation.affectedUserId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (violation.renterId && violation.renterId.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesTab = activeTab === 'all' || 
       (activeTab === 'investigating' && violation.status === 'under_investigation') ||
@@ -308,6 +309,9 @@ const ViolationsSection: React.FC = () => {
                   Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Penalty
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -315,7 +319,7 @@ const ViolationsSection: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredViolations.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                     <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                     <p className="text-lg font-medium">No violations found</p>
                     <p className="text-sm">No violations match your current filters.</p>
@@ -349,9 +353,14 @@ const ViolationsSection: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <User className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">
-                          {violation.affectedUserId.slice(0, 8)}...
-                        </span>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {violation.violatorName || 'Unknown User'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {(violation.violatorId || violation.renterId || violation.affectedUserId || 'Unknown').slice(0, 8)}...
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -364,6 +373,14 @@ const ViolationsSection: React.FC = () => {
                         <Calendar className="h-4 w-4 text-gray-400 mr-2" />
                         <span className="text-sm text-gray-900">
                           {new Date(violation.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-sm text-gray-900">
+                          {violation.penaltyAmount ? `$${parseFloat(violation.penaltyAmount).toFixed(2)}` : 'N/A'}
                         </span>
                       </div>
                     </td>

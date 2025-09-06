@@ -9,42 +9,12 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { formatPrice, getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { getProductById, fetchProductImages, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
+import { getProductById, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
+import { getProductImagesByProductId } from './my-account/service/api';
 import { fetchProductReviews } from './my-account/service/api';
-import { logInteraction } from './admin/service/ai';
 import { UserProfileService } from './admin/service/userProfileService';
 
-// Define an interface for image objects
-interface ProductImage {
-  url?: string;
-  image_url?: string;
-  path?: string;
-}
 
-// Type guard to check if an item is a ProductImage
-function isProductImage(item: unknown): item is ProductImage {
-  return typeof item === 'object' && item !== null && 
-    ('url' in (item as ProductImage) || 
-     'image_url' in (item as ProductImage) || 
-     'path' in (item as ProductImage));
-}
-
-// Utility function to extract image URL
-function extractImageUrl(img: unknown): string | null {
-  // If it's already a string and not empty, return it
-  if (typeof img === 'string' && img.trim() !== '') {
-    return img;
-  }
-
-  // If it's a ProductImage object, extract URL
-  if (isProductImage(img)) {
-    const url = img.url || img.image_url || img.path;
-    return typeof url === 'string' && url.trim() !== '' ? url : null;
-  }
-
-  // If no valid URL found
-  return null;
-}
 
 // Utility to format currency display
 function formatCurrency(amount: string, currency: string): string {
@@ -117,37 +87,30 @@ const ItemDetailsPage: React.FC = () => {
         setLoading(false);
         
         if (result && result.id) {
-          fetchProductImages(result.id, token)
+          getProductImagesByProductId(result.id)
             .then((rawImages) => {
-              // Normalize images to extract URLs
+              // Simple image extraction like in my-account
               const normalizedImages: string[] = [];
               
-              // Handle array of images
               if (Array.isArray(rawImages)) {
-                rawImages.forEach((img) => {
-                  const extractedUrl = extractImageUrl(img);
-                  if (extractedUrl) normalizedImages.push(extractedUrl);
+                rawImages.forEach((img: any) => {
+                  if (img && img.image_url) {
+                    normalizedImages.push(img.image_url);
+                  }
                 });
-              } 
-              // Handle single image
-              else {
-                const extractedUrl = extractImageUrl(rawImages);
-                if (extractedUrl) normalizedImages.push(extractedUrl);
               }
               
-              // Fallback to placeholder if no images
-              const finalImages = normalizedImages.length > 0 
-                ? normalizedImages 
-                : ['/assets/img/placeholder-image.png'];
+              // Set images array (empty if no images)
+              const finalImages = normalizedImages.length > 0 ? normalizedImages : [];
               
               setImages(finalImages);
             })
             .catch(() => {
-              // Fallback to placeholder on error
-              setImages(['/assets/img/placeholder-image.png']);
+              // Set empty array on error
+              setImages([]);
             });
         } else {
-          setImages(['/assets/img/placeholder-image.png']);
+          setImages([]);
           navigate('/items');
         }
         
@@ -172,7 +135,6 @@ const ItemDetailsPage: React.FC = () => {
           setProductPrices(result.data[0]);
         }
       } catch (error) {
-        console.warn(`Failed to fetch prices for product ${item.id}:`, error);
       }
     }
     
@@ -191,7 +153,6 @@ const ItemDetailsPage: React.FC = () => {
           setProductInteractions(result.data);
         }
       } catch (error) {
-        console.warn(`Failed to fetch interactions for product ${item.id}:`, error);
       }
     }
     
@@ -379,20 +340,16 @@ const ItemDetailsPage: React.FC = () => {
     );
   };
 
-  const renderImage = (image: string | ProductImage, index?: number) => {
-    // Determine the actual image URL
-    const currentImageUrl = 
-      typeof image === 'string' 
-        ? image 
-        : (image.url || image.image_url || image.path || '/assets/img/placeholder-image.png');
-    
+  const renderImage = (image: string, index?: number) => {
     return (
       <img 
-        src={currentImageUrl} 
+        src={image} 
         alt={`Product image ${index !== undefined ? index + 1 : ''}`} 
         className="w-full h-full object-cover"
         onError={(e) => {
-          (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
+          // Hide the image and show icon instead
+          (e.target as HTMLImageElement).style.display = 'none';
+          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
         }}
       />
     );
@@ -421,19 +378,26 @@ const ItemDetailsPage: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-              <div className="relative">
-                <img
-                  src={
-                    images[currentImageIndex] 
-                      ? renderImage(images[currentImageIndex]).props.src
-                      : '/assets/img/placeholder-image.png'
-                  }
-                  alt={item.name}
-                  className="w-full h-96 object-cover"
-                                  onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
-                }}
-                />
+              <div className="relative bg-gray-100 flex items-center justify-center">
+                {images.length > 0 ? (
+                  <img
+                    src={images[currentImageIndex]}
+                    alt={item.name}
+                    className="w-full h-96 object-cover"
+                    onError={(e) => {
+                      // Hide the image and show icon instead
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                {/* No Image Icon */}
+                <div className={`${images.length > 0 ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400 h-96`}>
+                  <svg className="w-24 h-24 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-lg font-medium">No Images Available</span>
+                </div>
 
                 {/* Image Navigation */}
                 {Array.isArray(images) && images.length > 1 && (
@@ -520,9 +484,9 @@ const ItemDetailsPage: React.FC = () => {
               </div>
 
               {/* Thumbnail Strip */}
-              {Array.isArray(images) && images.length > 1 && (
+              {Array.isArray(images) && images.length > 1 ? (
                 <div className="p-4 flex space-x-2 overflow-x-auto">
-                  {images.map((image: string | ProductImage, index: number) => (
+                  {images.map((image: string, index: number) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
@@ -532,7 +496,7 @@ const ItemDetailsPage: React.FC = () => {
                     </button>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* Item Details */}
@@ -625,7 +589,7 @@ const ItemDetailsPage: React.FC = () => {
               </div>
 
               {/* Features */}
-              {item.features.length > 0 && (
+              {item.features && item.features.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Features</h3>
                   <div className="grid grid-cols-2 gap-2">
@@ -640,7 +604,7 @@ const ItemDetailsPage: React.FC = () => {
               )}
 
               {/* Specifications */}
-              {Object.keys(item.specifications).length > 0 && (
+              {item.specifications && Object.keys(item.specifications).length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Specifications</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

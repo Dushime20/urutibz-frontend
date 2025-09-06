@@ -2,22 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Heart, TrendingUp } from 'lucide-react';
 
-import { fetchAvailableProducts, fetchProductImages, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, getProductInteractions } from './admin/service';
+import { fetchAvailableProducts, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, getProductInteractions } from './admin/service';
+import { getProductImagesByProductId } from './my-account/service/api';
 import { logInteraction } from './admin/service/ai';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 
-// Utility to normalize possible image shapes
-function extractImageUrl(img: unknown): string | null {
-  if (typeof img === 'string' && img.trim() !== '') return img;
-  if (img && typeof img === 'object') {
-    const possible = ['url', 'image_url', 'path'] as const;
-    for (const key of possible) {
-      const value = (img as Record<string, unknown>)[key];
-      if (typeof value === 'string' && value.trim() !== '') return value;
-    }
-  }
-  return null;
-}
 
 // Utility to format currency display
 function formatCurrency(amount: string, currency: string): string {
@@ -91,27 +80,25 @@ const HomePage: React.FC = () => {
 
   // Fetch images for visible products
   useEffect(() => {
-    const token = localStorage.getItem('token') || undefined;
     let isMounted = true;
     async function loadImages() {
       const map: Record<string, string[]> = {};
       await Promise.all(
         products.map(async (p) => {
           try {
-            const imgs = await fetchProductImages(p.id, token);
+            const imgs = await getProductImagesByProductId(p.id);
+            
             const normalized: string[] = [];
             if (Array.isArray(imgs)) {
-              imgs.forEach(i => {
-                const url = extractImageUrl(i);
-                if (url) normalized.push(url);
+              imgs.forEach((img: any) => {
+                if (img && img.image_url) {
+                  normalized.push(img.image_url);
+                }
               });
-            } else {
-              const url = extractImageUrl(imgs);
-              if (url) normalized.push(url);
             }
-            map[p.id] = normalized.length ? normalized : ['/assets/img/placeholder-image1.png'];
+            map[p.id] = normalized.length ? normalized : [];
           } catch (e) {
-            map[p.id] = ['/assets/img/placeholder-image1.png'];
+            map[p.id] = [];
           }
         })
       );
@@ -222,7 +209,6 @@ const HomePage: React.FC = () => {
               priceMap[product.id] = result.data[0];
             }
           } catch (error) {
-            console.warn(`Failed to fetch prices for product ${product.id}:`, error);
           }
         })
       );
@@ -250,7 +236,6 @@ const HomePage: React.FC = () => {
               interactionMap[product.id] = result.data;
             }
           } catch (error) {
-            console.warn(`Failed to fetch interactions for product ${product.id}:`, error);
           }
         })
       );
@@ -313,13 +298,26 @@ const HomePage: React.FC = () => {
             >
               <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
                 {/* Image Container */}
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
-                  <img
-                    src={productImages[item.id]?.[0] || '/assets/img/placeholder-image1.png'}
-                    alt={item.title || 'Listing'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/assets/img/placeholder-image1.png'; }}
-                  />
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center">
+                  {productImages[item.id]?.[0] ? (
+                    <img
+                      src={productImages[item.id][0]}
+                      alt={item.title || 'Listing'}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        // Hide the image and show icon instead
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  {/* No Image Icon */}
+                  <div className={`${productImages[item.id]?.[0] ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400`}>
+                    <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm font-medium">No Image</span>
+                  </div>
                   {/* Heart Icon */}
                   <button
                     type="button"

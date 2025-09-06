@@ -1,0 +1,72 @@
+{
+  "profiles": [
+    {
+      "productId": "403eb546-56bf-4b2e-987d-6bb05a09cadd",
+      "categoryId": "photography-equipment",
+      "riskLevel": "high",
+      "mandatoryRequirements": {
+        "insurance": true,
+        "inspection": true,
+        "minCoverage": 25000,
+        "inspectionTypes": ["pre_rental", "post_rental"],
+        "complianceDeadlineHours": 12
+      },
+      "riskFactors": ["high_value", "fragile", "technical_complexity"],
+      "mitigationStrategies": ["require_insurance", "mandatory_inspection", "user_training"],
+      "enforcementLevel": "strict",
+      "autoEnforcement": true,
+      "gracePeriodHours": 24
+    },
+    {
+      "productId": "550e8400-e29b-41d4-a716-446655440000",
+      "categoryId": "vehicles",
+      "riskLevel": "critical",
+      "mandatoryRequirements": {
+        "insurance": true,
+        "inspection": true,
+        "minCoverage": 50000,
+        "inspectionTypes": ["pre_rental", "post_rental", "periodic"],
+        "complianceDeadlineHours": 6
+      },
+      "riskFactors": ["high_value", "safety_critical", "regulatory_compliance"],
+      "mitigationStrategies": ["require_insurance", "mandatory_inspection", "safety_protocols"],
+      "enforcementLevel": "very_strict",
+      "autoEnforcement": true,
+      "gracePeriodHours": 12
+    },
+    {
+      "productId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "categoryId": "electronics",
+      "riskLevel": "medium",
+      "mandatoryRequirements": {
+        "insurance": true,
+        "inspection": false,
+        "minCoverage": 5000,
+        "inspectionTypes": ["pre_rental"],
+        "complianceDeadlineHours": 48
+      },
+      "riskFactors": ["technical_complexity", "weather_sensitive"],
+      "mitigationStrategies": ["require_insurance", "user_training"],
+      "enforcementLevel": "moderate",
+      "autoEnforcement": false,
+      "gracePeriodHours": 72
+    },
+    {
+      "productId": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+      "categoryId": "outdoor-equipment",
+      "riskLevel": "low",
+      "mandatoryRequirements": {
+        "insurance": false,
+        "inspection": true,
+        "minCoverage": 1000,
+        "inspectionTypes": ["pre_rental", "post_rental"],
+        "complianceDeadlineHours": 72
+      },
+      "riskFactors": ["seasonal_demand"],
+      "mitigationStrategies": ["mandatory_inspection", "regular_maintenance"],
+      "enforcementLevel": "lenient",
+      "autoEnforcement": false,
+      "gracePeriodHours": 120
+    }
+  ]
+}

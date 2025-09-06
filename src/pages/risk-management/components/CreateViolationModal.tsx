@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, AlertTriangle, User, Calendar, FileText, DollarSign } from 'lucide-react';
+import { X, AlertTriangle, User, Calendar } from 'lucide-react';
 import { riskManagementService } from '../../../services/riskManagementService';
 import type { CreateViolationRequest } from '../../../types/riskManagement';
 
@@ -11,20 +11,12 @@ interface CreateViolationModalProps {
 
 const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState<CreateViolationRequest>({
-    violationType: 'insurance',
-    severity: 'medium',
-    description: '',
-    affectedUserId: '',
-    productId: '',
     bookingId: '',
-    evidence: [],
-    notes: '',
-    reportedBy: '',
-    assignedTo: '',
-    priority: 'medium',
-    dueDate: '',
-    estimatedImpact: 0,
-    riskLevel: 'medium'
+    productId: '',
+    renterId: '',
+    violationType: 'missing_insurance',
+    severity: 'low',
+    description: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,20 +30,12 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
       queryClient.invalidateQueries({ queryKey: ['violations'] });
       onClose();
       setFormData({
-        violationType: 'insurance',
-        severity: 'medium',
-        description: '',
-        affectedUserId: '',
-        productId: '',
         bookingId: '',
-        evidence: [],
-        notes: '',
-        reportedBy: '',
-        assignedTo: '',
-        priority: 'medium',
-        dueDate: '',
-        estimatedImpact: 0,
-        riskLevel: 'medium'
+        productId: '',
+        renterId: '',
+        violationType: 'missing_insurance',
+        severity: 'low',
+        description: ''
       });
       setErrors({});
     },
@@ -68,14 +52,17 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
 
     // Basic validation
     const newErrors: Record<string, string> = {};
+    if (!formData.bookingId.trim()) {
+      newErrors.bookingId = 'Booking ID is required';
+    }
+    if (!formData.productId.trim()) {
+      newErrors.productId = 'Product ID is required';
+    }
+    if (!formData.renterId.trim()) {
+      newErrors.renterId = 'Renter ID is required';
+    }
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
-    }
-    if (!formData.affectedUserId.trim()) {
-      newErrors.affectedUserId = 'Affected user ID is required';
-    }
-    if (!formData.reportedBy.trim()) {
-      newErrors.reportedBy = 'Reported by is required';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -101,33 +88,17 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
   };
 
   const violationTypes = [
-    { value: 'insurance', label: 'Insurance Violation', icon: '🛡️' },
-    { value: 'inspection', label: 'Inspection Violation', icon: '🔍' },
-    { value: 'safety', label: 'Safety Violation', icon: '⚠️' },
-    { value: 'payment', label: 'Payment Violation', icon: '💳' },
-    { value: 'documentation', label: 'Documentation Violation', icon: '📄' },
-    { value: 'usage', label: 'Usage Violation', icon: '🚫' }
+    { value: 'missing_insurance', label: 'Missing Insurance', icon: '🛡️' },
+    { value: 'missing_inspection', label: 'Missing Inspection', icon: '🔍' },
+    { value: 'inadequate_coverage', label: 'Inadequate Coverage', icon: '⚠️' },
+    { value: 'expired_compliance', label: 'Expired Compliance', icon: '📄' }
   ];
 
   const severityLevels = [
-    { value: 'critical', label: 'Critical', color: 'text-red-600' },
-    { value: 'high', label: 'High', color: 'text-orange-600' },
+    { value: 'low', label: 'Low', color: 'text-green-600' },
     { value: 'medium', label: 'Medium', color: 'text-yellow-600' },
-    { value: 'low', label: 'Low', color: 'text-green-600' }
-  ];
-
-  const priorityLevels = [
-    { value: 'urgent', label: 'Urgent', color: 'text-red-600' },
     { value: 'high', label: 'High', color: 'text-orange-600' },
-    { value: 'medium', label: 'Medium', color: 'text-yellow-600' },
-    { value: 'low', label: 'Low', color: 'text-green-600' }
-  ];
-
-  const riskLevels = [
-    { value: 'critical', label: 'Critical', color: 'text-red-600' },
-    { value: 'high', label: 'High', color: 'text-orange-600' },
-    { value: 'medium', label: 'Medium', color: 'text-yellow-600' },
-    { value: 'low', label: 'Low', color: 'text-green-600' }
+    { value: 'critical', label: 'Critical', color: 'text-red-600' }
   ];
 
   if (!isOpen) return null;
@@ -168,7 +139,70 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
               </div>
             )}
 
-            {/* Basic Information */}
+            {/* Required Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Booking ID *
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.bookingId}
+                    onChange={(e) => handleInputChange('bookingId', e.target.value)}
+                    placeholder="Valid UUID"
+                    className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                      errors.bookingId ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  />
+                </div>
+                {errors.bookingId && (
+                  <p className="mt-1 text-sm text-red-600">{errors.bookingId}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Product ID *
+                </label>
+                <input
+                  type="text"
+                  value={formData.productId}
+                  onChange={(e) => handleInputChange('productId', e.target.value)}
+                  placeholder="Valid UUID"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                    errors.productId ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.productId && (
+                  <p className="mt-1 text-sm text-red-600">{errors.productId}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Renter ID *
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.renterId}
+                    onChange={(e) => handleInputChange('renterId', e.target.value)}
+                    placeholder="Valid UUID"
+                    className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                      errors.renterId ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  />
+                </div>
+                {errors.renterId && (
+                  <p className="mt-1 text-sm text-red-600">{errors.renterId}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Violation Type and Severity */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -189,7 +223,7 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Severity Level *
+                  Severity *
                 </label>
                 <select
                   value={formData.severity}
@@ -214,7 +248,7 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={3}
-                placeholder="Describe the violation in detail..."
+                placeholder="Describe the violation..."
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                   errors.description ? 'border-red-300' : 'border-gray-300'
                 }`}
@@ -222,175 +256,6 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
               {errors.description && (
                 <p className="mt-1 text-sm text-red-600">{errors.description}</p>
               )}
-            </div>
-
-            {/* Affected Parties */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Affected User ID *
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={formData.affectedUserId}
-                    onChange={(e) => handleInputChange('affectedUserId', e.target.value)}
-                    placeholder="User ID"
-                    className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
-                      errors.affectedUserId ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                  />
-                </div>
-                {errors.affectedUserId && (
-                  <p className="mt-1 text-sm text-red-600">{errors.affectedUserId}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Product ID
-                </label>
-                <input
-                  type="text"
-                  value={formData.productId}
-                  onChange={(e) => handleInputChange('productId', e.target.value)}
-                  placeholder="Product ID (optional)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Booking ID
-                </label>
-                <input
-                  type="text"
-                  value={formData.bookingId}
-                  onChange={(e) => handleInputChange('bookingId', e.target.value)}
-                  placeholder="Booking ID (optional)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                />
-              </div>
-            </div>
-
-            {/* Reporting Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reported By *
-                </label>
-                <input
-                  type="text"
-                  value={formData.reportedBy}
-                  onChange={(e) => handleInputChange('reportedBy', e.target.value)}
-                  placeholder="Reporter name or ID"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
-                    errors.reportedBy ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                />
-                {errors.reportedBy && (
-                  <p className="mt-1 text-sm text-red-600">{errors.reportedBy}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Assigned To
-                </label>
-                <input
-                  type="text"
-                  value={formData.assignedTo}
-                  onChange={(e) => handleInputChange('assignedTo', e.target.value)}
-                  placeholder="Inspector or admin ID (optional)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                />
-              </div>
-            </div>
-
-            {/* Priority and Risk Assessment */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Priority
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => handleInputChange('priority', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  {priorityLevels.map((level) => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Risk Level
-                </label>
-                <select
-                  value={formData.riskLevel}
-                  onChange={(e) => handleInputChange('riskLevel', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  {riskLevels.map((level) => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estimated Impact ($)
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="number"
-                    value={formData.estimatedImpact}
-                    onChange={(e) => handleInputChange('estimatedImpact', parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    min="0"
-                    step="0.01"
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Due Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Due Date
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                />
-              </div>
-            </div>
-
-            {/* Additional Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Additional Notes
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => handleInputChange('notes', e.target.value)}
-                rows={3}
-                placeholder="Additional information, evidence, or context..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              />
             </div>
 
             {/* Actions */}

@@ -8,6 +8,7 @@ import type {
   RiskManagementStats,
   CreateRiskProfileRequest,
   BulkCreateRiskProfileRequest,
+  BulkCreateRiskProfileResponse,
   CreateViolationRequest,
   CreateEnforcementActionRequest,
   RiskAssessmentRequest,
@@ -19,7 +20,11 @@ import type {
   AssessmentFilters,
   PaginatedResponse,
   ExportOptions,
-  ExportResult
+  ExportResult,
+  RiskLevel,
+  ViolationType,
+  ViolationSeverity,
+  ViolationStatus
 } from '../types/riskManagement';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
@@ -75,17 +80,111 @@ export const riskManagementService = {
   /**
    * Create multiple risk profiles in bulk
    */
-  async createRiskProfilesBulk(data: BulkCreateRiskProfileRequest): Promise<{
-    successful: RiskProfile[];
-    failed: Array<{ data: CreateRiskProfileRequest; error: string }>;
-    summary: {
-      total: number;
-      successful: number;
-      failed: number;
+  async createRiskProfilesBulk(data: BulkCreateRiskProfileRequest): Promise<BulkCreateRiskProfileResponse> {
+    try {
+      // Validate and normalize the data before sending
+      const normalizedData = this.normalizeBulkCreateData(data);
+      
+      // Debug logging to help identify JSON validation issues
+      console.log('🔍 Sending bulk create request:', {
+        profileCount: normalizedData.profiles.length,
+        sampleProfile: normalizedData.profiles[0],
+        inspectionTypes: normalizedData.profiles[0]?.mandatoryRequirements?.inspectionTypes,
+        riskFactors: normalizedData.profiles[0]?.riskFactors,
+        mitigationStrategies: normalizedData.profiles[0]?.mitigationStrategies
+      });
+      
+      const response = await riskManagementApi.post('/profiles/bulk', normalizedData);
+      
+      // Return the response in the expected format
+      return {
+        success: true,
+        message: response.data.message || 'Bulk risk profile creation completed',
+        data: {
+          successful: response.data.data?.successful || 0,
+          failed: response.data.data?.failed || 0,
+          results: response.data.data?.results || [],
+          errors: response.data.data?.errors || []
+        }
+      };
+    } catch (error: any) {
+      // Enhanced error logging
+      console.error('❌ Bulk create error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Handle different types of errors
+      if (error.response?.status === 400) {
+        // Validation errors
+        const validationErrors = error.response.data?.errors || [];
+        return {
+          success: false,
+          message: 'Validation failed',
+          data: {
+            successful: 0,
+            failed: data.profiles.length,
+            results: [],
+            errors: validationErrors.map((err: any, index: number) => ({
+              data: data.profiles[index] || {},
+              error: err.message || 'Validation error'
+            }))
+          }
+        };
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Insufficient permissions. Admin access required.');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to create risk profiles');
+      }
+    }
+  },
+
+  /**
+   * Normalize bulk create data to ensure proper format
+   */
+  normalizeBulkCreateData(data: BulkCreateRiskProfileRequest): BulkCreateRiskProfileRequest {
+    return {
+      profiles: data.profiles.map(profile => {
+        // Ensure arrays are properly formatted and allow empty arrays
+        const normalizedProfile = {
+          productId: String(profile.productId).trim(),
+          categoryId: String(profile.categoryId).trim(),
+          riskLevel: profile.riskLevel,
+          mandatoryRequirements: {
+            insurance: Boolean(profile.mandatoryRequirements.insurance),
+            inspection: Boolean(profile.mandatoryRequirements.inspection),
+            minCoverage: Number(profile.mandatoryRequirements.minCoverage) || 0,
+            inspectionTypes: Array.isArray(profile.mandatoryRequirements.inspectionTypes) 
+              ? profile.mandatoryRequirements.inspectionTypes.filter(item => item != null && item !== '')
+              : [],
+            complianceDeadlineHours: Number(profile.mandatoryRequirements.complianceDeadlineHours) || 24
+          },
+          riskFactors: Array.isArray(profile.riskFactors) 
+            ? profile.riskFactors.filter(item => item != null && item !== '')
+            : [],
+          mitigationStrategies: Array.isArray(profile.mitigationStrategies) 
+            ? profile.mitigationStrategies.filter(item => item != null && item !== '')
+            : [],
+          enforcementLevel: profile.enforcementLevel,
+          autoEnforcement: Boolean(profile.autoEnforcement),
+          gracePeriodHours: Number(profile.gracePeriodHours) || 48
+        };
+        
+        // Debug logging for each profile
+        console.log('🔧 Normalized profile:', {
+          productId: normalizedProfile.productId,
+          inspectionTypes: normalizedProfile.mandatoryRequirements.inspectionTypes,
+          riskFactors: normalizedProfile.riskFactors,
+          mitigationStrategies: normalizedProfile.mitigationStrategies
+        });
+        
+        return normalizedProfile;
+      })
     };
-  }> {
-    const response = await riskManagementApi.post('/profiles/bulk', data);
-    return response.data.data || response.data;
   },
 
   /**
@@ -290,8 +389,64 @@ export const riskManagementService = {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
 
-    const response = await riskManagementApi.get(`/violations?${params.toString()}`);
-    return response.data.data || response.data;
+    try {
+      const response = await riskManagementApi.get(`/violations?${params.toString()}`);
+      const apiData = response.data.data;
+      
+      // Map the API response to match our expected structure
+      const violations = apiData.violations || [];
+      const pagination = apiData.pagination || {};
+      
+      // Transform each violation to match our PolicyViolation interface
+      const mappedViolations: PolicyViolation[] = violations.map((violation: any) => ({
+        id: violation.id,
+        bookingId: violation.bookingId,
+        productId: violation.productId,
+        violatorId: violation.violatorId,
+        violationType: violation.violationType as ViolationType,
+        severity: violation.severity as ViolationSeverity,
+        description: violation.description,
+        penaltyAmount: violation.penaltyAmount,
+        status: violation.status as ViolationStatus,
+        resolutionActions: violation.resolutionActions || [],
+        resolvedAt: violation.resolvedAt,
+        detectedAt: violation.detectedAt,
+        createdAt: violation.createdAt,
+        updatedAt: violation.updatedAt,
+        // Additional API fields
+        productName: violation.productName,
+        productDescription: violation.productDescription,
+        violatorName: violation.violatorName,
+        violatorEmail: violation.violatorEmail,
+        // Backward compatibility
+        renterId: violation.violatorId, // Map violatorId to renterId for compatibility
+        affectedUserId: violation.violatorId // Map violatorId to affectedUserId for compatibility
+      }));
+
+      return {
+        data: mappedViolations,
+        total: pagination.total || 0,
+        page: pagination.page || page,
+        limit: pagination.limit || limit,
+        totalPages: pagination.totalPages || 0,
+        hasNext: pagination.hasNext || false,
+        hasPrev: pagination.hasPrev || false
+      };
+    } catch (error: any) {
+      // If API endpoint doesn't exist (404), return empty data structure
+      if (error.response?.status === 404) {
+        return {
+          data: [],
+          total: 0,
+          page: page,
+          limit: limit,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false
+        };
+      }
+      throw error;
+    }
   },
 
   /**
@@ -561,11 +716,10 @@ export const riskManagementService = {
    */
   async getViolationTypes(): Promise<{ value: string; label: string }[]> {
     return [
-      { value: 'safety_violation', label: 'Safety Violation' },
-      { value: 'compliance_violation', label: 'Compliance Violation' },
-      { value: 'quality_violation', label: 'Quality Violation' },
-      { value: 'procedural_violation', label: 'Procedural Violation' },
-      { value: 'documentation_violation', label: 'Documentation Violation' }
+      { value: 'missing_insurance', label: 'Missing Insurance' },
+      { value: 'missing_inspection', label: 'Missing Inspection' },
+      { value: 'inadequate_coverage', label: 'Inadequate Coverage' },
+      { value: 'expired_compliance', label: 'Expired Compliance' }
     ];
   },
 
