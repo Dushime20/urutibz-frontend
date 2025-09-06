@@ -343,31 +343,7 @@ export interface CreateEnforcementActionRequest {
   impact: EnforcementImpact;
 }
 
-export interface RiskAssessmentRequest {
-  productId?: string;
-  bookingId?: string;
-  riskFactors: {
-    factorId: string;
-    score: number;
-    assessment: string;
-  }[];
-  assessmentNotes?: string;
-}
 
-export interface BulkRiskAssessmentRequest {
-  assessments: RiskAssessmentRequest[];
-}
-
-export interface ComplianceCheckRequest {
-  bookingId: string;
-  requirements: {
-    requirementId: string;
-    status: ComplianceStatus;
-    evidence: string[];
-    notes?: string;
-  }[];
-  recommendations?: string[];
-}
 
 // API Response Interfaces
 export interface RiskManagementApiResponse<T> {
@@ -580,4 +556,104 @@ export interface RiskManagementTrendsResponse {
   success: boolean;
   message: string;
   data: RiskManagementTrends;
+}
+
+// Risk Assessment Types
+export interface RiskAssessmentRequest {
+  productId: string;
+  renterId: string;
+}
+
+export interface RiskAssessmentResponse {
+  success: boolean;
+  data: {
+    productId: string;
+    renterId: string;
+    overallRiskScore: number;
+    riskFactors: {
+      productRisk: number;
+      renterRisk: number;
+      bookingRisk: number;
+      seasonalRisk: number;
+    };
+    recommendations: string[];
+    mandatoryRequirements: {
+      insurance: boolean;
+      inspection: boolean;
+      minCoverage: number;
+      inspectionTypes: string[];
+    };
+    complianceStatus: 'compliant' | 'non_compliant' | 'pending' | 'under_review';
+    assessmentDate: string;
+    expiresAt: string;
+  };
+}
+
+export interface BulkRiskAssessmentRequest {
+  assessments: RiskAssessmentRequest[];
+}
+
+export interface BulkRiskAssessmentResponse {
+  success: boolean;
+  data: {
+    totalAssessments: number;
+    successful: number;
+    failed: number;
+    results: RiskAssessmentResponse['data'][];
+    errors: Array<{
+      productId: string;
+      renterId: string;
+      error: string;
+    }>;
+  };
+}
+
+export interface ComplianceCheckRequest {
+  bookingId: string;
+  productId: string;
+  renterId: string;
+  forceCheck?: boolean;
+}
+
+export interface ComplianceCheckResponse {
+  success: boolean;
+  data: {
+    bookingId: string;
+    isCompliant: boolean;
+    missingRequirements: string[];
+    complianceScore: number;
+    status: 'compliant' | 'non_compliant' | 'pending' | 'under_review';
+    enforcementActions: EnforcementAction[];
+    lastCheckedAt: string;
+  };
+}
+
+export interface BookingComplianceResponse {
+  success: boolean;
+  data: ComplianceCheckResponse['data'];
+}
+
+export interface ProductRiskProfileResponse {
+  success: boolean;
+  data: {
+    productId: string;
+    productName: string;
+    categoryId: string;
+    categoryName: string;
+    riskLevel: RiskLevel;
+    mandatoryRequirements: {
+      insurance: boolean;
+      inspection: boolean;
+      minCoverage: number;
+      inspectionTypes: string[];
+      complianceDeadlineHours: number;
+    };
+    riskFactors: string[];
+    mitigationStrategies: string[];
+    enforcementLevel: 'lenient' | 'moderate' | 'strict' | 'very_strict';
+    autoEnforcement: boolean;
+    gracePeriodHours: number;
+    createdAt: string;
+    updatedAt: string;
+  };
 }

@@ -13,9 +13,6 @@ import type {
   BulkCreateRiskProfileResponse,
   CreateViolationRequest,
   CreateEnforcementActionRequest,
-  RiskAssessmentRequest,
-  BulkRiskAssessmentRequest,
-  ComplianceCheckRequest,
   RiskProfileFilters,
   ViolationFilters,
   EnforcementFilters,
@@ -28,7 +25,15 @@ import type {
   ViolationSeverity,
   ViolationStatus,
   RiskEnforcementRequest,
-  RiskEnforcementResponse
+  RiskEnforcementResponse,
+  RiskAssessmentRequest,
+  RiskAssessmentResponse,
+  BulkRiskAssessmentRequest,
+  BulkRiskAssessmentResponse,
+  ComplianceCheckRequest,
+  ComplianceCheckResponse,
+  BookingComplianceResponse,
+  ProductRiskProfileResponse
 } from '../types/riskManagement';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
@@ -551,21 +556,6 @@ export const riskManagementService = {
 
   // Risk Assessment (All authenticated users)
 
-  /**
-   * Perform risk assessment
-   */
-  async assessRisk(data: RiskAssessmentRequest): Promise<RiskAssessment> {
-    const response = await riskManagementApi.post('/assess', data);
-    return response.data.data || response.data;
-  },
-
-  /**
-   * Perform bulk risk assessment
-   */
-  async assessRiskBulk(data: BulkRiskAssessmentRequest): Promise<RiskAssessment[]> {
-    const response = await riskManagementApi.post('/assess/bulk', data);
-    return response.data.data || response.data;
-  },
 
   /**
    * Get risk assessments with filters and pagination
@@ -607,13 +597,6 @@ export const riskManagementService = {
 
   // Compliance Checking (All authenticated users)
 
-  /**
-   * Perform compliance check
-   */
-  async checkCompliance(data: ComplianceCheckRequest): Promise<ComplianceCheck> {
-    const response = await riskManagementApi.post('/compliance/check', data);
-    return response.data.data || response.data;
-  },
 
   /**
    * Get compliance check for booking
@@ -822,6 +805,120 @@ export const riskManagementService = {
         throw new Error('Trends endpoint not found. Please check API configuration.');
       } else {
         throw new Error(error.response?.data?.message || error.message || 'Failed to fetch risk management trends');
+      }
+    }
+  },
+
+  /**
+   * Perform single risk assessment
+   * POST /api/v1/risk-management/assess
+   */
+  async assessRisk(data: RiskAssessmentRequest): Promise<RiskAssessmentResponse> {
+    try {
+      console.log('🔍 Performing risk assessment for product:', data.productId, 'renter:', data.renterId);
+      const response = await riskManagementApi.post('/assess', data);
+      console.log('✅ Risk assessment completed successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Risk assessment failed:', error);
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data?.message || 'Invalid product or renter ID');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Product or renter not found');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to perform risk assessment');
+      }
+    }
+  },
+
+  /**
+   * Perform bulk risk assessments
+   * POST /api/v1/risk-management/assess/bulk
+   */
+  async bulkAssessRisk(data: BulkRiskAssessmentRequest): Promise<BulkRiskAssessmentResponse> {
+    try {
+      console.log('🔍 Performing bulk risk assessment for', data.assessments.length, 'assessments');
+      const response = await riskManagementApi.post('/assess/bulk', data);
+      console.log('✅ Bulk risk assessment completed successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Bulk risk assessment failed:', error);
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data?.message || 'Invalid assessment data');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to perform bulk risk assessment');
+      }
+    }
+  },
+
+  /**
+   * Check booking compliance
+   * POST /api/v1/risk-management/compliance/check
+   */
+  async checkCompliance(data: ComplianceCheckRequest): Promise<ComplianceCheckResponse> {
+    try {
+      console.log('🔍 Checking compliance for booking:', data.bookingId);
+      const response = await riskManagementApi.post('/compliance/check', data);
+      console.log('✅ Compliance check completed successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Compliance check failed:', error);
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data?.message || 'Invalid booking ID');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Booking not found');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to check compliance');
+      }
+    }
+  },
+
+  /**
+   * Get booking compliance status
+   * GET /api/v1/risk-management/compliance/booking/:bookingId
+   */
+  async getBookingCompliance(bookingId: string): Promise<BookingComplianceResponse> {
+    try {
+      console.log('🔍 Getting compliance status for booking:', bookingId);
+      const response = await riskManagementApi.get(`/compliance/booking/${bookingId}`);
+      console.log('✅ Booking compliance status retrieved successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to get booking compliance status:', error);
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Booking not found or no compliance data available');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to get booking compliance status');
+      }
+    }
+  },
+
+  /**
+   * Get product risk profile
+   * GET /api/v1/risk-management/profiles/product/:productId
+   */
+  async getProductRiskProfile(productId: string): Promise<ProductRiskProfileResponse> {
+    try {
+      console.log('🔍 Getting risk profile for product:', productId);
+      const response = await riskManagementApi.get(`/profiles/product/${productId}`);
+      console.log('✅ Product risk profile retrieved successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to get product risk profile:', error);
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Product not found or no risk profile available');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to get product risk profile');
       }
     }
   },

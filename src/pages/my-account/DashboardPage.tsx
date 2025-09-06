@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, XCircle } from 'lucide-react';
+import { Star, XCircle, TrendingUp, Package, CheckCircle } from 'lucide-react';
 import VerificationBanner from '../../components/verification/VerificationBanner';
 import {
   createProduct,
@@ -31,6 +31,9 @@ import InspectionsSection from './components/InspectionsSection';
 import ReviewsSection from './components/ReviewsSection';
 import SettingsSection from './components/SettingsSection';
 import MessagesSection from './components/MessagesSection';
+import RiskAssessmentForm from '../risk-management/components/RiskAssessmentForm';
+import ComplianceChecker from '../risk-management/components/ComplianceChecker';
+import ProductRiskProfile from '../risk-management/components/ProductRiskProfile';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import CreateInspectionModal from '../../components/inspections/CreateInspectionModal';
@@ -52,7 +55,8 @@ import type { FormState } from './types';
 
 
 const DashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment'>('overview');
+  const [riskAssessmentTab, setRiskAssessmentTab] = useState<'assessment' | 'compliance' | 'profile'>('assessment');
   const { showToast } = useToast();
   const { user: authUser } = useAuth();
   const navigate = useNavigate();
@@ -1040,6 +1044,62 @@ const DashboardPage: React.FC = () => {
 
           {activeTab === 'messages' && (
             <MessagesSection />
+          )}
+
+          {activeTab === 'risk-assessment' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Risk Assessment</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Evaluate risk for product-renter combinations and check compliance
+                    </p>
+                  </div>
+                </div>
+
+                {/* Risk Assessment Tabs */}
+                <div className="border-b border-gray-200">
+                  <nav className="-mb-px flex space-x-8">
+                    {[
+                      { id: 'assessment', label: 'Risk Assessment', icon: TrendingUp },
+                      { id: 'compliance', label: 'Compliance Check', icon: CheckCircle },
+                      { id: 'profile', label: 'Product Profile', icon: Package }
+                    ].map((tab) => {
+                      const Icon = tab.icon;
+                      const isActive = riskAssessmentTab === tab.id;
+                      
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setRiskAssessmentTab(tab.id as any)}
+                          className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                            isActive
+                              ? 'border-teal-500 text-teal-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          <Icon
+                            className={`-ml-0.5 mr-2 h-5 w-5 ${
+                              isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
+                            }`}
+                          />
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+              </div>
+
+              {/* Tab Content */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                {riskAssessmentTab === 'assessment' && <RiskAssessmentForm />}
+                {riskAssessmentTab === 'compliance' && <ComplianceChecker />}
+                {riskAssessmentTab === 'profile' && <ProductRiskProfile />}
+              </div>
+            </div>
           )}
         </div>
       </div>

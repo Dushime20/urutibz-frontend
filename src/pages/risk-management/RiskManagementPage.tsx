@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Shield, AlertTriangle, CheckCircle, BarChart3 } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, BarChart3, TrendingUp, Package } from 'lucide-react';
 import RiskProfilesSection from './components/RiskProfilesSection';
 import ViolationsSection from './components/ViolationsSection';
 import EnforcementSection from './components/EnforcementSection';
 import StatisticsSection from './components/StatisticsSection';
+import RiskAssessmentForm from './components/RiskAssessmentForm';
+import ComplianceChecker from './components/ComplianceChecker';
+import ProductRiskProfile from './components/ProductRiskProfile';
 
 const RiskManagementPage: React.FC = () => {
   const { user } = useAuth();
@@ -44,6 +47,27 @@ const RiskManagementPage: React.FC = () => {
       adminOnly: true,
       description: 'View risk management analytics'
     },
+    {
+      id: 'assessment',
+      label: 'Risk Assessment',
+      icon: TrendingUp,
+      adminOnly: false,
+      description: 'Evaluate risk for product-renter combinations'
+    },
+    {
+      id: 'compliance',
+      label: 'Compliance Check',
+      icon: CheckCircle,
+      adminOnly: false,
+      description: 'Check booking compliance status'
+    },
+    {
+      id: 'profile',
+      label: 'Product Profile',
+      icon: Package,
+      adminOnly: false,
+      description: 'View product-specific risk information'
+    },
   ];
 
   // Filter tabs based on user role
@@ -63,6 +87,12 @@ const RiskManagementPage: React.FC = () => {
         return <EnforcementSection />;
       case 'statistics':
         return <StatisticsSection />;
+      case 'assessment':
+        return <RiskAssessmentForm />;
+      case 'compliance':
+        return <ComplianceChecker />;
+      case 'profile':
+        return <ProductRiskProfile />;
       default:
         return <RiskProfilesSection />;
     }
