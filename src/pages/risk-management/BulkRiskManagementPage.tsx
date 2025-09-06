@@ -14,6 +14,8 @@ import BulkRiskProfileForm from './components/BulkRiskProfileForm';
 import RiskProfilesTable from './components/RiskProfilesTable';
 import BulkOperationProgress from './components/BulkOperationProgress';
 import JsonValidationTest from './components/JsonValidationTest';
+import EnforcementApiTest from './components/EnforcementApiTest';
+import EnforcementActionsPanel from './components/EnforcementActionsPanel';
 import { useRiskProfiles } from './hooks/useRiskProfiles';
 import { useBulkCreateProfiles } from './hooks/useBulkCreateProfiles';
 import { useToast } from '../../contexts/ToastContext';
@@ -284,6 +286,12 @@ const BulkRiskManagementContent: React.FC = () => {
 
         {/* JSON Validation Test */}
         <JsonValidationTest />
+
+        {/* Enforcement API Test */}
+        <EnforcementApiTest />
+
+        {/* Enforcement Actions Panel */}
+        <EnforcementActionsPanel />
 
         {/* Profiles Table */}
         <RiskProfilesTable

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Heart, TrendingUp } from 'lucide-react';
+import { Star, Heart, TrendingUp, AlertCircle, RefreshCw, Package, Wifi, WifiOff } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 import { fetchAvailableProducts, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, getProductInteractions } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
@@ -27,6 +28,7 @@ function formatCurrency(amount: string, currency: string): string {
 }
 
 const HomePage: React.FC = () => {
+  const { showToast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
   const [productImages, setProductImages] = useState<Record<string, string[]>>({});
   const [itemLocations, setItemLocations] = useState<Record<string, { city: string | null; country: string | null }>>({});
@@ -34,28 +36,99 @@ const HomePage: React.FC = () => {
   const [locationsLoading, setLocationsLoading] = useState<Record<string, boolean>>({});
   const [productInteractions, setProductInteractions] = useState<Record<string, any[]>>({});
   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
+  
+  // Loading and error states
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [networkError, setNetworkError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Simple in-page search state (visual UX only for now)
   const [where] = useState('');
 
-  useEffect(() => {
-    const token = localStorage.getItem('token') || undefined;
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setNetworkError(false);
+      
+      const token = localStorage.getItem('token') || undefined;
 
-    // First load: get active products quickly (skip availability check for performance)
-    fetchAvailableProducts(token, true).then(result => {
+      // First load: get active products quickly (skip availability check for performance)
+      const result = await fetchAvailableProducts(token, true);
       const initial = result.data || [];
       setProducts(initial);
 
       // Background load: get fully filtered products (with availability check)
-      setTimeout(() => {
-        fetchAvailableProducts(token, false).then(filteredResult => {
+      setTimeout(async () => {
+        try {
+          const filteredResult = await fetchAvailableProducts(token, false);
           if (filteredResult.data) {
             setProducts(filteredResult.data);
           }
-        });
+        } catch (backgroundError) {
+          console.warn('Background product fetch failed:', backgroundError);
+          // Don't show error for background fetch, just log it
+        }
       }, 1000);
-    });
+      
+    } catch (err: any) {
+      console.error('Failed to fetch products:', err);
+      
+      // Check if it's a network error
+      if (err.code === 'NETWORK_ERROR' || err.message?.includes('Network Error') || !navigator.onLine) {
+        setNetworkError(true);
+        setError('Unable to connect to the server. Please check your internet connection.');
+        showToast('Network connection failed. Please check your internet connection.', 'error');
+      } else {
+        setError('Failed to load products. Please try again.');
+        showToast('Failed to load products. Please try again.', 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
+
+  // Network status listener
+  useEffect(() => {
+    const handleOnline = () => {
+      setNetworkError(false);
+      showToast('Connection restored', 'success');
+      // Auto-retry if there was a network error
+      if (error && products.length === 0) {
+        fetchProducts();
+      }
+    };
+
+    const handleOffline = () => {
+      setNetworkError(true);
+      showToast('Connection lost', 'error');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [error, products.length, showToast]);
+
+  const handleRetry = () => {
+    const newRetryCount = retryCount + 1;
+    setRetryCount(newRetryCount);
+    showToast(`Retrying... (Attempt ${newRetryCount})`, 'info');
+    fetchProducts();
+  };
+
+  const handleRefresh = () => {
+    fetchProducts();
+    showToast('Refreshing products...', 'info');
+  };
 
   // Load user's favorites and map by product id
   useEffect(() => {
@@ -72,7 +145,8 @@ const HomePage: React.FC = () => {
           });
         }
         setFavoriteMap(map);
-      } catch {
+      } catch (err) {
+        console.warn('Failed to load favorites:', err);
         // ignore favorites loading errors silently
       }
     })();
@@ -254,6 +328,129 @@ const HomePage: React.FC = () => {
     return title.includes(q) || city.includes(q);
   });
 
+  // Loading state
+  if (loading && products.length === 0) {
+    return (
+      <div className="space-y-8 sm:space-y-10">
+        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#01aaa7] mx-auto mb-4"></div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Loading products...</h3>
+              <p className="text-gray-600">Please wait while we fetch the latest listings</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Network error state
+  if (networkError) {
+    return (
+      <div className="space-y-8 sm:space-y-10">
+        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center max-w-md">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <WifiOff className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Connection Lost</h3>
+              <p className="text-gray-600 mb-6">
+                Unable to connect to the server. Please check your internet connection and try again.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={handleRetry}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#01aaa7] hover:bg-[#01aaa7]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
+                >
+                  Refresh Page
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // General error state
+  if (error && products.length === 0) {
+    return (
+      <div className="space-y-8 sm:space-y-10">
+        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center max-w-md">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Something went wrong</h3>
+              <p className="text-gray-600 mb-6">{error}</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={handleRetry}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#01aaa7] hover:bg-[#01aaa7]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
+                >
+                  Refresh Page
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (!loading && !error && products.length === 0) {
+    return (
+      <div className="space-y-8 sm:space-y-10">
+        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center max-w-md">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4">
+                <Package className="h-8 w-8 text-gray-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No products available</h3>
+              <p className="text-gray-600 mb-6">
+                There are currently no products available for rent. Check back later or explore other categories.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={handleRefresh}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#01aaa7] hover:bg-[#01aaa7]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </button>
+                <Link
+                  to="/search"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
+                >
+                  Browse All Categories
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 sm:space-y-10">
       {/* Search Bar removed (moved into Header) */}
@@ -270,8 +467,36 @@ const HomePage: React.FC = () => {
               <TrendingUp className="w-3 h-3" />
               AI trending
             </span>
+            {loading && (
+              <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 text-blue-600">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                Updating...
+              </span>
+            )}
+            {/* Network status indicator */}
+            <span className={`inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 ${
+              navigator.onLine 
+                ? 'bg-green-100 text-green-600' 
+                : 'bg-red-100 text-red-600'
+            }`}>
+              {navigator.onLine ? (
+                <Wifi className="w-3 h-3" />
+              ) : (
+                <WifiOff className="w-3 h-3" />
+              )}
+              {navigator.onLine ? 'Online' : 'Offline'}
+            </span>
           </div>
-          <Link to="/search" className="text-sm text-[#01aaa7] hover:underline">View all</Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRefresh}
+              className="text-sm text-gray-600 hover:text-[#01aaa7] transition-colors"
+              title="Refresh products"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <Link to="/search" className="text-sm text-[#01aaa7] hover:underline">View all</Link>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filtered.slice(0, 15).map((item, index) => (

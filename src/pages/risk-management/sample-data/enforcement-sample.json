@@ -1,0 +1,107 @@
+{
+  "sampleRequests": [
+    {
+      "bookingId": "550e8400-e29b-41d4-a716-446655440000",
+      "description": "High-value camera equipment booking"
+    },
+    {
+      "bookingId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "description": "Vehicle rental booking"
+    },
+    {
+      "bookingId": "6ba7b811-9dad-11d1-80b4-00c04fd430c9",
+      "description": "Electronics equipment booking"
+    }
+  ],
+  "expectedResponses": [
+    {
+      "success": true,
+      "message": "Enforcement triggered successfully",
+      "data": {
+        "compliance": {
+          "bookingId": "550e8400-e29b-41d4-a716-446655440000",
+          "productId": "403eb546-56bf-4b2e-987d-6bb05a09cadd",
+          "renterId": "user-123-456-789",
+          "isCompliant": false,
+          "missingRequirements": ["MISSING_INSURANCE", "MISSING_INSPECTION"],
+          "complianceScore": 45,
+          "status": "non_compliant",
+          "enforcementActions": [
+            {
+              "id": "action-1",
+              "type": "warning",
+              "status": "executed",
+              "message": "Insurance coverage required for high-value equipment",
+              "createdAt": "2025-01-06T10:30:00Z"
+            },
+            {
+              "id": "action-2", 
+              "type": "penalty",
+              "status": "pending",
+              "message": "Inspection required before rental start",
+              "createdAt": "2025-01-06T10:30:00Z"
+            }
+          ],
+          "lastCheckedAt": "2025-01-06T10:30:00Z"
+        },
+        "violationsRecorded": 2
+      }
+    },
+    {
+      "success": true,
+      "message": "Enforcement triggered successfully",
+      "data": {
+        "compliance": {
+          "bookingId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+          "productId": "vehicle-456-789-012",
+          "renterId": "user-987-654-321",
+          "isCompliant": true,
+          "missingRequirements": [],
+          "complianceScore": 95,
+          "status": "compliant",
+          "enforcementActions": [],
+          "lastCheckedAt": "2025-01-06T10:30:00Z"
+        },
+        "violationsRecorded": 0
+      }
+    },
+    {
+      "success": true,
+      "message": "Enforcement triggered successfully",
+      "data": {
+        "compliance": {
+          "bookingId": "6ba7b811-9dad-11d1-80b4-00c04fd430c9",
+          "productId": "electronics-789-012-345",
+          "renterId": "user-456-789-012",
+          "isCompliant": false,
+          "missingRequirements": ["MISSING_INSPECTION"],
+          "complianceScore": 75,
+          "status": "non_compliant",
+          "enforcementActions": [
+            {
+              "id": "action-3",
+              "type": "training_required",
+              "status": "executed",
+              "message": "Equipment handling training required",
+              "createdAt": "2025-01-06T10:30:00Z"
+            }
+          ],
+          "lastCheckedAt": "2025-01-06T10:30:00Z"
+        },
+        "violationsRecorded": 1
+      }
+    }
+  ],
+  "errorScenarios": [
+    {
+      "bookingId": "invalid-uuid",
+      "expectedError": "Invalid booking ID or request data",
+      "statusCode": 400
+    },
+    {
+      "bookingId": "00000000-0000-0000-0000-000000000000",
+      "expectedError": "Booking not found or no risk profile associated",
+      "statusCode": 404
+    }
+  ]
+}

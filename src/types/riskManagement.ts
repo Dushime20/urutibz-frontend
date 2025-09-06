@@ -489,3 +489,95 @@ export interface ExportResult {
   size: number;
   expiresAt: string;
 }
+
+// Risk Enforcement API Types
+export interface RiskEnforcementRequest {
+  bookingId: string;
+}
+
+export interface ComplianceData {
+  bookingId: string;
+  productId: string;
+  renterId: string;
+  isCompliant: boolean;
+  missingRequirements: string[];
+  complianceScore: number;
+  status: 'compliant' | 'non_compliant' | 'pending' | 'under_review';
+  enforcementActions: EnforcementAction[];
+  lastCheckedAt: string;
+}
+
+export interface RiskEnforcementResponse {
+  success: boolean;
+  message: string;
+  data: {
+    compliance: ComplianceData;
+    violationsRecorded: number;
+  };
+}
+
+// Risk Management Statistics Types
+export interface RiskManagementStats {
+  totalRiskProfiles: number;
+  complianceRate: number;
+  violationRate: number;
+  averageRiskScore: number;
+  enforcementActions: {
+    total: number;
+    successful: number;
+    failed: number;
+    pending: number;
+  };
+  riskDistribution: {
+    low: number;
+    medium: number;
+    high: number;
+    critical: number;
+  };
+}
+
+export interface RiskManagementStatsResponse {
+  success: boolean;
+  message: string;
+  data: RiskManagementStats;
+}
+
+// Risk Management Trends Types
+export interface TrendDataPoint {
+  date: string;
+  value: number;
+  label?: string;
+}
+
+export interface RiskManagementTrends {
+  complianceRate: TrendDataPoint[];
+  violationRate: TrendDataPoint[];
+  enforcementActions: {
+    total: TrendDataPoint[];
+    successful: TrendDataPoint[];
+    failed: TrendDataPoint[];
+    pending: TrendDataPoint[];
+  };
+  riskProfiles: {
+    total: TrendDataPoint[];
+    low: TrendDataPoint[];
+    medium: TrendDataPoint[];
+    high: TrendDataPoint[];
+    critical: TrendDataPoint[];
+  };
+  averageRiskScore: TrendDataPoint[];
+  period: string;
+  comparison?: {
+    previousPeriod: string;
+    complianceRateChange: number;
+    violationRateChange: number;
+    enforcementActionsChange: number;
+    riskProfilesChange: number;
+  };
+}
+
+export interface RiskManagementTrendsResponse {
+  success: boolean;
+  message: string;
+  data: RiskManagementTrends;
+}

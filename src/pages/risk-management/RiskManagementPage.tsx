@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Shield, AlertTriangle, CheckCircle, BarChart3, FileText, Settings } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, BarChart3 } from 'lucide-react';
 import RiskProfilesSection from './components/RiskProfilesSection';
 import ViolationsSection from './components/ViolationsSection';
 import EnforcementSection from './components/EnforcementSection';
 import StatisticsSection from './components/StatisticsSection';
-import AssessmentSection from './components/AssessmentSection';
-import ComplianceSection from './components/ComplianceSection';
 
 const RiskManagementPage: React.FC = () => {
   const { user } = useAuth();
@@ -46,20 +44,6 @@ const RiskManagementPage: React.FC = () => {
       adminOnly: true,
       description: 'View risk management analytics'
     },
-    {
-      id: 'assessment',
-      label: 'Risk Assessment',
-      icon: FileText,
-      adminOnly: false,
-      description: 'Perform risk assessments'
-    },
-    {
-      id: 'compliance',
-      label: 'Compliance',
-      icon: Settings,
-      adminOnly: false,
-      description: 'Check compliance status'
-    }
   ];
 
   // Filter tabs based on user role
@@ -79,10 +63,6 @@ const RiskManagementPage: React.FC = () => {
         return <EnforcementSection />;
       case 'statistics':
         return <StatisticsSection />;
-      case 'assessment':
-        return <AssessmentSection />;
-      case 'compliance':
-        return <ComplianceSection />;
       default:
         return <RiskProfilesSection />;
     }

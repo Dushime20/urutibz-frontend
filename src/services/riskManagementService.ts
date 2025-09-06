@@ -6,6 +6,8 @@ import type {
   RiskAssessment,
   ComplianceCheck,
   RiskManagementStats,
+  RiskManagementStatsResponse,
+  RiskManagementTrendsResponse,
   CreateRiskProfileRequest,
   BulkCreateRiskProfileRequest,
   BulkCreateRiskProfileResponse,
@@ -24,7 +26,9 @@ import type {
   RiskLevel,
   ViolationType,
   ViolationSeverity,
-  ViolationStatus
+  ViolationStatus,
+  RiskEnforcementRequest,
+  RiskEnforcementResponse
 } from '../types/riskManagement';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
@@ -735,6 +739,129 @@ export const riskManagementService = {
       { value: 'training_required', label: 'Training Required' },
       { value: 'audit_required', label: 'Audit Required' }
     ];
+  },
+
+  /**
+   * Get risk management statistics
+   * GET /api/v1/risk-management/stats
+   */
+  async getRiskManagementStats(): Promise<RiskManagementStatsResponse> {
+    try {
+      console.log('📊 Fetching risk management statistics...');
+      const response = await riskManagementApi.get('/stats');
+      console.log('✅ Risk management statistics retrieved successfully:', response.data);
+      
+      // Check if the response has the expected structure
+      if (response.data && response.data.success && response.data.data) {
+        return {
+          success: true,
+          message: response.data.message || 'Statistics retrieved successfully',
+          data: response.data.data
+        };
+      } else {
+        console.warn('⚠️ Unexpected response structure:', response.data);
+        throw new Error('Invalid response structure from statistics API');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to fetch risk management statistics:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url
+      });
+      
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Insufficient permissions. Admin or Super Admin access required.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Statistics endpoint not found. Please check API configuration.');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to fetch risk management statistics');
+      }
+    }
+  },
+
+  /**
+   * Get risk management trend data
+   * GET /api/v1/risk-management/trends
+   */
+  async getRiskManagementTrends(period: string = '30d'): Promise<RiskManagementTrendsResponse> {
+    try {
+      console.log('📈 Fetching risk management trends for period:', period);
+      const response = await riskManagementApi.get(`/trends?period=${period}`);
+      console.log('✅ Risk management trends retrieved successfully:', response.data);
+      
+      if (response.data && response.data.success && response.data.data) {
+        return {
+          success: true,
+          message: response.data.message || 'Trends retrieved successfully',
+          data: response.data.data
+        };
+      } else {
+        console.warn('⚠️ Unexpected trends response structure:', response.data);
+        throw new Error('Invalid response structure from trends API');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to fetch risk management trends:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url
+      });
+      
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Insufficient permissions. Admin or Super Admin access required.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Trends endpoint not found. Please check API configuration.');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to fetch risk management trends');
+      }
+    }
+  },
+
+  /**
+   * Trigger risk enforcement for a booking
+   * POST /api/v1/risk-management/enforce
+   */
+  async triggerRiskEnforcement(data: RiskEnforcementRequest): Promise<RiskEnforcementResponse> {
+    try {
+      console.log('🔍 Triggering risk enforcement for booking:', data.bookingId);
+      
+      const response = await riskManagementApi.post('/enforce', data);
+      
+      console.log('✅ Risk enforcement triggered successfully:', response.data);
+      
+      return {
+        success: true,
+        message: response.data.message || 'Enforcement triggered successfully',
+        data: {
+          compliance: response.data.data.compliance,
+          violationsRecorded: response.data.data.violationsRecorded
+        }
+      };
+    } catch (error: any) {
+      console.error('❌ Risk enforcement failed:', error);
+      
+      // Handle different types of errors
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data?.message || 'Invalid booking ID or request data');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Insufficient permissions. Admin or Super Admin access required.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Booking not found or no risk profile associated');
+      } else {
+        throw new Error(error.response?.data?.message || error.message || 'Failed to trigger risk enforcement');
+      }
+    }
   }
 };
 
