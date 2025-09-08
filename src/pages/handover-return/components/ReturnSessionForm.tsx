@@ -1,7 +1,7 @@
 // Return Session Form Component
 // Following the same patterns as RiskAssessmentForm.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   Package, 
   MapPin, 
@@ -14,6 +14,8 @@ import { useReturnSession } from '../../../hooks/useReturnSession';
 import { useToast } from '../../../contexts/ToastContext';
 import { CreateReturnSessionRequest } from '../../../types/handoverReturn';
 import ErrorBoundary from '../../../components/ErrorBoundary';
+import { fetchUserBookings, getProductById } from '../../my-account/service/api';
+import handoverReturnService from '../../../services/handoverReturnService';
 
 interface ReturnSessionFormProps {
   onSessionCreated?: (sessionId: string) => void;
@@ -26,6 +28,8 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
 }) => {
   const { showToast } = useToast();
   const { session, loading, error, createSession } = useReturnSession();
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookingSearch, setBookingSearch] = useState('');
   
   const [formData, setFormData] = useState<CreateReturnSessionRequest>({
     bookingId: '',
@@ -46,6 +50,96 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
   });
 
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
+  const [handoverOptions, setHandoverOptions] = useState<any[]>([]);
+
+  // Current user id (from localStorage auth info)
+  const currentUserId = useMemo(() => {
+    try {
+      const rawUser = localStorage.getItem('user') || localStorage.getItem('authUser');
+      if (rawUser) {
+        const parsed = JSON.parse(rawUser);
+        return parsed?.id || parsed?.user?.id || '';
+      }
+    } catch {}
+    return '';
+  }, []);
+
+  // Load user bookings for selection
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = localStorage.getItem('token') || null;
+        const res = await fetchUserBookings(token);
+        const baseList = (res?.data || res || []).map((b: any) => ({
+          id: b.id || b.bookingId || b.uuid,
+          bookingNumber: b.booking_number || b.bookingNumber,
+          productId: b.productId || b.product_id,
+          renterId: b.renterId || b.renter_id,
+          ownerId: b.ownerId || b.owner_id,
+          productName: b.productTitle || b.product_name || b.title || b.reference || `Booking ${String(b.id).slice(0,8)}`,
+          createdAt: b.createdAt || b.created_at,
+          status: b.status,
+        }));
+        const enriched = await Promise.all(
+          baseList.map(async (b: any) => {
+            try {
+              if (!b.productId) return b;
+              const p = await getProductById(b.productId);
+              return { ...b, productName: p?.title || p?.name || b.productName };
+            } catch {
+              return b;
+            }
+          })
+        );
+        setBookings(enriched);
+      } catch (e) {
+        setBookings([]);
+      }
+    })();
+  }, []);
+
+  // Only allow creation for bookings where current user is the owner
+  const ownerBookings = useMemo(() => {
+    if (!currentUserId) return bookings;
+    return bookings.filter(b => String(b.ownerId) === String(currentUserId));
+  }, [bookings, currentUserId]);
+
+  const filteredBookings = useMemo(() => {
+    const source = ownerBookings;
+    if (!bookingSearch.trim()) return source;
+    const q = bookingSearch.toLowerCase();
+    return source.filter(b => (b.productName || '').toLowerCase().includes(q) || String(b.id).toLowerCase().includes(q));
+  }, [ownerBookings, bookingSearch]);
+
+  const handleSelectBooking = (id: string) => {
+    const b = bookings.find(x => String(x.id) === String(id));
+    if (!b) return;
+    setFormData(prev => ({
+      ...prev,
+      bookingId: b.id,
+      productId: b.productId || '',
+      renterId: b.renterId || '',
+      ownerId: b.ownerId || '',
+      handoverSessionId: ''
+    }));
+  };
+
+  // Load user's handover sessions and filter by selected booking
+  useEffect(() => {
+    const loadHandoverForBooking = async () => {
+      try {
+        setHandoverOptions([]);
+        if (!currentUserId || !formData.bookingId) return;
+        const res = await handoverReturnService.getHandoverSessionsByUser(currentUserId, 1, 100);
+        const all = res?.data || [];
+        const byBooking = all.filter((s: any) => String(s.bookingId) === String(formData.bookingId));
+        setHandoverOptions(byBooking);
+      } catch (e) {
+        setHandoverOptions([]);
+      }
+    };
+    loadHandoverForBooking();
+  }, [currentUserId, formData.bookingId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -117,6 +211,11 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
       return;
     }
 
+    if (!currentUserId || String(formData.ownerId) !== String(currentUserId)) {
+      showToast('You can only create return sessions for your own items (owner role).', 'error');
+      return;
+    }
+
     try {
       await createSession(formData);
       if (onSessionCreated && session) {
@@ -167,78 +266,45 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="bookingId" className="block text-sm font-medium text-gray-700 mb-2">
-                <FileText className="w-4 h-4 inline mr-2" />
-                Booking ID *
-              </label>
-              <input
-                type="text"
-                id="bookingId"
-                name="bookingId"
+          {/* Booking selection (searchable), IDs auto-filled and hidden */}
+          <div>
+            <label htmlFor="booking" className="block text-sm font-medium text-gray-700 mb-2">
+              <FileText className="w-4 h-4 inline mr-2" />
+              Booking *
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 md:col-span-2"
                 value={formData.bookingId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter booking UUID"
-                disabled={loading}
+                onChange={(e) => handleSelectBooking(e.target.value)}
                 required
-              />
-            </div>
-            <div>
-              <label htmlFor="productId" className="block text-sm font-medium text-gray-700 mb-2">
-                <Package className="w-4 h-4 inline mr-2" />
-                Product ID *
-              </label>
+                disabled={loading || ownerBookings.length === 0}
+              >
+                <option value="">Select booking</option>
+                {filteredBookings.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.productName}
+                  </option>
+                ))}
+              </select>
               <input
                 type="text"
-                id="productId"
-                name="productId"
-                value={formData.productId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter product UUID"
-                disabled={loading}
-                required
+                placeholder="Search your bookings..."
+                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 md:col-span-1 md:justify-self-end"
+                value={bookingSearch}
+                onChange={(e) => setBookingSearch(e.target.value)}
+                disabled={loading || ownerBookings.length === 0}
               />
             </div>
+            {ownerBookings.length === 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 mt-2">You have no bookings where you are the owner. Return sessions can only be created for your own items.</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="renterId" className="block text-sm font-medium text-gray-700 mb-2">
-                Renter ID *
-              </label>
-              <input
-                type="text"
-                id="renterId"
-                name="renterId"
-                value={formData.renterId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter renter UUID"
-                disabled={loading}
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="ownerId" className="block text-sm font-medium text-gray-700 mb-2">
-                Owner ID *
-              </label>
-              <input
-                type="text"
-                id="ownerId"
-                name="ownerId"
-                value={formData.ownerId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter owner UUID"
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
+          {/* Hidden auto-filled identifiers */}
+          <input type="hidden" name="productId" value={formData.productId} />
+          <input type="hidden" name="renterId" value={formData.renterId} />
+          <input type="hidden" name="ownerId" value={formData.ownerId} />
 
           {/* Return Type and Schedule */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -278,20 +344,23 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
           </div>
 
           <div>
-            <label htmlFor="handoverSessionId" className="block text-sm font-medium text-gray-700 mb-2">
-              Handover Session ID *
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Linked Handover Session *
             </label>
-            <input
-              type="text"
-              id="handoverSessionId"
-              name="handoverSessionId"
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               value={formData.handoverSessionId}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              placeholder="Enter handover session UUID"
-              disabled={loading}
+              onChange={(e) => setFormData(prev => ({ ...prev, handoverSessionId: e.target.value }))}
+              disabled={loading || !formData.bookingId || handoverOptions.length === 0}
               required
-            />
+            >
+              <option value="">{handoverOptions.length ? 'Select handover session' : 'No handover sessions for this booking'}</option>
+              {handoverOptions.map((s:any) => (
+                <option key={s.id} value={s.id}>
+                  {s.status} • {new Date(s.updatedAt || s.createdAt).toLocaleString()}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Location Information */}

@@ -15,11 +15,17 @@ import {
   UploadPhotoResponse,
   SendMessageRequest,
   SendMessageResponse,
+  SendPlainMessageRequest,
+  SendPlainMessageResponse,
   CompleteHandoverRequest,
   CompleteHandoverResponse,
   CompleteReturnRequest,
   CompleteReturnResponse,
-  HandoverReturnStatsResponse
+  HandoverReturnStatsResponse,
+  GetMessagesParams,
+  GetMessagesResponse,
+  ScheduleNotificationRequest,
+  ScheduleNotificationResponse
 } from '../types/handoverReturn';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
@@ -206,7 +212,13 @@ export const handoverReturnService = {
               handoverSessionId: data.handoverSessionId,
               status: 'pending' as const,
               verificationCode: Math.random().toString().substr(2, 6),
-              returnLocation: data.returnLocation,
+              returnLocation: {
+                latitude: data.location.latitude,
+                longitude: data.location.longitude,
+                address: data.location.address,
+                city: data.location.city,
+                country: data.location.country
+              },
               returnPhotos: [],
               returnNotes: data.returnNotes || '',
               returnSignature: '',
@@ -330,6 +342,20 @@ export const handoverReturnService = {
     }
   },
 
+  // Send booking-scoped plain message (per provided sample)
+  sendPlainMessage: async (data: SendPlainMessageRequest): Promise<SendPlainMessageResponse> => {
+    try {
+      console.log('Sending plain message:', data);
+      const response: AxiosResponse<SendPlainMessageResponse> = 
+        await handoverReturnApi.post('/messages', data);
+      console.log('Plain message sent:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error sending plain message:', error);
+      throw new Error(error.response?.data?.message || 'Failed to send message');
+    }
+  },
+
   // Get messages for session
   getSessionMessages: async (sessionId: string): Promise<HandoverMessage[]> => {
     try {
@@ -338,6 +364,26 @@ export const handoverReturnService = {
         await handoverReturnApi.get(`/messages/session/${sessionId}`);
       console.log('Messages fetched:', response.data);
       return response.data.data;
+    } catch (error: any) {
+      console.error('Error fetching messages:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch messages');
+    }
+  },
+
+  // Get messages (supports bookingId/sessionId)
+  getMessages: async (params: GetMessagesParams): Promise<GetMessagesResponse> => {
+    try {
+      console.log('Fetching messages with params:', params);
+      const query = new URLSearchParams();
+      if (params.bookingId) query.set('bookingId', params.bookingId);
+      if (params.sessionId) query.set('sessionId', params.sessionId);
+      if (params.handoverSessionId) query.set('handoverSessionId', params.handoverSessionId);
+      if (params.returnSessionId) query.set('returnSessionId', params.returnSessionId);
+      if (params.page) query.set('page', String(params.page));
+      if (params.limit) query.set('limit', String(params.limit));
+      const response: AxiosResponse<GetMessagesResponse> = await handoverReturnApi.get(`/messages?${query.toString()}`);
+      console.log('Messages fetched:', response.data);
+      return response.data;
     } catch (error: any) {
       console.error('Error fetching messages:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch messages');
@@ -367,6 +413,55 @@ export const handoverReturnService = {
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch notifications');
+    }
+  },
+
+  // Schedule notification (per provided sample)
+  scheduleNotification: async (data: ScheduleNotificationRequest): Promise<ScheduleNotificationResponse> => {
+    try {
+      console.log('Scheduling notification:', data);
+      const response: AxiosResponse<ScheduleNotificationResponse> = 
+        await handoverReturnApi.post('/notifications/schedule', data);
+      console.log('Notification scheduled:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error scheduling notification:', error);
+      throw new Error(error.response?.data?.message || 'Failed to schedule notification');
+    }
+  },
+
+  // Get notifications feed (booking/user scoped depending on backend)
+  getNotificationsFeed: async (params?: { bookingId?: string; userId?: string; page?: number; limit?: number }): Promise<{ success: boolean; message: string; data: HandoverNotification[]; meta?: any }> => {
+    try {
+      const query = new URLSearchParams();
+      if (params?.bookingId) query.set('bookingId', params.bookingId);
+      if (params?.userId) query.set('userId', params.userId);
+      if (params?.page) query.set('page', String(params.page));
+      if (params?.limit) query.set('limit', String(params.limit));
+      const url = query.toString() ? `/notifications?${query.toString()}` : '/notifications';
+      console.log('Fetching notifications feed:', url);
+      const response: AxiosResponse<{ success: boolean; message: string; data: HandoverNotification[]; meta?: any }> = await handoverReturnApi.get(url);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching notifications feed:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch notifications');
+    }
+  },
+
+  // Get notifications for a specific session (handover or return)
+  getSessionNotifications: async (params: { handoverSessionId?: string; returnSessionId?: string; page?: number; limit?: number }): Promise<{ success: boolean; message: string; data: any[]; meta?: any }> => {
+    try {
+      const query = new URLSearchParams();
+      if (params.handoverSessionId) query.set('handoverSessionId', params.handoverSessionId);
+      if (params.returnSessionId) query.set('returnSessionId', params.returnSessionId);
+      if (params.page) query.set('page', String(params.page));
+      if (params.limit) query.set('limit', String(params.limit));
+      const url = `/notifications?${query.toString()}`;
+      const response: AxiosResponse<{ success: boolean; message: string; data: any[]; meta?: any }> = await handoverReturnApi.get(url);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching session notifications:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch session notifications');
     }
   },
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearAuthAndRedirect } from '../../lib/utils';
 import {
   NotificationSchema,
   TemplateSchema,
@@ -26,6 +27,16 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      clearAuthAndRedirect();
+    }
+    return Promise.reject(error);
+  }
+);
 
 function normalizePaginated<T>(data: any, itemParser: (i: any) => T): Paginated<T> {
   const itemsRaw = data?.items ?? data?.data ?? data?.results ?? [];

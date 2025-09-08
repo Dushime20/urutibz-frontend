@@ -16,8 +16,11 @@ import {
   fetchUserTransactions,
   fetchUserReviews,
   fetchReviewById,
+  fetchProductReviews,
   fetchReviewByBookingId,
-  fetchUserProfile
+  fetchUserProfile,
+  fetchMyReceivedReviews,
+  fetchMyWrittenReviews
 } from './service/api';
 // Notifications handled in MyAccountHeader
 import MyAccountHeader from './components/MyAccountHeader';
@@ -463,10 +466,13 @@ const DashboardPage: React.FC = () => {
       setLoadingReviews(true);
       try {
         const token = localStorage.getItem('token');
-        // For now, using a hardcoded user ID - in a real app, you'd get this from user context
-        const userId = '7f102034-45c2-460a-bc89-a7525cf32938'; // This should come from user context
-        const reviews = await fetchUserReviews(userId, token ?? undefined);
-        setUserReviews(reviews);
+        const received = await fetchMyReceivedReviews(token ?? undefined);
+        const written = await fetchMyWrittenReviews(token ?? undefined);
+        const merged = [
+          ...received.map((r: any) => ({ ...r, _source: 'received' })),
+          ...written.map((r: any) => ({ ...r, _source: 'written' }))
+        ];
+        setUserReviews(merged);
       } catch (error) {
         setUserReviews([]);
       } finally {

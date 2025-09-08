@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import { 
   Shield, 
   Search, 
@@ -9,8 +10,7 @@ import {
   Clock,
   FileText,
   Download,
-  Package,
-  User
+  Package
 } from 'lucide-react';
 import { useComplianceCheck } from '../hooks/useComplianceCheck';
 import { useToast } from '../../../contexts/ToastContext';
@@ -33,11 +33,124 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
     forceCheck: false
   });
 
+  // Product autocomplete and renter auto-fill (no React Query)
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+  const [productQuery, setProductQuery] = useState('');
+  const [productOptions, setProductOptions] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [showProductOptions, setShowProductOptions] = useState(false);
+  const productDebounceRef = useRef<number | undefined>(undefined);
+  // Booking autocomplete
+  const [bookingQuery, setBookingQuery] = useState('');
+  const [bookingOptions, setBookingOptions] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [bookingsLoaded, setBookingsLoaded] = useState(false);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [showBookingOptions, setShowBookingOptions] = useState(false);
+  const bookingDebounceRef = useRef<number | undefined>(undefined);
+
+  const normalizeProducts = (list: any[]): any[] => {
+    return (Array.isArray(list) ? list : []).map((p: any) => ({
+      id: p.id ?? p.productId ?? p._id ?? p.uuid,
+      name: p.name ?? p.productName ?? p.title ?? '',
+      title: p.title,
+      productName: p.productName,
+    })).filter((p: any) => p.id);
+  };
+
+  const normalizeBookings = (list: any[]): any[] => {
+    return (Array.isArray(list) ? list : []).map((b: any) => ({
+      id: b.id ?? b.bookingId ?? b._id ?? b.uuid,
+      name: b.reference ?? b.code ?? b.bookingCode ?? b.name ?? '',
+      reference: b.reference ?? b.code ?? b.bookingCode,
+    })).filter((b: any) => b.id);
+  };
+
+  const loadAllProducts = async () => {
+    if (productsLoaded || productsLoading) return;
+    setProductsLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/products`, { params: { limit: 1000 } });
+      const list = data?.data?.data || data?.data || data || [];
+      const normalized = normalizeProducts(list);
+      setAllProducts(normalized);
+      setProductsLoaded(true);
+      setProductOptions(normalized.slice(0, 20));
+    } catch (_) {
+      setAllProducts([]);
+      setProductOptions([]);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const filterProducts = (q: string) => {
+    const term = (q || '').toLowerCase();
+    if (!term) return allProducts.slice(0, 20);
+    return allProducts.filter((p: any) => (p.name || '').toLowerCase().includes(term)).slice(0, 20);
+  };
+
+  const loadAllBookings = async () => {
+    if (bookingsLoaded || bookingsLoading) return;
+    setBookingsLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/bookings`, { params: { limit: 1000 } });
+      const list = data?.data?.data || data?.data || data || [];
+      const normalized = normalizeBookings(list);
+      setAllBookings(normalized);
+      setBookingsLoaded(true);
+      setBookingOptions(normalized.slice(0, 20));
+    } catch (_) {
+      setAllBookings([]);
+      setBookingOptions([]);
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  const filterBookings = (q: string) => {
+    const term = (q || '').toLowerCase();
+    if (!term) return allBookings.slice(0, 20);
+    return allBookings.filter((b: any) => (b.name || '').toLowerCase().includes(term)).slice(0, 20);
+  };
+
+  useEffect(() => {
+    if (productDebounceRef.current) window.clearTimeout(productDebounceRef.current);
+    productDebounceRef.current = window.setTimeout(() => {
+      if (productsLoaded) setProductOptions(filterProducts(productQuery));
+    }, 200);
+    return () => { if (productDebounceRef.current) window.clearTimeout(productDebounceRef.current); };
+  }, [productQuery, productsLoaded, allProducts]);
+
+  useEffect(() => {
+    if (bookingDebounceRef.current) window.clearTimeout(bookingDebounceRef.current);
+    bookingDebounceRef.current = window.setTimeout(() => {
+      if (bookingsLoaded) setBookingOptions(filterBookings(bookingQuery));
+    }, 200);
+    return () => { if (bookingDebounceRef.current) window.clearTimeout(bookingDebounceRef.current); };
+  }, [bookingQuery, bookingsLoaded, allBookings]);
+
+  // Initialize renterId from current user; hide renter input
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        const currentUserId = parsed?.id || parsed?.userId || parsed?.sub;
+        if (currentUserId) {
+          setFormData(prev => ({ ...prev, renterId: String(currentUserId) }));
+        }
+      }
+    } catch {}
+  }, []);
+
   const handleCheckCompliance = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.bookingId.trim() || !formData.productId.trim() || !formData.renterId.trim()) {
-      showToast('Please enter Booking ID, Product ID, and Renter ID', 'error');
+      showToast('Please enter Booking ID and select Product', 'error');
       return;
     }
 
@@ -171,54 +284,114 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
         {/* Form */}
         <form onSubmit={handleCheckCompliance} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="bookingId" className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="relative">
+              <label htmlFor="booking" className="block text-sm font-medium text-gray-700 mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
-                Booking ID
+                Booking
               </label>
               <input
                 type="text"
-                id="bookingId"
-                value={formData.bookingId}
-                onChange={(e) => setFormData(prev => ({ ...prev, bookingId: e.target.value }))}
+                id="booking"
+                value={bookingQuery}
+                onChange={(e) => {
+                  setBookingQuery(e.target.value);
+                  setShowBookingOptions(true);
+                  setFormData(prev => ({ ...prev, bookingId: '' }));
+                }}
+                onFocus={() => {
+                  setShowBookingOptions(true);
+                  if (!bookingsLoaded && !bookingsLoading) {
+                    void loadAllBookings();
+                  } else if (bookingsLoaded) {
+                    setBookingOptions(filterBookings(bookingQuery));
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter booking UUID"
+                placeholder="Search booking by reference/code"
                 disabled={loading}
+                autoComplete="off"
               />
+              {showBookingOptions && bookingOptions.length > 0 && (
+                <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-200">
+                  {bookingOptions.map((b: any) => (
+                    <li
+                      key={b.id || b.bookingId}
+                      className="cursor-pointer select-none py-2 px-3 text-gray-700 hover:bg-gray-100"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const id = b.id || b.bookingId;
+                        const label = b.name || `Booking ${id?.slice?.(0,8)}`;
+                        setBookingQuery(label);
+                        setFormData(prev => ({ ...prev, bookingId: String(id) }));
+                        setShowBookingOptions(false);
+                      }}
+                    >
+                      <div className="font-medium">{b.name || 'Unnamed booking'}</div>
+                      <div className="text-xs text-gray-500 truncate">ID: {b.id || b.bookingId}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {formData.bookingId && (
+                <div className="mt-1 text-xs text-gray-500">Selected Booking ID: {formData.bookingId}</div>
+              )}
             </div>
-            <div>
-              <label htmlFor="productId" className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="relative">
+              <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2">
                 <Package className="w-4 h-4 inline mr-2" />
-                Product ID
+                Product
               </label>
               <input
                 type="text"
-                id="productId"
-                value={formData.productId}
-                onChange={(e) => setFormData(prev => ({ ...prev, productId: e.target.value }))}
+                id="product"
+                value={productQuery}
+                onChange={(e) => {
+                  setProductQuery(e.target.value);
+                  setShowProductOptions(true);
+                  setFormData(prev => ({ ...prev, productId: '' }));
+                }}
+                onFocus={() => {
+                  setShowProductOptions(true);
+                  if (!productsLoaded && !productsLoading) {
+                    void loadAllProducts();
+                  } else if (productsLoaded) {
+                    setProductOptions(filterProducts(productQuery));
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter product UUID"
+                placeholder="Search product by name"
                 disabled={loading}
+                autoComplete="off"
               />
+              {showProductOptions && productOptions.length > 0 && (
+                <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-200">
+                  {productOptions.map((p: any) => (
+                    <li
+                      key={p.id || p.productId}
+                      className="cursor-pointer select-none py-2 px-3 text-gray-700 hover:bg-gray-100"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const id = p.id || p.productId;
+                        const name = p.name || p.productName || p.title || `Product ${id?.slice?.(0,8)}`;
+                        setProductQuery(name);
+                        setFormData(prev => ({ ...prev, productId: String(id) }));
+                        setShowProductOptions(false);
+                      }}
+                    >
+                      <div className="font-medium">{p.name || p.productName || p.title || 'Unnamed product'}</div>
+                      <div className="text-xs text-gray-500 truncate">ID: {p.id || p.productId}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {formData.productId && (
+                <div className="mt-1 text-xs text-gray-500">Selected Product ID: {formData.productId}</div>
+              )}
             </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="renterId" className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="w-4 h-4 inline mr-2" />
-                Renter ID
-              </label>
-              <input
-                type="text"
-                id="renterId"
-                value={formData.renterId}
-                onChange={(e) => setFormData(prev => ({ ...prev, renterId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter renter UUID"
-                disabled={loading}
-              />
-            </div>
+            {/* Renter hidden: backend uses current session */}
             <div className="flex items-end">
               <label className="flex items-center space-x-3">
                 <input

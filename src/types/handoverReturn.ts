@@ -102,6 +102,7 @@ export interface HandoverMessage {
   id: string;
   sessionId: string;
   senderId: string;
+  senderType?: 'renter' | 'owner' | string;
   receiverId: string;
   messageType: 'text' | 'image' | 'voice' | 'video' | 'location' | 'file';
   content: string;
@@ -128,6 +129,68 @@ export interface HandoverNotification {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   createdAt: string;
   readAt?: string;
+}
+
+// V2 Message payloads (booking-scoped)
+export interface HandoverMessageAttachment {
+  type: 'image' | 'file' | 'video' | 'audio';
+  url: string;
+}
+
+export interface SendPlainMessageRequest {
+  bookingId?: string;
+  senderId: string;
+  senderType?: 'renter' | 'owner' | string;
+  message: string; // up to 2000 chars
+  messageType?: 'text' | 'image' | 'voice' | 'video' | 'location' | 'file';
+  attachments?: HandoverMessageAttachment[];
+  timestamp?: string; // ISO time
+  handoverSessionId?: string | null;
+  returnSessionId?: string | null;
+}
+
+export interface SendPlainMessageResponse {
+  success: boolean;
+  message: string;
+  data: {
+    message: HandoverMessage;
+  };
+}
+
+export interface GetMessagesParams {
+  bookingId?: string;
+  sessionId?: string;
+  handoverSessionId?: string;
+  returnSessionId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface GetMessagesResponse {
+  success: boolean;
+  message: string;
+  data: HandoverMessage[];
+  meta?: any;
+}
+
+// Scheduling notifications
+export interface ScheduleNotificationRequest {
+  bookingId: string;
+  type: 'handover' | 'return' | string;
+  scheduledAt: string; // ISO string
+  payload?: {
+    note?: string;
+    channel?: 'email' | 'sms' | 'push' | string;
+    [key: string]: any;
+  };
+}
+
+export interface ScheduleNotificationResponse {
+  success: boolean;
+  message: string;
+  data: {
+    notification: HandoverNotification;
+  };
 }
 
 // API Request/Response Types
@@ -304,9 +367,9 @@ export interface UseHandoverMessagesReturn {
   messages: HandoverMessage[];
   loading: boolean;
   error: string | null;
-  sendMessage: (data: SendMessageRequest) => Promise<void>;
+  sendMessage: (data: SendMessageRequest | SendPlainMessageRequest) => Promise<void>;
   markAsRead: (messageId: string) => Promise<void>;
-  refreshMessages: () => Promise<void>;
+  refreshMessages: (handoverSessionId?: string, returnSessionId?: string) => Promise<void>;
 }
 
 export interface UseHandoverNotificationsReturn {
@@ -317,6 +380,7 @@ export interface UseHandoverNotificationsReturn {
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
+  schedule: (req: ScheduleNotificationRequest) => Promise<void>;
 }
 
 export interface UseHandoverStatsReturn {

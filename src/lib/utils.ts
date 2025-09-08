@@ -358,3 +358,20 @@ export function convertToMobileMoneyAmount(
     exchangeRate
   };
 }
+
+// Centralized auth helpers
+export function clearAuthAndRedirect(): void {
+  try {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    const current = window.location.pathname + window.location.search + window.location.hash;
+    sessionStorage.setItem('post_login_redirect', current);
+  } catch (e) {
+    // ignore
+  }
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login');
+  }
+}

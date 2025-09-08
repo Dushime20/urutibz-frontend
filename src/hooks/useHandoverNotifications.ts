@@ -6,10 +6,11 @@ import { useToast } from '../contexts/ToastContext';
 import handoverReturnService from '../services/handoverReturnService';
 import { 
   HandoverNotification,
-  UseHandoverNotificationsReturn
+  UseHandoverNotificationsReturn,
+  ScheduleNotificationRequest
 } from '../types/handoverReturn';
 
-export const useHandoverNotifications = (userId?: string): UseHandoverNotificationsReturn => {
+export const useHandoverNotifications = (userId?: string, bookingId?: string): UseHandoverNotificationsReturn => {
   const { showToast } = useToast();
   const [notifications, setNotifications] = useState<HandoverNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -17,15 +18,21 @@ export const useHandoverNotifications = (userId?: string): UseHandoverNotificati
   const [error, setError] = useState<string | null>(null);
 
   const refreshNotifications = useCallback(async () => {
-    if (!userId) return;
+    if (!userId && !bookingId) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      const notificationsData = await handoverReturnService.getNotifications(userId);
-      setNotifications(notificationsData);
-      setUnreadCount(notificationsData.filter(n => !n.isRead).length);
+      if (bookingId) {
+        const res = await handoverReturnService.getNotificationsFeed({ bookingId, page: 1, limit: 100 });
+        setNotifications(res.data);
+        setUnreadCount(res.data.filter(n => !n.isRead).length);
+      } else if (userId) {
+        const notificationsData = await handoverReturnService.getNotifications(userId);
+        setNotifications(notificationsData);
+        setUnreadCount(notificationsData.filter(n => !n.isRead).length);
+      }
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to fetch notifications';
       setError(errorMessage);
@@ -33,7 +40,7 @@ export const useHandoverNotifications = (userId?: string): UseHandoverNotificati
     } finally {
       setLoading(false);
     }
-  }, [userId, showToast]);
+  }, [userId, bookingId, showToast]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
@@ -76,10 +83,27 @@ export const useHandoverNotifications = (userId?: string): UseHandoverNotificati
 
   // Auto-refresh notifications when userId changes
   useEffect(() => {
-    if (userId) {
+    if (userId || bookingId) {
       refreshNotifications();
     }
-  }, [userId, refreshNotifications]);
+  }, [userId, bookingId, refreshNotifications]);
+
+  const schedule = useCallback(async (req: ScheduleNotificationRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await handoverReturnService.scheduleNotification(req);
+      await refreshNotifications();
+      showToast('Notification scheduled', 'success');
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to schedule notification';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshNotifications, showToast]);
 
   return {
     notifications,
@@ -88,6 +112,7 @@ export const useHandoverNotifications = (userId?: string): UseHandoverNotificati
     error,
     markAsRead,
     markAllAsRead,
-    refreshNotifications
+    refreshNotifications,
+    schedule
   };
 };

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import { 
   Shield, 
   Search, 
@@ -6,7 +7,6 @@ import {
   CheckCircle, 
   XCircle,
   RefreshCw,
-  User,
   Package
 } from 'lucide-react';
 import { useRiskAssessment } from '../hooks/useRiskAssessment';
@@ -29,11 +29,104 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
     renterId: ''
   });
 
+  // Friendly search inputs (no React Query)
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+  const [productQuery, setProductQuery] = useState('');
+  const [renterQuery, setRenterQuery] = useState('');
+  const [productOptions, setProductOptions] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [showProductOptions, setShowProductOptions] = useState(false);
+  const productDebounceRef = useRef<number | undefined>(undefined);
+  const renterDebounceRef = useRef<number | undefined>(undefined);
+
+  // Fetch helpers
+  const normalizeProducts = (list: any[]): any[] => {
+    return (Array.isArray(list) ? list : []).map((p: any) => ({
+      id: p.id ?? p.productId ?? p._id ?? p.uuid,
+      name: p.name ?? p.productName ?? p.title ?? '',
+      title: p.title,
+      productName: p.productName,
+    })).filter((p: any) => p.id);
+  };
+
+  const loadAllProducts = async () => {
+    if (productsLoaded || productsLoading) return;
+    setProductsLoading(true);
+    try {
+      // Try large limit to fetch all; backend should cap if needed
+      const { data } = await axios.get(`${API_BASE_URL}/products`, { params: { limit: 1000 } });
+      const list = data?.data?.data || data?.data || data || [];
+      const normalized = normalizeProducts(list);
+      setAllProducts(normalized);
+      setProductsLoaded(true);
+      // Initialize visible options
+      setProductOptions(normalized.slice(0, 20));
+    } catch (_) {
+      setAllProducts([]);
+      setProductOptions([]);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const filterProducts = (q: string) => {
+    const term = (q || '').toLowerCase();
+    if (!term) return allProducts.slice(0, 20);
+    return allProducts.filter((p: any) =>
+      (p.name || '').toLowerCase().includes(term)
+    ).slice(0, 20);
+  };
+
+  // Initialize renterId from current authenticated user and hide renter input
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        const currentUserId = parsed?.id || parsed?.userId || parsed?.sub;
+        const displayName = parsed?.name || [parsed?.firstName, parsed?.lastName].filter(Boolean).join(' ') || parsed?.email;
+        if (currentUserId) {
+          setFormData(prev => ({ ...prev, renterId: String(currentUserId) }));
+        }
+        if (displayName) {
+          setRenterQuery(displayName);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Renter comes from current session; no user search needed
+
+  // Debounce queries
+  useEffect(() => {
+    if (productDebounceRef.current) window.clearTimeout(productDebounceRef.current);
+    productDebounceRef.current = window.setTimeout(() => {
+      if (productsLoaded) {
+        setProductOptions(filterProducts(productQuery));
+      }
+    }, 200);
+    return () => {
+      if (productDebounceRef.current) window.clearTimeout(productDebounceRef.current);
+    };
+  }, [productQuery, productsLoaded, allProducts]);
+
+  useEffect(() => {
+    if (renterDebounceRef.current) window.clearTimeout(renterDebounceRef.current);
+    renterDebounceRef.current = window.setTimeout(() => {
+      // No-op: renter is current logged-in user
+    }, 250);
+    return () => {
+      if (renterDebounceRef.current) window.clearTimeout(renterDebounceRef.current);
+    };
+  }, [renterQuery]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.productId.trim() || !formData.renterId.trim()) {
-      showToast('Please enter both Product ID and Renter ID', 'error');
+      showToast('Please select both Product and Renter', 'error');
       return;
     }
 
@@ -54,6 +147,10 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
   const handleClear = () => {
     clearAssessment();
     setFormData({ productId: '', renterId: '' });
+    setProductQuery('');
+    setRenterQuery('');
+    setProductOptions([]);
+    // keep renterId from session
   };
 
   const getRiskLevelColor = (score: number) => {
@@ -114,36 +211,62 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="productId" className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Product autocomplete */}
+            <div className="relative">
+              <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2">
                 <Package className="w-4 h-4 inline mr-2" />
-                Product ID
+                Product
               </label>
               <input
                 type="text"
-                id="productId"
-                value={formData.productId}
-                onChange={(e) => setFormData(prev => ({ ...prev, productId: e.target.value }))}
+                id="product"
+                value={productQuery}
+                onChange={(e) => {
+                  setProductQuery(e.target.value);
+                  setShowProductOptions(true);
+                  // Clear selected id if user changes query
+                  setFormData(prev => ({ ...prev, productId: '' }));
+                }}
+                onFocus={() => {
+                  setShowProductOptions(true);
+                  if (!productsLoaded && !productsLoading) {
+                    void loadAllProducts();
+                  } else if (productsLoaded) {
+                    setProductOptions(filterProducts(productQuery));
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter product UUID"
+                placeholder="Search product by name"
                 disabled={loading}
+                autoComplete="off"
               />
+              {showProductOptions && productOptions.length > 0 && (
+                <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-200">
+                  {productOptions.map((p: any) => (
+                    <li
+                      key={p.id || p.productId}
+                      className="cursor-pointer select-none py-2 px-3 text-gray-700 hover:bg-gray-100"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const id = p.id || p.productId;
+                        const name = p.name || p.productName || p.title || `Product ${id?.slice?.(0,8)}`;
+                        setProductQuery(name);
+                        setFormData(prev => ({ ...prev, productId: String(id) }));
+                        setShowProductOptions(false);
+                      }}
+                    >
+                      <div className="font-medium">{p.name || p.productName || p.title || 'Unnamed product'}</div>
+                      <div className="text-xs text-gray-500 truncate">ID: {p.id || p.productId}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {formData.productId && (
+                <div className="mt-1 text-xs text-gray-500">Selected Product ID: {formData.productId}</div>
+              )}
             </div>
-            <div>
-              <label htmlFor="renterId" className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="w-4 h-4 inline mr-2" />
-                Renter ID
-              </label>
-              <input
-                type="text"
-                id="renterId"
-                value={formData.renterId}
-                onChange={(e) => setFormData(prev => ({ ...prev, renterId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter renter UUID"
-                disabled={loading}
-              />
-            </div>
+
+            {/* Renter field hidden: backend expects renterId from current session */}
           </div>
 
           <div className="flex justify-end">

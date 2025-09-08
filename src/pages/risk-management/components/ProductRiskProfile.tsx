@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import { 
   Shield, 
   Search, 
@@ -26,6 +27,56 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
   const { showToast } = useToast();
   const { profile, loading, error, getProfile, clearProfile } = useProductRiskProfile();
   const [productId, setProductId] = useState('');
+  // Product autocomplete (no React Query)
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+  const [productQuery, setProductQuery] = useState('');
+  const [productOptions, setProductOptions] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [showProductOptions, setShowProductOptions] = useState(false);
+  const productDebounceRef = useRef<number | undefined>(undefined);
+
+  const normalizeProducts = (list: any[]): any[] => {
+    return (Array.isArray(list) ? list : []).map((p: any) => ({
+      id: p.id ?? p.productId ?? p._id ?? p.uuid,
+      name: p.name ?? p.productName ?? p.title ?? '',
+      title: p.title,
+      productName: p.productName,
+    })).filter((p: any) => p.id);
+  };
+
+  const loadAllProducts = async () => {
+    if (productsLoaded || productsLoading) return;
+    setProductsLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/products`, { params: { limit: 1000 } });
+      const list = data?.data?.data || data?.data || data || [];
+      const normalized = normalizeProducts(list);
+      setAllProducts(normalized);
+      setProductsLoaded(true);
+      setProductOptions(normalized.slice(0, 20));
+    } catch (_) {
+      setAllProducts([]);
+      setProductOptions([]);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const filterProducts = (q: string) => {
+    const term = (q || '').toLowerCase();
+    if (!term) return allProducts.slice(0, 20);
+    return allProducts.filter((p: any) => (p.name || '').toLowerCase().includes(term)).slice(0, 20);
+  };
+
+  useEffect(() => {
+    if (productDebounceRef.current) window.clearTimeout(productDebounceRef.current);
+    productDebounceRef.current = window.setTimeout(() => {
+      if (productsLoaded) setProductOptions(filterProducts(productQuery));
+    }, 200);
+    return () => { if (productDebounceRef.current) window.clearTimeout(productDebounceRef.current); };
+  }, [productQuery, productsLoaded, allProducts]);
 
   const handleGetProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,20 +201,59 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
         {/* Form */}
         <form onSubmit={handleGetProfile} className="space-y-6">
           <div>
-            <label htmlFor="productId" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2">
               <Package className="w-4 h-4 inline mr-2" />
-              Product ID
+              Product
             </label>
             <div className="flex space-x-3">
-              <input
-                type="text"
-                id="productId"
-                value={productId}
-                onChange={(e) => setProductId(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter product UUID"
-                disabled={loading}
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  id="product"
+                  value={productQuery}
+                  onChange={(e) => {
+                    setProductQuery(e.target.value);
+                    setShowProductOptions(true);
+                    setProductId('');
+                  }}
+                  onFocus={() => {
+                    setShowProductOptions(true);
+                    if (!productsLoaded && !productsLoading) {
+                      void loadAllProducts();
+                    } else if (productsLoaded) {
+                      setProductOptions(filterProducts(productQuery));
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  placeholder="Search product by name"
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {showProductOptions && productOptions.length > 0 && (
+                  <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-200">
+                    {productOptions.map((p: any) => (
+                      <li
+                        key={p.id || p.productId}
+                        className="cursor-pointer select-none py-2 px-3 text-gray-700 hover:bg-gray-100"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          const id = p.id || p.productId;
+                          const name = p.name || p.productName || p.title || `Product ${id?.slice?.(0,8)}`;
+                          setProductQuery(name);
+                          setProductId(String(id));
+                          setShowProductOptions(false);
+                        }}
+                      >
+                        <div className="font-medium">{p.name || p.productName || p.title || 'Unnamed product'}</div>
+                        <div className="text-xs text-gray-500 truncate">ID: {p.id || p.productId}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {productId && (
+                  <div className="mt-1 text-xs text-gray-500">Selected Product ID: {productId}</div>
+                )}
+              </div>
               <button
                 type="submit"
                 disabled={loading || !productId.trim()}
@@ -213,10 +303,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                   <div className="text-sm text-gray-600">Category</div>
                   <div className="text-lg font-medium text-gray-900">{profile.categoryName}</div>
                 </div>
-                <div>
-                  <div className="text-sm text-gray-600">Product ID</div>
-                  <div className="text-sm font-mono text-gray-700">{profile.productId}</div>
-                </div>
+                {/* Product ID intentionally hidden per requirement */}
                 <div>
                   <div className="text-sm text-gray-600">Risk Level</div>
                   <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getRiskLevelColor(profile.riskLevel)}`}>

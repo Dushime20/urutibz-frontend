@@ -7,24 +7,62 @@ import handoverReturnService from '../services/handoverReturnService';
 import { 
   HandoverMessage,
   SendMessageRequest,
+  SendPlainMessageRequest,
   UseHandoverMessagesReturn
 } from '../types/handoverReturn';
 
-export const useHandoverMessages = (sessionId?: string): UseHandoverMessagesReturn => {
+// View-focused: fetch by handoverSessionId or returnSessionId per backend API
+export const useHandoverMessages = (initialHandoverSessionId?: string, initialReturnSessionId?: string): UseHandoverMessagesReturn => {
   const { showToast } = useToast();
   const [messages, setMessages] = useState<HandoverMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentHandoverId, setCurrentHandoverId] = useState<string | undefined>(initialHandoverSessionId);
+  const [currentReturnId, setCurrentReturnId] = useState<string | undefined>(initialReturnSessionId);
 
-  const refreshMessages = useCallback(async () => {
-    if (!sessionId) return;
+  const refreshMessages = useCallback(async (handoverSessionId?: string, returnSessionId?: string) => {
+    // Allow caller to override which session id to fetch
+    const hId = handoverSessionId ?? currentHandoverId;
+    const rId = returnSessionId ?? currentReturnId;
+    if (!hId && !rId) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      const messagesData = await handoverReturnService.getSessionMessages(sessionId);
-      setMessages(messagesData);
+      if (hId) {
+        const res = await handoverReturnService.getMessages({ handoverSessionId: hId, page: 1, limit: 50 });
+        const mapped: HandoverMessage[] = (res.data || []).map((m: any) => ({
+          id: m.id,
+          sessionId: hId!,
+          senderId: m.senderId,
+          senderType: m.senderType,
+          receiverId: '',
+          messageType: (m.messageType || 'text') as any,
+          content: m.message,
+          metadata: undefined,
+          isRead: Array.isArray(m.readBy) ? m.readBy.length > 0 : false,
+          sentAt: m.timestamp,
+          readAt: undefined,
+        }));
+        setMessages(mapped);
+      } else if (rId) {
+        const res = await handoverReturnService.getMessages({ returnSessionId: rId, page: 1, limit: 50 });
+        const mapped: HandoverMessage[] = (res.data || []).map((m: any) => ({
+          id: m.id,
+          sessionId: rId!,
+          senderId: m.senderId,
+          senderType: m.senderType,
+          receiverId: '',
+          messageType: (m.messageType || 'text') as any,
+          content: m.message,
+          metadata: undefined,
+          isRead: Array.isArray(m.readBy) ? m.readBy.length > 0 : false,
+          sentAt: m.timestamp,
+          readAt: undefined,
+        }));
+        setMessages(mapped);
+      }
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to fetch messages';
       setError(errorMessage);
@@ -32,15 +70,20 @@ export const useHandoverMessages = (sessionId?: string): UseHandoverMessagesRetu
     } finally {
       setLoading(false);
     }
-  }, [sessionId, showToast]);
+  }, [currentHandoverId, currentReturnId, showToast]);
 
-  const sendMessage = useCallback(async (data: SendMessageRequest) => {
+  const sendMessage = useCallback(async (data: SendMessageRequest | SendPlainMessageRequest) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await handoverReturnService.sendMessage(data);
-      setMessages(prev => [...prev, response.data.message]);
+      if ((data as SendPlainMessageRequest).bookingId) {
+        const createdResponse = await handoverReturnService.sendPlainMessage(data as SendPlainMessageRequest);
+        setMessages(prev => [...prev, createdResponse.data.message]);
+      } else {
+        const response = await handoverReturnService.sendMessage(data as SendMessageRequest);
+        setMessages(prev => [...prev, response.data.message]);
+      }
       showToast('Message sent successfully', 'success');
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to send message';
@@ -71,10 +114,15 @@ export const useHandoverMessages = (sessionId?: string): UseHandoverMessagesRetu
 
   // Auto-refresh messages when sessionId changes
   useEffect(() => {
-    if (sessionId) {
+    setCurrentHandoverId(initialHandoverSessionId);
+    setCurrentReturnId(initialReturnSessionId);
+  }, [initialHandoverSessionId, initialReturnSessionId]);
+
+  useEffect(() => {
+    if (currentHandoverId || currentReturnId) {
       refreshMessages();
     }
-  }, [sessionId, refreshMessages]);
+  }, [currentHandoverId, currentReturnId, refreshMessages]);
 
   return {
     messages,

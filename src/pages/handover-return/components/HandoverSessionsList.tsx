@@ -42,7 +42,7 @@ const HandoverSessionsList: React.FC = () => {
       case 'in_progress':
         return <AlertCircle className="w-5 h-5 text-yellow-500" />;
       default:
-        return <Clock className="w-5 h-5 text-blue-500" />;
+        return <Clock className="w-5 h-5 text-teal-500" />;
     }
   };
 
@@ -55,7 +55,7 @@ const HandoverSessionsList: React.FC = () => {
       case 'in_progress':
         return 'bg-yellow-100 text-yellow-800';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-teal-100 text-teal-800';
     }
   };
 
@@ -201,7 +201,7 @@ const HandoverSessionsList: React.FC = () => {
                       {session.type === 'handover' ? (
                         <Package className="w-4 h-4 text-teal-500" />
                       ) : (
-                        <ArrowRightLeft className="w-4 h-4 text-blue-500" />
+                        <ArrowRightLeft className="w-4 h-4 text-teal-500" />
                       )}
                     </div>
                     <div>

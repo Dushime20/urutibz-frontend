@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearAuthAndRedirect } from '../lib/utils';
 import type {
   Inspection,
   InspectionFilters,
@@ -45,8 +46,7 @@ inspectionApi.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Handle unauthorized access
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      clearAuthAndRedirect();
     }
     return Promise.reject(error);
   }

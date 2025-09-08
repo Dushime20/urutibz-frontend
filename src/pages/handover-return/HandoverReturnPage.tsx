@@ -1,7 +1,7 @@
 // Handover & Return Main Page
 // Following the same patterns as RiskAssessmentPage.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Package, 
   ArrowRightLeft, 
@@ -13,11 +13,15 @@ import HandoverSessionForm from './components/HandoverSessionForm';
 import ReturnSessionForm from './components/ReturnSessionForm';
 import HandoverSessionsList from './components/HandoverSessionsList';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import handoverReturnService from '../../services/handoverReturnService';
 
 const HandoverReturnPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createType, setCreateType] = useState<'handover' | 'return'>('handover');
+  const [stats, setStats] = useState<any | null>(null);
+  const [statsLoading, setStatsLoading] = useState<boolean>(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   const tabs = [
     {
@@ -41,22 +45,99 @@ const HandoverReturnPage: React.FC = () => {
       case 'stats':
         return (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="text-center py-12">
-              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Statistics Dashboard</h3>
-              <p className="text-gray-600 mb-4">
-                Comprehensive analytics for handover and return operations
-              </p>
-              <div className="text-sm text-gray-500">
-                Coming soon - Real-time statistics and performance metrics
-              </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Statistics Dashboard</h3>
+              <p className="text-sm text-gray-600">Handover and return analytics</p>
             </div>
+            {statsError && <div className="text-sm text-red-600 mb-4">{statsError}</div>}
+            {statsLoading ? (
+              <div className="text-sm text-gray-500">Loading stats…</div>
+            ) : stats ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="text-xs text-gray-500">Total Handovers</div>
+                    <div className="text-2xl font-semibold text-gray-900">{stats.totalHandovers}</div>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="text-xs text-gray-500">Total Returns</div>
+                    <div className="text-2xl font-semibold text-gray-900">{stats.totalReturns}</div>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="text-xs text-gray-500">Dispute Rate</div>
+                    <div className="text-2xl font-semibold text-gray-900">{stats.disputeRate}%</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="text-xs text-gray-500">Handover Success</div>
+                    <div className="text-xl font-semibold text-teal-600">{stats.handoverSuccessRate}%</div>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="text-xs text-gray-500">Return On-Time</div>
+                    <div className="text-xl font-semibold text-teal-600">{stats.returnOnTimeRate}%</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="text-xs text-gray-500">Avg Handover Time</div>
+                    <div className="text-xl font-semibold text-gray-900">{stats.averageHandoverTime} min</div>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="text-xs text-gray-500">Avg Return Processing</div>
+                    <div className="text-xl font-semibold text-gray-900">{stats.averageReturnProcessingTime} min</div>
+                  </div>
+                </div>
+                {(stats.statusDistribution || stats.typeDistribution) && (
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {stats.statusDistribution && (
+                      <div className="rounded-lg border border-gray-200 p-4">
+                        <div className="text-sm font-medium text-gray-900 mb-2">Status Distribution</div>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(stats.statusDistribution).map(([k, v]: any) => (
+                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">{k}: {v}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {stats.typeDistribution && (
+                      <div className="rounded-lg border border-gray-200 p-4">
+                        <div className="text-sm font-medium text-gray-900 mb-2">Type Distribution</div>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(stats.typeDistribution).map(([k, v]: any) => (
+                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">{k}: {v}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-sm text-gray-500">No stats available.</div>
+            )}
           </div>
         );
       default:
         return <HandoverSessionsList />;
     }
   };
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      setStatsError(null);
+      try {
+        const res = await handoverReturnService.getHandoverReturnStats();
+        setStats(res?.data || null);
+      } catch (e: any) {
+        setStatsError(e?.message || 'Failed to load stats');
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    if (activeTab === 'stats') fetchStats();
+  }, [activeTab]);
 
   return (
     <ErrorBoundary>

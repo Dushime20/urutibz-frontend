@@ -31,6 +31,8 @@ import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ui/ToastContainer';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import NotificationsPage from './features/notifications/pages/NotificationsPage';
+import SessionMessagesPage from './pages/my-account/SessionMessagesPage';
+import HandoverReturnDemoPage from './pages/handover-return/HandoverReturnDemoPage';
 
 
 function App() {
@@ -51,6 +53,11 @@ function App() {
               <Route path="dashboard" element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="my-account/messages/:type/:id" element={
+                <ProtectedRoute>
+                  <SessionMessagesPage />
                 </ProtectedRoute>
               } />
               <Route path="dashboard/notifications" element={
@@ -98,6 +105,7 @@ function App() {
 
                 <Route path="demo" element={<DemoPage />} />
                 <Route path="faq" element={<FaqPage />} />
+                <Route path="handover-return-demo" element={<HandoverReturnDemoPage />} />
 
                 {/* Protected routes */}
                 <Route path="create-listing" element={

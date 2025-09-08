@@ -1,7 +1,7 @@
 // Handover Session Form Component
 // Following the same patterns as RiskAssessmentForm.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   Package, 
   MapPin, 
@@ -14,6 +14,7 @@ import { useHandoverSession } from '../../../hooks/useHandoverSession';
 import { useToast } from '../../../contexts/ToastContext';
 import { CreateHandoverSessionRequest } from '../../../types/handoverReturn';
 import ErrorBoundary from '../../../components/ErrorBoundary';
+import { fetchUserBookings, getProductById } from '../../my-account/service/api';
 
 interface HandoverSessionFormProps {
   onSessionCreated?: (sessionId: string) => void;
@@ -26,6 +27,8 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
 }) => {
   const { showToast } = useToast();
   const { session, loading, error, createSession } = useHandoverSession();
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookingSearch, setBookingSearch] = useState('');
   
   const [formData, setFormData] = useState<CreateHandoverSessionRequest>({
     bookingId: '',
@@ -45,6 +48,79 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
   });
 
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
+  // Current user id (from localStorage auth info)
+  const currentUserId = useMemo(() => {
+    try {
+      const rawUser = localStorage.getItem('user') || localStorage.getItem('authUser');
+      if (rawUser) {
+        const parsed = JSON.parse(rawUser);
+        return parsed?.id || parsed?.user?.id || '';
+      }
+    } catch {}
+    return '';
+  }, []);
+
+  // Load user bookings for selection
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = localStorage.getItem('token') || null;
+        const res = await fetchUserBookings(token);
+        const baseList = (res?.data || res || []).map((b: any) => ({
+          id: b.id || b.bookingId || b.uuid,
+          bookingNumber: b.booking_number || b.bookingNumber,
+          productId: b.productId || b.product_id,
+          renterId: b.renterId || b.renter_id,
+          ownerId: b.ownerId || b.owner_id,
+          // Prefer product name for display in selector
+          productName: b.productTitle || b.product_name || b.title || b.reference || `Booking ${String(b.id).slice(0,8)}`,
+          title: b.title || b.reference || b.productTitle || b.product_name || `Booking ${String(b.id).slice(0,8)}`,
+          createdAt: b.createdAt || b.created_at,
+          status: b.status,
+        }));
+        // Enrich with authoritative product title
+        const enriched = await Promise.all(
+          baseList.map(async (b: any) => {
+            try {
+              if (!b.productId) return b;
+              const p = await getProductById(b.productId);
+              return { ...b, productName: p?.title || p?.name || b.productName };
+            } catch {
+              return b;
+            }
+          })
+        );
+        setBookings(enriched);
+      } catch (e) {
+        setBookings([]);
+      }
+    })();
+  }, []);
+
+  // Only allow handover creation for bookings where current user is the owner
+  const ownerBookings = useMemo(() => {
+    if (!currentUserId) return bookings;
+    return bookings.filter(b => String(b.ownerId) === String(currentUserId));
+  }, [bookings, currentUserId]);
+
+  const filteredBookings = useMemo(() => {
+    const source = ownerBookings;
+    if (!bookingSearch.trim()) return source;
+    const q = bookingSearch.toLowerCase();
+    return source.filter(b => (b.title || '').toLowerCase().includes(q) || String(b.id).toLowerCase().includes(q));
+  }, [ownerBookings, bookingSearch]);
+
+  const handleSelectBooking = (id: string) => {
+    const b = bookings.find(x => String(x.id) === String(id));
+    if (!b) return;
+    setFormData(prev => ({
+      ...prev,
+      bookingId: b.id,
+      productId: b.productId || '',
+      renterId: b.renterId || '',
+      ownerId: b.ownerId || ''
+    }));
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -115,6 +191,11 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
       return;
     }
 
+    if (!currentUserId || String(formData.ownerId) !== String(currentUserId)) {
+      showToast('You can only create handover sessions for your own items (owner role).', 'error');
+      return;
+    }
+
     try {
       await createSession(formData);
       if (onSessionCreated && session) {
@@ -164,78 +245,51 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {ownerBookings.length === 0 && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-800">
+              You have no bookings where you are the owner. Handover sessions can only be created for your own items.
+            </div>
+          )}
           {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="bookingId" className="block text-sm font-medium text-gray-700 mb-2">
-                <FileText className="w-4 h-4 inline mr-2" />
-                Booking ID *
-              </label>
-              <input
-                type="text"
-                id="bookingId"
-                name="bookingId"
+          {/* Booking selection (searchable) */}
+          <div>
+            <label htmlFor="booking" className="block text-sm font-medium text-gray-700 mb-2">
+              <FileText className="w-4 h-4 inline mr-2" />
+              Booking *
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 md:col-span-2"
                 value={formData.bookingId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter booking UUID"
-                disabled={loading}
+                onChange={(e) => handleSelectBooking(e.target.value)}
                 required
-              />
-            </div>
-            <div>
-              <label htmlFor="productId" className="block text-sm font-medium text-gray-700 mb-2">
-                <Package className="w-4 h-4 inline mr-2" />
-                Product ID *
-              </label>
+                disabled={loading || ownerBookings.length === 0}
+              >
+                <option value="">Select booking</option>
+                {filteredBookings.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.productName || b.title}
+                  </option>
+                ))}
+              </select>
               <input
                 type="text"
-                id="productId"
-                name="productId"
-                value={formData.productId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter product UUID"
-                disabled={loading}
-                required
+                placeholder="Search your bookings..."
+                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 md:col-span-1 md:justify-self-end"
+                value={bookingSearch}
+                onChange={(e) => setBookingSearch(e.target.value)}
+                disabled={loading || ownerBookings.length === 0}
               />
             </div>
+            {formData.bookingId && (
+              <p className="text-xs text-gray-500 mt-2">Linked product, renter and owner were auto-filled from the booking.</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="renterId" className="block text-sm font-medium text-gray-700 mb-2">
-                Renter ID *
-              </label>
-              <input
-                type="text"
-                id="renterId"
-                name="renterId"
-                value={formData.renterId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter renter UUID"
-                disabled={loading}
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="ownerId" className="block text-sm font-medium text-gray-700 mb-2">
-                Owner ID *
-              </label>
-              <input
-                type="text"
-                id="ownerId"
-                name="ownerId"
-                value={formData.ownerId}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter owner UUID"
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
+          {/* Hidden auto-filled identifiers */}
+          <input type="hidden" name="productId" value={formData.productId} />
+          <input type="hidden" name="renterId" value={formData.renterId} />
+          <input type="hidden" name="ownerId" value={formData.ownerId} />
 
           {/* Handover Type and Schedule */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -383,7 +437,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || ownerBookings.length === 0}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (

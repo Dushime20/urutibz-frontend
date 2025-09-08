@@ -471,12 +471,43 @@ export async function fetchCountries() {
   return res.json();
 }
 
-export async function fetchUserBookings(token: string | null) {
-  const response = await axios.get(`${API_BASE_URL}/bookings`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  // Return bookings array and pagination info
-  return response.data?.data || { data: [], page: 1, limit: 20, total: 0, totalPages: 1, hasNext: false, hasPrev: false };
+export async function fetchBookingsByRole(role: 'renter' | 'owner', page = 1, limit = 100, token?: string | null) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/bookings?role=${role}&page=${page}&limit=${limit}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    // API shape: { success, message, data: { data: [...], page, limit, ... } }
+    const payload = response?.data?.data;
+    const items = payload?.data ?? [];
+    const meta = payload
+      ? {
+          page: payload.page,
+          limit: payload.limit,
+          total: payload.total,
+          totalPages: payload.totalPages,
+          hasNext: payload.hasNext,
+          hasPrev: payload.hasPrev,
+        }
+      : {};
+    return { data: items, meta };
+  } catch (error) {
+    console.error('Error fetching bookings by role:', error);
+    return { data: [], meta: {} };
+  }
+}
+
+export async function fetchUserBookings(token?: string | null) {
+  // Backwards-compat wrapper: merge renter + owner
+  try {
+    const [asRenter, asOwner] = await Promise.all([
+      fetchBookingsByRole('renter', 1, 100, token),
+      fetchBookingsByRole('owner', 1, 100, token),
+    ]);
+    return { data: [...(asRenter.data || []), ...(asOwner.data || [])] };
+  } catch (error) {
+    console.error('Error fetching user bookings:', error);
+    return { data: [] };
+  }
 }
 
 // Existing product and image fetchers (if not present, add them)
@@ -499,14 +530,28 @@ export async function fetchProductImages(productId: string, token?: string) {
   }
 }
 
-export async function fetchUserReviews(userId: string, token?: string) {
+
+
+export async function fetchMyReceivedReviews(token?: string) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/review/user/${userId}`, {
+    const response = await axios.get(`${API_BASE_URL}/review/mine/received`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     return response.data?.data || [];
   } catch (error) {
-    console.error('Error fetching user reviews:', error);
+    console.error('Error fetching received reviews:', error);
+    return [];
+  }
+}
+
+export async function fetchMyWrittenReviews(token?: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/review/mine/written`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching written reviews:', error);
     return [];
   }
 }

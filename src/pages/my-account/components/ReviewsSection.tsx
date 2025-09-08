@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Star } from 'lucide-react';
 
 interface Props {
@@ -9,19 +9,30 @@ interface Props {
 }
 
 const ReviewsSection: React.FC<Props> = ({ loadingReviews, userReviews, onViewReviewDetail, loadingReviewDetail }) => {
+  const [activeTab, setActiveTab] = useState<'received' | 'written'>('received');
+  const received = useMemo(() => userReviews.filter(r => r._source === 'received'), [userReviews]);
+  const written = useMemo(() => userReviews.filter(r => r._source === 'written'), [userReviews]);
+  const list = activeTab === 'received' ? received : written;
+
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">My Reviews</h3>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-500">{userReviews.length} review{userReviews.length !== 1 ? 's' : ''}</span>
+          <div className="inline-flex bg-gray-100 rounded-lg p-1">
+            {(['received','written'] as const).map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)} className={`px-3 py-1 rounded-md text-sm ${activeTab===tab ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
+                {tab === 'received' ? `Received (${received.length})` : `Written (${written.length})`}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       {loadingReviews ? (
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
-      ) : userReviews.length === 0 ? (
+      ) : list.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Star className="w-10 h-10 text-gray-400" />
@@ -32,7 +43,7 @@ const ReviewsSection: React.FC<Props> = ({ loadingReviews, userReviews, onViewRe
         </div>
       ) : (
         <div className="space-y-6">
-          {userReviews.map((review) => (
+          {list.map((review) => (
             <div key={review.id} className="border border-gray-100 rounded-2xl p-6 hover:border-gray-200 transition-colors">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
