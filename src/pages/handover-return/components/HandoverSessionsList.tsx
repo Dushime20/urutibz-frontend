@@ -3,11 +3,12 @@ import { Calendar, MapPin, Clock, CheckCircle, XCircle, AlertCircle, Eye, Packag
 import { useHandoverSession } from '../../../hooks/useHandoverSession';
 import { useReturnSession } from '../../../hooks/useReturnSession';
 import { useAuth } from '../../../contexts/AuthContext';
+import { handoverReturnService } from '../../../services/handoverReturnService';
 import { HandoverSession, ReturnSession } from '../../../types/handoverReturn';
 import SessionDetailModal from './SessionDetailModal';
 
 const HandoverSessionsList: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth() as any;
   const { sessions: handoverSessions, meta: handoverMeta, loading: handoverLoading, error: handoverError, getSessionsByUser: getHandoverSessions } = useHandoverSession();
   const { sessions: returnSessions, meta: returnMeta, loading: returnLoading, error: returnError, getSessionsByUser: getReturnSessions } = useReturnSession();
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,21 +18,56 @@ const HandoverSessionsList: React.FC = () => {
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [selectedSessionType, setSelectedSessionType] = useState<'handover' | 'return'>('handover');
 
+  const [adminSessions, setAdminSessions] = useState<any[]>([]);
+  const [adminMeta, setAdminMeta] = useState<any>({ total: 0, pages: 1 });
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (user?.id) {
-      getHandoverSessions(user.id, currentPage, limit);
-      getReturnSessions(user.id, currentPage, limit);
-    }
-  }, [user?.id, currentPage, limit, getHandoverSessions, getReturnSessions]);
+    (async () => {
+      if (isAdmin && isAdmin()) {
+        try {
+          setAdminLoading(true);
+          setAdminError(null);
+          const view = activeTab === 'all' ? undefined : (activeTab as 'handover' | 'return');
+          const res = await handoverReturnService.getAdminSessions({ view, page: currentPage, limit });
+          const list = Array.isArray(res?.data) ? res.data : [];
+          // Normalize type per item
+          const normalized = list.map((s: any) => ({
+            ...s,
+            type: s.type || (s.handoverCode || s.handoverType ? 'handover' : 'return'),
+          }));
+          setAdminSessions(normalized);
+          const meta = res?.meta ?? { total: normalized.length, pages: 1, page: 1, limit };
+          setAdminMeta(meta);
+        } catch (e: any) {
+          setAdminError(e?.message || 'Failed to load sessions');
+          setAdminSessions([]);
+          setAdminMeta({ total: 0, pages: 1 });
+        } finally {
+          setAdminLoading(false);
+        }
+        return;
+      }
+      if (user?.id) {
+        getHandoverSessions(user.id, currentPage, limit);
+        getReturnSessions(user.id, currentPage, limit);
+      }
+    })();
+  }, [user?.id, currentPage, limit, activeTab, getHandoverSessions, getReturnSessions, isAdmin]);
 
   // Combine sessions for "all" view
-  const allSessions = [
-    ...handoverSessions.map(session => ({ ...session, type: 'handover' as const })),
-    ...returnSessions.map(session => ({ ...session, type: 'return' as const }))
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const allSessions = (
+    (isAdmin && isAdmin())
+      ? adminSessions
+      : [
+          ...handoverSessions.map(session => ({ ...session, type: 'handover' as const })),
+          ...returnSessions.map(session => ({ ...session, type: 'return' as const }))
+        ]
+  ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const loading = handoverLoading || returnLoading;
-  const error = handoverError || returnError;
+  const loading = (isAdmin && isAdmin()) ? adminLoading : (handoverLoading || returnLoading);
+  const error = (isAdmin && isAdmin()) ? adminError : (handoverError || returnError);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -85,6 +121,10 @@ const HandoverSessionsList: React.FC = () => {
   };
 
   const getCurrentSessions = () => {
+    if (isAdmin && isAdmin()) {
+      // Admin sessions already filtered by view on fetch
+      return allSessions;
+    }
     switch (activeTab) {
       case 'handover':
         return handoverSessions.map(session => ({ ...session, type: 'handover' as const }));
@@ -96,6 +136,9 @@ const HandoverSessionsList: React.FC = () => {
   };
 
   const getCurrentMeta = () => {
+    if (isAdmin && isAdmin()) {
+      return adminMeta;
+    }
     switch (activeTab) {
       case 'handover':
         return handoverMeta;
@@ -111,12 +154,12 @@ const HandoverSessionsList: React.FC = () => {
 
   if (loading && currentSessions.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4 dark:bg-slate-700"></div>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+              <div key={i} className="h-20 bg-gray-200 rounded dark:bg-slate-700"></div>
             ))}
           </div>
         </div>
@@ -126,36 +169,36 @@ const HandoverSessionsList: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
         <div className="text-center">
           <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Sessions</h3>
-          <p className="text-gray-500">{error}</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">Error Loading Sessions</h3>
+          <p className="text-gray-500 dark:text-slate-400">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">My Sessions</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">My Sessions</h2>
+            <p className="text-sm text-gray-500 mt-1 dark:text-slate-400">
               {currentMeta?.total || 0} total sessions
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-slate-400">
               Page {currentPage} of {currentMeta?.pages || 1}
             </span>
           </div>
         </div>
 
         {/* Session Type Tabs */}
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        <div className="flex space-x-1 overflow-x-auto whitespace-nowrap bg-gray-100 p-1 rounded-lg dark:bg-slate-800">
           {[
             { id: 'all', label: 'All Sessions', icon: Calendar },
             { id: 'handover', label: 'Handover', icon: Package },
@@ -168,10 +211,10 @@ const HandoverSessionsList: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors shrink-0 ${
                   isActive
-                    ? 'bg-white text-teal-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-teal-600 shadow-sm dark:bg-slate-900'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <Icon className="w-4 h-4 mr-2" />
@@ -183,16 +226,16 @@ const HandoverSessionsList: React.FC = () => {
       </div>
 
       {/* Sessions List */}
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-slate-700">
         {currentSessions.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Sessions Found</h3>
-            <p className="text-gray-500">You don't have any {activeTab === 'all' ? '' : activeTab} sessions yet.</p>
+          <div className="px-4 sm:px-6 py-12 text-center">
+            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Sessions Found</h3>
+            <p className="text-gray-500 dark:text-slate-400">You don't have any {activeTab === 'all' ? '' : activeTab} sessions yet.</p>
           </div>
         ) : (
           currentSessions.map((session: any) => (
-            <div key={session.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+            <div key={session.id} className="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors dark:hover:bg-slate-800">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
@@ -205,10 +248,10 @@ const HandoverSessionsList: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-900">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-slate-100">
                         {session.type === 'handover' ? 'Handover' : 'Return'} #{session.id.slice(0, 8)}
                       </h3>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
                         Booking: {session.bookingId.slice(0, 8)}...
                       </p>
                     </div>
@@ -216,29 +259,29 @@ const HandoverSessionsList: React.FC = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600">
+                      <Calendar className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                      <span className="text-gray-600 dark:text-slate-400">
                         {formatDate(session.scheduledDateTime)}
                       </span>
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600 capitalize">
+                      <MapPin className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                      <span className="text-gray-600 capitalize dark:text-slate-400">
                         {session.type === 'handover' ? session.handoverType : session.returnType}
                       </span>
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600">
+                      <Clock className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                      <span className="text-gray-600 dark:text-slate-400">
                         {session.estimatedDurationMinutes} min
                       </span>
                     </div>
                   </div>
                   
                   {session.location?.address && (
-                    <div className="mt-2 text-sm text-gray-500">
+                    <div className="mt-2 text-sm text-gray-500 dark:text-slate-400">
                       <MapPin className="w-4 h-4 inline mr-1" />
                       {session.location.address}
                     </div>
@@ -253,14 +296,14 @@ const HandoverSessionsList: React.FC = () => {
                   <div className="flex items-center space-x-1">
                     <button 
                       onClick={() => handleViewSession(session.id, session.type)}
-                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-500 dark:hover:text-slate-300"
                       title="View Details"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handleViewSession(session.id, session.type)}
-                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-500 dark:hover:text-slate-300"
                       title="Edit Session"
                     >
                       <Edit className="w-4 h-4" />
@@ -270,12 +313,12 @@ const HandoverSessionsList: React.FC = () => {
               </div>
               
               {(session.handoverCode || session.returnCode) && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg dark:bg-slate-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
                       {session.type === 'handover' ? 'Handover' : 'Return'} Code:
                     </span>
-                    <span className="text-lg font-mono font-bold text-gray-900">
+                    <span className="text-lg font-mono font-bold text-gray-900 dark:text-slate-100">
                       {session.type === 'handover' ? session.handoverCode : session.returnCode}
                     </span>
                   </div>
@@ -288,9 +331,9 @@ const HandoverSessionsList: React.FC = () => {
 
       {/* Pagination */}
       {currentMeta && currentMeta.pages > 1 && (
-        <div className="px-6 py-4 border-t border-gray-200">
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-slate-400">
               Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, currentMeta.total)} of {currentMeta.total} results
             </div>
             
@@ -298,19 +341,19 @@ const HandoverSessionsList: React.FC = () => {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-800"
               >
                 Previous
               </button>
               
-              <span className="px-3 py-1 text-sm text-gray-700">
+              <span className="px-3 py-1 text-sm text-gray-700 dark:text-slate-300">
                 {currentPage} / {currentMeta.pages}
               </span>
               
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === currentMeta.pages}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-800"
               >
                 Next
               </button>

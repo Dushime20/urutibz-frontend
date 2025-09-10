@@ -14,9 +14,7 @@ import {
   fetchRecentBookings,
   fetchRecentTransactions,
   fetchUserTransactions,
-  fetchUserReviews,
   fetchReviewById,
-  fetchProductReviews,
   fetchReviewByBookingId,
   fetchUserProfile,
   fetchMyReceivedReviews,
@@ -144,6 +142,7 @@ const DashboardPage: React.FC = () => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editProductId, setEditProductId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userBookings, setUserBookings] = useState<any[]>([]);
   const [bookingProducts, setBookingProducts] = useState<{ [bookingId: string]: any }>({});
   const [bookingImages, setBookingImages] = useState<{ [bookingId: string]: any[] }>({});
@@ -439,15 +438,15 @@ const DashboardPage: React.FC = () => {
           const imagesRes = await fetchProductImages(booking.product_id, token ?? undefined);
           setBookingImages(prev => ({ ...prev, [booking.id]: imagesRes.data || [] }));
 
-          // Also check for reviews for this booking
+          // Optionally check for review count without preloading the full review content
           try {
             const reviewResult = await fetchReviewByBookingId(booking.id, token ?? undefined);
-            if (reviewResult.review) {
-              setBookingReviews(prev => ({ ...prev, [booking.id]: reviewResult.review }));
+            if (typeof reviewResult.count === 'number') {
               setBookingReviewCounts(prev => ({ ...prev, [booking.id]: reviewResult.count }));
             }
+            // Do NOT set bookingReviews here to avoid auto-render; fetch on user click instead
           } catch (reviewError) {
-            // Review fetch failed for this booking
+            // Ignore count errors; user can still click to load review
           }
         }
       } catch (err) {
@@ -727,8 +726,22 @@ const DashboardPage: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const result = await fetchReviewByBookingId(bookingId, token ?? undefined);
-      setBookingReviews(prev => ({ ...prev, [bookingId]: result.review }));
-      setBookingReviewCounts(prev => ({ ...prev, [bookingId]: result.count }));
+      const hasReview = Boolean(result?.review);
+      setBookingReviewCounts(prev => ({ ...prev, [bookingId]: Number(result?.count) || (hasReview ? 1 : 0) }));
+      if (!hasReview) {
+        // Open a small modal/toast-like dialog indicating no review yet
+        setSelectedReview({
+          id: 'no-review',
+          title: 'No review yet',
+          createdAt: new Date().toISOString(),
+          overallRating: 0,
+          comment: 'This booking has no review yet.',
+        } as any);
+        setShowReviewDetail(true);
+        return;
+      }
+      setSelectedReview(result.review);
+      setShowReviewDetail(true);
     } catch (error) {
       showToast('Failed to load booking review', 'error');
     } finally {
@@ -736,10 +749,10 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleOpenDisputeModal = (inspectionId: string) => {
-    setSelectedInspectionId(inspectionId);
-    setShowDisputeModal(true);
-  };
+  // const handleOpenDisputeModal = (inspectionId: string) => {
+  //   setSelectedInspectionId(inspectionId);
+  //   setShowDisputeModal(true);
+  // };
 
   const handleRaiseDispute = async () => {
     if (!selectedInspectionId || !disputeForm.reason.trim()) {
@@ -843,23 +856,36 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-my-primary/10 to-indigo-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-my-primary/10 to-indigo-50/30 dark:from-slate-900 dark:via-slate-900/40 dark:to-slate-800">
       {/* Top Navigation Bar */}
-      <div className="sticky top-0 z-50  backdrop-blur-xl border-b border-gray-200 bg-white ">
+      <div className="sticky top-0 z-50  backdrop-blur-xl border-b border-gray-200 bg-white dark:bg-slate-900 dark:border-slate-700">
         <div className="flex h-16">
           {/* Sidebar Space */}
          
           {/* Header Content - full width */}
           <div className="flex-1 flex items-center  w-full">
-            <MyAccountHeader />
+            <MyAccountHeader onToggleSidebar={() => setSidebarOpen(true)} />
           </div>
         </div>
       </div>
 
       {/* Main Layout with Sidebar */}
       <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="flex-shrink-0">
+        {/* Mobile Sidebar Drawer */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 flex md:hidden">
+            <div className="fixed inset-0 bg-black/40" onClick={() => setSidebarOpen(false)}></div>
+            <div className="relative ml-0 h-full w-72 bg-white dark:bg-slate-900 shadow-xl transform transition-transform duration-300 translate-x-0">
+              <div className="p-3 flex justify-end">
+                <button onClick={() => setSidebarOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+              </div>
+              <MyAccountSidebar activeTab={activeTab} setActiveTab={(tab: any) => { setActiveTab(tab); setSidebarOpen(false); }} />
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block flex-shrink-0">
           <MyAccountSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
@@ -1066,19 +1092,19 @@ const DashboardPage: React.FC = () => {
           {activeTab === 'risk-assessment' && (
             <div className="space-y-6">
               {/* Header */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Risk Assessment</h2>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Risk Assessment</h2>
+                    <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">
                       Evaluate risk for product-renter combinations and check compliance
                     </p>
                   </div>
                 </div>
 
                 {/* Risk Assessment Tabs */}
-                <div className="border-b border-gray-200">
-                  <nav className="-mb-px flex space-x-8">
+                <div className="border-b border-gray-200 dark:border-slate-700">
+                  <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto whitespace-nowrap">
                     {[
                       { id: 'assessment', label: 'Risk Assessment', icon: TrendingUp },
                       { id: 'compliance', label: 'Compliance Check', icon: CheckCircle },
@@ -1091,15 +1117,15 @@ const DashboardPage: React.FC = () => {
                         <button
                           key={tab.id}
                           onClick={() => setRiskAssessmentTab(tab.id as any)}
-                          className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                          className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm shrink-0 ${
                             isActive
                               ? 'border-teal-500 text-teal-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
                           }`}
                         >
                           <Icon
                             className={`-ml-0.5 mr-2 h-5 w-5 ${
-                              isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
+                              isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-slate-500 dark:group-hover:text-slate-300'
                             }`}
                           />
                           {tab.label}
@@ -1111,7 +1137,7 @@ const DashboardPage: React.FC = () => {
               </div>
 
               {/* Tab Content */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
                 {riskAssessmentTab === 'assessment' && <RiskAssessmentForm />}
                 {riskAssessmentTab === 'compliance' && <ComplianceChecker />}
                 {riskAssessmentTab === 'profile' && <ProductRiskProfile />}
@@ -1159,16 +1185,16 @@ const DashboardPage: React.FC = () => {
 
       {showReviewDetail && selectedReview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto dark:bg-slate-900">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Review Details</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">Review Details</h3>
                 <button
                   onClick={() => {
                     setShowReviewDetail(false);
                     setSelectedReview(null);
                   }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1180,14 +1206,13 @@ const DashboardPage: React.FC = () => {
                 {/* Review Header */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                      <Star className="w-6 h-6 text-primary-600" />
+                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center dark:bg-primary-900/30">
+                      <Star className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900">{selectedReview.title}</h4>
-                      <p className="text-sm text-gray-500">
-                        {new Date(selectedReview.createdAt).toLocaleDateString()} at{' '}
-                        {new Date(selectedReview.createdAt).toLocaleTimeString()}
+                      <h4 className="font-semibold text-gray-900 dark:text-slate-100">{selectedReview.title || (selectedReview.id === 'no-review' ? 'No review yet' : 'Review')}</h4>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
+                        {selectedReview.createdAt ? `${new Date(selectedReview.createdAt).toLocaleDateString()} at ${new Date(selectedReview.createdAt).toLocaleTimeString()}` : ''}
                       </p>
                     </div>
                   </div>
@@ -1195,63 +1220,63 @@ const DashboardPage: React.FC = () => {
                     {[...Array(5)].map((_, index) => (
                       <Star
                         key={index}
-                        className={`w-5 h-5 ${index < selectedReview.overallRating
+                        className={`w-5 h-5 ${index < (selectedReview.overallRating || 0)
                           ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
+                          : 'text-gray-300 dark:text-slate-600'
                           }`}
                       />
                     ))}
-                    <span className="ml-2 text-lg font-medium text-gray-900">
-                      {selectedReview.overallRating}/5
+                    <span className="ml-2 text-lg font-medium text-gray-900 dark:text-slate-100">
+                      {(selectedReview.overallRating || 0)}/5
                     </span>
                   </div>
                 </div>
 
                 {/* Review Comment */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h5 className="font-medium text-gray-900 mb-2">Review Comment</h5>
-                  <p className="text-gray-700">{selectedReview.comment}</p>
+                <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800">
+                  <h5 className="font-medium text-gray-900 mb-2 dark:text-slate-100">Review Comment</h5>
+                  <p className="text-gray-700 dark:text-slate-300">{selectedReview.comment || 'This booking has no review yet.'}</p>
                 </div>
 
                 {/* Detailed Ratings */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-xl">
-                    <div className="text-2xl font-bold text-gray-900">{selectedReview.communicationRating}</div>
-                    <div className="text-sm text-gray-500">Communication</div>
+                  <div className="text-center p-4 bg-gray-50 rounded-xl dark:bg-slate-800">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{selectedReview.communicationRating}</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">Communication</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-xl">
-                    <div className="text-2xl font-bold text-gray-900">{selectedReview.conditionRating}</div>
-                    <div className="text-sm text-gray-500">Condition</div>
+                  <div className="text-center p-4 bg-gray-50 rounded-xl dark:bg-slate-800">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{selectedReview.conditionRating}</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">Condition</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-xl">
-                    <div className="text-2xl font-bold text-gray-900">{selectedReview.valueRating}</div>
-                    <div className="text-sm text-gray-500">Value</div>
+                  <div className="text-center p-4 bg-gray-50 rounded-xl dark:bg-slate-800">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{selectedReview.valueRating}</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">Value</div>
                   </div>
                   {selectedReview.deliveryRating && (
-                    <div className="text-center p-4 bg-gray-50 rounded-xl">
-                      <div className="text-2xl font-bold text-gray-900">{selectedReview.deliveryRating}</div>
-                      <div className="text-sm text-gray-500">Delivery</div>
+                    <div className="text-center p-4 bg-gray-50 rounded-xl dark:bg-slate-800">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{selectedReview.deliveryRating}</div>
+                      <div className="text-sm text-gray-500 dark:text-slate-400">Delivery</div>
                     </div>
                   )}
                 </div>
 
                 {/* AI Analysis */}
                 {selectedReview.aiSentimentScore && (
-                  <div className="bg-my-primary/10 rounded-xl p-4">
-                    <h5 className="font-medium text-gray-900 mb-3">AI Analysis</h5>
+                  <div className="bg-my-primary/10 rounded-xl p-4 dark:bg-my-primary/20">
+                    <h5 className="font-medium text-gray-900 mb-3 dark:text-slate-100">AI Analysis</h5>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center">
                         <div className="text-lg font-semibold text-my-primary">
                           {parseFloat(selectedReview.aiSentimentScore).toFixed(2)}
                         </div>
-                        <div className="text-xs text-gray-500">Sentiment Score</div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400">Sentiment Score</div>
                       </div>
                       {selectedReview.aiToxicityScore && (
                         <div className="text-center">
                           <div className="text-lg font-semibold text-orange-600">
                             {parseFloat(selectedReview.aiToxicityScore).toFixed(2)}
                           </div>
-                          <div className="text-xs text-gray-500">Toxicity Score</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400">Toxicity Score</div>
                         </div>
                       )}
                       {selectedReview.aiHelpfulnessScore && (
@@ -1259,7 +1284,7 @@ const DashboardPage: React.FC = () => {
                           <div className="text-lg font-semibold text-green-600">
                             {parseFloat(selectedReview.aiHelpfulnessScore).toFixed(2)}
                           </div>
-                          <div className="text-xs text-gray-500">Helpfulness Score</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400">Helpfulness Score</div>
                         </div>
                       )}
                     </div>
@@ -1268,39 +1293,39 @@ const DashboardPage: React.FC = () => {
 
                 {/* Response Section */}
                 {selectedReview.response && (
-                  <div className="bg-green-50 rounded-xl p-4">
+                  <div className="bg-green-50 rounded-xl p-4 dark:bg-green-900/20">
                     <div className="flex items-center space-x-2 mb-3">
                       <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                         <span className="text-xs text-white font-bold">R</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">Your Response</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-slate-100">Your Response</span>
                       {selectedReview.responseDate && (
                         <span className="text-xs text-gray-500">
                           {new Date(selectedReview.responseDate).toLocaleDateString()}
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-700">{selectedReview.response}</p>
+                    <p className="text-gray-700 dark:text-slate-300">{selectedReview.response}</p>
                   </div>
                 )}
 
                 {/* Metadata */}
-                <div className="border-t border-gray-200 pt-4">
+                <div className="border-t border-gray-200 pt-4 dark:border-slate-700">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500">Review ID:</span>
-                      <p className="font-mono text-xs text-gray-700">{selectedReview.id}</p>
+                      <span className="text-gray-500 dark:text-slate-400">Review ID:</span>
+                      <p className="font-mono text-xs text-gray-700 dark:text-slate-300">{selectedReview.id}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Booking ID:</span>
-                      <p className="font-mono text-xs text-gray-700">{selectedReview.bookingId}</p>
+                      <span className="text-gray-500 dark:text-slate-400">Booking ID:</span>
+                      <p className="font-mono text-xs text-gray-700 dark:text-slate-300">{selectedReview.bookingId}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Reviewer ID:</span>
-                      <p className="font-mono text-xs text-gray-700">{selectedReview.reviewerId}</p>
+                      <span className="text-gray-500 dark:text-slate-400">Reviewer ID:</span>
+                      <p className="font-mono text-xs text-gray-700 dark:text-slate-300">{selectedReview.reviewerId}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Status:</span>
+                      <span className="text-gray-500 dark:text-slate-400">Status:</span>
                       <span className={`ml-1 px-2 py-1 rounded-full text-xs ${selectedReview.moderationStatus === 'approved'
                         ? 'bg-success-100 text-success-700'
                         : selectedReview.moderationStatus === 'pending'
@@ -1321,13 +1346,13 @@ const DashboardPage: React.FC = () => {
       {/* 2FA Management Modal */}
       {show2FAModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto dark:bg-slate-900">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Two-Factor Authentication</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Two-Factor Authentication</h2>
                 <button
                   onClick={() => setShow2FAModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   <XCircle className="w-6 h-6" />
                 </button>

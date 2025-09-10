@@ -184,15 +184,15 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
 
   return (
     <ErrorBoundary>
-      <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+      <div className={`bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 ${className}`}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center space-x-3">
             <Shield className="w-6 h-6 text-teal-600" />
             <div>
-              <h2 className="text-lg font-medium text-gray-900">Risk Assessment</h2>
-              <p className="text-sm text-gray-600">Evaluate risk for product-renter combination</p>
+              <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-slate-100">Risk Assessment</h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400">Evaluate risk for product-renter combination</p>
             </div>
           </div>
           {assessment && (
@@ -207,13 +207,13 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Product autocomplete */}
             <div className="relative">
-              <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 <Package className="w-4 h-4 inline mr-2" />
                 Product
               </label>
@@ -235,17 +235,17 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
                     setProductOptions(filterProducts(productQuery));
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                 placeholder="Search product by name"
                 disabled={loading}
                 autoComplete="off"
               />
               {showProductOptions && productOptions.length > 0 && (
-                <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-200">
+                <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
                   {productOptions.map((p: any) => (
                     <li
                       key={p.id || p.productId}
-                      className="cursor-pointer select-none py-2 px-3 text-gray-700 hover:bg-gray-100"
+                      className="cursor-pointer select-none py-2 px-3 text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         const id = p.id || p.productId;
@@ -255,14 +255,27 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
                         setShowProductOptions(false);
                       }}
                     >
-                      <div className="font-medium">{p.name || p.productName || p.title || 'Unnamed product'}</div>
-                      <div className="text-xs text-gray-500 truncate">ID: {p.id || p.productId}</div>
+                      <div className="font-medium dark:text-slate-100">{p.name || p.productName || p.title || 'Unnamed product'}</div>
+                      <div className="text-xs text-gray-500 truncate dark:text-slate-400">ID: {p.id || p.productId}</div>
                     </li>
                   ))}
+                  {filterProducts(productQuery).length > productOptions.length && (
+                    <li
+                      className="cursor-pointer select-none py-2 px-3 text-center text-sm text-teal-700 hover:bg-gray-100 dark:text-teal-400 dark:hover:bg-slate-800"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        // show more results (up to 200)
+                        const all = filterProducts(productQuery);
+                        setProductOptions(all.slice(0, 200));
+                      }}
+                    >
+                      Show all results ({filterProducts(productQuery).length})
+                    </li>
+                  )}
                 </ul>
               )}
               {formData.productId && (
-                <div className="mt-1 text-xs text-gray-500">Selected Product ID: {formData.productId}</div>
+                <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">Selected Product ID: {formData.productId}</div>
               )}
             </div>
 

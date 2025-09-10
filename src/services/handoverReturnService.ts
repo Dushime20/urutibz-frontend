@@ -111,6 +111,50 @@ export const handoverReturnService = {
     }
   },
 
+  // ADMIN: Get all sessions (handover + return) with optional view filter
+  getAdminSessions: async (params?: { view?: 'handover' | 'return'; page?: number; limit?: number }): Promise<{ success: boolean; message: string; data: any[]; meta?: any }> => {
+    try {
+      const query = new URLSearchParams();
+      if (params?.view) query.set('view', params.view);
+      if (params?.page) query.set('page', String(params.page));
+      if (params?.limit) query.set('limit', String(params.limit));
+      const path = query.toString() ? `/admin/sessions?${query.toString()}` : '/admin/sessions';
+      const { data } = await handoverReturnApi.get(path);
+      const body = data || {};
+      // Normalize response to flat list
+      let items: any[] = [];
+      let meta: any = undefined;
+      if (Array.isArray(body?.data)) {
+        items = body.data;
+        meta = body?.meta;
+      } else if (body?.data && (Array.isArray(body.data.handovers) || Array.isArray(body.data.returns))) {
+        const handovers = Array.isArray(body.data.handovers) ? body.data.handovers.map((s: any) => ({ ...s, type: 'handover' })) : [];
+        const returns = Array.isArray(body.data.returns) ? body.data.returns.map((s: any) => ({ ...s, type: 'return' })) : [];
+        // If a specific view was requested, many backends still return both; filter here
+        const view = params?.view;
+        items = view === 'handover' ? handovers : view === 'return' ? returns : [...handovers, ...returns];
+        const handoverMeta = body?.meta?.handovers || {};
+        const returnMeta = body?.meta?.returns || {};
+        const total = (handoverMeta.total || handovers.length) + (returnMeta.total || returns.length);
+        const limit = params?.limit || handoverMeta.limit || returnMeta.limit || items.length;
+        const page = params?.page || handoverMeta.page || returnMeta.page || 1;
+        const pages = view
+          ? (view === 'handover' ? (handoverMeta.pages || Math.max(1, Math.ceil((handoverMeta.total || handovers.length) / (handoverMeta.limit || limit || 1))))
+             : (returnMeta.pages || Math.max(1, Math.ceil((returnMeta.total || returns.length) / (returnMeta.limit || limit || 1)))))
+          : Math.max(1, Math.ceil(total / (limit || 1)));
+        meta = { total, page, limit, pages };
+      } else {
+        // Fallback unknown shape
+        items = [];
+        meta = body?.meta || { total: 0, page: 1, limit: params?.limit || 20, pages: 1 };
+      }
+      return { success: !!body.success, message: body.message, data: items, meta };
+    } catch (error: any) {
+      console.error('Error fetching admin sessions:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch admin sessions');
+    }
+  },
+
   // Get handover session by ID
   getHandoverSession: async (sessionId: string): Promise<HandoverSession> => {
     try {

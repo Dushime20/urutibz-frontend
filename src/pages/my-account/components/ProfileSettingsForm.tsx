@@ -152,13 +152,13 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
-      <div className="flex items-start gap-6">
+      <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
         <div className="flex flex-col items-center gap-2">
           {avatarUrl ? (
-            <img src={avatarUrl} className="w-28 h-28 rounded-2xl object-cover" />
+            <img src={avatarUrl} className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-2 ring-white/20" />
           ) : (
-            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-              <UserCircle className="w-16 h-16 text-gray-400" />
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center dark:from-slate-800 dark:to-slate-700">
+              <UserCircle className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400 dark:text-slate-500" />
             </div>
           )}
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
@@ -169,35 +169,35 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
               upload(f);
             }
           }} />
-          <button type="button" className="px-3 py-2 rounded-xl border" onClick={() => fileRef.current?.click()} disabled={saving}>Upload avatar</button>
+          <button type="button" className="px-3 py-2 rounded-lg border text-sm dark:border-slate-700 dark:text-slate-100" onClick={() => fileRef.current?.click()} disabled={saving}>Upload avatar</button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 flex-1 w-full">
           <div>
-            <label className="block text-sm mb-1">First Name</label>
-            <input className="w-full px-3 py-2 border rounded-lg" {...register('firstName')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">First Name</label>
+            <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('firstName')} />
             {errors.firstName && <p className="text-xs text-red-600">{errors.firstName.message as any}</p>}
           </div>
           <div>
-            <label className="block text-sm mb-1">Last Name</label>
-            <input className="w-full px-3 py-2 border rounded-lg" {...register('lastName')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Last Name</label>
+            <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('lastName')} />
             {errors.lastName && <p className="text-xs text-red-600">{errors.lastName.message as any}</p>}
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm mb-1">Bio</label>
-            <textarea className="w-full px-3 py-2 border rounded-lg" rows={3} maxLength={500} {...register('bio')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Bio</label>
+            <textarea className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" rows={3} maxLength={500} {...register('bio')} />
             {errors.bio && <p className="text-xs text-red-600">{errors.bio.message as any}</p>}
           </div>
 
           <div>
-            <label className="block text-sm mb-1">Date of Birth</label>
-            <input type="date" className="w-full px-3 py-2 border rounded-lg" {...register('date_of_birth')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Date of Birth</label>
+            <input type="date" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('date_of_birth')} />
             {errors.date_of_birth && <p className="text-xs text-red-600">{errors.date_of_birth.message as any}</p>}
           </div>
           <div>
-            <label className="block text-sm mb-1">Gender</label>
-            <select className="w-full px-3 py-2 border rounded-lg" {...register('gender')}>
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Gender</label>
+            <select className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('gender')}>
               <option value="">Select</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -207,38 +207,38 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
           </div>
 
           <div>
-            <label className="block text-sm mb-1">Province</label>
-            <input className="w-full px-3 py-2 border rounded-lg" {...register('province')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Province</label>
+            <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('province')} />
             {errors.province && <p className="text-xs text-red-600">{errors.province.message as any}</p>}
           </div>
           <div>
-            <label className="block text-sm mb-1">Address Line</label>
-            <input className="w-full px-3 py-2 border rounded-lg" {...register('address_line')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Address Line</label>
+            <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('address_line')} />
             {errors.address_line && <p className="text-xs text-red-600">{errors.address_line.message as any}</p>}
           </div>
 
           <div>
-            <label className="block text-sm mb-1">District</label>
-            <input className="w-full px-3 py-2 border rounded-lg" {...register('district')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">District</label>
+            <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('district')} />
           </div>
           <div>
-            <label className="block text-sm mb-1">Sector</label>
-            <input className="w-full px-3 py-2 border rounded-lg" {...register('sector')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Sector</label>
+            <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('sector')} />
           </div>
           <div>
-            <label className="block text-sm mb-1">Cell</label>
-            <input className="w-full px-3 py-2 border rounded-lg" {...register('cell')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Cell</label>
+            <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('cell')} />
           </div>
           <div>
-            <label className="block text-sm mb-1">Village</label>
-            <input className="w-full px-3 py-2 border rounded-lg" {...register('village')} />
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Village</label>
+            <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('village')} />
           </div>
 
           {/* Hidden geo fields - maintained in form state */}
           <input type="hidden" {...register('location.lat')} />
           <input type="hidden" {...register('location.lng')} />
           <div className="md:col-span-2">
-            <button type="button" className="px-3 py-2 rounded-lg border" onClick={useCurrentLocation}>Use current location</button>
+            <button type="button" className="px-3 py-2 rounded-lg border dark:border-slate-700 dark:text-slate-100" onClick={useCurrentLocation}>Use current location</button>
           </div>
         </div>
       </div>

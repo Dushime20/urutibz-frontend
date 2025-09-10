@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { X, Edit, Calendar, MapPin, Clock, CheckCircle, XCircle, AlertCircle, Package, ArrowRightLeft, User, Building, Play } from 'lucide-react';
 import { useHandoverSession } from '../../../hooks/useHandoverSession';
 import { useReturnSession } from '../../../hooks/useReturnSession';
@@ -30,6 +31,26 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
   const loading = handoverLoading || returnLoading;
   const session = sessionType === 'handover' ? handoverSession : returnSession;
+  // Current user (used to authorize who can complete the session)
+  let currentUserId: string | null = null;
+  try {
+    const token = (typeof window !== 'undefined' && localStorage.getItem('token')) || '';
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      currentUserId = payload?.sub || payload?.userId || payload?.id || null;
+    }
+    if (!currentUserId) {
+      const storedUser = (typeof window !== 'undefined' && localStorage.getItem('user')) || '';
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        currentUserId = u?.id || u?.userId || null;
+      }
+    }
+  } catch {}
+
+  // Friendly names derived from IDs
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+  const [friendly, setFriendly] = useState<{ productName?: string; bookingName?: string; ownerName?: string; ownerPhone?: string; renterName?: string }>({});
 
   useEffect(() => {
     if (isOpen && sessionId) {
@@ -50,6 +71,44 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
         estimatedDurationMinutes: session.estimatedDurationMinutes
       });
     }
+  }, [session]);
+
+  // Fetch friendly names when IDs are available
+  useEffect(() => {
+    (async () => {
+      if (!session) return;
+      const updates: any = {};
+      try {
+        if (session.productId) {
+          const { data } = await axios.get(`${API_BASE_URL}/products/${session.productId}`);
+          const prod = data?.data || data;
+          updates.productName = prod?.name || prod?.title || prod?.productName || `Product ${String(session.productId).slice(0,8)}`;
+        }
+      } catch {}
+      try {
+        if (session.bookingId) {
+          const { data } = await axios.get(`${API_BASE_URL}/bookings/${session.bookingId}`);
+          const b = data?.data || data;
+          updates.bookingName = b?.reference || b?.code || b?.bookingCode || `Booking ${String(session.bookingId).slice(0,8)}`;
+        }
+      } catch {}
+      try {
+        if (session.ownerId) {
+          const { data } = await axios.get(`${API_BASE_URL}/users/${session.ownerId}`);
+          const u = data?.data || data;
+          updates.ownerName = u?.name || [u?.firstName, u?.lastName].filter(Boolean).join(' ') || u?.email || `Owner ${String(session.ownerId).slice(0,8)}`;
+          updates.ownerPhone = u?.phone || u?.phoneNumber || u?.mobile || '';
+        }
+      } catch {}
+      try {
+        if (session.renterId) {
+          const { data } = await axios.get(`${API_BASE_URL}/users/${session.renterId}`);
+          const u = data?.data || data;
+          updates.renterName = u?.name || [u?.firstName, u?.lastName].filter(Boolean).join(' ') || u?.email || `Renter ${String(session.renterId).slice(0,8)}`;
+        }
+      } catch {}
+      if (Object.keys(updates).length) setFriendly((prev) => ({ ...prev, ...updates }));
+    })();
   }, [session]);
 
   const getStatusIcon = (status: string) => {
@@ -242,7 +301,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              {session?.status === 'scheduled' && (
+              {session?.status === 'scheduled' && session?.renterId === currentUserId && (
                 <button
                   onClick={handleStartComplete}
                   className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
@@ -291,20 +350,35 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Booking ID</label>
-                    <p className="text-sm text-gray-900 font-mono">{session.bookingId}</p>
+                    <label className="text-sm font-medium text-gray-700">Booking</label>
+                    <p className="text-sm text-gray-900">
+                      {friendly.bookingName || '—'}
+                    </p>
+                    <p className="text-xs text-gray-500 font-mono">{session.bookingId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Product ID</label>
-                    <p className="text-sm text-gray-900 font-mono">{session.productId}</p>
+                    <label className="text-sm font-medium text-gray-700">Product</label>
+                    <p className="text-sm text-gray-900">
+                      {friendly.productName || '—'}
+                    </p>
+                    <p className="text-xs text-gray-500 font-mono">{session.productId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Owner ID</label>
-                    <p className="text-sm text-gray-900 font-mono">{session.ownerId}</p>
+                    <label className="text-sm font-medium text-gray-700">Owner</label>
+                    <p className="text-sm text-gray-900">
+                      {friendly.ownerName || '—'}
+                    </p>
+                    {friendly.ownerPhone && (
+                      <p className="text-xs text-gray-600 mt-0.5">{friendly.ownerPhone}</p>
+                    )}
+                    <p className="text-xs text-gray-500 font-mono">{session.ownerId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Renter ID</label>
-                    <p className="text-sm text-gray-900 font-mono">{session.renterId}</p>
+                    <label className="text-sm font-medium text-gray-700">Renter</label>
+                    <p className="text-sm text-gray-900">
+                      {friendly.renterName || '—'}
+                    </p>
+                    <p className="text-xs text-gray-500 font-mono">{session.renterId}</p>
                   </div>
                 </div>
               </div>

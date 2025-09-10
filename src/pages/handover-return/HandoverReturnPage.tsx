@@ -44,68 +44,68 @@ const HandoverReturnPage: React.FC = () => {
         return <HandoverSessionsList />;
       case 'stats':
         return (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Statistics Dashboard</h3>
-              <p className="text-sm text-gray-600">Handover and return analytics</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Statistics Dashboard</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-400">Handover and return analytics</p>
             </div>
             {statsError && <div className="text-sm text-red-600 mb-4">{statsError}</div>}
             {statsLoading ? (
-              <div className="text-sm text-gray-500">Loading stats…</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">Loading stats…</div>
             ) : stats ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Total Handovers</div>
-                    <div className="text-2xl font-semibold text-gray-900">{stats.totalHandovers}</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Total Handovers</div>
+                    <div className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalHandovers}</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Total Returns</div>
-                    <div className="text-2xl font-semibold text-gray-900">{stats.totalReturns}</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Total Returns</div>
+                    <div className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalReturns}</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Dispute Rate</div>
-                    <div className="text-2xl font-semibold text-gray-900">{stats.disputeRate}%</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Dispute Rate</div>
+                    <div className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{stats.disputeRate}%</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Handover Success</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Handover Success</div>
                     <div className="text-xl font-semibold text-teal-600">{stats.handoverSuccessRate}%</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Return On-Time</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Return On-Time</div>
                     <div className="text-xl font-semibold text-teal-600">{stats.returnOnTimeRate}%</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-lg border border-gray-200 p-4">
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
                     <div className="text-xs text-gray-500">Avg Handover Time</div>
-                    <div className="text-xl font-semibold text-gray-900">{stats.averageHandoverTime} min</div>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageHandoverTime} min</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
                     <div className="text-xs text-gray-500">Avg Return Processing</div>
-                    <div className="text-xl font-semibold text-gray-900">{stats.averageReturnProcessingTime} min</div>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageReturnProcessingTime} min</div>
                   </div>
                 </div>
                 {(stats.statusDistribution || stats.typeDistribution) && (
                   <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {stats.statusDistribution && (
-                      <div className="rounded-lg border border-gray-200 p-4">
-                        <div className="text-sm font-medium text-gray-900 mb-2">Status Distribution</div>
+                      <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                        <div className="text-sm font-medium text-gray-900 mb-2 dark:text-slate-100">Status Distribution</div>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(stats.statusDistribution).map(([k, v]: any) => (
-                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">{k}: {v}</span>
+                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">{k}: {v}</span>
                           ))}
                         </div>
                       </div>
                     )}
                     {stats.typeDistribution && (
-                      <div className="rounded-lg border border-gray-200 p-4">
-                        <div className="text-sm font-medium text-gray-900 mb-2">Type Distribution</div>
+                      <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                        <div className="text-sm font-medium text-gray-900 mb-2 dark:text-slate-100">Type Distribution</div>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(stats.typeDistribution).map(([k, v]: any) => (
-                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">{k}: {v}</span>
+                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">{k}: {v}</span>
                           ))}
                         </div>
                       </div>
@@ -114,7 +114,7 @@ const HandoverReturnPage: React.FC = () => {
                 )}
               </>
             ) : (
-              <div className="text-sm text-gray-500">No stats available.</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">No stats available.</div>
             )}
           </div>
         );
@@ -141,25 +141,25 @@ const HandoverReturnPage: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Handover & Return</h1>
-                <p className="text-gray-600 mt-2">
+                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">Handover & Return</h1>
+                <p className="text-gray-600 mt-1 sm:mt-2 dark:text-slate-400">
                   Manage product handover and return sessions with comprehensive tracking
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2 sm:space-x-3">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
                       setCreateType('handover');
                       setShowCreateModal(true);
                     }}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                    className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
                   >
                     <Package className="w-4 h-4 mr-2" />
                     New Handover
@@ -169,21 +169,21 @@ const HandoverReturnPage: React.FC = () => {
                       setCreateType('return');
                       setShowCreateModal(true);
                     }}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                    className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
                   >
                     <ArrowRightLeft className="w-4 h-4 mr-2" />
                     New Return
                   </button>
                 </div>
-                <Package className="w-8 h-8 text-teal-600" />
+                <Package className="w-6 h-6 sm:w-8 sm:h-8 text-teal-600" />
               </div>
             </div>
           </div>
 
           {/* Navigation Tabs */}
-          <div className="mb-8">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
+          <div className="mb-6 sm:mb-8">
+            <div className="border-b border-gray-200 dark:border-slate-700">
+              <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto whitespace-nowrap">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -192,17 +192,13 @@ const HandoverReturnPage: React.FC = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as any)}
-                      className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                      className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm shrink-0 ${
                         isActive
                           ? 'border-teal-500 text-teal-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
                       }`}
                     >
-                      <Icon
-                        className={`-ml-0.5 mr-2 h-5 w-5 ${
-                          isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
-                        }`}
-                      />
+                      <Icon className={`-ml-0.5 mr-2 h-5 w-5 ${isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-slate-500 dark:group-hover:text-slate-300'}`} />
                       {tab.label}
                     </button>
                   );
@@ -218,38 +214,38 @@ const HandoverReturnPage: React.FC = () => {
 
           {/* Quick Stats Overview */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <Package className="w-8 h-8 text-teal-600" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Handover Sessions</h3>
-                  <p className="text-sm text-gray-600">Manage product handovers</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">Handover Sessions</h3>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">Manage product handovers</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <ArrowRightLeft className="w-8 h-8 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Return Sessions</h3>
-                  <p className="text-sm text-gray-600">Manage product returns</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">Return Sessions</h3>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">Manage product returns</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <TrendingUp className="w-8 h-8 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Success Rate</h3>
-                  <p className="text-sm text-gray-600">Track completion rates</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">Success Rate</h3>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">Track completion rates</p>
                 </div>
               </div>
             </div>

@@ -6,15 +6,20 @@ import { z } from 'zod';
 import type { Inspector } from '../../types/inspection';
 import { InspectionType } from '../../types/inspection';
 import { inspectorService } from '../../services/inspectionService';
+import { getMyProducts, fetchUserBookings, getProductById } from '../../pages/my-account/service/api';
 
 const createInspectionSchema = z.object({
-  productId: z.string().min(1, 'Product ID is required'),
-  bookingId: z.string().min(1, 'Booking ID is required'),
+  mode: z.enum(['owner', 'renter']).default('owner'),
+  productId: z.string().optional(),
+  bookingId: z.string().optional(),
   inspectorId: z.string().min(1, 'Inspector is required'),
   inspectionType: z.nativeEnum(InspectionType),
   scheduledAt: z.string().min(1, 'Scheduled date is required'),
   location: z.string().min(1, 'Location is required'),
   notes: z.string().optional()
+}).refine((data) => !!(data.productId || data.bookingId), {
+  message: 'Provide at least product or booking ID',
+  path: ['productId'],
 });
 
 type CreateInspectionFormData = z.infer<typeof createInspectionSchema>;
@@ -39,20 +44,57 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-    watch
+    setValue,
+    watch,
   } = useForm<CreateInspectionFormData>({
-    resolver: zodResolver(createInspectionSchema),
+    resolver: zodResolver(createInspectionSchema) as any,
     defaultValues: {
+      mode: 'owner',
       inspectionType: InspectionType.PRE_RENTAL
     }
   });
 
-  const watchedInspectorId = watch('inspectorId');
+  const mode = watch('mode');
+  const [productQuery, setProductQuery] = useState('');
+  const [bookingQuery, setBookingQuery] = useState('');
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [showProductOptions, setShowProductOptions] = useState(false);
+  const [showBookingOptions, setShowBookingOptions] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       loadInspectors();
       reset();
+      // preload products and bookings for autocomplete
+      (async () => {
+        try {
+          const products = await getMyProducts();
+          const normalized = Array.isArray(products) ? products : (products?.data || products?.items || []);
+          setAllProducts(normalized);
+        } catch {
+          setAllProducts([]);
+        }
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetchUserBookings(token || undefined);
+          const bookings = (res?.data || []) as any[];
+          // Enrich each booking with product title like in My Bookings list
+          const enriched = await Promise.all(bookings.map(async (b: any) => {
+            try {
+              const pid = b.product_id || b.productId;
+              if (pid) {
+                const prod = await getProductById(pid);
+                return { ...b, product: prod };
+              }
+            } catch {}
+            return b;
+          }));
+          setAllBookings(enriched);
+        } catch {
+          setAllBookings([]);
+        }
+      })();
     }
   }, [isOpen, reset]);
 
@@ -61,16 +103,16 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
       setLoadingInspectors(true);
       // Try fetching inspectors by role first
       const byRole = await inspectorService.getInspectors('inspector');
-      let normalized: Inspector[] = Array.isArray(byRole)
+      let normalized: Inspector[] = Array.isArray(byRole as any)
         ? byRole
-        : (byRole?.inspectors ?? byRole?.data ?? byRole?.items ?? []);
+        : ((byRole as any)?.inspectors ?? (byRole as any)?.data ?? (byRole as any)?.items ?? []);
 
       // Fallback: fetch all inspectors if none returned with role filter
       if (!Array.isArray(normalized) || normalized.length === 0) {
         const all = await inspectorService.getInspectors();
-        normalized = Array.isArray(all)
+        normalized = Array.isArray(all as any)
           ? all
-          : (all?.inspectors ?? all?.data ?? all?.items ?? []);
+          : ((all as any)?.inspectors ?? (all as any)?.data ?? (all as any)?.items ?? []);
       }
 
       setInspectors(Array.isArray(normalized) ? normalized : []);
@@ -131,33 +173,122 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
           {/* Form */}
           <form onSubmit={handleSubmit(handleFormSubmit)} className="px-4 py-5 sm:p-6">
             <div className="space-y-4">
-              {/* Product ID */}
+              {/* Mode selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Request For</label>
+                <div className="flex gap-3">
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input type="radio" value="owner" {...register('mode')} className="text-blue-600" defaultChecked />
+                    My item (owner)
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input type="radio" value="renter" {...register('mode')} className="text-blue-600" />
+                    My rental (renter)
+                  </label>
+                </div>
+              </div>
+              {/* Product ID (visible in all modes) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Product ID
                 </label>
-                <input
-                  type="text"
-                  {...register('productId')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter product ID"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={productQuery}
+                    onChange={(e) => {
+                      setProductQuery(e.target.value);
+                      setShowProductOptions(true);
+                      setValue('productId', undefined as any);
+                    }}
+                    onFocus={() => setShowProductOptions(true)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Search product by name"
+                  />
+                  {showProductOptions && (
+                    <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-200">
+                      {allProducts
+                        .filter((p: any) => (p.title || p.name || '').toLowerCase().includes(productQuery.toLowerCase()))
+                        .slice(0, 20)
+                        .map((p: any) => (
+                          <li
+                            key={p.id}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setProductQuery(p.title || p.name || `Product ${p.id.slice(0,8)}`);
+                              setValue('productId', String(p.id));
+                              setShowProductOptions(false);
+                            }}
+                          >
+                            <div className="font-medium text-gray-900">{p.title || p.name}</div>
+                            <div className="text-xs text-gray-500">ID: {p.id}</div>
+                          </li>
+                        ))}
+                      {allProducts.length === 0 && (
+                        <li className="px-3 py-2 text-gray-500">No products</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
                 {errors.productId && (
                   <p className="mt-1 text-sm text-red-600">{errors.productId.message}</p>
                 )}
               </div>
 
-              {/* Booking ID */}
+              {/* Booking ID (visible in all modes) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Booking ID
                 </label>
-                <input
-                  type="text"
-                  {...register('bookingId')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter booking ID"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={bookingQuery}
+                    onChange={(e) => {
+                      setBookingQuery(e.target.value);
+                      setShowBookingOptions(true);
+                      setValue('bookingId', undefined as any);
+                    }}
+                    onFocus={() => setShowBookingOptions(true)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Search booking by reference/code"
+                  />
+                  {showBookingOptions && (
+                    <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-200">
+                      {allBookings
+                        .filter((b: any) => {
+                          const match = (b.reference || b.code || b.bookingCode || '').toLowerCase().includes(bookingQuery.toLowerCase());
+                          const productTitle = (bookingQuery || '').toLowerCase();
+                          const productName = (b.product?.title || b.product?.name || '').toLowerCase();
+                          return match || (productTitle && productName.includes(productTitle));
+                        })
+                        .slice(0, 20)
+                        .map((b: any) => (
+                          <li
+                            key={b.id}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const productLabel = b.product?.title || b.product?.name || '';
+                              const refLabel = b.reference || b.code || b.bookingCode || `Booking ${String(b.id).slice(0,8)}`;
+                              const label = productLabel ? `${productLabel} (${refLabel})` : refLabel;
+                              setBookingQuery(label);
+                              setValue('bookingId', String(b.id));
+                              setShowBookingOptions(false);
+                            }}
+                          >
+                            <div className="font-medium text-gray-900">{b.product?.title || b.product?.name || 'Booking'}</div>
+                            <div className="text-xs text-gray-500">{b.reference || b.code || b.bookingCode || ''}</div>
+                            <div className="text-xs text-gray-500">ID: {b.id}</div>
+                          </li>
+                        ))}
+                      {allBookings.length === 0 && (
+                        <li className="px-3 py-2 text-gray-500">No bookings</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
                 {errors.bookingId && (
                   <p className="mt-1 text-sm text-red-600">{errors.bookingId.message}</p>
                 )}
@@ -286,14 +417,14 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || loading}
-                className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex justify-center rounded-md border border-transparent bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting || loading ? 'Creating...' : 'Create Inspection'}
               </button>

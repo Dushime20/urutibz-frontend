@@ -174,7 +174,7 @@ const InspectionsSection: React.FC<Props> = ({
 
   if ((loading && activeTab === 'my-items') || (rentedLoading && activeTab === 'rented-items')) {
     return (
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
         </div>
@@ -184,7 +184,7 @@ const InspectionsSection: React.FC<Props> = ({
 
   if (disputesLoading && activeTab === 'disputes') {
     return (
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
         </div>
@@ -193,36 +193,36 @@ const InspectionsSection: React.FC<Props> = ({
   }
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+    <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
       {/* Header with tabs */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+        <div className="flex overflow-x-auto whitespace-nowrap space-x-1 bg-gray-100 rounded-lg p-1 dark:bg-slate-800">
           <button
             onClick={() => setActiveTab('my-items')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors shrink-0 ${
               activeTab === 'my-items'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-gray-900 shadow-sm dark:bg-slate-900 dark:text-slate-100'
+                : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             My Items ({userInspections.length})
           </button>
           <button
             onClick={() => setActiveTab('rented-items')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors shrink-0 ${
               activeTab === 'rented-items'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-gray-900 shadow-sm dark:bg-slate-900 dark:text-slate-100'
+                : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             Rented Items ({rentedInspections.length})
           </button>
           <button
             onClick={() => setActiveTab('disputes')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors shrink-0 ${
               activeTab === 'disputes'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-gray-900 shadow-sm dark:bg-slate-900 dark:text-slate-100'
+                : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             Disputes ({userDisputes.length})
@@ -230,14 +230,14 @@ const InspectionsSection: React.FC<Props> = ({
         </div>
         <div className="flex gap-2">
           {activeTab === 'my-items' && (
-            <button onClick={onRequestInspection} className="bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 rounded">
+            <button onClick={onRequestInspection} className="bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 rounded text-sm">
               Request Inspection
             </button>
           )}
           {activeTab === 'disputes' && (
             <button 
               onClick={() => setShowDisputeModal(true)}
-              className="bg-red-600 text-white px-3 py-2 hover:bg-red-700 rounded flex items-center gap-2"
+              className="bg-red-600 text-white px-3 py-2 hover:bg-red-700 rounded flex items-center gap-2 text-sm"
             >
               <Plus className="w-4 h-4" />
               Raise Dispute
@@ -251,9 +251,9 @@ const InspectionsSection: React.FC<Props> = ({
         <div className="space-y-4">
           {userInspections.length === 0 ? (
             <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Inspections Yet</h3>
-              <p className="text-gray-500 mb-4">You haven't requested any inspections yet.</p>
+              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Inspections Yet</h3>
+              <p className="text-gray-500 mb-4 dark:text-slate-400">You haven't requested any inspections yet.</p>
               <button
                 onClick={onRequestInspection}
                 className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
@@ -265,12 +265,12 @@ const InspectionsSection: React.FC<Props> = ({
             userInspections.map((inspection) => (
               <div
                 key={inspection.id}
-                className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
+                className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-3 sm:space-y-0 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer overflow-hidden dark:border-slate-700 dark:hover:border-slate-600"
                 onClick={() => onViewInspection(inspection.id)}
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <h4 className="font-semibold text-gray-900 capitalize">
+                    <h4 className="font-semibold text-gray-900 capitalize dark:text-slate-100">
                       {inspection.inspectionType?.replace(/_/g, ' ') || 'Inspection'}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(inspection.status)}`}>
@@ -279,7 +279,7 @@ const InspectionsSection: React.FC<Props> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2 dark:text-slate-400">
                     {inspection.scheduledAt && (
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
@@ -295,32 +295,32 @@ const InspectionsSection: React.FC<Props> = ({
                   </div>
 
                   {inspection.notes && (
-                    <p className="text-xs text-gray-400 truncate">{inspection.notes}</p>
+                    <p className="text-xs text-gray-400 truncate dark:text-slate-500">{inspection.notes}</p>
                   )}
                 </div>
 
-                                 <div className="text-right">
-                   <div className="flex items-center gap-2">
-                     <Eye className="w-4 h-4 text-gray-400" />
-                     <span className="text-xs text-gray-500">View Details</span>
-                   </div>
-                   {inspection.createdAt && (
-                     <p className="text-xs text-gray-400 mt-1">
-                       Created {formatDate(inspection.createdAt)}
-                     </p>
-                   )}
-                   {/* Raise Dispute Button */}
-                   <button
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       openDisputeModal(inspection.id);
-                     }}
-                     className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full hover:bg-red-200 transition-colors flex items-center gap-1"
-                   >
-                     <AlertCircle className="w-3 h-3" />
-                     Raise Dispute
-                   </button>
-                 </div>
+                <div className="sm:text-right text-left">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                    <span className="text-xs text-gray-500 dark:text-slate-400">View Details</span>
+                  </div>
+                  {inspection.createdAt && (
+                    <p className="text-xs text-gray-400 mt-1 break-words dark:text-slate-500">
+                      Created {formatDate(inspection.createdAt)}
+                    </p>
+                  )}
+                  {/* Raise Dispute Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDisputeModal(inspection.id);
+                    }}
+                    className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full hover:bg-red-200 transition-colors flex items-center gap-1 dark:bg-red-900/20 dark:hover:bg-red-900/30"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    Raise Dispute
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -332,20 +332,20 @@ const InspectionsSection: React.FC<Props> = ({
         <div className="space-y-4">
           {rentedInspections.length === 0 ? (
             <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Rented Item Inspections</h3>
-              <p className="text-gray-500 mb-4">You haven't rented any items that require inspections yet.</p>
+              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Rented Item Inspections</h3>
+              <p className="text-gray-500 mb-4 dark:text-slate-400">You haven't rented any items that require inspections yet.</p>
             </div>
           ) : (
             rentedInspections.map((inspection) => (
               <div
                 key={inspection.id}
-                className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
+                className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-3 sm:space-y-0 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer overflow-hidden dark:border-slate-700 dark:hover:border-slate-600"
                 onClick={() => onViewInspection(inspection.id)}
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <h4 className="font-semibold text-gray-900 capitalize">
+                    <h4 className="font-semibold text-gray-900 capitalize dark:text-slate-100">
                       {inspection.inspectionType?.replace(/_/g, ' ') || 'Inspection'}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(inspection.status)}`}>
@@ -354,7 +354,7 @@ const InspectionsSection: React.FC<Props> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2 dark:text-slate-400">
                     {inspection.scheduledAt && (
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
@@ -370,23 +370,23 @@ const InspectionsSection: React.FC<Props> = ({
                   </div>
 
                   {inspection.notes && (
-                    <p className="text-sm text-gray-600 mb-2">{inspection.notes}</p>
+                    <p className="text-sm text-gray-600 mb-2 dark:text-slate-400">{inspection.notes}</p>
                   )}
 
                   {inspection.inspectorNotes && (
-                    <p className="text-sm text-gray-600 mb-2 italic">
+                    <p className="text-sm text-gray-600 mb-2 italic dark:text-slate-400">
                       Inspector Notes: {inspection.inspectorNotes}
                     </p>
                   )}
                 </div>
 
-                <div className="text-right">
+                <div className="sm:text-right text-left">
                   <div className="flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500">View Details</span>
+                    <Eye className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                    <span className="text-xs text-gray-500 dark:text-slate-400">View Details</span>
                   </div>
                   {inspection.createdAt && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-400 mt-1 break-words dark:text-slate-500">
                       Created {formatDate(inspection.createdAt)}
                     </p>
                   )}
@@ -402,9 +402,9 @@ const InspectionsSection: React.FC<Props> = ({
         <div className="space-y-4">
           {userDisputes.length === 0 ? (
             <div className="text-center py-8">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Disputes Yet</h3>
-              <p className="text-gray-500 mb-4">You haven't raised any disputes yet.</p>
+              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Disputes Yet</h3>
+              <p className="text-gray-500 mb-4 dark:text-slate-400">You haven't raised any disputes yet.</p>
               <button
                 onClick={() => setShowDisputeModal(true)}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
@@ -416,11 +416,11 @@ const InspectionsSection: React.FC<Props> = ({
             userDisputes.map((dispute) => (
               <div
                 key={dispute.id}
-                className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors"
+                className="flex items-center space-x-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors dark:border-slate-700 dark:hover:border-slate-600"
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <h4 className="font-semibold text-gray-900 capitalize">
+                    <h4 className="font-semibold text-gray-900 capitalize dark:text-slate-100">
                       {dispute.disputeType?.replace(/_/g, ' ') || 'Dispute'}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getDisputeStatusColor(dispute.status)}`}>
@@ -429,7 +429,7 @@ const InspectionsSection: React.FC<Props> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2 dark:text-slate-400">
                     {dispute.createdAt && (
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
@@ -445,17 +445,17 @@ const InspectionsSection: React.FC<Props> = ({
                   </div>
 
                   {dispute.reason && (
-                    <p className="text-xs text-gray-400 truncate">{dispute.reason}</p>
+                    <p className="text-xs text-gray-400 truncate dark:text-slate-500">{dispute.reason}</p>
                   )}
                 </div>
 
                 <div className="text-right">
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500">Dispute</span>
+                    <MessageSquare className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                    <span className="text-xs text-gray-500 dark:text-slate-400">Dispute</span>
                   </div>
                   {dispute.updatedAt && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-400 mt-1 dark:text-slate-500">
                       Updated {formatDate(dispute.updatedAt)}
                     </p>
                   )}
@@ -470,16 +470,16 @@ const InspectionsSection: React.FC<Props> = ({
       {showDisputeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowDisputeModal(false)} />
-          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Raise Dispute</h3>
+          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 dark:bg-slate-900">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 dark:text-slate-100">Raise Dispute</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dispute Type *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Dispute Type *</label>
                 <select
                   value={disputeForm.disputeType}
                   onChange={(e) => setDisputeForm(prev => ({ ...prev, disputeType: e.target.value as DisputeType }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 >
                   <option value={DisputeType.DAMAGE_ASSESSMENT}>Damage Assessment</option>
                   <option value={DisputeType.COST_DISPUTE}>Cost Dispute</option>
@@ -489,29 +489,29 @@ const InspectionsSection: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Reason *</label>
                 <textarea
                   value={disputeForm.reason}
                   onChange={(e) => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                   placeholder="Describe the reason for this dispute..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Evidence</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Evidence</label>
                 <textarea
                   value={disputeForm.evidence}
                   onChange={(e) => setDisputeForm(prev => ({ ...prev, evidence: e.target.value }))}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                   placeholder="Provide any supporting evidence or additional details..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Supporting Photos</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Supporting Photos</label>
                 <input
                   type="file"
                   multiple
@@ -520,13 +520,13 @@ const InspectionsSection: React.FC<Props> = ({
                     const files = Array.from(e.target.files || []);
                     setDisputeForm(prev => ({ ...prev, photos: files }));
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
-                <p className="mt-1 text-sm text-gray-500">Upload photos to support your dispute (optional)</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Upload photos to support your dispute (optional)</p>
                 {disputeForm.photos.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-sm text-gray-600">Selected files:</p>
-                    <ul className="mt-1 text-sm text-gray-500">
+                    <p className="text-sm text-gray-600 dark:text-slate-400">Selected files:</p>
+                    <ul className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                       {disputeForm.photos.map((file, index) => (
                         <li key={index}>{file.name}</li>
                       ))}
@@ -539,7 +539,7 @@ const InspectionsSection: React.FC<Props> = ({
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setShowDisputeModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
               >
                 Cancel
               </button>

@@ -106,23 +106,23 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Handover & Return</h3>
-            <p className="text-sm text-gray-500">View conversation for a session.</p>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100">Handover & Return</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">View conversation for a session.</p>
           </div>
           <div className="flex gap-2">
             <button
-              className="px-3 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700"
+              className="px-3 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 text-sm"
               onClick={() => setShowComposer(true)}
               disabled={!handoverSessionId && !returnSessionId}
             >
               New Message
             </button>
             <button
-              className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               onClick={() => setShowScheduler(true)}
               disabled={!handoverSessionId && !returnSessionId}
             >
@@ -132,17 +132,17 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
         </div>
       </div>
 
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <h4 className="font-medium text-gray-900 mb-3">Session & Messages</h4>
+          <h4 className="font-medium text-gray-900 mb-3 dark:text-slate-100">Session & Messages</h4>
           <div className="space-y-3">
             {/* Tabs */}
-            <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg w-max">
+            <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg w-max dark:bg-slate-800">
               {(['handover','return'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1 rounded-md text-sm ${activeTab === tab ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                  className={`px-3 py-1 rounded-md text-sm ${activeTab === tab ? 'bg-white text-teal-600 shadow-sm dark:bg-slate-900' : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
                 >
                   {tab === 'handover' ? 'Handover messages' : 'Return messages'}
                 </button>
@@ -151,8 +151,8 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
 
             {/* All sessions list - click to load conversation */}
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Your Sessions</label>
-              <div className="max-h-56 overflow-auto border border-gray-200 rounded-md divide-y">
+              <label className="block text-sm text-gray-700 mb-2 dark:text-slate-300">Your Sessions</label>
+              <div className="max-h-56 overflow-auto border border-gray-200 rounded-md divide-y dark:border-slate-700 dark:divide-slate-700">
                 {(activeTab === 'handover'
                   ? handoverSessionsForBooking.map((s: any) => ({ ...s, _type: 'handover' as const }))
                   : returnSessionsForBooking.map((s: any) => ({ ...s, _type: 'return' as const }))
@@ -165,17 +165,17 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
                         if (s._type === 'handover') { navigate(`/my-account/messages/handover/${s.id}`); }
                         else { navigate(`/my-account/messages/return/${s.id}`); }
                       }}
-                      className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
+                      className={`w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-800 ${
                         (handoverSessionId === s.id && s._type === 'handover') || (returnSessionId === s.id && s._type === 'return')
-                          ? 'bg-teal-50'
+                          ? 'bg-teal-50 dark:bg-teal-900/20'
                           : ''
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-slate-100">
                           {s._type === 'handover' ? 'Handover' : 'Return'} • {s.status}
                         </div>
-                        <div className="text-xs text-gray-500">{new Date(s.updatedAt || s.createdAt).toLocaleString()}</div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400">{new Date(s.updatedAt || s.createdAt).toLocaleString()}</div>
                       </div>
                     </button>
                   ))}
@@ -185,9 +185,9 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
             <div className="grid grid-cols-2 gap-3">
               {activeTab === 'handover' ? (
                 <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-1">Handover Session</label>
+                  <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Handover Session</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                     value={handoverSessionId}
                     onChange={async (e) => { const id=e.target.value; setHandoverSessionId(id); setReturnSessionId(''); navigate(`/my-account/messages/handover/${id}`); }}
                   >
@@ -201,9 +201,9 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
                 </div>
               ) : (
                 <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-1">Return Session</label>
+                  <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Return Session</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                     value={returnSessionId}
                     onChange={async (e) => { const id=e.target.value; setReturnSessionId(id); setHandoverSessionId(''); navigate(`/my-account/messages/return/${id}`); }}
                   >
@@ -218,47 +218,47 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
               )}
             </div>
             {linkingSessions && (
-              <p className="text-xs text-gray-500">Loading your sessions…</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">Loading your sessions…</p>
             )}
           </div>
         </div>
 
         <div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="px-5 py-3 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Handover & Return Stats</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
+            <div className="px-5 py-3 border-b border-gray-100 dark:border-slate-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Handover & Return Stats</h2>
             </div>
             <div className="p-5">
               {statsError && <div className="text-sm text-red-600 mb-2">{statsError}</div>}
               {stats ? (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Total Handovers</div>
-                    <div className="text-xl font-semibold text-gray-900">{stats.totalHandovers}</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Total Handovers</div>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalHandovers}</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Total Returns</div>
-                    <div className="text-xl font-semibold text-gray-900">{stats.totalReturns}</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Total Returns</div>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalReturns}</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Handover Success</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Handover Success</div>
                     <div className="text-xl font-semibold text-teal-600">{stats.handoverSuccessRate}%</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Return On-Time</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Return On-Time</div>
                     <div className="text-xl font-semibold text-teal-600">{stats.returnOnTimeRate}%</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Avg Handover Time</div>
-                    <div className="text-xl font-semibold text-gray-900">{stats.averageHandoverTime} min</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Avg Handover Time</div>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageHandoverTime} min</div>
                   </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="text-xs text-gray-500">Avg Return Processing</div>
-                    <div className="text-xl font-semibold text-gray-900">{stats.averageReturnProcessingTime} min</div>
+                  <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Avg Return Processing</div>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageReturnProcessingTime} min</div>
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-gray-500">Loading stats…</div>
+                <div className="text-sm text-gray-500 dark:text-slate-400">Loading stats…</div>
               )}
             </div>
           </div>
@@ -269,12 +269,12 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
       {showComposer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowComposer(false)} />
-          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">New Message</h4>
+          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-lg p-6 dark:bg-slate-900">
+            <h4 className="text-lg font-semibold text-gray-900 mb-3 dark:text-slate-100">New Message</h4>
             <div className="mb-3">
-              <label className="block text-sm text-gray-700 mb-1">Select Session</label>
+              <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Select Session</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                 value={composeSessionId}
                 onChange={(e) => setComposeSessionId(e.target.value)}
               >
@@ -285,21 +285,21 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
               </select>
             </div>
             <div className="mb-3">
-              <label className="block text-sm text-gray-700 mb-1">Sender Type</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={senderType} onChange={(e)=> setSenderType(e.target.value as any)}>
+              <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Sender Type</label>
+              <select className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" value={senderType} onChange={(e)=> setSenderType(e.target.value as any)}>
                 <option value="renter">renter</option>
                 <option value="owner">owner</option>
               </select>
             </div>
             <textarea
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
               rows={4}
               placeholder="Write your message..."
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
             />
             <div className="mt-4 flex justify-end gap-2">
-              <button className="px-3 py-2 border border-gray-300 rounded-md" onClick={() => setShowComposer(false)}>Cancel</button>
+              <button className="px-3 py-2 border border-gray-300 rounded-md dark:border-slate-700 dark:text-slate-200" onClick={() => setShowComposer(false)}>Cancel</button>
               <button
                 className="px-3 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50"
                 disabled={!messageText.trim() || !composeSessionId}
@@ -343,13 +343,13 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
       {showScheduler && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowScheduler(false)} />
-          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Schedule Notification</h4>
+          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-lg p-6 dark:bg-slate-900">
+            <h4 className="text-lg font-semibold text-gray-900 mb-3 dark:text-slate-100">Schedule Notification</h4>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Select Session</label>
+                <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Select Session</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                   value={scheduleSessionId}
                   onChange={(e) => setScheduleSessionId(e.target.value)}
                 >
@@ -361,23 +361,23 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
               </div>
               <input
                 type="datetime-local"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
               />
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={channel} onChange={(e) => setChannel(e.target.value as any)}>
+              <select className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" value={channel} onChange={(e) => setChannel(e.target.value as any)}>
                 <option value="email">email</option>
                 <option value="sms">sms</option>
                 <option value="push">push</option>
               </select>
               <input
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                 placeholder="Title / Note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
               <textarea
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                 placeholder="Message"
                 rows={3}
                 value={scheduleMessage}
@@ -385,7 +385,7 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
               />
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button className="px-3 py-2 border border-gray-300 rounded-md" onClick={() => setShowScheduler(false)}>Cancel</button>
+              <button className="px-3 py-2 border border-gray-300 rounded-md dark:border-slate-700 dark:text-slate-200" onClick={() => setShowScheduler(false)}>Cancel</button>
               <button
                 className="px-3 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50"
                 disabled={!scheduledAt.trim() || !scheduleSessionId || !scheduleMessage.trim()}

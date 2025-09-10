@@ -41,16 +41,16 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
   ];
 
   return (
-    <div className={`w-64 bg-white border-r border-gray-200 h-full ${className}`}>
+    <div className={`w-64 bg-white border-r border-gray-200 h-full dark:bg-slate-900 dark:border-slate-700 ${className}`}>
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 dark:border-slate-700">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-            <User className="w-6 h-6 text-teal-600" />
+          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center dark:bg-teal-900/30">
+            <User className="w-6 h-6 text-teal-600 dark:text-teal-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">My Account</h2>
-            <p className="text-sm text-gray-500">Manage your account</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">My Account</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Manage your account</p>
           </div>
         </div>
       </div>
@@ -67,16 +67,16 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
               onClick={() => setActiveTab(item.tab as any)}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors duration-200 ${
                 isActive
-                  ? 'bg-teal-50 text-teal-700 border border-teal-200'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Icon
                 className={`w-5 h-5 ${
-                  isActive ? 'text-teal-600' : 'text-gray-400'
+                  isActive ? 'text-teal-600 dark:text-teal-400' : 'text-gray-400 dark:text-slate-500'
                 }`}
               />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium dark:text-slate-200">{item.label}</span>
             </button>
           );
         })}
