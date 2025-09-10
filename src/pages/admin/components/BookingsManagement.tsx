@@ -150,12 +150,12 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+      <div className="p-6 border-b border-gray-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Bookings Management</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Bookings Management</h2>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">Total Bookings: {totalBookings}</span>
+            <span className="text-sm text-gray-500 dark:text-slate-400">Total Bookings: {totalBookings}</span>
           </div>
         </div>
         {/* Your existing filters/search UI here */}
@@ -163,57 +163,57 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
       <div className="overflow-x-auto">
         {loading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="mt-4 text-gray-500">Loading bookings...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-my-primary dark:border-teal-500 mx-auto"></div>
+            <p className="mt-4 text-gray-500 dark:text-slate-400">Loading bookings...</p>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+            <thead className="bg-gray-50 dark:bg-slate-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   Booking Details
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   Customer
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   Product
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   Dates
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
               {bookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-gray-50">
+                <tr key={booking.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
                       {booking.booking_number}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
                       {format(new Date(booking.created_at), 'MMM d, yyyy')}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
                       {booking.renter_first_name} {booking.renter_last_name}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
                       {booking.renter_email}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
                       {booking.product_title}
                     </div>
-                    <div className="text-sm text-gray-500 truncate max-w-xs">
+                    <div className="text-sm text-gray-500 dark:text-slate-400 truncate max-w-xs">
                       {booking.product_description}
                     </div>
                   </td>
@@ -221,15 +221,15 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
                       {booking.status}
                     </span>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                       Payment: {booking.payment_status}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-gray-900 dark:text-slate-100">
                       {format(new Date(booking.start_date), 'MMM d, yyyy')}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
                       {booking.total_days} days
                     </div>
                   </td>
@@ -237,20 +237,20 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                     <div className="relative action-menu-container">
                       <button 
                         onClick={() => setActionMenuOpen(actionMenuOpen === booking.id ? null : booking.id)}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
                         title="More Actions"
                       >
                         <MoreVertical className="w-5 h-5" />
                       </button>
                       {actionMenuOpen === booking.id && (
-                        <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                        <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-slate-700 shadow-lg ring-1 ring-black ring-opacity-5 dark:ring-slate-600 focus:outline-none">
                           <div className="py-1">
                             <button
                               onClick={() => {
                                 setSelectedBookingId(booking.id);
                                 setActionMenuOpen(null);
                               }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-600 flex items-center"
                             >
                               <Eye className="w-4 h-4 mr-2" /> View Details
                             </button>
@@ -260,7 +260,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                                 handleEdit(booking);
                                 setActionMenuOpen(null);
                               }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-600 flex items-center"
                             >
                               <Edit className="w-4 h-4 mr-2" /> Edit Booking
                             </button>
@@ -270,7 +270,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                                 setOverrideModalOpen(true);
                                 setActionMenuOpen(null);
                               }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-600 flex items-center"
                             >
                               <RefreshCw className="w-4 h-4 mr-2" /> Override Status
                             </button>
@@ -287,21 +287,21 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
       </div>
       {/* Pagination */}
       {!loading && totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <button
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Previous
           </button>
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-gray-700 dark:text-slate-300">
             Page {currentPage} of {totalPages}
           </span>
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
           </button>
@@ -315,27 +315,27 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
       />
       {overrideModalOpen && bookingToOverride && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-[500px] p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">Override Booking Status</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-[500px] p-6 border border-gray-200 dark:border-slate-700">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-slate-100">Override Booking Status</h2>
             
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Booking: {bookingToOverride.booking_number}
               </label>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Current Status: {bookingToOverride.status}
               </label>
             </div>
 
             <div className="mb-4">
-              <label htmlFor="override-status" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="override-status" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 New Status
               </label>
               <select
                 id="override-status"
                 value={overrideStatus}
                 onChange={(e) => setOverrideStatus(e.target.value as 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled')}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
               >
                 {['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].map((status) => (
                   <option key={status} value={status}>
@@ -346,14 +346,14 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="override-reason" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="override-reason" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Reason for Override (Optional)
               </label>
               <textarea
                 id="override-reason"
                 value={overrideReason}
                 onChange={(e) => setOverrideReason(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                 placeholder="Enter reason for status change"
                 rows={3}
               />
@@ -362,13 +362,13 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
             <div className="flex justify-end space-x-2">
               <button
                 onClick={() => setOverrideModalOpen(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-slate-200 rounded-md hover:bg-gray-300 dark:hover:bg-slate-500"
               >
                 Cancel
               </button>
               <button
                 onClick={handleOverrideBooking}
-                className="px-4 py-2 bg-my-primary text-white rounded-md hover:bg-my-primary/80"
+                className="px-4 py-2 bg-my-primary dark:bg-teal-500 text-white rounded-md hover:bg-my-primary/80 dark:hover:bg-teal-600"
               >
                 Override Status
               </button>

@@ -262,11 +262,11 @@ const ItemDetailsPage: React.FC = () => {
   }
 
   if (error) {
-    return <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
       <div className="text-center">
         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Item</h2>
-        <p className="text-gray-600 mb-4">{error}</p>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Error Loading Item</h2>
+        <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
         <Button onClick={() => navigate('/items')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">
           Browse Items
         </Button>
@@ -276,11 +276,11 @@ const ItemDetailsPage: React.FC = () => {
   
   if (!item) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
         <div className="text-center">
           <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Item not found</h2>
-          <p className="text-gray-600 mb-4">The item you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Item not found</h2>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">The item you're looking for doesn't exist.</p>
           <Button onClick={() => navigate('/items')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">
             Browse Items
           </Button>
@@ -356,34 +356,34 @@ const ItemDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
       {/* Breadcrumb */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b dark:bg-slate-900 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex items-center space-x-2 text-sm">
-            <Link to="/items" className="text-gray-600 hover:text-gray-900">Items</Link>
+            <Link to="/items" className="text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white">Items</Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-            <Link to={`/items?category=${item.category}`} className="text-gray-600 hover:text-gray-900 capitalize">
+            <Link to={`/items?category=${item.category}`} className="text-gray-600 hover:text-gray-900 capitalize dark:text-slate-300 dark:hover:text-white">
               {item.category}
             </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-900 font-medium">{item.name}</span>
+            <span className="text-gray-900 font-medium dark:text-white">{item.name}</span>
           </nav>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Left Column - Images and Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-              <div className="relative bg-gray-100 flex items-center justify-center">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm dark:bg-slate-900 dark:border dark:border-slate-700">
+              <div className="relative bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
                 {images.length > 0 ? (
                   <img
                     src={images[currentImageIndex]}
                     alt={item.name}
-                    className="w-full h-96 object-cover"
+                    className="w-full h-80 sm:h-96 object-cover"
                     onError={(e) => {
                       // Hide the image and show icon instead
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -392,8 +392,8 @@ const ItemDetailsPage: React.FC = () => {
                   />
                 ) : null}
                 {/* No Image Icon */}
-                <div className={`${images.length > 0 ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400 h-96`}>
-                  <svg className="w-24 h-24 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`${images.length > 0 ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400 dark:text-slate-400 h-80 sm:h-96`}>
+                  <svg className="w-20 h-20 sm:w-24 sm:h-24 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <span className="text-lg font-medium">No Images Available</span>
@@ -404,13 +404,13 @@ const ItemDetailsPage: React.FC = () => {
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
+                      className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/80 dark:bg-slate-900/70 backdrop-blur-sm p-2 rounded-full hover:bg-white dark:hover:bg-slate-800 transition-colors"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
+                      className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/80 dark:bg-slate-900/70 backdrop-blur-sm p-2 rounded-full hover:bg-white dark:hover:bg-slate-800 transition-colors"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -424,8 +424,7 @@ const ItemDetailsPage: React.FC = () => {
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-colors ${index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                          }`}
+                        className={`w-2 h-2 rounded-full transition-colors ${index === currentImageIndex ? 'bg-white' : 'bg-white/50'}`}
                       />
                     ))}
                   </div>
@@ -458,12 +457,12 @@ const ItemDetailsPage: React.FC = () => {
                         setIsFavorited(currentlyFav);
                       }
                     }}
-                    className="bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
+                    className="bg-white/80 dark:bg-slate-900/70 backdrop-blur-sm p-2 rounded-full hover:bg-white dark:hover:bg-slate-800 transition-colors"
                   >
-                    <Heart className={`w-5 h-5 ${isFavorited ? 'text-red-500 fill-current' : 'text-gray-600'}`} />
+                    <Heart className={`w-5 h-5 ${isFavorited ? 'text-red-500 fill-current' : 'text-gray-600 dark:text-slate-300'}`} />
                   </button>
-                  <button className="bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors">
-                    <Share2 className="w-5 h-5 text-gray-600" />
+                  <button className="bg-white/80 dark:bg-slate-900/70 backdrop-blur-sm p-2 rounded-full hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                    <Share2 className="w-5 h-5 text-gray-600 dark:text-slate-300" />
                   </button>
                 </div>
 
@@ -490,7 +489,7 @@ const ItemDetailsPage: React.FC = () => {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-200'}`}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-200 dark:border-slate-700'}`}
                     >
                       {renderImage(image, index)}
                     </button>
@@ -500,12 +499,12 @@ const ItemDetailsPage: React.FC = () => {
             </div>
 
             {/* Item Details */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm dark:bg-slate-900 dark:border dark:border-slate-700">
               <div className="mb-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">{item.name}</h1>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{item.name}</h1>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-slate-300">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
                         {locationLoading ? (
@@ -526,19 +525,19 @@ const ItemDetailsPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">
                       {productPrices?.price_per_day && productPrices?.currency ? (
                         <>
                           {formatCurrency(productPrices.price_per_day, productPrices.currency)}
-                          <span className="text-lg font-normal text-gray-600">/day</span>
+                          <span className="text-lg font-normal text-gray-600 dark:text-slate-300">/day</span>
                         </>
                       ) : item.base_price_per_day != null && item.base_currency ? (
                         <>
                           {item.base_price_per_day}
-                          <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
+                          <span className="text-lg font-normal text-gray-600 dark:text-slate-300">/{item.base_currency}</span>
                         </>
                       ) : (
-                        <span className="text-gray-500 text-base">No price</span>
+                        <span className="text-gray-500 text-base dark:text-slate-400">No price</span>
                       )}
                     </div>
                   </div>
@@ -547,15 +546,15 @@ const ItemDetailsPage: React.FC = () => {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-1">
                     <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                    <span className="font-semibold">{item.average_rating || '0.00'}</span>
-                    <span className="text-gray-600">({item.review_count || 0} reviews)</span>
+                    <span className="font-semibold dark:text-white">{item.average_rating || '0.00'}</span>
+                    <span className="text-gray-600 dark:text-slate-300">({item.review_count || 0} reviews)</span>
                   </div>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-gray-600">{item.view_count || 0} views</span>
+                  <span className="text-gray-300 dark:text-slate-600">•</span>
+                  <span className="text-gray-600 dark:text-slate-300">{item.view_count || 0} views</span>
                   {productInteractions.length > 0 && (
                     <>
-                      <span className="text-gray-300">•</span>
-                      <span className="text-gray-600 flex items-center gap-1">
+                      <span className="text-gray-300 dark:text-slate-600">•</span>
+                      <span className="text-gray-600 dark:text-slate-300 flex items-center gap-1">
                         <span>👥</span>
                         {productInteractions.length} recent interaction{productInteractions.length !== 1 ? 's' : ''}
                       </span>
@@ -565,18 +564,18 @@ const ItemDetailsPage: React.FC = () => {
 
                 <div className="flex flex-wrap gap-2 mb-6">
                   {item.availability.instantBook && (
-                    <div className="flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm">
+                    <div className="flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm dark:bg-green-900/30 dark:text-green-300">
                       <Zap className="w-4 h-4" />
                       Instant Book
                     </div>
                   )}
                   {item.deliveryAvailable && (
-                    <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+                    <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm dark:bg-blue-900/30 dark:text-blue-300">
                       <Truck className="w-4 h-4" />
                       Delivery Available
                     </div>
                   )}
-                  <div className="flex items-center gap-1 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm">
+                  <div className="flex items-center gap-1 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm dark:bg-slate-800 dark:text-slate-200">
                     <Shield className="w-4 h-4" />
                     {productPrices?.security_deposit && productPrices?.currency ? 
                       `${formatCurrency(productPrices.security_deposit, productPrices.currency)} Security Deposit` :
@@ -585,18 +584,18 @@ const ItemDetailsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-gray-700 leading-relaxed">{item.description}</p>
+                <p className="text-gray-700 leading-relaxed dark:text-slate-300">{item.description}</p>
               </div>
 
               {/* Features */}
               {item.features && item.features.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Features</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Features</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {item.features.map((feature: string, index: number) => (
                       <div key={index} className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="text-gray-700">{feature}</span>
+                        <span className="text-gray-700 dark:text-slate-300">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -606,12 +605,12 @@ const ItemDetailsPage: React.FC = () => {
               {/* Specifications */}
               {item.specifications && Object.keys(item.specifications).length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Specifications</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Specifications</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {Object.entries(item.specifications).map(([key, value]) => (
-                      <div key={key} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
-                        <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                        <span className="font-medium text-gray-900">{String(value)}</span>
+                      <div key={key} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0 dark:border-slate-700">
+                        <span className="text-gray-600 capitalize dark:text-slate-300">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{String(value)}</span>
                       </div>
                     ))}
                   </div>
@@ -621,36 +620,36 @@ const ItemDetailsPage: React.FC = () => {
               {/* Product Meta */}
               {(item.brand || item.model || item.year_manufactured || item.address_line || item.delivery_fee) && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Product Details</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Product Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {item.brand && (
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Brand</span>
-                        <span className="font-medium text-gray-900">{item.brand}</span>
+                      <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
+                        <span className="text-gray-600 dark:text-slate-300">Brand</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{item.brand}</span>
                       </div>
                     )}
                     {item.model && (
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Model</span>
-                        <span className="font-medium text-gray-900">{item.model}</span>
+                      <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
+                        <span className="text-gray-600 dark:text-slate-300">Model</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{item.model}</span>
                       </div>
                     )}
                     {item.year_manufactured != null && (
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Year</span>
-                        <span className="font-medium text-gray-900">{item.year_manufactured}</span>
+                      <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
+                        <span className="text-gray-600 dark:text-slate-300">Year</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{item.year_manufactured}</span>
                       </div>
                     )}
                     {item.address_line && (
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Address</span>
-                        <span className="font-medium text-gray-900">{item.address_line}</span>
+                      <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
+                        <span className="text-gray-600 dark:text-slate-300">Address</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{item.address_line}</span>
                       </div>
                     )}
                     {item.delivery_fee && (
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Delivery Fee</span>
-                        <span className="font-medium text-gray-900">{formatPrice(Number(item.delivery_fee))}</span>
+                      <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
+                        <span className="text-gray-600 dark:text-slate-300">Delivery Fee</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{formatPrice(Number(item.delivery_fee))}</span>
                       </div>
                     )}
                   </div>
@@ -660,12 +659,12 @@ const ItemDetailsPage: React.FC = () => {
               {/* Included Accessories */}
               {Array.isArray(item.included_accessories) && item.included_accessories.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">What's Included</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">What's Included</h3>
                   <div className="space-y-2">
                     {item.included_accessories.map((acc: string, index: number) => (
                       <div key={index} className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-blue-500" />
-                        <span className="text-gray-700">{acc}</span>
+                        <span className="text-gray-700 dark:text-slate-300">{acc}</span>
                       </div>
                     ))}
                   </div>
@@ -675,22 +674,22 @@ const ItemDetailsPage: React.FC = () => {
               {/* Reviews */}
               {productReviews.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Reviews</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Reviews</h3>
                   <div className="space-y-4">
                     {productReviews.map((rev: any, idx: number) => (
-                      <div key={rev.id || idx} className="border rounded-xl p-4">
+                      <div key={rev.id || idx} className="border rounded-xl p-4 dark:border-slate-700">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
                             <User className="w-4 h-4" />
                             <span>{rev.user_name || rev.reviewer || 'Anonymous'}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                            <span className="text-sm font-medium">{rev.rating || rev.overallRating || 0}</span>
+                            <span className="text-sm font-medium dark:text-white">{rev.rating || rev.overallRating || 0}</span>
                           </div>
                         </div>
-                        <p className="text-gray-700 text-sm">{rev.comment || rev.text || ''}</p>
-                        <div className="mt-2 text-xs text-gray-500">
+                        <p className="text-gray-700 text-sm dark:text-slate-300">{rev.comment || rev.text || ''}</p>
+                        <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
                           {rev.created_at ? new Date(rev.created_at).toLocaleDateString() : ''}
                         </div>
                       </div>
@@ -702,10 +701,10 @@ const ItemDetailsPage: React.FC = () => {
               {/* Recent Interactions */}
               {productInteractions.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Recent Activity</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Recent Activity</h3>
                   <div className="space-y-2">
                     {productInteractions.slice(0, 3).map((interaction, index) => (
-                      <div key={interaction.id || index} className="flex items-center gap-2 text-sm text-gray-600">
+                      <div key={interaction.id || index} className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                         <span className="capitalize">{interaction.actionType}</span>
                         <span>•</span>
@@ -715,7 +714,7 @@ const ItemDetailsPage: React.FC = () => {
                         {interaction.metadata?.source && (
                           <>
                             <span>•</span>
-                            <span className="text-gray-500">from {interaction.metadata.source}</span>
+                            <span className="text-gray-500 dark:text-slate-400">from {interaction.metadata.source}</span>
                           </>
                         )}
                       </div>
@@ -730,24 +729,24 @@ const ItemDetailsPage: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-8">
               {/* Booking Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
                 <div className="text-center mb-6">
-                  <div className="text-3xl font-bold text-gray-900 mb-1">
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
                     {productPrices?.price_per_day && productPrices?.currency ? (
                       <>
                         {formatCurrency(productPrices.price_per_day, productPrices.currency)}
-                        <span className="text-lg font-normal text-gray-600">/day</span>
+                        <span className="text-lg font-normal text-gray-600 dark:text-slate-300">/day</span>
                       </>
                     ) : item.base_price_per_day != null && item.base_currency ? (
                       <>
                         {item.base_price_per_day}
-                        <span className="text-lg font-normal text-gray-600">/{item.base_currency}</span>
+                        <span className="text-lg font-normal text-gray-600 dark:text-slate-300">/{item.base_currency}</span>
                       </>
                     ) : (
-                      <span className="text-gray-500 text-base">No price</span>
+                      <span className="text-gray-500 text-base dark:text-slate-400">No price</span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-slate-300">
                     {productPrices?.min_rental_duration_hours ? 
                       `Min rental: ${productPrices.min_rental_duration_hours} hours` : 
                       'Item min rental period loading...'
@@ -766,8 +765,8 @@ const ItemDetailsPage: React.FC = () => {
 
                 {/* Authentication Status */}
                 {!isAuthenticated && (
-                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-amber-700">
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-900/20 dark:border-amber-800">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
                       <Info className="w-4 h-4" />
                       <span className="text-sm">Login required to book items</span>
                     </div>
@@ -775,23 +774,23 @@ const ItemDetailsPage: React.FC = () => {
                 )}
 
                 {isAuthenticated && ((latestKycStatus ?? user?.kyc_status) !== 'verified') && (
-                  <div className="mt-4 p-3 b border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-blue-700">
+                  <div className="mt-4 p-3 b border border-blue-200 rounded-lg dark:border-blue-900/40">
+                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                       <AlertCircle className="w-4 h-4 text-[#01aaa7]" />
                       <span className="text-sm text-[#01aaa7]">Account verification required</span>
                     </div>
                   </div>
                 )}
 
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <p className="text-sm text-gray-600 text-center mb-4">
+                <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700">
+                  <p className="text-sm text-gray-600 text-center mb-4 dark:text-slate-300">
                     You won't be charged yet
                   </p>
 
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Security Deposit</span>
-                      <span className="font-medium">
+                      <span className="text-gray-600 dark:text-slate-300">Security Deposit</span>
+                      <span className="font-medium dark:text-white">
                         {productPrices?.security_deposit && productPrices?.currency ? 
                           formatCurrency(productPrices.security_deposit, productPrices.currency) :
                           formatPrice(item.securityDeposit || 0)
@@ -800,21 +799,21 @@ const ItemDetailsPage: React.FC = () => {
                     </div>
                     {item.deliveryAvailable && item.deliveryFee && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Delivery Fee</span>
-                        <span className="font-medium">{formatPrice(item.deliveryFee)}</span>
+                        <span className="text-gray-600 dark:text-slate-300">Delivery Fee</span>
+                        <span className="font-medium dark:text-white">{formatPrice(item.deliveryFee)}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Cancellation Policy</span>
-                      <span className="font-medium capitalize">{item.cancellationPolicy}</span>
+                      <span className="text-gray-600 dark:text-slate-300">Cancellation Policy</span>
+                      <span className="font-medium capitalize dark:text-white">{item.cancellationPolicy}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Host Information */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Host</h3>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mt-6 dark:bg-slate-900 dark:border-slate-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Host</h3>
                 <div className="flex items-center gap-4 mb-4">
                   <img
                     src={item.ownerAvatar}
@@ -822,10 +821,10 @@ const ItemDetailsPage: React.FC = () => {
                     className="w-12 h-12 rounded-full object-cover"
                   />
                   <div>
-                    <h4 className="font-semibold text-gray-900">{item.ownerName}</h4>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{item.ownerName}</h4>
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600">{item.ownerRating} ({item.ownerReviews} reviews)</span>
+                      <span className="text-sm text-gray-600 dark:text-slate-300">{item.ownerRating} ({item.ownerReviews} reviews)</span>
                     </div>
                   </div>
                 </div>
@@ -848,12 +847,12 @@ const ItemDetailsPage: React.FC = () => {
 
       {/* Authentication Modal */}
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-gray-100 dark:border-slate-700">
             <div className="text-center">
               <User className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Account Required</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Account Required</h3>
+              <p className="text-gray-600 dark:text-slate-300 mb-6">
                 Please log in or create an account to book items on our platform.
               </p>
 
@@ -880,7 +879,7 @@ const ItemDetailsPage: React.FC = () => {
                 </Button>
               </div>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-slate-400">
                 Join thousands of users renting safely on our platform.
               </p>
             </div>
@@ -891,9 +890,9 @@ const ItemDetailsPage: React.FC = () => {
       {/* Verification Modal */}
       {showVerificationModal && ((latestKycStatus ?? user?.kyc_status) !== 'verified') && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
-          <div className="bg-white rounded-xl p-8 shadow-lg max-w-md w-full text-center">
+          <div className="bg-white rounded-xl p-8 shadow-lg max-w-md w-full text-center dark:bg-slate-900 dark:border dark:border-slate-700">
             <h2 className="text-xl font-bold mb-4 text-[#01aaa7]">Verification Required</h2>
-            <p className="mb-6 text-gray-700">
+            <p className="mb-6 text-gray-700 dark:text-slate-300">
               You must complete your account verification (including document upload) before booking this item.
             </p>
             <Button
@@ -906,7 +905,7 @@ const ItemDetailsPage: React.FC = () => {
               Go to Verification
             </Button>
             <button
-              className="mt-4 text-sm text-gray-500 underline"
+              className="mt-4 text-sm text-gray-500 underline dark:text-slate-400"
               onClick={() => setShowVerificationModal(false)}
             >
               Cancel

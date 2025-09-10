@@ -7,7 +7,6 @@ interface Props {
   navigateToBrowse: () => void;
   bookingProducts: { [k: string]: any };
   bookingImages: { [k: string]: any[] };
-  bookingReviews: { [k: string]: any };
   loadingBookingReviews: { [k: string]: boolean };
   bookingReviewCounts: { [k: string]: number };
   onViewBookingReview: (bookingId: string) => void;
@@ -19,7 +18,6 @@ const BookingsSection: React.FC<Props> = ({
   navigateToBrowse,
   bookingProducts,
   bookingImages,
-  bookingReviews,
   loadingBookingReviews,
   bookingReviewCounts,
   onViewBookingReview,
@@ -112,7 +110,6 @@ const BookingsSection: React.FC<Props> = ({
           roleFilteredBookings.map((booking) => {
             const product = bookingProducts[booking.id];
             const images = bookingImages[booking.id] || [];
-            const bookingReview = bookingReviews[booking.id];
             const isLoadingReview = loadingBookingReviews[booking.id];
             const reviewCount = bookingReviewCounts[booking.id] || 0;
             return (

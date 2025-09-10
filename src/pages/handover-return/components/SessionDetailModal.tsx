@@ -280,11 +280,11 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-slate-700">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div className="flex items-center space-x-3">
               {sessionType === 'handover' ? (
                 <Package className="w-6 h-6 text-teal-600" />
@@ -292,10 +292,10 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 <ArrowRightLeft className="w-6 h-6 text-blue-600" />
               )}
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
                   {sessionType === 'handover' ? 'Handover' : 'Return'} Session Details
                 </h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 break-all">
                   Session #{session?.id?.slice(0, 8)}...
                 </p>
               </div>
@@ -312,14 +312,14 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               )}
               <button
                 onClick={() => setIsEditing(!isEditing)}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-slate-700 text-sm font-medium rounded-md text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 <Edit className="w-4 h-4 mr-2" />
                 {isEditing ? 'Cancel' : 'Edit'}
               </button>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -327,116 +327,116 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           </div>
 
           {loading ? (
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="animate-pulse space-y-3 sm:space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4 dark:bg-slate-700"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 dark:bg-slate-700"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3 dark:bg-slate-700"></div>
             </div>
           ) : session ? (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Status and Basic Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-4">
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className="flex items-center space-x-3">
                     {getStatusIcon(session.status)}
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(session.status)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(session.status)}`}>
                       {session.status.replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-slate-400">
                     Created: {formatDate(session.createdAt)}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Booking</label>
-                    <p className="text-sm text-gray-900">
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Booking</label>
+                    <p className="text-sm text-gray-900 dark:text-slate-100 break-words">
                       {friendly.bookingName || '—'}
                     </p>
-                    <p className="text-xs text-gray-500 font-mono">{session.bookingId}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">{session.bookingId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Product</label>
-                    <p className="text-sm text-gray-900">
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Product</label>
+                    <p className="text-sm text-gray-900 dark:text-slate-100 break-words">
                       {friendly.productName || '—'}
                     </p>
-                    <p className="text-xs text-gray-500 font-mono">{session.productId}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">{session.productId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Owner</label>
-                    <p className="text-sm text-gray-900">
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Owner</label>
+                    <p className="text-sm text-gray-900 dark:text-slate-100 break-words">
                       {friendly.ownerName || '—'}
                     </p>
                     {friendly.ownerPhone && (
-                      <p className="text-xs text-gray-600 mt-0.5">{friendly.ownerPhone}</p>
+                      <p className="text-xs text-gray-600 dark:text-slate-400 mt-0.5 break-words">{friendly.ownerPhone}</p>
                     )}
-                    <p className="text-xs text-gray-500 font-mono">{session.ownerId}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">{session.ownerId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Renter</label>
-                    <p className="text-sm text-gray-900">
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Renter</label>
+                    <p className="text-sm text-gray-900 dark:text-slate-100 break-words">
                       {friendly.renterName || '—'}
                     </p>
-                    <p className="text-xs text-gray-500 font-mono">{session.renterId}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">{session.renterId}</p>
                   </div>
                 </div>
               </div>
 
               {/* Session Details */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Session Details</h3>
+              <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 sm:p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4">Session Details</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Scheduled Date & Time</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Scheduled Date & Time</label>
                     {isEditing ? (
                       <input
                         type="datetime-local"
                         value={editForm.scheduledDateTime ? new Date(editForm.scheduledDateTime).toISOString().slice(0, 16) : ''}
                         onChange={(e) => setEditForm({...editForm, scheduledDateTime: e.target.value})}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:text-slate-100"
                       />
                     ) : (
-                      <p className="text-sm text-gray-900">{formatDate(session.scheduledDateTime)}</p>
+                      <p className="text-sm text-gray-900 dark:text-slate-100">{formatDate(session.scheduledDateTime)}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
                       {sessionType === 'handover' ? 'Handover' : 'Return'} Type
                     </label>
-                    <p className="text-sm text-gray-900 capitalize">
+                    <p className="text-sm text-gray-900 dark:text-slate-100 capitalize">
                       {sessionType === 'handover' ? session.handoverType : session.returnType}
                     </p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Estimated Duration</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Estimated Duration</label>
                     {isEditing ? (
                       <input
                         type="number"
                         value={editForm.estimatedDurationMinutes}
                         onChange={(e) => setEditForm({...editForm, estimatedDurationMinutes: parseInt(e.target.value)})}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:text-slate-100"
                       />
                     ) : (
-                      <p className="text-sm text-gray-900">{session.estimatedDurationMinutes} minutes</p>
+                      <p className="text-sm text-gray-900 dark:text-slate-100">{session.estimatedDurationMinutes} minutes</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
                       {sessionType === 'handover' ? 'Handover' : 'Return'} Code
                     </label>
-                    <p className="text-lg font-mono font-bold text-gray-900">
+                    <p className="text-lg font-mono font-bold text-gray-900 dark:text-slate-100">
                       {sessionType === 'handover' ? session.handoverCode : session.returnCode}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  <label className="text-sm font-medium text-gray-700">Location</label>
+                <div className="mt-3 sm:mt-4">
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Location</label>
                   {isEditing ? (
                     <div className="mt-1 space-y-2">
                       <input
@@ -447,7 +447,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                           ...editForm, 
                           location: {...editForm.location, address: e.target.value}
                         })}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                        className="block w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:text-slate-100"
                       />
                       <input
                         type="text"
@@ -457,31 +457,31 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                           ...editForm, 
                           location: {...editForm.location, instructions: e.target.value}
                         })}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                        className="block w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:text-slate-100"
                       />
                     </div>
                   ) : (
                     <div className="mt-1">
-                      <p className="text-sm text-gray-900">{session.location?.address}</p>
+                      <p className="text-sm text-gray-900 dark:text-slate-100 break-words">{session.location?.address}</p>
                       {session.location?.instructions && (
-                        <p className="text-sm text-gray-500 mt-1">{session.location.instructions}</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 break-words">{session.location.instructions}</p>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="mt-4">
-                  <label className="text-sm font-medium text-gray-700">Notes</label>
+                <div className="mt-3 sm:mt-4">
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Notes</label>
                   {isEditing ? (
                     <textarea
                       rows={3}
                       value={editForm.notes}
                       onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:text-slate-100"
                       placeholder="Add notes about this session..."
                     />
                   ) : (
-                    <p className="text-sm text-gray-900 mt-1">
+                    <p className="text-sm text-gray-900 dark:text-slate-100 mt-1 break-words">
                       {session.notes || 'No notes added'}
                     </p>
                   )}
@@ -490,24 +490,24 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
               {/* Return Session Specific Fields */}
               {sessionType === 'return' && session.handoverSessionId && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-blue-900 mb-2">Related Handover Session</h3>
-                  <p className="text-sm text-blue-800 font-mono">{session.handoverSessionId}</p>
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-lg p-3 sm:p-4">
+                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-2">Related Handover Session</h3>
+                  <p className="text-sm text-blue-800 dark:text-blue-300 font-mono break-all">{session.handoverSessionId}</p>
                 </div>
               )}
 
               {/* Condition Report (for handover sessions) */}
               {sessionType === 'handover' && session.conditionReport && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-green-900 mb-2">Condition Report</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/40 rounded-lg p-3 sm:p-4">
+                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 mb-2">Condition Report</h3>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 text-sm">
                     <div>
-                      <span className="font-medium text-green-800">Overall Condition:</span>
-                      <span className="ml-2 capitalize text-green-700">{session.conditionReport.overallCondition}</span>
+                      <span className="font-medium text-green-800 dark:text-green-300">Overall Condition:</span>
+                      <span className="ml-2 capitalize text-green-700 dark:text-green-300/90">{session.conditionReport.overallCondition}</span>
                     </div>
                     <div>
-                      <span className="font-medium text-green-800">Cleanliness:</span>
-                      <span className="ml-2 capitalize text-green-700">{session.conditionReport.cleanliness}</span>
+                      <span className="font-medium text-green-800 dark:text-green-300">Cleanliness:</span>
+                      <span className="ml-2 capitalize text-green-700 dark:text-green-300/90">{session.conditionReport.cleanliness}</span>
                     </div>
                   </div>
                 </div>
@@ -515,21 +515,21 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
               {/* Condition Comparison (for return sessions) */}
               {sessionType === 'return' && session.conditionComparison && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-orange-900 mb-2">Condition Comparison</h3>
+                <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/40 rounded-lg p-3 sm:p-4">
+                  <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-300 mb-2">Condition Comparison</h3>
                   <div className="text-sm">
-                    <span className="font-medium text-orange-800">Overall Change:</span>
-                    <span className="ml-2 capitalize text-orange-700">{session.conditionComparison.overallConditionChange}</span>
+                    <span className="font-medium text-orange-800 dark:text-orange-300">Overall Change:</span>
+                    <span className="ml-2 capitalize text-orange-700 dark:text-orange-300/90">{session.conditionComparison.overallConditionChange}</span>
                   </div>
                 </div>
               )}
 
               {/* Action Buttons */}
               {isEditing && (
-                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-700">
                   <button
                     onClick={handleCancel}
-                    className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 dark:border-slate-700 text-sm font-medium rounded-md text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700"
                   >
                     Cancel
                   </button>
@@ -545,18 +545,18 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
               {/* Complete Session Form */}
               {showCompleteForm && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
-                  <h3 className="text-lg font-semibold text-green-900 mb-4">Complete Session</h3>
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/40 rounded-lg p-3 sm:p-4 mt-6">
+                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 mb-3 sm:mb-4">Complete Session</h3>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-green-800 mb-2">
+                      <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
                         Final Condition
                       </label>
                       <select
                         value={completeForm.finalCondition}
                         onChange={(e) => setCompleteForm({...completeForm, finalCondition: e.target.value})}
-                        className="block w-full px-3 py-2 border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                        className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                       >
                         <option value="excellent">Excellent</option>
                         <option value="good">Good</option>
@@ -569,7 +569,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                     {sessionType === 'handover' && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-green-800 mb-2">
+                          <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
                             Overall Condition
                           </label>
                           <select
@@ -581,7 +581,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                                 overallCondition: e.target.value
                               }
                             })}
-                            className="block w-full px-3 py-2 border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                            className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                           >
                             <option value="excellent">Excellent</option>
                             <option value="good">Good</option>
@@ -592,7 +592,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-green-800 mb-2">
+                          <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
                             Cleanliness
                           </label>
                           <select
@@ -604,7 +604,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                                 cleanliness: e.target.value
                               }
                             })}
-                            className="block w-full px-3 py-2 border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                            className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                           >
                             <option value="very_clean">Very Clean</option>
                             <option value="clean">Clean</option>
@@ -615,7 +615,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-green-800 mb-2">
+                          <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
                             Damage Notes
                           </label>
                           <textarea
@@ -628,7 +628,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                                 damageNotes: e.target.value
                               }
                             })}
-                            className="block w-full px-3 py-2 border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                            className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                             placeholder="Describe any damage or issues..."
                           />
                         </div>
@@ -638,7 +638,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                     {sessionType === 'return' && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-green-800 mb-2">
+                          <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
                             Overall Condition Change
                           </label>
                           <select
@@ -650,7 +650,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                                 overallConditionChange: e.target.value
                               }
                             })}
-                            className="block w-full px-3 py-2 border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                            className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                           >
                             <option value="improved">Improved</option>
                             <option value="no_change">No Change</option>
@@ -661,7 +661,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-green-800 mb-2">
+                          <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
                             Cleanliness Change
                           </label>
                           <select
@@ -673,7 +673,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                                 cleanlinessChange: e.target.value
                               }
                             })}
-                            className="block w-full px-3 py-2 border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                            className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                           >
                             <option value="improved">Improved</option>
                             <option value="no_change">No Change</option>
@@ -684,7 +684,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-green-800 mb-2">
+                          <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
                             Condition Change Notes
                           </label>
                           <textarea
@@ -697,7 +697,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                                 damageNotes: e.target.value
                               }
                             })}
-                            className="block w-full px-3 py-2 border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                            className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                             placeholder="Describe any changes in condition since handover..."
                           />
                         </div>
@@ -705,22 +705,22 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                     )}
 
                     <div>
-                      <label className="block text-sm font-medium text-green-800 mb-2">
+                      <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
                         Completion Notes
                       </label>
                       <textarea
                         rows={3}
                         value={completeForm.completionNotes}
                         onChange={(e) => setCompleteForm({...completeForm, completionNotes: e.target.value})}
-                        className="block w-full px-3 py-2 border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                        className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                         placeholder="Add any notes about the session completion..."
                       />
                     </div>
 
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-green-200">
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-green-200 dark:border-green-900/40">
                       <button
                         onClick={handleCancelComplete}
-                        className="px-4 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50"
+                        className="px-4 py-2 border border-green-300 dark:border-green-900/40 text-sm font-medium rounded-md text-green-700 dark:text-green-300 bg-white dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-slate-700"
                       >
                         Cancel
                       </button>
@@ -738,7 +738,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500">Session not found</p>
+              <p className="text-gray-500 dark:text-slate-400">Session not found</p>
             </div>
           )}
         </div>

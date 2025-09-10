@@ -348,31 +348,33 @@ const HomePage: React.FC = () => {
   // Network error state
   if (networkError) {
     return (
-      <div className="space-y-8 sm:space-y-10">
-        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center max-w-md">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                <WifiOff className="h-8 w-8 text-red-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Connection Lost</h3>
-              <p className="text-gray-600 mb-6">
-                Unable to connect to the server. Please check your internet connection and try again.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={handleRetry}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#01aaa7] hover:bg-[#01aaa7]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Try Again
-                </button>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
-                >
-                  Refresh Page
-                </button>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
+        <div className="space-y-8 sm:space-y-10">
+          <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center max-w-md">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
+                  <WifiOff className="h-8 w-8 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Connection Lost</h3>
+                <p className="text-gray-600 dark:text-slate-400 mb-6">
+                  Unable to connect to the server. Please check your internet connection and try again.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={handleRetry}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Try Again
+                  </button>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
+                  >
+                    Refresh Page
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -384,29 +386,31 @@ const HomePage: React.FC = () => {
   // General error state
   if (error && products.length === 0) {
     return (
-      <div className="space-y-8 sm:space-y-10">
-        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center max-w-md">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                <AlertCircle className="h-8 w-8 text-red-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Something went wrong</h3>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={handleRetry}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#01aaa7] hover:bg-[#01aaa7]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Try Again
-                </button>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
-                >
-                  Refresh Page
-                </button>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
+        <div className="space-y-8 sm:space-y-10">
+          <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center max-w-md">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
+                  <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Something went wrong</h3>
+                <p className="text-gray-600 dark:text-slate-400 mb-6">{error}</p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={handleRetry}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Try Again
+                  </button>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
+                  >
+                    Refresh Page
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -418,31 +422,33 @@ const HomePage: React.FC = () => {
   // Empty state
   if (!loading && !error && products.length === 0) {
     return (
-      <div className="space-y-8 sm:space-y-10">
-        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center max-w-md">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4">
-                <Package className="h-8 w-8 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No products available</h3>
-              <p className="text-gray-600 mb-6">
-                There are currently no products available for rent. Check back later or explore other categories.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={handleRefresh}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#01aaa7] hover:bg-[#01aaa7]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh
-                </button>
-                <Link
-                  to="/search"
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#01aaa7]"
-                >
-                  Browse All Categories
-                </Link>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
+        <div className="space-y-8 sm:space-y-10">
+          <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center max-w-md">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 dark:bg-slate-700 mb-4">
+                  <Package className="h-8 w-8 text-gray-600 dark:text-slate-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">No products available</h3>
+                <p className="text-gray-600 dark:text-slate-400 mb-6">
+                  There are currently no products available for rent. Check back later or explore other categories.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={handleRefresh}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </button>
+                  <Link
+                    to="/search"
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
+                  >
+                    Browse All Categories
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -452,52 +458,53 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 sm:space-y-10">
-      {/* Search Bar removed (moved into Header) */}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
+      <div className="space-y-8 sm:space-y-10">
+        {/* Search Bar removed (moved into Header) */}
 
-      {/* Category chips removed to declutter above Popular listings */}
+        {/* Category chips removed to declutter above Popular listings */}
 
-      {/* Results grid */}
-      <div className=" max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
-        {/* Section header */}
-        <div className="mb-4 sm:mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-semibold">Popular listings</h2>
-            <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-[#01aaa7]/10 text-[#01aaa7]">
-              <TrendingUp className="w-3 h-3" />
-              AI trending
-            </span>
-            {loading && (
-              <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 text-blue-600">
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                Updating...
+        {/* Results grid */}
+        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          {/* Section header */}
+          <div className="mb-4 sm:mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100">Popular listings</h2>
+              <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-my-primary/10 text-my-primary dark:bg-my-primary/20 dark:text-teal-400">
+                <TrendingUp className="w-3 h-3" />
+                AI trending
               </span>
-            )}
-            {/* Network status indicator */}
-            <span className={`inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 ${
-              navigator.onLine 
-                ? 'bg-green-100 text-green-600' 
-                : 'bg-red-100 text-red-600'
-            }`}>
-              {navigator.onLine ? (
-                <Wifi className="w-3 h-3" />
-              ) : (
-                <WifiOff className="w-3 h-3" />
+              {loading && (
+                <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  Updating...
+                </span>
               )}
-              {navigator.onLine ? 'Online' : 'Offline'}
-            </span>
+              {/* Network status indicator */}
+              <span className={`inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 ${
+                navigator.onLine 
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+              }`}>
+                {navigator.onLine ? (
+                  <Wifi className="w-3 h-3" />
+                ) : (
+                  <WifiOff className="w-3 h-3" />
+                )}
+                {navigator.onLine ? 'Online' : 'Offline'}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleRefresh}
+                className="text-sm text-gray-600 dark:text-slate-400 hover:text-my-primary dark:hover:text-teal-400 transition-colors"
+                title="Refresh products"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <Link to="/search" className="text-sm text-my-primary dark:text-teal-400 hover:underline">View all</Link>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleRefresh}
-              className="text-sm text-gray-600 hover:text-[#01aaa7] transition-colors"
-              title="Refresh products"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-            <Link to="/search" className="text-sm text-[#01aaa7] hover:underline">View all</Link>
-          </div>
-        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filtered.slice(0, 15).map((item, index) => (
             <Link key={item.id} to={`/it/${item.id}`} className="group"
@@ -521,9 +528,9 @@ const HomePage: React.FC = () => {
                 void logInteraction(payload, token);
               }}
             >
-              <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+              <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-300 border border-gray-100 dark:border-slate-700">
                 {/* Image Container */}
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
                   {productImages[item.id]?.[0] ? (
                     <img
                       src={productImages[item.id][0]}
@@ -537,7 +544,7 @@ const HomePage: React.FC = () => {
                     />
                   ) : null}
                   {/* No Image Icon */}
-                  <div className={`${productImages[item.id]?.[0] ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400`}>
+                  <div className={`${productImages[item.id]?.[0] ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400 dark:text-slate-500`}>
                     <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -547,7 +554,7 @@ const HomePage: React.FC = () => {
                   <button
                     type="button"
                     aria-label="Add to favorites"
-                    className="absolute top-3 right-3 w-8 h-8 bg-black/20 hover:bg-black/40 rounded-full flex items-center justify-center transition-colors"
+                    className="absolute top-3 right-3 w-8 h-8 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40 rounded-full flex items-center justify-center transition-colors"
                     onClick={async (e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -584,7 +591,7 @@ const HomePage: React.FC = () => {
                       }
                     }}
                   >
-                    <Heart className={`w-4 h-4 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-white'}`} />
+                    <Heart className={`w-4 h-4 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-white dark:text-slate-200'}`} />
                   </button>
                 </div>
 
@@ -592,22 +599,22 @@ const HomePage: React.FC = () => {
                 <div className="p-3 space-y-1">
                   {/* Title and Rating */}
                   <div className="flex items-start justify-between">
-                    <h3 className="font-medium text-gray-900 text-sm leading-tight flex-1 pr-2">
+                    <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 pr-2">
                       {item.title || item.name}
                     </h3>
                     <div className="flex items-center space-x-1 flex-shrink-0">
                       <Star className="w-3 h-3 fill-current text-yellow-400" />
-                      <span className="text-sm text-gray-900">
+                      <span className="text-sm text-gray-900 dark:text-slate-100">
                         {item.average_rating || '4.8'}
                       </span>
                     </div>
                   </div>
                   
                   {/* Location */}
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 dark:text-slate-400 text-sm">
                     {locationsLoading[item.id] ? (
                       <span className="flex items-center gap-1">
-                        <div className="w-3 h-3 border border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                        <div className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin"></div>
                         Loading location...
                       </span>
                     ) : (
@@ -619,7 +626,7 @@ const HomePage: React.FC = () => {
                   </p>
                   
                   {/* Price */}
-                  <div className="text-gray-900 pt-1">
+                  <div className="text-gray-900 dark:text-slate-100 pt-1">
                     {productPrices[item.id]?.price_per_day ? (
                       <>
                         <span className="font-semibold">
@@ -639,7 +646,7 @@ const HomePage: React.FC = () => {
 
                   {/* Interactions */}
                   {productInteractions[item.id] && productInteractions[item.id].length > 0 && (
-                    <div className="text-xs text-gray-500 pt-1">
+                    <div className="text-xs text-gray-500 dark:text-slate-500 pt-1">
                       <span className="flex items-center gap-1">
                         <span>👥</span>
                         <span>{productInteractions[item.id].length} recent interaction{productInteractions[item.id].length !== 1 ? 's' : ''}</span>
@@ -653,6 +660,7 @@ const HomePage: React.FC = () => {
         </div>
 
        
+        </div>
       </div>
       
       {/* Padding between content and footer */}

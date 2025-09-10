@@ -341,27 +341,27 @@ const Header: React.FC = () => {
         {/* Full-width Search Row (desktop) */}
         <div className="hidden md:block pb-3">
           <div className="flex items-center justify-center">
-            <div className="flex items-stretch divide-x divide-gray-200 border border-gray-200 rounded-full overflow-hidden bg-white w-full max-w-4xl">
+            <div className="flex items-stretch divide-x divide-gray-200 dark:divide-slate-600 border border-gray-200 dark:border-slate-600 rounded-full overflow-hidden bg-white dark:bg-slate-800 w-full max-w-4xl">
               {/* Where */}
               <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700">Where</div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Where</div>
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Search destinations"
-                  className="mt-0.5 text-sm outline-none placeholder-gray-500 w-56"
+                  className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-56"
                 />
               </div>
 
               {/* Check in */}
               <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700">Check in</div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Check in</div>
                 <input
                   type="text"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
                   placeholder="Add dates"
-                  className="mt-0.5 text-sm outline-none placeholder-gray-500 w-36"
+                  className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-36"
                   onFocus={(e) => { e.currentTarget.type = 'date'; }}
                   onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
                 />
@@ -369,13 +369,13 @@ const Header: React.FC = () => {
 
               {/* Check out */}
               <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700">Check out</div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Check out</div>
                 <input
                   type="text"
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
                   placeholder="Add dates"
-                  className="mt-0.5 text-sm outline-none placeholder-gray-500 w-36"
+                  className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-36"
                   onFocus={(e) => { e.currentTarget.type = 'date'; }}
                   onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
                 />
@@ -383,10 +383,10 @@ const Header: React.FC = () => {
 
               {/* Near me */}
               <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700">Near me</div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Near me</div>
                 {nearMe && lat && lng ? (
                   <div className="mt-0.5 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700">
                       ✓ Using location
                     </span>
                     <input
@@ -394,7 +394,7 @@ const Header: React.FC = () => {
                       min={1}
                       value={radiusKm}
                       onChange={(e) => setRadiusKm(Number(e.target.value) || 25)}
-                      className="text-sm outline-none w-24 border border-gray-200 rounded-full px-3 py-1"
+                      className="text-sm outline-none w-24 border border-gray-200 dark:border-slate-600 rounded-full px-3 py-1 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                       placeholder="km"
                       title="Radius in kilometers"
                     />
@@ -403,7 +403,7 @@ const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={detectLocation}
-                    className="mt-0.5 inline-flex items-center gap-1 text-sm text-[#01aaa7] hover:underline"
+                    className="mt-0.5 inline-flex items-center gap-1 text-sm text-my-primary dark:text-teal-400 hover:underline"
                   >
                     <span aria-hidden>📍</span>
                     Use current location
@@ -416,7 +416,7 @@ const Header: React.FC = () => {
                 <button
                   onClick={submitSearch}
                   aria-label="Search"
-                  className="h-10 w-10 rounded-full bg-[#01aaa7] text-white hover:opacity-90 flex items-center justify-center"
+                  className="h-10 w-10 rounded-full bg-my-primary dark:bg-teal-500 text-white hover:opacity-90 flex items-center justify-center"
                 >
                   <Search className="h-5 w-5" />
                 </button>

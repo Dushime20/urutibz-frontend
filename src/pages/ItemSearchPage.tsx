@@ -346,9 +346,9 @@ const ItemSearchPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
              {/* Enhanced Search Header */}
-       <div className="bg-white shadow-sm border-b sticky top-0 z-40">
+       <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-40">
          <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 py-6">
           {/* Main Search Section */}
           <div className="flex flex-col gap-6">
@@ -380,7 +380,7 @@ const ItemSearchPage: React.FC = () => {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="appearance-none pl-4 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] bg-white min-w-48 cursor-pointer transition-all duration-200"
+                  className="appearance-none pl-4 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-my-primary focus:border-my-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 min-w-48 cursor-pointer transition-all duration-200"
                   aria-label="Select category"
                 >
                   <option value="all">All Categories</option>
@@ -390,14 +390,14 @@ const ItemSearchPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-400 pointer-events-none" />
               </div>
               
               <div className="relative">
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="appearance-none pl-4 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] bg-white min-w-40 cursor-pointer transition-all duration-200"
+                  className="appearance-none pl-4 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-my-primary focus:border-my-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 min-w-40 cursor-pointer transition-all duration-200"
                   aria-label="Select location"
                 >
                   <option value="all">All Locations</option>
@@ -406,13 +406,13 @@ const ItemSearchPage: React.FC = () => {
                   <option value="Kampala">🇺🇬 Kampala</option>
                   <option value="Nairobi">🇰🇪 Nairobi</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-400 pointer-events-none" />
               </div>
               
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-3 border rounded-xl hover:bg-gray-50 flex items-center gap-2 transition-all duration-200 ${
-                  showFilters ? 'border-[#00aaa9] bg-[#00aaa9]/5 text-[#00aaa9]' : 'border-gray-300 text-gray-700'
+                className={`px-4 py-3 border rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2 transition-all duration-200 ${
+                  showFilters ? 'border-my-primary bg-my-primary/5 dark:bg-my-primary/10 text-my-primary dark:text-teal-400' : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300'
                 }`}
                 aria-label={showFilters ? 'Hide filters' : 'Show more filters'}
               >
@@ -421,13 +421,13 @@ const ItemSearchPage: React.FC = () => {
               </button>
 
               {/* View Toggle */}
-              <div className="ml-auto flex border border-gray-300 rounded-xl overflow-hidden">
+              <div className="ml-auto flex border border-gray-300 dark:border-slate-600 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`px-4 py-3 flex items-center gap-2 transition-all duration-200 ${
                     viewMode === 'grid' 
-                      ? 'bg-[#00aaa9] text-white' 
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-my-primary dark:bg-teal-500 text-white' 
+                      : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-600'
                   }`}
                   aria-label="Grid view"
                 >
@@ -438,8 +438,8 @@ const ItemSearchPage: React.FC = () => {
                   onClick={() => setViewMode('list')}
                   className={`px-4 py-3 flex items-center gap-2 transition-all duration-200 ${
                     viewMode === 'list' 
-                      ? 'bg-[#00aaa9] text-white' 
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-my-primary dark:bg-teal-500 text-white' 
+                      : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-600'
                   }`}
                   aria-label="List view"
                 >
@@ -452,34 +452,34 @@ const ItemSearchPage: React.FC = () => {
           
           {/* Advanced Filters Panel */}
           {showFilters && (
-            <div className="mt-6 p-6 border border-gray-200 rounded-2xl bg-gray-50 animate-in slide-in-from-top duration-200">
+            <div className="mt-6 p-6 border border-gray-200 dark:border-slate-600 rounded-2xl bg-gray-50 dark:bg-slate-800 animate-in slide-in-from-top duration-200">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">Price Range (USD)</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Price Range (USD)</label>
                   <div className="flex gap-3">
                     <input
                       type="number"
                       value={priceRange.min}
                       onChange={(e) => setPriceRange({...priceRange, min: Number(e.target.value)})}
                       placeholder="Min"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none transition-all duration-200"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                     />
                     <input
                       type="number"
                       value={priceRange.max}
                       onChange={(e) => setPriceRange({...priceRange, max: Number(e.target.value)})}
                       placeholder="Max"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none transition-all duration-200"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">Sort By</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Sort By</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none transition-all duration-200"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                   >
                     <option value="relevance">Relevance</option>
                     <option value="price-low">Price: Low to High</option>
@@ -492,7 +492,7 @@ const ItemSearchPage: React.FC = () => {
                 <div className="md:col-span-2 flex items-end">
                   <Button
                     onClick={clearAllFilters}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
+                    className="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-all duration-200 flex items-center gap-2"
                   >
                     <X className="w-4 h-4" />
                     Clear All Filters
@@ -508,9 +508,9 @@ const ItemSearchPage: React.FC = () => {
        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 py-8">
         {/* Error Handling */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-2xl mb-8 animate-in fade-in duration-200">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-400 px-6 py-4 rounded-2xl mb-8 animate-in fade-in duration-200">
             <div className="flex items-center">
-              <AlertCircle className="w-5 h-5 mr-3 text-red-600" />
+              <AlertCircle className="w-5 h-5 mr-3 text-red-600 dark:text-red-400" />
               <p className="font-medium">{error}</p>
             </div>
           </div>
@@ -519,10 +519,10 @@ const ItemSearchPage: React.FC = () => {
         {/* Results Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">
               {searchQuery ? `Results for "${searchQuery}"` : 'Browse Rentals'}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-slate-400">
               {loading ? 'Searching...' : `${totalResults} items available`}
             </p>
           </div>
@@ -536,8 +536,8 @@ const ItemSearchPage: React.FC = () => {
               onClick={() => setSelectedCategory(category.id)}
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl whitespace-nowrap transition-all duration-200 font-medium ${
                 selectedCategory === category.id
-                  ? 'bg-[#00aaa9] text-white shadow-lg shadow-[#00aaa9]/25'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
+                  ? 'bg-my-primary dark:bg-teal-500 text-white shadow-lg shadow-my-primary/25 dark:shadow-teal-500/25'
+                  : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
               }`}
             >
               <span className="text-lg">{category.icon}</span>
@@ -549,8 +549,8 @@ const ItemSearchPage: React.FC = () => {
         {/* Results Grid/List */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-12 h-12 border-4 border-[#00aaa9] border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-gray-600 font-medium">Finding the perfect items for you...</p>
+            <div className="w-12 h-12 border-4 border-my-primary dark:border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-gray-600 dark:text-slate-400 font-medium">Finding the perfect items for you...</p>
           </div>
         ) : items.length > 0 ? (
                      <div className={viewMode === 'grid' 
@@ -567,10 +567,10 @@ const ItemSearchPage: React.FC = () => {
                                  <div
                    key={id}
                    onClick={() => handleItemClick(id)}
-                   className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                   className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-300 cursor-pointer group border border-gray-100 dark:border-slate-700"
                  >
                    {/* Image Container */}
-                   <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center">
+                   <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
                      {productImages[item.id]?.[0] ? (
                        <img
                          src={productImages[item.id][0]}
@@ -584,7 +584,7 @@ const ItemSearchPage: React.FC = () => {
                        />
                      ) : null}
                      {/* No Image Icon */}
-                     <div className={`${productImages[item.id]?.[0] ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400`}>
+                     <div className={`${productImages[item.id]?.[0] ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400 dark:text-slate-500`}>
                        <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                        </svg>
@@ -594,7 +594,7 @@ const ItemSearchPage: React.FC = () => {
                      <button
                        type="button"
                        aria-label="Add to favorites"
-                       className="absolute top-3 right-3 w-8 h-8 bg-black/20 hover:bg-black/40 rounded-full flex items-center justify-center transition-colors"
+                       className="absolute top-3 right-3 w-8 h-8 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40 rounded-full flex items-center justify-center transition-colors"
                        onClick={async (e) => {
                          e.preventDefault();
                          e.stopPropagation();
@@ -615,7 +615,7 @@ const ItemSearchPage: React.FC = () => {
                          }
                        }}
                      >
-                       <Heart className={`w-4 h-4 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-white'}`} />
+                       <Heart className={`w-4 h-4 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-white dark:text-slate-200'}`} />
                      </button>
                    </div>
 
@@ -623,22 +623,22 @@ const ItemSearchPage: React.FC = () => {
                    <div className="p-3 space-y-1">
                      {/* Title and Rating */}
                      <div className="flex items-start justify-between">
-                       <h3 className="font-medium text-gray-900 text-sm leading-tight flex-1 pr-2">
+                       <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 pr-2">
                          {item.title || item.name}
                        </h3>
                                                <div className="flex items-center space-x-1 flex-shrink-0">
                           <Star className="w-3 h-3 fill-current text-yellow-400" />
-                          <span className="text-sm text-gray-900">
+                          <span className="text-sm text-gray-900 dark:text-slate-100">
                             {item.average_rating || '4.8'}
                           </span>
                         </div>
                      </div>
                      
                      {/* Location */}
-                     <p className="text-gray-600 text-sm">
+                     <p className="text-gray-600 dark:text-slate-400 text-sm">
                        {locationsLoading[item.id] ? (
                          <span className="flex items-center gap-1">
-                           <div className="w-3 h-3 border border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                           <div className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin"></div>
                            Loading location...
                          </span>
                        ) : (
@@ -650,7 +650,7 @@ const ItemSearchPage: React.FC = () => {
                      </p>
                      
                      {/* Price */}
-                     <div className="text-gray-900 pt-1">
+                     <div className="text-gray-900 dark:text-slate-100 pt-1">
                        {item.base_price_per_day != null && item.base_currency ? (
                          <>
                            <span className="font-semibold">
@@ -674,10 +674,10 @@ const ItemSearchPage: React.FC = () => {
                 <div
                   key={id}
                   onClick={() => handleItemClick(id)}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                  className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-300 cursor-pointer group"
                 >
                   <div className="flex gap-6">
-                    <div className="relative flex-shrink-0 bg-gray-100 rounded-xl flex items-center justify-center">
+                    <div className="relative flex-shrink-0 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center">
                       {productImages[item.id]?.[0] ? (
                         <img
                           src={productImages[item.id][0]}
@@ -691,15 +691,15 @@ const ItemSearchPage: React.FC = () => {
                         />
                       ) : null}
                       {/* No Image Icon */}
-                      <div className={`${productImages[item.id]?.[0] ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400 w-28 h-28`}>
+                      <div className={`${productImages[item.id]?.[0] ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400 dark:text-slate-500 w-28 h-28`}>
                         <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <span className="text-xs font-medium">No Image</span>
                       </div>
                       <div className="absolute -top-2 -right-2">
-                        <div className="bg-white rounded-full p-1.5 shadow-sm">
-                          <IconComponent className="w-4 h-4 text-gray-600" />
+                        <div className="bg-white dark:bg-slate-600 rounded-full p-1.5 shadow-sm">
+                          <IconComponent className="w-4 h-4 text-gray-600 dark:text-slate-300" />
                         </div>
                       </div>
                     </div>
@@ -707,11 +707,11 @@ const ItemSearchPage: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <h3 className="font-bold text-gray-900 text-lg mb-1">{item.title || item.name}</h3>
-                          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{item.description}</p>
+                          <h3 className="font-bold text-gray-900 dark:text-slate-100 text-lg mb-1">{item.title || item.name}</h3>
+                          <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2 leading-relaxed">{item.description}</p>
                         </div>
                                                  <button 
-                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors ml-4"
+                           className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors ml-4"
                            onClick={async (e) => {
                              e.preventDefault();
                              e.stopPropagation();
@@ -732,17 +732,17 @@ const ItemSearchPage: React.FC = () => {
                              }
                            }}
                          >
-                           <Heart className={`w-5 h-5 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-gray-600'} hover:text-red-500 transition-colors`} />
+                           <Heart className={`w-5 h-5 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-gray-600 dark:text-slate-400'} hover:text-red-500 transition-colors`} />
                          </button>
                       </div>
                       
                       <div className="flex items-center gap-6 mb-3">
                         <div className="flex items-center gap-2">
                           <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-sm font-semibold">{item.average_rating || '0.00'}</span>
-                          <span className="text-sm text-gray-600">({item.review_count || 0})</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">{item.average_rating || '0.00'}</span>
+                          <span className="text-sm text-gray-600 dark:text-slate-400">({item.review_count || 0})</span>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-slate-400">
                           <MapPin className="w-4 h-4" />
                           <span className="truncate">
                             {itemLocations[item.id]?.city || 'Unknown'}{itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
@@ -753,30 +753,30 @@ const ItemSearchPage: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-xl font-bold text-[#00aaa9]">
+                            <span className="text-xl font-bold text-my-primary dark:text-teal-400">
                               {item.base_price_per_day != null && item.base_currency ? `$${item.base_price_per_day}` : 'No price'}
                             </span>
-                            <span className="text-sm text-gray-600">{item.base_price_per_day != null && item.base_currency ? `/${item.base_currency}` : ''}</span>
+                            <span className="text-sm text-gray-600 dark:text-slate-400">{item.base_price_per_day != null && item.base_currency ? `/${item.base_currency}` : ''}</span>
                           </div>
                           {item.condition && (
-                            <span className="text-xs px-2.5 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                            <span className="text-xs px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full font-medium">
                               {item.condition}
                             </span>
                           )}
                           {item.pickup_methods?.includes('delivery') && (
                             <div className="flex items-center gap-1">
-                              <Truck className="w-4 h-4 text-blue-500" />
-                              <span className="text-xs text-blue-600 font-medium">Delivery</span>
+                              <Truck className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Delivery</span>
                             </div>
                           )}
                           {item.pickup_methods?.includes('pickup') && (
                             <div className="flex items-center gap-1">
-                              <Package className="w-4 h-4 text-purple-500" />
-                              <span className="text-xs text-purple-600 font-medium">Pickup</span>
+                              <Package className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                              <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">Pickup</span>
                             </div>
                           )}
                         </div>
-                        <Button className="px-6 py-2.5 bg-[#00aaa9] hover:bg-[#008b8a] text-white rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md">
+                        <Button className="px-6 py-2.5 bg-my-primary dark:bg-teal-500 hover:bg-my-primary/90 dark:hover:bg-teal-600 text-white rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md">
                           View Details
                         </Button>
                       </div>

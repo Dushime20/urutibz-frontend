@@ -1,5 +1,6 @@
 import React from 'react';
 import { Package, Wallet, DollarSign, Shield, ArrowUpRight, Calendar, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   dashboardStats: {
@@ -10,9 +11,11 @@ interface Props {
   };
   recentDashboardBookings: any[];
   recentDashboardTransactions: any[];
+  onGoBookings?: () => void;
+  onGoWallet?: () => void;
 }
 
-const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor, gradientFrom, gradientTo }: any) => (
+const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor, gradientFrom, gradientTo, onClickSubtitle }: any) => (
   <div className="group relative overflow-hidden">
     <div className="relative bg-white rounded-2xl p-4 sm:p-6 border border-gray-100/50 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm dark:bg-slate-900/80 dark:border-slate-700/50">
       {/* Gradient overlay */}
@@ -23,9 +26,7 @@ const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor, g
         <div className="flex items-center justify-between mb-4">
           <div className={`relative p-3 rounded-xl ${bgColor} backdrop-blur-sm`}>
             <Icon className={`w-6 h-6 ${color}`} />
-            {trend && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-500 rounded-full animate-pulse"></div>
-            )}
+            {/* Removed decorative dot */}
           </div>
           {trend && (
             <div className="flex items-center space-x-1 text-teal-600 bg-teal-50 px-2 py-1 rounded-full">
@@ -43,10 +44,10 @@ const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor, g
             {title}
           </div>
           {subtitle && (
-            <div className="flex items-center text-xs text-teal-600 font-semibold bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400 px-2 py-1 rounded-full w-fit">
+            <button type="button" onClick={onClickSubtitle} className="flex items-center text-xs text-teal-600 font-semibold bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400 px-2 py-1 rounded-full w-fit cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/30">
               <ArrowUpRight className="w-3 h-3 mr-1" />
               {subtitle}
-            </div>
+            </button>
           )}
         </div>
       </div>
@@ -158,7 +159,8 @@ const EmptyState = ({ icon: Icon, message }: { icon: any, message: string }) => 
   </div>
 );
 
-const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBookings, recentDashboardTransactions }) => {
+const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBookings, recentDashboardTransactions, onGoBookings, onGoWallet }) => {
+  const navigate = useNavigate();
   const formatEarnings = (amount: number) => {
     return amount >= 1000000 
       ? `${(amount / 1000000).toFixed(1)}M`
@@ -175,6 +177,16 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
       : num.toLocaleString();
   };
 
+  const goBookings = () => {
+    if (onGoBookings) return onGoBookings();
+    navigate('/my-account#bookings');
+  };
+
+  const goWallet = () => {
+    if (onGoWallet) return onGoWallet();
+    navigate('/my-account#wallet');
+  };
+
   return (
     <div className="space-y-8 bg-gradient-to-br from-gray-50/50 to-teal-50/20 dark:from-slate-900 dark:to-slate-800 min-h-screen px-3 py-4 sm:p-6">
       {/* Stats Grid */}
@@ -189,6 +201,7 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
           bgColor="bg-teal-50 dark:bg-teal-900/30"
           gradientFrom="from-teal-500"
           gradientTo="to-cyan-500"
+          onClickSubtitle={goBookings}
         />
         <StatCard 
           icon={Wallet} 
@@ -235,7 +248,7 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Bookings</h3>
                 <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Latest booking activities</p>
               </div>
-              <button className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors">
+              <button onClick={goBookings} className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors">
                 View all
                 <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </button>
@@ -261,7 +274,7 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">Transactions</h3>
                 <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Recent payments</p>
               </div>
-              <button className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors">
+              <button onClick={goWallet} className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors">
                 View all
                 <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </button>

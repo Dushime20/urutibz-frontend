@@ -1,44 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '../../../components/ui/DesignSystem';
-import ProfileSettingsForm from '../components/ProfileSettingsForm';
 import { Lock, Edit2, Shield, Eye, Moon, Sun, Bell } from 'lucide-react';
+import LoginHistoryModal from './LoginHistoryModal';
+import ChangePasswordModal from './ChangePasswordModal';
 
 interface Props {
   twoFactorStatus: { isLoading: boolean; enabled: boolean };
   show2FAModal: boolean;
   setShow2FAModal: (v: boolean) => void;
-  realUser: any;
-  setRealUser: (fn: (prev: any) => any) => void;
 }
 
-const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal, setRealUser }) => {
+const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) => {
+  const [showLoginHistory, setShowLoginHistory] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [isDark, setIsDark] = useState<boolean>(false);
   const token = (typeof window !== 'undefined' && localStorage.getItem('token')) || '';
-  let userId = '';
-  try {
-    const tp = token ? JSON.parse(atob(token.split('.')[1])) : {};
-    userId = tp.sub || tp.userId || tp.id || '';
-  } catch {}
+
+  // Initialize theme from localStorage or system preference
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const useDark = saved ? saved === 'dark' : prefersDark;
+      setIsDark(useDark);
+      document.documentElement.classList.toggle('dark', useDark);
+    } catch {}
+  }, []);
+
+  const toggleTheme = (theme: 'light' | 'dark') => {
+    const newTheme = theme === 'dark';
+    setIsDark(newTheme);
+    document.documentElement.classList.toggle('dark', newTheme);
+    localStorage.setItem('theme', theme);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100">Profile Settings</h3>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:gap-6">
-          <div className="lg:col-span-1">
-            <ProfileSettingsForm
-              formId="profile-settings-form"
-              userId={userId}
-              token={token}
-              onUpdated={(u: any) => setRealUser((prev: any) => ({ ...(prev || {}), ...u, avatar: u?.profileImageUrl || prev?.avatar }))}
-            />
-            <div className="flex justify-end mt-4">
-              <button type="submit" form="profile-settings-form" className="px-4 py-2 rounded-xl bg-primary-600 text-white disabled:opacity-50">Save Changes</button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -57,7 +54,11 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal, se
                   <p className="text-sm text-gray-500 dark:text-slate-400">Last updated 3 months ago</p>
                 </div>
               </div>
-              <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto justify-center">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 w-full sm:w-auto justify-center text-gray-700 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800"
+                onClick={() => setShowChangePassword(true)}
+              >
                 <Edit2 className="w-4 h-4" />
                 Change Password
               </Button>
@@ -91,7 +92,13 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal, se
                   <p className="text-sm text-gray-500 dark:text-slate-400">View your recent login history</p>
                 </div>
               </div>
-              <Button variant="outline" className="w-full sm:w-auto">View Activity</Button>
+              <Button 
+                variant="outline" 
+                className="w-full sm:w-auto text-gray-700 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800"
+                onClick={() => setShowLoginHistory(true)}
+              >
+                View Activity
+              </Button>
             </div>
           </div>
         </div>
@@ -109,8 +116,26 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal, se
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 border border-gray-200 rounded-lg dark:border-slate-700 dark:hover:bg-slate-800"><Sun className="w-4 h-4" /></button>
-              <button className="p-2 border border-gray-200 rounded-lg bg-gray-100 dark:border-slate-700 dark:bg-slate-800"><Moon className="w-4 h-4" /></button>
+              <button 
+                onClick={() => toggleTheme('light')}
+                className={`p-2 border rounded-lg transition-colors ${
+                  !isDark 
+                    ? 'border-my-primary bg-my-primary/10 text-my-primary' 
+                    : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400'
+                }`}
+              >
+                <Sun className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => toggleTheme('dark')}
+                className={`p-2 border rounded-lg transition-colors ${
+                  isDark 
+                    ? 'border-my-primary bg-my-primary/10 text-my-primary' 
+                    : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400'
+                }`}
+              >
+                <Moon className="w-4 h-4" />
+              </button>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3">
@@ -128,6 +153,20 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal, se
           </div>
         </div>
       </div>
+
+      {/* Login History Modal */}
+      <LoginHistoryModal
+        isOpen={showLoginHistory}
+        onClose={() => setShowLoginHistory(false)}
+        token={token}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+        token={token}
+      />
     </div>
   );
 };

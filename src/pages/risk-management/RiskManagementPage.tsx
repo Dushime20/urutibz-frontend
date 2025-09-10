@@ -99,21 +99,21 @@ const RiskManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Risk Management</h1>
-                <p className="mt-2 text-gray-600">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Risk Management</h1>
+                <p className="mt-2 text-gray-600 dark:text-slate-400">
                   Comprehensive risk management and compliance monitoring system
                 </p>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="text-sm text-gray-500">
-                  Role: <span className="font-medium capitalize">{user?.role}</span>
+                <div className="text-sm text-gray-500 dark:text-slate-400">
+                  Role: <span className="font-medium capitalize text-gray-900 dark:text-slate-100">{user?.role}</span>
                 </div>
               </div>
             </div>
@@ -124,7 +124,7 @@ const RiskManagementPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Tabs */}
         <div className="mb-8">
-          <div className="border-b border-gray-200">
+          <div className="border-b border-gray-200 dark:border-slate-700">
             <nav className="-mb-px flex space-x-8 overflow-x-auto">
               {availableTabs.map((tab) => {
                 const Icon = tab.icon;
@@ -136,13 +136,13 @@ const RiskManagementPage: React.FC = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                       isActive
-                        ? 'border-teal-500 text-teal-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400'
+                        : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600'
                     }`}
                   >
                     <Icon
                       className={`-ml-0.5 mr-2 h-5 w-5 ${
-                        isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
+                        isActive ? 'text-teal-500 dark:text-teal-400' : 'text-gray-400 dark:text-slate-500 group-hover:text-gray-500 dark:group-hover:text-slate-400'
                       }`}
                     />
                     {tab.label}
@@ -154,14 +154,14 @@ const RiskManagementPage: React.FC = () => {
           
           {/* Tab Description */}
           <div className="mt-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-slate-400">
               {tabs.find(tab => tab.id === activeTab)?.description}
             </p>
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
           {renderTabContent()}
         </div>
       </div>

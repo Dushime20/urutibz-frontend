@@ -31,6 +31,7 @@ import WalletSection from './components/WalletSection';
 import InspectionsSection from './components/InspectionsSection';
 import ReviewsSection from './components/ReviewsSection';
 import SettingsSection from './components/SettingsSection';
+import ProfileSection from './components/ProfileSection';
 import MessagesSection from './components/MessagesSection';
 import RiskAssessmentForm from '../risk-management/components/RiskAssessmentForm';
 import ComplianceChecker from '../risk-management/components/ComplianceChecker';
@@ -57,7 +58,7 @@ import type { FormState } from './types';
 
 
 const DashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile'>('overview');
   const [riskAssessmentTab, setRiskAssessmentTab] = useState<'assessment' | 'compliance' | 'profile'>('assessment');
   const { showToast } = useToast();
   const { user: authUser } = useAuth();
@@ -163,7 +164,6 @@ const DashboardPage: React.FC = () => {
   const [selectedReview, setSelectedReview] = useState<any>(null);
   const [showReviewDetail, setShowReviewDetail] = useState(false);
   const [loadingReviewDetail, setLoadingReviewDetail] = useState(false);
-  const [bookingReviews, setBookingReviews] = useState<{ [bookingId: string]: any }>({});
   const [loadingBookingReviews, setLoadingBookingReviews] = useState<{ [bookingId: string]: boolean }>({});
   const [bookingReviewCounts, setBookingReviewCounts] = useState<{ [bookingId: string]: number }>({});
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
@@ -856,7 +856,7 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-my-primary/10 to-indigo-50/30 dark:from-slate-900 dark:via-slate-900/40 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
       {/* Top Navigation Bar */}
       <div className="sticky top-0 z-50  backdrop-blur-xl border-b border-gray-200 bg-white dark:bg-slate-900 dark:border-slate-700">
         <div className="flex h-16">
@@ -864,7 +864,10 @@ const DashboardPage: React.FC = () => {
          
           {/* Header Content - full width */}
           <div className="flex-1 flex items-center  w-full">
-            <MyAccountHeader onToggleSidebar={() => setSidebarOpen(true)} />
+            <MyAccountHeader 
+              onToggleSidebar={() => setSidebarOpen(true)} 
+              onNavigateToProfile={() => setActiveTab('profile')}
+            />
           </div>
         </div>
       </div>
@@ -891,7 +894,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mx-auto px-4 sm:px-6 lg:px-4 py-8">
         {/* Verification Banner */}
         <div className="mb-8">
           <VerificationBanner />
@@ -907,6 +910,8 @@ const DashboardPage: React.FC = () => {
                 dashboardStats={dashboardStats}
                 recentDashboardBookings={recentDashboardBookings}
                 recentDashboardTransactions={recentDashboardTransactions}
+                onGoBookings={() => setActiveTab('bookings')}
+                onGoWallet={() => setActiveTab('wallet')}
               />
             )
           )}
@@ -918,7 +923,6 @@ const DashboardPage: React.FC = () => {
               navigateToBrowse={() => navigate('/browse')}
               bookingProducts={bookingProducts}
               bookingImages={bookingImages}
-              bookingReviews={bookingReviews}
               loadingBookingReviews={loadingBookingReviews}
               bookingReviewCounts={bookingReviewCounts}
               onViewBookingReview={handleViewBookingReview}
@@ -1066,13 +1070,18 @@ const DashboardPage: React.FC = () => {
               onRequestInspection={() => setShowInspectionModal(true)}
             />
           )}
+          {activeTab === 'profile' && (
+            <ProfileSection
+              realUser={realUser}
+              setRealUser={setRealUser}
+            />
+          )}
+
           {activeTab === 'settings' && (
             <SettingsSection
               twoFactorStatus={twoFactorStatus}
               show2FAModal={show2FAModal}
               setShow2FAModal={setShow2FAModal}
-              realUser={realUser}
-              setRealUser={setRealUser}
             />
           )}
 

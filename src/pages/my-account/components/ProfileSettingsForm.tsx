@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,6 +36,7 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const { showToast } = useToast();
 
   const {
     register,
@@ -56,17 +57,23 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
         let lat: number | undefined;
         let lng: number | undefined;
         // Normalize location from different backend shapes
-        const g = data.location?.geometry || data.location;
-        if (g?.type === 'Point' && Array.isArray(g.coordinates)) {
-          lng = Number(g.coordinates[0]);
-          lat = Number(g.coordinates[1]);
-        } else if (Array.isArray(g)) {
+        const location = data.location;
+        if (location?.coordinates?.latitude != null && location?.coordinates?.longitude != null) {
+          // New format: location.coordinates.latitude and location.coordinates.longitude
+          lat = Number(location.coordinates.latitude);
+          lng = Number(location.coordinates.longitude);
+        } else if (location?.geometry?.type === 'Point' && Array.isArray(location.geometry.coordinates)) {
+          // GeoJSON format: [longitude, latitude]
+          lng = Number(location.geometry.coordinates[0]);
+          lat = Number(location.geometry.coordinates[1]);
+        } else if (Array.isArray(location)) {
           // Some APIs may return [lng, lat]
-          lng = Number(g[0]);
-          lat = Number(g[1]);
-        } else if (g?.lat != null && g?.lng != null) {
-          lat = Number(g.lat);
-          lng = Number(g.lng);
+          lng = Number(location[0]);
+          lat = Number(location[1]);
+        } else if (location?.lat != null && location?.lng != null) {
+          // Direct lat/lng format
+          lat = Number(location.lat);
+          lng = Number(location.lng);
         }
 
         reset({
@@ -101,14 +108,14 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
       const res = await updateUser(userId, payload, token);
       if (res.success) {
         onUpdated?.(res.data);
-        alert('Profile updated');
+        showToast('Profile updated successfully!', 'success');
         setSaving(false);
         return;
       }
-      alert(res as any);
+      showToast(res.message || 'Failed to update profile', 'error');
     } catch (e) {
       console.error(e);
-      alert('Failed to save');
+      showToast('Failed to save profile. Please try again.', 'error');
     } finally {
       setSaving(false);
     }
@@ -143,10 +150,10 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
   return (
     <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Top action bar */}
-      <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-white/80 backdrop-blur flex justify-end">
+      <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur flex justify-end">
         <button
           type="submit"
-          disabled={!isDirty || saving}
+          disabled={saving}
           className="px-4 py-2 rounded-xl bg-my-primary text-white shadow-sm hover:brightness-110 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save Changes'}
@@ -234,18 +241,33 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
             <input className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('village')} />
           </div>
 
-          {/* Hidden geo fields - maintained in form state */}
-          <input type="hidden" {...register('location.lat')} />
-          <input type="hidden" {...register('location.lng')} />
+          {/* Location fields */}
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Latitude</label>
+            <input
+              type="number"
+              step="any"
+              placeholder="Enter latitude"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent dark:bg-slate-800 dark:text-slate-100"
+              {...register('location.lat')}
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Longitude</label>
+            <input
+              type="number"
+              step="any"
+              placeholder="Enter longitude"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent dark:bg-slate-800 dark:text-slate-100"
+              {...register('location.lng')}
+            />
+          </div>
           <div className="md:col-span-2">
             <button type="button" className="px-3 py-2 rounded-lg border dark:border-slate-700 dark:text-slate-100" onClick={useCurrentLocation}>Use current location</button>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <button type="submit" className="px-4 py-2 rounded-xl bg-primary-600 text-white disabled:opacity-50" disabled={!isDirty || saving}>Save Profile</button>
-      </div>
       {/* Bottom action */}
       <div className="sticky bottom-0 z-10 -mx-6 px-6 py-3 flex justify-end">
         {/* <button

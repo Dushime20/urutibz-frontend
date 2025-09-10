@@ -52,25 +52,25 @@ const StatisticsSection: React.FC = () => {
 
   const getRiskLevelColor = (level: string) => {
     switch (level) {
-      case 'low': return 'text-green-600 bg-green-50';
-      case 'medium': return 'text-yellow-600 bg-yellow-50';
-      case 'high': return 'text-orange-600 bg-orange-50';
-      case 'critical': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'low': return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
+      case 'medium': return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30';
+      case 'high': return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30';
+      case 'critical': return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700';
     }
   };
 
   const getComplianceColor = (rate: number) => {
-    if (rate >= 90) return 'text-green-600';
-    if (rate >= 80) return 'text-teal-600';
-    if (rate >= 70) return 'text-yellow-600';
-    return 'text-red-600';
+    if (rate >= 90) return 'text-green-600 dark:text-green-400';
+    if (rate >= 80) return 'text-teal-600 dark:text-teal-400';
+    if (rate >= 70) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const getViolationColor = (rate: number) => {
-    if (rate <= 5) return 'text-green-600';
-    if (rate <= 15) return 'text-yellow-600';
-    return 'text-red-600';
+    if (rate <= 5) return 'text-green-600 dark:text-green-400';
+    if (rate <= 15) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   if (loading) {
@@ -78,9 +78,9 @@ const StatisticsSection: React.FC = () => {
       <div className="p-6">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <RefreshCw className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Statistics</h3>
-            <p className="text-gray-600">Fetching risk management data...</p>
+            <RefreshCw className="w-12 h-12 text-gray-400 dark:text-slate-500 animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Loading Statistics</h3>
+            <p className="text-gray-600 dark:text-slate-400">Fetching risk management data...</p>
           </div>
         </div>
       </div>
@@ -92,11 +92,11 @@ const StatisticsSection: React.FC = () => {
       <div className="p-6">
         <div className="text-center py-12">
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Statistics</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Failed to Load Statistics</h3>
+          <p className="text-gray-600 dark:text-slate-400 mb-4">{error}</p>
           <button
             onClick={refetch}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Retry
@@ -110,9 +110,9 @@ const StatisticsSection: React.FC = () => {
     return (
       <div className="p-6">
         <div className="text-center py-12">
-          <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Statistics Available</h3>
-          <p className="text-gray-600">Statistics will appear here once data is available</p>
+          <BarChart3 className="w-12 h-12 text-gray-400 dark:text-slate-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">No Statistics Available</h3>
+          <p className="text-gray-600 dark:text-slate-400">Statistics will appear here once data is available</p>
         </div>
       </div>
     );
@@ -124,10 +124,10 @@ const StatisticsSection: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <BarChart3 className="w-8 h-8 text-teal-600" />
+            <BarChart3 className="w-8 h-8 text-teal-600 dark:text-teal-400" />
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Risk Management Statistics</h2>
-              <p className="text-gray-600">Comprehensive overview of risk management performance</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Risk Management Statistics</h2>
+              <p className="text-gray-600 dark:text-slate-400">Comprehensive overview of risk management performance</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
@@ -137,7 +137,7 @@ const StatisticsSection: React.FC = () => {
                 setSelectedPeriod(e.target.value as any);
                 refetchTrends(e.target.value);
               }}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="border border-gray-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
             >
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
@@ -150,14 +150,14 @@ const StatisticsSection: React.FC = () => {
                 refetchTrends();
               }}
               disabled={loading || trendsLoading}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
+              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${(loading || trendsLoading) ? 'animate-spin' : ''}`} />
               Refresh
             </button>
             <button
               onClick={handleExport}
-              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
             >
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -165,7 +165,7 @@ const StatisticsSection: React.FC = () => {
           </div>
         </div>
         {lastUpdated && (
-          <div className="mt-2 text-sm text-gray-500">
+          <div className="mt-2 text-sm text-gray-500 dark:text-slate-400">
             Last updated: {lastUpdated.toLocaleString()}
           </div>
         )}
@@ -173,7 +173,7 @@ const StatisticsSection: React.FC = () => {
 
       {/* View Mode Tabs */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-slate-700">
           <nav className="-mb-px flex space-x-8">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -188,12 +188,12 @@ const StatisticsSection: React.FC = () => {
                   onClick={() => setViewMode(tab.id as any)}
                     className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                       isActive
-                        ? 'border-teal-500 text-teal-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400'
+                        : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600'
                     }`}
                 >
                   <Icon className={`-ml-0.5 mr-2 h-5 w-5 ${
-                    isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
+                    isActive ? 'text-teal-500 dark:text-teal-400' : 'text-gray-400 dark:text-slate-500 group-hover:text-gray-500 dark:group-hover:text-slate-400'
                   }`} />
                   {tab.label}
                 </button>
@@ -208,25 +208,25 @@ const StatisticsSection: React.FC = () => {
         <div className="space-y-6">
           {/* Key Metrics Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Shield className="w-8 h-8 text-teal-600" />
+                  <Shield className="w-8 h-8 text-teal-600 dark:text-teal-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Risk Profiles</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.totalRiskProfiles}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Total Risk Profiles</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalRiskProfiles}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Target className="w-8 h-8 text-green-600" />
+                  <Target className="w-8 h-8 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Compliance Rate</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Compliance Rate</p>
                   <p className={`text-2xl font-semibold ${getComplianceColor(stats.complianceRate)}`}>
                     {stats.complianceRate.toFixed(1)}%
                   </p>
@@ -234,13 +234,13 @@ const StatisticsSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <AlertTriangle className="w-8 h-8 text-red-600" />
+                  <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Violation Rate</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Violation Rate</p>
                   <p className={`text-2xl font-semibold ${getViolationColor(stats.violationRate)}`}>
                     {stats.violationRate.toFixed(1)}%
                   </p>
@@ -248,48 +248,48 @@ const StatisticsSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Activity className="w-8 h-8 text-purple-600" />
+                  <Activity className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Average Risk Score</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.averageRiskScore.toFixed(1)}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Average Risk Score</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageRiskScore.toFixed(1)}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Enforcement Actions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Enforcement Actions</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">Enforcement Actions</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">{stats.enforcementActions.total}</div>
-                <div className="text-sm text-gray-600">Total Actions</div>
+              <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{stats.enforcementActions.total}</div>
+                <div className="text-sm text-gray-600 dark:text-slate-400">Total Actions</div>
               </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-green-600">{stats.enforcementActions.successful}</div>
-                <div className="text-sm text-green-600">Successful</div>
+              <div className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.enforcementActions.successful}</div>
+                <div className="text-sm text-green-600 dark:text-green-400">Successful</div>
               </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <XCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-red-600">{stats.enforcementActions.failed}</div>
-                <div className="text-sm text-red-600">Failed</div>
+              <div className="text-center p-4 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                <XCircle className="w-8 h-8 text-red-600 dark:text-red-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.enforcementActions.failed}</div>
+                <div className="text-sm text-red-600 dark:text-red-400">Failed</div>
               </div>
-              <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                <Clock className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-yellow-600">{stats.enforcementActions.pending}</div>
-                <div className="text-sm text-yellow-600">Pending</div>
+              <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
+                <Clock className="w-8 h-8 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.enforcementActions.pending}</div>
+                <div className="text-sm text-yellow-600 dark:text-yellow-400">Pending</div>
               </div>
             </div>
           </div>
 
           {/* Risk Distribution */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Risk Distribution</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">Risk Distribution</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Object.entries(stats.riskDistribution).map(([level, count]) => (
                 <div key={level} className={`text-center p-4 rounded-lg ${getRiskLevelColor(level)}`}>
@@ -308,16 +308,16 @@ const StatisticsSection: React.FC = () => {
           {/* Detailed Statistics */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Compliance Breakdown */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Compliance Analysis</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">Compliance Analysis</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Overall Compliance</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-400">Overall Compliance</span>
                   <span className={`font-semibold ${getComplianceColor(stats.complianceRate)}`}>
                     {stats.complianceRate.toFixed(1)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full ${getComplianceColor(stats.complianceRate).includes('green') ? 'bg-green-500' : 
                       getComplianceColor(stats.complianceRate).includes('teal') ? 'bg-teal-500' : 
@@ -326,12 +326,12 @@ const StatisticsSection: React.FC = () => {
                   ></div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Violation Rate</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-400">Violation Rate</span>
                   <span className={`font-semibold ${getViolationColor(stats.violationRate)}`}>
                     {stats.violationRate.toFixed(1)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full ${getViolationColor(stats.violationRate).includes('green') ? 'bg-green-500' : 
                       getViolationColor(stats.violationRate).includes('yellow') ? 'bg-yellow-500' : 'bg-red-500'}`}
@@ -342,28 +342,28 @@ const StatisticsSection: React.FC = () => {
             </div>
 
             {/* Enforcement Effectiveness */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Enforcement Effectiveness</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">Enforcement Effectiveness</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Success Rate</span>
-                  <span className="font-semibold text-green-600">
+                  <span className="text-sm text-gray-600 dark:text-slate-400">Success Rate</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">
                     {((stats.enforcementActions.successful / stats.enforcementActions.total) * 100).toFixed(1)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                   <div 
                     className="h-2 rounded-full bg-green-500"
                     style={{ width: `${(stats.enforcementActions.successful / stats.enforcementActions.total) * 100}%` }}
                   ></div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Failure Rate</span>
-                  <span className="font-semibold text-red-600">
+                  <span className="text-sm text-gray-600 dark:text-slate-400">Failure Rate</span>
+                  <span className="font-semibold text-red-600 dark:text-red-400">
                     {((stats.enforcementActions.failed / stats.enforcementActions.total) * 100).toFixed(1)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                   <div 
                     className="h-2 rounded-full bg-red-500"
                     style={{ width: `${(stats.enforcementActions.failed / stats.enforcementActions.total) * 100}%` }}
@@ -374,25 +374,25 @@ const StatisticsSection: React.FC = () => {
           </div>
 
           {/* Risk Profile Details */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Risk Profile Analysis</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">Risk Profile Analysis</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">{stats.totalRiskProfiles}</div>
-                <div className="text-sm text-gray-600">Total Risk Profiles</div>
-                <div className="text-xs text-gray-500 mt-1">Products with risk assessments</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">{stats.totalRiskProfiles}</div>
+                <div className="text-sm text-gray-600 dark:text-slate-400">Total Risk Profiles</div>
+                <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">Products with risk assessments</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">{stats.averageRiskScore.toFixed(1)}</div>
-                <div className="text-sm text-gray-600">Average Risk Score</div>
-                <div className="text-xs text-gray-500 mt-1">Weighted risk assessment</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">{stats.averageRiskScore.toFixed(1)}</div>
+                <div className="text-sm text-gray-600 dark:text-slate-400">Average Risk Score</div>
+                <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">Weighted risk assessment</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">
+                <div className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">
                   {Object.values(stats.riskDistribution).reduce((a, b) => a + b, 0)}
                 </div>
-                <div className="text-sm text-gray-600">Total Products</div>
-                <div className="text-xs text-gray-500 mt-1">All risk categories</div>
+                <div className="text-sm text-gray-600 dark:text-slate-400">Total Products</div>
+                <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">All risk categories</div>
               </div>
             </div>
           </div>
@@ -403,13 +403,13 @@ const StatisticsSection: React.FC = () => {
       {viewMode === 'trends' && (
         <div className="space-y-6">
           {/* Trend Analysis Header */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Trend Analysis</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">Trend Analysis</h3>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">Period: {selectedPeriod}</span>
+                <span className="text-sm text-gray-600 dark:text-slate-400">Period: {selectedPeriod}</span>
                 {trendsLastUpdated && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-slate-500">
                     Updated: {trendsLastUpdated.toLocaleTimeString()}
                   </span>
                 )}
@@ -418,17 +418,17 @@ const StatisticsSection: React.FC = () => {
             
             {trendsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mr-3" />
-                <span className="text-gray-600">Loading trend data...</span>
+                <RefreshCw className="w-8 h-8 text-gray-400 dark:text-slate-500 animate-spin mr-3" />
+                <span className="text-gray-600 dark:text-slate-400">Loading trend data...</span>
               </div>
             ) : trendsError ? (
               <div className="text-center py-8">
                 <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Trends</h4>
-                <p className="text-gray-600 mb-4">{trendsError}</p>
+                <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Failed to Load Trends</h4>
+                <p className="text-gray-600 dark:text-slate-400 mb-4">{trendsError}</p>
                 <button
                   onClick={() => refetchTrends()}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Retry
@@ -439,45 +439,45 @@ const StatisticsSection: React.FC = () => {
                 {/* Comparison Summary */}
                 {trends.comparison && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-teal-50 rounded-lg p-4">
+                    <div className="bg-teal-50 dark:bg-teal-900/30 rounded-lg p-4">
                       <div className="flex items-center">
-                        <Target className="w-8 h-8 text-teal-600 mr-3" />
+                        <Target className="w-8 h-8 text-teal-600 dark:text-teal-400 mr-3" />
                         <div>
-                          <p className="text-sm text-teal-600">Compliance Change</p>
-                          <p className={`text-lg font-semibold ${trends.comparison.complianceRateChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <p className="text-sm text-teal-600 dark:text-teal-400">Compliance Change</p>
+                          <p className={`text-lg font-semibold ${trends.comparison.complianceRateChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {trends.comparison.complianceRateChange >= 0 ? '+' : ''}{trends.comparison.complianceRateChange.toFixed(1)}%
                           </p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-4">
+                    <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-4">
                       <div className="flex items-center">
-                        <AlertTriangle className="w-8 h-8 text-red-600 mr-3" />
+                        <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400 mr-3" />
                         <div>
-                          <p className="text-sm text-red-600">Violation Change</p>
-                          <p className={`text-lg font-semibold ${trends.comparison.violationRateChange <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <p className="text-sm text-red-600 dark:text-red-400">Violation Change</p>
+                          <p className={`text-lg font-semibold ${trends.comparison.violationRateChange <= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {trends.comparison.violationRateChange >= 0 ? '+' : ''}{trends.comparison.violationRateChange.toFixed(1)}%
                           </p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-green-50 rounded-lg p-4">
+                    <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
                       <div className="flex items-center">
-                        <CheckCircle className="w-8 h-8 text-green-600 mr-3" />
+                        <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400 mr-3" />
                         <div>
-                          <p className="text-sm text-green-600">Enforcement Change</p>
-                          <p className={`text-lg font-semibold ${trends.comparison.enforcementActionsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <p className="text-sm text-green-600 dark:text-green-400">Enforcement Change</p>
+                          <p className={`text-lg font-semibold ${trends.comparison.enforcementActionsChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {trends.comparison.enforcementActionsChange >= 0 ? '+' : ''}{trends.comparison.enforcementActionsChange.toFixed(1)}%
                           </p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-4">
+                    <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
                       <div className="flex items-center">
-                        <Shield className="w-8 h-8 text-purple-600 mr-3" />
+                        <Shield className="w-8 h-8 text-purple-600 dark:text-purple-400 mr-3" />
                         <div>
-                          <p className="text-sm text-purple-600">Risk Profiles Change</p>
-                          <p className={`text-lg font-semibold ${trends.comparison.riskProfilesChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <p className="text-sm text-purple-600 dark:text-purple-400">Risk Profiles Change</p>
+                          <p className={`text-lg font-semibold ${trends.comparison.riskProfilesChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {trends.comparison.riskProfilesChange >= 0 ? '+' : ''}{trends.comparison.riskProfilesChange.toFixed(1)}%
                           </p>
                         </div>
@@ -503,8 +503,8 @@ const StatisticsSection: React.FC = () => {
                 </div>
 
                 {/* Enforcement Actions Trends */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Enforcement Actions Trends</h4>
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">Enforcement Actions Trends</h4>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <TrendChart
                       data={trends.enforcementActions.total}
@@ -534,8 +534,8 @@ const StatisticsSection: React.FC = () => {
                 </div>
 
                 {/* Risk Profile Trends */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Risk Profile Distribution Trends</h4>
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">Risk Profile Distribution Trends</h4>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <TrendChart
                       data={trends.riskProfiles.total}
@@ -577,12 +577,12 @@ const StatisticsSection: React.FC = () => {
                 </div>
 
                 {/* Trend Summary */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Trend Summary</h4>
+                <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-6">
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">Trend Summary</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h5 className="font-medium text-gray-900 mb-2">Key Insights</h5>
-                      <ul className="space-y-2 text-sm text-gray-600">
+                      <h5 className="font-medium text-gray-900 dark:text-slate-100 mb-2">Key Insights</h5>
+                      <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-400">
                         <li className="flex items-center">
                           <TrendingUp className="w-4 h-4 text-green-500 mr-2" />
                           Compliance rate is {trends.complianceRate[trends.complianceRate.length - 1]?.value > trends.complianceRate[0]?.value ? 'improving' : 'declining'}
@@ -598,8 +598,8 @@ const StatisticsSection: React.FC = () => {
                       </ul>
                     </div>
                     <div>
-                      <h5 className="font-medium text-gray-900 mb-2">Recommendations</h5>
-                      <ul className="space-y-2 text-sm text-gray-600">
+                      <h5 className="font-medium text-gray-900 dark:text-slate-100 mb-2">Recommendations</h5>
+                      <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-400">
                         <li>• Monitor compliance trends closely</li>
                         <li>• Review enforcement strategies if failure rate is high</li>
                         <li>• Focus on high-risk areas requiring attention</li>
@@ -611,9 +611,9 @@ const StatisticsSection: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No Trend Data Available</h4>
-                <p className="text-gray-600">Trend data will appear here once historical data is available</p>
+                <TrendingUp className="w-12 h-12 text-gray-400 dark:text-slate-500 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">No Trend Data Available</h4>
+                <p className="text-gray-600 dark:text-slate-400">Trend data will appear here once historical data is available</p>
               </div>
             )}
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -12,13 +12,19 @@ import {
   AlertTriangle,
   Clock,
   DollarSign,
-  Users
+  Users,
+  Bell,
+  Search,
+  Sun,
+  Moon
 } from 'lucide-react';
 import type { Inspection } from '../../types/inspection';
 import { inspectionService } from '../../services/inspectionService';
-import { getProductById } from '../my-account/service/api';
+import { getProductById, fetchUserProfile } from '../my-account/service/api';
 import { useAuth } from '../../contexts/AuthContext';
 import StatusBadge from '../../components/inspections/StatusBadge';
+import { getMyNotifications } from '../../features/notifications/api';
+import { useMarkReadMutation } from '../../features/notifications/queries';
 
 const InspectionDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,14 +34,116 @@ const InspectionDetailsPage: React.FC = () => {
   const [inspectionDetails, setInspectionDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [productName, setProductName] = useState<string>('');
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const isInspector = user?.role === 'inspector' || user?.role === 'admin';
+
+  // Header state
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  const avatarRef = useRef<HTMLDivElement | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const [notificationsData, setNotificationsData] = useState<any[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const unreadCount = notificationsData.filter((n: any) => !n.read).length;
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const { mutate: markRead } = useMarkReadMutation();
+  const notifRef = useRef<HTMLDivElement | null>(null);
+  const [isDark, setIsDark] = useState<boolean>(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Initialize theme from localStorage or system preference
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const useDark = saved ? saved === 'dark' : prefersDark;
+      setIsDark(useDark);
+      document.documentElement.classList.toggle('dark', useDark);
+    } catch {}
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    try { localStorage.setItem('theme', next ? 'dark' : 'light'); } catch {}
+  };
 
   useEffect(() => {
     if (id) {
       loadInspection();
     }
   }, [id]);
+
+  // Load avatar and display name from stored user (fast load)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        const url: string | undefined = u?.avatar || u?.profilePhoto || u?.photoUrl || u?.image;
+        const name: string = u?.name || [u?.firstName, u?.lastName].filter(Boolean).join(' ') || u?.email || 'Account';
+        if (url) setAvatarUrl(url);
+        setUserName(name);
+      }
+    } catch {}
+  }, []);
+
+  // Mirror Settings: fetch live profile using token and populate avatar/name
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = (typeof window !== 'undefined' && localStorage.getItem('token')) || '';
+        if (!token) return;
+        const res = await fetchUserProfile(token);
+        const data = res?.data;
+        if (!data) return;
+        const url: string | undefined = data.profileImageUrl || data.profile_image || data.avatarUrl || data.avatar;
+        const name: string = data.name || [data.firstName, data.lastName].filter(Boolean).join(' ') || data.email || userName;
+        if (url) setAvatarUrl(url);
+        if (name) setUserName(name);
+        try {
+          const stored = localStorage.getItem('user');
+          const existing = stored ? JSON.parse(stored) : {};
+          localStorage.setItem('user', JSON.stringify({ ...existing, ...data }));
+        } catch {}
+      } catch {}
+    })();
+  }, []);
+
+  // Load notifications
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        setNotificationsLoading(true);
+        const data = await getMyNotifications();
+        setNotificationsData(Array.isArray(data) ? data : (data as any).notifications || []);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+      } finally {
+        setNotificationsLoading(false);
+      }
+    };
+
+    loadNotifications();
+  }, []);
+
+  // Handle click outside for dropdowns
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (notifRef.current && !notifRef.current.contains(target)) {
+        setIsNotifOpen(false);
+      }
+      if (avatarRef.current && !avatarRef.current.contains(target)) {
+        setIsAvatarMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const loadInspection = async () => {
     try {
@@ -169,9 +277,10 @@ const InspectionDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b dark:bg-slate-900 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white shadow-sm border-b dark:bg-slate-900 dark:border-slate-700 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Left side - Back button and title */}
             <div className="flex items-center space-x-3 sm:space-x-4">
               <button
                 onClick={handleBackNavigation}
@@ -181,51 +290,201 @@ const InspectionDetailsPage: React.FC = () => {
                 Back
               </button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
-                  {productName || inspection.product?.title || inspection.product?.name || `Product ${inspection.productId}`}
+                <h1 className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-slate-100 truncate max-w-[200px] sm:max-w-xs">
+                  <span className="sm:hidden">Inspection Details</span>
+                  <span className="hidden sm:inline">
+                    {productName || (inspection.product as any)?.title || inspection.product?.name || `Product ${inspection.productId}`}
+                  </span>
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-slate-400 break-all">
+                <p className="hidden sm:block text-xs text-gray-500 dark:text-slate-400 truncate">
                   Inspection ID: {inspection.id}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <StatusBadge status={inspection.status} size="lg" />
-              <div className="flex space-x-2">
-                {isInspector && inspection.status === 'pending' && (
-                  <button
-                    onClick={handleStartInspection}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Start Inspection
-                  </button>
+
+            {/* Right side - Search, theme, notifications, avatar */}
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* Search */}
+              <div className="hidden sm:block relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    placeholder="Search..."
+                    className="w-64 pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Mobile search button */}
+              <button
+                onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+                className="sm:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+
+              {/* Notifications */}
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={() => setIsNotifOpen(!isNotifOpen)}
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors relative"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications dropdown */}
+                {isNotifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                    <div className="p-4 border-b border-gray-200 dark:border-slate-700">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-slate-100">Notifications</h3>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {notificationsLoading ? (
+                        <div className="p-4 text-center text-sm text-gray-500 dark:text-slate-400">
+                          Loading...
+                        </div>
+                      ) : notificationsData.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-gray-500 dark:text-slate-400">
+                          No notifications
+                        </div>
+                      ) : (
+                        notificationsData.map((notification: any) => (
+                          <div
+                            key={notification.id}
+                            className={`p-3 border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer ${
+                              !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                            onClick={() => {
+                              if (!notification.read) {
+                                markRead(notification.id);
+                              }
+                              setIsNotifOpen(false);
+                            }}
+                          >
+                            <p className="text-sm text-gray-900 dark:text-slate-100">{notification.message}</p>
+                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                              {new Date(notification.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 )}
-                {isInspector && inspection.status === 'in_progress' && (
-                  <button
-                    onClick={handleCompleteInspection}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Complete Inspection
-                  </button>
-                )}
-                {['pending', 'in_progress'].includes(inspection.status) && (
-                  <button
-                    onClick={handleEditInspection}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </button>
+              </div>
+
+              {/* Avatar menu */}
+              <div className="relative" ref={avatarRef}>
+                <button
+                  onClick={() => setIsAvatarMenuOpen(!isAvatarMenuOpen)}
+                  className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={userName}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </button>
+
+                {/* Avatar dropdown */}
+                {isAvatarMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                    <div className="p-3 border-b border-gray-200 dark:border-slate-700">
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{userName}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">{user?.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsAvatarMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Mobile search */}
+          {mobileSearchOpen && (
+            <div className="sm:hidden pb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* Action buttons */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <StatusBadge status={inspection.status} size="lg" />
+          </div>
+          <div className="flex space-x-2">
+            {isInspector && inspection.status === 'pending' && (
+              <button
+                onClick={handleStartInspection}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Start Inspection
+              </button>
+            )}
+            {isInspector && inspection.status === 'in_progress' && (
+              <button
+                onClick={handleCompleteInspection}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Complete Inspection
+              </button>
+            )}
+            {['pending', 'in_progress'].includes(inspection.status) && (
+              <button
+                onClick={handleEditInspection}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">

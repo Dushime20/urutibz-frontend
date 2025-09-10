@@ -149,21 +149,21 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          className="fixed inset-0 bg-gray-500/60 dark:bg-black/60 transition-opacity"
           onClick={handleClose}
         />
 
         {/* Modal */}
-        <div className="relative w-full max-w-md transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all">
+        <div className="relative w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-slate-900 text-left shadow-xl transition-all border border-gray-200 dark:border-slate-700">
           {/* Header */}
-          <div className="bg-gray-50 px-4 py-3 sm:px-6">
+          <div className="bg-gray-50 dark:bg-slate-900 px-4 py-3 sm:px-6 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">
                 Create New Inspection
               </h3>
               <button
                 onClick={handleClose}
-                className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="rounded-md bg-white dark:bg-slate-900 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -175,21 +175,21 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
             <div className="space-y-4">
               {/* Mode selector */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Request For</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Request For</label>
                 <div className="flex gap-3">
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input type="radio" value="owner" {...register('mode')} className="text-blue-600" defaultChecked />
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                    <input type="radio" value="owner" {...register('mode')} className="text-teal-600" defaultChecked />
                     My item (owner)
                   </label>
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input type="radio" value="renter" {...register('mode')} className="text-blue-600" />
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                    <input type="radio" value="renter" {...register('mode')} className="text-teal-600" />
                     My rental (renter)
                   </label>
                 </div>
               </div>
               {/* Product ID (visible in all modes) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Product ID
                 </label>
                 <div className="relative">
@@ -202,18 +202,18 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                       setValue('productId', undefined as any);
                     }}
                     onFocus={() => setShowProductOptions(true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                     placeholder="Search product by name"
                   />
                   {showProductOptions && (
-                    <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-200">
+                    <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white dark:bg-slate-900 py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-200 dark:border-slate-700">
                       {allProducts
                         .filter((p: any) => (p.title || p.name || '').toLowerCase().includes(productQuery.toLowerCase()))
                         .slice(0, 20)
                         .map((p: any) => (
                           <li
                             key={p.id}
-                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
                             onMouseDown={(e) => {
                               e.preventDefault();
                               setProductQuery(p.title || p.name || `Product ${p.id.slice(0,8)}`);
@@ -221,12 +221,12 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                               setShowProductOptions(false);
                             }}
                           >
-                            <div className="font-medium text-gray-900">{p.title || p.name}</div>
-                            <div className="text-xs text-gray-500">ID: {p.id}</div>
+                            <div className="font-medium text-gray-900 dark:text-slate-100">{p.title || p.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">ID: {p.id}</div>
                           </li>
                         ))}
                       {allProducts.length === 0 && (
-                        <li className="px-3 py-2 text-gray-500">No products</li>
+                        <li className="px-3 py-2 text-gray-500 dark:text-slate-400">No products</li>
                       )}
                     </ul>
                   )}
@@ -238,7 +238,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
 
               {/* Booking ID (visible in all modes) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Booking ID
                 </label>
                 <div className="relative">
@@ -251,11 +251,11 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                       setValue('bookingId', undefined as any);
                     }}
                     onFocus={() => setShowBookingOptions(true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                     placeholder="Search booking by reference/code"
                   />
                   {showBookingOptions && (
-                    <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-200">
+                    <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white dark:bg-slate-900 py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-200 dark:border-slate-700">
                       {allBookings
                         .filter((b: any) => {
                           const match = (b.reference || b.code || b.bookingCode || '').toLowerCase().includes(bookingQuery.toLowerCase());
@@ -267,7 +267,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                         .map((b: any) => (
                           <li
                             key={b.id}
-                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
                             onMouseDown={(e) => {
                               e.preventDefault();
                               const productLabel = b.product?.title || b.product?.name || '';
@@ -278,13 +278,13 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                               setShowBookingOptions(false);
                             }}
                           >
-                            <div className="font-medium text-gray-900">{b.product?.title || b.product?.name || 'Booking'}</div>
-                            <div className="text-xs text-gray-500">{b.reference || b.code || b.bookingCode || ''}</div>
-                            <div className="text-xs text-gray-500">ID: {b.id}</div>
+                            <div className="font-medium text-gray-900 dark:text-slate-100">{b.product?.title || b.product?.name || 'Booking'}</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">{b.reference || b.code || b.bookingCode || ''}</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">ID: {b.id}</div>
                           </li>
                         ))}
                       {allBookings.length === 0 && (
-                        <li className="px-3 py-2 text-gray-500">No bookings</li>
+                        <li className="px-3 py-2 text-gray-500 dark:text-slate-400">No bookings</li>
                       )}
                     </ul>
                   )}
@@ -296,14 +296,14 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
 
               {/* Inspector */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Inspector
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <select
                     {...register('inspectorId')}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                   >
                     <option value="">
                       {loadingInspectors ? 'Loading inspectors...' : 'Select an inspector'}
@@ -327,7 +327,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                     ) : null}
                   </select>
                   {!loadingInspectors && (!Array.isArray(inspectors) || inspectors.length === 0) && (
-                    <p className="mt-2 text-sm text-gray-500">No inspectors available right now. Please try again later.</p>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">No inspectors available right now. Please try again later.</p>
                   )}
                 </div>
                 {errors.inspectorId && (
@@ -337,12 +337,12 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
 
               {/* Inspection Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Inspection Type
                 </label>
                 <select
                   {...register('inspectionType')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                 >
                   <option value={InspectionType.PRE_RENTAL}>Pre-Rental</option>
                   <option value={InspectionType.POST_RENTAL}>Post-Rental</option>
@@ -357,7 +357,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
 
               {/* Scheduled Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Scheduled Date & Time
                 </label>
                 <div className="relative">
@@ -365,7 +365,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                   <input
                     type="datetime-local"
                     {...register('scheduledAt')}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                   />
                 </div>
                 {errors.scheduledAt && (
@@ -375,7 +375,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
 
               {/* Location */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Location
                 </label>
                 <div className="relative">
@@ -383,7 +383,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                   <input
                     type="text"
                     {...register('location')}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                     placeholder="Enter inspection location"
                   />
                 </div>
@@ -394,7 +394,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Notes
                 </label>
                 <div className="relative">
@@ -402,7 +402,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
                   <textarea
                     {...register('notes')}
                     rows={3}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                     placeholder="Add any additional notes..."
                   />
                 </div>
@@ -417,7 +417,7 @@ const CreateInspectionModal: React.FC<CreateInspectionModalProps> = ({
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                className="inline-flex justify-center rounded-md border border-gray-300 bg-white dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
               >
                 Cancel
               </button>

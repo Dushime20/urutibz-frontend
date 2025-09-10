@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 
 interface MyAccountSidebarProps {
-  activeTab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return';
-  setActiveTab: (tab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return') => void;
+  activeTab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile';
+  setActiveTab: (tab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile') => void;
   className?: string;
 }
 
@@ -37,6 +37,7 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
     { icon: ArrowRightLeft, label: 'Handover & Return', tab: 'handover-return' },
     { icon: BookOpen, label: 'Reviews', tab: 'reviews' },
     { icon: MessageCircle, label: 'Messages', tab: 'messages' },
+    { icon: User, label: 'Profile', tab: 'profile' },
     { icon: Settings, label: 'Settings', tab: 'settings' },
   ];
 

@@ -308,7 +308,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
         return (
           <div className="space-y-6">
             <div className="group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Product Title *
               </label>
               <input
@@ -317,15 +317,15 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 onChange={handleInputChangeWithValidation}
                 required
                 placeholder="Enter a descriptive title for your product"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 ${
-                  validationErrors.title ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 ${
+                  validationErrors.title ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700'
                 }`}
               />
               {renderErrorMessage('title')}
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Description *
               </label>
               <textarea
@@ -335,8 +335,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 required
                 placeholder="Describe your product in detail. Include key features, condition, and any important information."
                 rows={4}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 resize-none ${
-                  validationErrors.description ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 resize-none ${
+                  validationErrors.description ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700'
                 }`}
               />
               {renderErrorMessage('description')}
@@ -344,7 +344,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Category *
                 </label>
                 <select
@@ -352,8 +352,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                   value={form.category_id}
                   onChange={handleInputChangeWithValidation}
                   required
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
-                    validationErrors.category_id ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 ${
+                    validationErrors.category_id ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700'
                   }`}
                 >
                   <option value="">Select a category</option>
@@ -365,15 +365,15 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               </div>
 
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Condition *
                 </label>
                 <select
                   name="condition"
                   value={form.condition}
                   onChange={handleInputChangeWithValidation}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
-                    validationErrors.condition ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 ${
+                    validationErrors.condition ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700'
                   }`}
                 >
                   <option value="new">New</option>
@@ -386,40 +386,40 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
             {/* New fields: brand, model, year manufactured */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Brand</label>
                 <input
                   name="brand"
                   value={form.brand || ''}
                   onChange={handleInputChange}
                   placeholder="Canon"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Model</label>
                 <input
                   name="model"
                   value={form.model || ''}
                   onChange={handleInputChange}
                   placeholder="EOS R6"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Year Manufactured</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Year Manufactured</label>
                 <input
                   name="year_manufactured"
                   value={form.year_manufactured || ''}
                   onChange={handleInputChange}
                   placeholder="2022"
                   type="number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Country *
               </label>
               <select
@@ -427,8 +427,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 value={form.country_id}
                 onChange={handleInputChangeWithValidation}
                 required
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
-                  validationErrors.country_id ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 ${
+                  validationErrors.country_id ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700'
                 }`}
               >
                 <option value="">Select country</option>
@@ -444,12 +444,12 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
       case 2:
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Pricing Information</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Pricing Information</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Currency *
                   </label>
                   <select
@@ -457,8 +457,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     value={form.currency}
                     onChange={handleInputChangeWithValidation}
                     required
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
-                      validationErrors.currency ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                    className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 ${
+                      validationErrors.currency ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700'
                     }`}
                   >
                     <option value="">Select currency</option>
@@ -472,7 +472,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 </div>
 
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Price per Day *
                   </label>
                   <input
@@ -483,8 +483,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
-                      validationErrors.price_per_day ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                    className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200 ${
+                      validationErrors.price_per_day ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700'
                     }`}
                   />
                   {renderErrorMessage('price_per_day')}
@@ -493,7 +493,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Price per Hour
                   </label>
                   <input
@@ -503,12 +503,12 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
 
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Price per Week
                   </label>
                   <input
@@ -518,60 +518,14 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price per Month
-                  </label>
-                  <input
-                    name="price_per_month"
-                    value={form.price_per_month}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                    type="number"
-                    step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
-                  />
-                </div>
-
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Security Deposit
-                  </label>
-                  <input
-                    name="security_deposit"
-                    value={form.security_deposit}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                    type="number"
-                    step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
-                  />
-                </div>
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Delivery Fee
-                  </label>
-                  <input
-                    name="delivery_fee"
-                    value={form.delivery_fee || ''}
-                    onChange={handleInputChange}
-                    placeholder="2500"
-                    type="number"
-                    step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Pickup Methods *
               </label>
               <div className="grid grid-cols-2 gap-4">
@@ -612,8 +566,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
       case 3:
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Product Features</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Product Features</h3>
               
               <div className="space-y-4">
                 {(Array.isArray(form.features) ? form.features : []).map((feature: string, idx: number) => (
@@ -626,7 +580,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                         setForm((f: FormState) => ({ ...f, features }));
                       }}
                       placeholder="Enter a feature (e.g., Waterproof, Bluetooth)"
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      className="flex-1 px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                     />
                     <button
                       type="button"
@@ -636,7 +590,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                           features: (Array.isArray(f.features) ? f.features : []).filter((_: any, i: number) => i !== idx) 
                         }));
                       }}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -649,7 +603,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     ...f, 
                     features: [...(Array.isArray(f.features) ? f.features : []), ''] 
                   }))}
-                  className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                  className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-medium transition-colors"
                 >
                   <Plus size={18} />
                   Add Feature
@@ -657,8 +611,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Specifications</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Specifications</h3>
               
               <div className="space-y-4">
                 {Object.entries(form.specifications).map(([key, value], idx) => (
@@ -677,7 +631,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                         });
                       }}
                       placeholder="Specification name (e.g., Color, Size)"
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      className="px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                     />
                     <div className="flex gap-3">
                       <input
@@ -692,7 +646,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                           });
                         }}
                         placeholder="Value (e.g., Red, Large)"
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                        className="flex-1 px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                         disabled={!key}
                       />
                       <button
@@ -704,7 +658,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                             return { ...f, specifications: Object.fromEntries(newEntries) };
                           });
                         }}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -718,7 +672,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     ...f,
                     specifications: { ...f.specifications, [`spec${Object.keys(f.specifications).length + 1}`]: '' }
                   }))}
-                  className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                  className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-medium transition-colors"
                 >
                   <Plus size={18} />
                   Add Specification
@@ -726,8 +680,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Included Accessories</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Included Accessories</h3>
 
               <div className="space-y-4">
                 {(Array.isArray(form.included_accessories) ? form.included_accessories : []).map((acc: string, idx: number) => (
@@ -740,7 +694,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                         setForm((f: FormState) => ({ ...f, included_accessories: accessories }));
                       }}
                       placeholder="e.g., 2x batteries"
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      className="flex-1 px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                     />
                     <button
                       type="button"
@@ -750,7 +704,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                           included_accessories: (Array.isArray(f.included_accessories) ? f.included_accessories : []).filter((_: any, i: number) => i !== idx) 
                         }));
                       }}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -763,7 +717,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     ...f, 
                     included_accessories: [...(Array.isArray(f.included_accessories) ? f.included_accessories : []), ''] 
                   }))}
-                  className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                  className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-medium transition-colors"
                 >
                   <Plus size={18} />
                   Add Accessory
@@ -776,16 +730,19 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
       case 4:
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-green-800 mb-4">Product Images</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <Camera className="w-5 h-5" />
+                Product Images
+              </h3>
               
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
                   dragActive 
-                    ? 'border-teal-500 bg-teal-50' 
+                    ? 'border-slate-500 bg-slate-50 dark:bg-slate-800' 
                     : validationErrors.images
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-red-300 bg-red-50 dark:bg-red-900/20'
+                    : 'border-gray-300 dark:border-slate-700 hover:border-gray-400 dark:hover:border-slate-500'
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
@@ -793,9 +750,9 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                 onDrop={handleDrop}
               >
                 <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-600 mb-2">
+                <p className="text-gray-600 dark:text-slate-300 mb-2">
                   Drag and drop images here, or{' '}
-                  <label className="text-teal-600 hover:text-teal-700 cursor-pointer font-medium">
+                  <label className="text-slate-900 dark:text-white underline cursor-pointer font-medium">
                     browse
                     <input
                       type="file"
@@ -819,7 +776,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     />
                   </label>
                 </p>
-                <p className="text-sm text-gray-500">PNG, JPG, GIF up to 10MB each</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">PNG, JPG, GIF up to 10MB each</p>
               </div>
 
               {renderErrorMessage('images')}
@@ -827,13 +784,13 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               {form.images && form.images.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
                   {form.images.map((file: File, idx: number) => (
-                    <div key={idx} className="relative group rounded-lg overflow-hidden bg-gray-100">
+                    <div key={idx} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800">
                       <img
                         src={URL.createObjectURL(file)}
                         alt={file.name}
                         className="w-full h-32 object-cover"
                       />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-200 flex items-center justify-center">
                         <button
                           type="button"
                           className="opacity-0 group-hover:opacity-100 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all duration-200"
@@ -841,7 +798,6 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                             const newImages = form.images.filter((_: File, i: number) => i !== idx);
                             setForm((prev: FormState) => ({ ...prev, images: newImages }));
                             
-                            // Check if we still have images after removal
                             if (newImages.length === 0 && validationErrors.images) {
                               setValidationErrors(prev => ({ ...prev, images: 'At least one product image is required' }));
                             }
@@ -851,7 +807,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                         </button>
                       </div>
                       <div className="absolute bottom-2 left-2 right-2">
-                        <p className="text-xs text-white bg-black bg-opacity-75 px-2 py-1 rounded truncate">
+                        <p className="text-xs text-white bg-black/70 px-2 py-1 rounded truncate">
                           {file.name}
                         </p>
                       </div>
@@ -861,7 +817,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               )}
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Alt Text for Images *
                 </label>
                 <input
@@ -870,31 +826,31 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                   onChange={handleInputChange}
                   required
                   placeholder="Describe the images for accessibility"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-lg border border-yellow-200">
-              <h3 className="text-lg font-semibold text-yellow-800 mb-4">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
                 <MapPin className="inline mr-2" size={20} />
                 Location
               </h3>
               
               <div className="group mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Address Line</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Address Line</label>
                 <input
                   name="address_line"
                   value={form.address_line || ''}
                   onChange={handleInputChange}
                   placeholder="KG 11 Ave, Kigali"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Latitude
                   </label>
                   <input
@@ -906,11 +862,11 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                       location: { ...(f.location || { latitude: '', longitude: '' }), latitude: e.target.value }
                     }))}
                     placeholder="e.g., 40.7128"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Longitude
                   </label>
                   <input
@@ -922,39 +878,39 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                       location: { ...(f.location || { latitude: '', longitude: '' }), longitude: e.target.value }
                     }))}
                     placeholder="e.g., -74.0060"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sort Order
-                </label>
-                <input
-                  name="sort_order"
-                  value={form.sort_order}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  type="number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
-                />
-              </div>
-              <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Is Primary
-                </label>
-                <select
-                  name="isPrimary"
-                  value={form.isPrimary}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
-                >
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div className="group">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                    Sort Order
+                  </label>
+                  <input
+                    name="sort_order"
+                    value={form.sort_order}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    type="number"
+                    className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+                <div className="group">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                    Is Primary
+                  </label>
+                  <select
+                    name="isPrimary"
+                    value={form.isPrimary}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
+                  >
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -966,28 +922,39 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full mx-4 h-[95vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-2xl max-w-6xl w-full mx-3 sm:mx-4 h-[95vh] overflow-hidden">
         {/* Content with Sidebar */}
-        <form onSubmit={handleFormSubmit} className="flex flex-1 h-full">
+        <form onSubmit={handleFormSubmit} className="flex flex-1 h-full flex-col md:flex-row">
+          {/* Mobile Step Header */}
+          <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+            <div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Step {currentStep} of {steps.length}</div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-white">{steps.find(s => s.id === currentStep)?.title}</div>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800">
+              <X size={20} className="text-slate-600 dark:text-slate-300" />
+            </button>
+          </div>
+
           {/* Sidebar with Steps */}
-          <div className="w-64 bg-gray-50 border-r border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Steps</h3>
+          <div className="w-full md:w-64 bg-gray-50 dark:bg-slate-900 border-b md:border-b-0 md:border-r border-gray-200 dark:border-slate-700 p-4 md:p-6 md:block">
+            <div className="hidden md:flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Steps</h3>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200"
               >
-                <X size={20} className="text-gray-500" />
+                <X size={20} className="text-gray-500 dark:text-slate-300" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="hidden md:block space-y-4">
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
                     currentStep >= step.id
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-gray-200 text-gray-500 dark:bg-slate-800 dark:text-slate-400'
                   }`}>
                     {currentStep > step.id ? (
                       <CheckCircle size={18} />
@@ -997,12 +964,12 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                   </div>
                   <div className="ml-3 flex-1">
                     <div className={`text-sm font-medium ${
-                      currentStep >= step.id ? 'text-teal-600' : 'text-gray-500'
+                      currentStep >= step.id ? 'text-slate-900 dark:text-white' : 'text-gray-500 dark:text-slate-400'
                     }`}>
                       {step.title}
                     </div>
                     <div className={`text-xs ${
-                      currentStep >= step.id ? 'text-teal-500' : 'text-gray-400'
+                      currentStep >= step.id ? 'text-slate-600 dark:text-slate-400' : 'text-gray-400 dark:text-slate-500'
                     }`}>
                       {step.id === 1 && 'Product details & category'}
                       {step.id === 2 && 'Pricing & pickup options'}
@@ -1012,7 +979,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                   </div>
                   {index < steps.length - 1 && (
                     <div className={`w-8 h-0.5 ml-4 transition-all duration-200 ${
-                      currentStep > step.id ? 'bg-teal-600' : 'bg-gray-200'
+                      currentStep > step.id ? 'bg-slate-900' : 'bg-gray-200 dark:bg-slate-800'
                     }`} />
                   )}
                 </div>
@@ -1023,36 +990,35 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-h-0">
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-8 py-6 min-h-0">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6 min-h-0">
               {renderStepContent()}
             </div>
 
             {/* Footer - Always Visible */}
-            <div className="border-t border-gray-200 px-8 py-3 bg-gray-50 flex-shrink-0">
-              <div className="flex justify-between items-center">
+            <div className="border-t border-gray-200 dark:border-slate-700 px-4 sm:px-8 py-3 bg-gray-50 dark:bg-slate-900 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <button
                   type="button"
                   onClick={handlePreviousStep}
                   disabled={currentStep === 1}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  className={`px-5 py-3 rounded-lg font-medium transition-all duration-200 ${
                     currentStep === 1
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   Previous
                 </button>
 
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500">
+                <div className="flex items-center gap-4 justify-between sm:justify-end">
+                  <span className="text-sm text-gray-500 dark:text-slate-400">
                     Step {currentStep} of {steps.length}
                   </span>
-                  
                   {currentStep < steps.length ? (
                     <button
                       type="button"
                       onClick={handleNextStep}
-                      className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-all duration-200 flex items-center gap-2"
+                      className="px-6 py-3 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-all duration-200 flex items-center gap-2"
                     >
                       Continue
                       <ArrowLeft className="w-4 h-4 rotate-180" />
@@ -1061,7 +1027,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting && (
                         <Loader2 className="w-4 h-4 animate-spin" />

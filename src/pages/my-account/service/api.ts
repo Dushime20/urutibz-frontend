@@ -18,6 +18,79 @@ export type UpdateUserPayload = {
   location?: { lat: number; lng: number };
 };
 
+// Change user password
+export async function changePassword(token: string, currentPassword: string, newPassword: string) {
+  try {
+    // Extract user ID from JWT token
+    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
+    
+    if (!userId) {
+      return {
+        data: null,
+        success: false,
+        message: 'Invalid token'
+      };
+    }
+
+    const response = await axios.put(`${API_BASE_URL}/users/${userId}/password`, {
+      currentPassword,
+      newPassword
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return response.data;
+  } catch (error: any) {
+    logger.error('Error changing password:', error);
+    return {
+      data: null,
+      success: false,
+      message: error.response?.data?.message || 'Failed to change password'
+    };
+  }
+}
+
+// Fetch login history
+export async function fetchLoginHistory(token: string, page = 1, limit = 20) {
+  try {
+    // Extract user ID from JWT token
+    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
+    
+    if (!userId) {
+      return {
+        data: null,
+        success: false,
+        message: 'Invalid token'
+      };
+    }
+
+    console.log('Fetching login history for user:', userId, 'page:', page, 'limit:', limit);
+    
+    const response = await axios.get(`${API_BASE_URL}/users/${userId}/login-history`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      params: { page, limit }
+    });
+
+    console.log('API Response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    logger.error('Error fetching login history:', error);
+    return {
+      data: null,
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch login history'
+    };
+  }
+}
+
 // Fetch current user profile
 export async function fetchUserProfile(token: string) {
   try {
