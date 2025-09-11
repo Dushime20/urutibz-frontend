@@ -16,12 +16,14 @@ import DocumentTypeStep from './components/DocumentTypeStep';
 import DocumentUploadStep from './components/DocumentUploadStep';
 import SelfieStep from './components/SelfieStep';
 import PhoneStep from './components/PhoneStep';
+import EmailStep from './components/EmailStep';
 import CompletionStep from './components/CompletionStep';
 import { useToast } from '../../contexts/ToastContext';
 import { Link } from 'react-router-dom';
 
 import Tesseract from 'tesseract.js';
 import { submitDocumentStep, submitSelfieStep, requestPhoneOtp, verifyPhoneOtp } from './service/api';
+import { requestEmailOtp, verifyEmailOtp } from './service/verifications';
 import { updateUser, API_BASE_URL } from '../my-account/service/api';
 import axios from 'axios';
 
@@ -251,7 +253,8 @@ const UrutiBzVerification = () => {
     { id: 3, title: 'Upload Document', icon: Upload, description: 'Scan your ID with AI' },
     { id: 4, title: 'Selfie Verification', icon: User, description: 'Take a verification selfie' },
     { id: 5, title: 'Phone Verification', icon: Smartphone, description: 'Verify your phone number' },
-    { id: 6, title: 'Complete', icon: Award, description: 'Verification successful' }
+    { id: 6, title: 'Email Verification', icon: Smartphone, description: 'Verify your email' },
+    { id: 7, title: 'Complete', icon: Award, description: 'Verification successful' }
   ];
 
   const countries = [
@@ -557,6 +560,12 @@ const UrutiBzVerification = () => {
       await handleSelfieStepNext();
       return;
     }
+    if (currentStep === 6) {
+      if (!emailVerified) {
+        showToast('Please verify your email to continue.', 'error');
+        return;
+      }
+    }
     // Block progression from Selfie to Phone if the latest status is rejected
     if (currentStep === 4 && selfieRejected) {
       showToast('Your last selfie was rejected. Please retake a selfie to continue.', 'error');
@@ -589,6 +598,9 @@ const UrutiBzVerification = () => {
   // Add OTP state
   const [otp, setOtp] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
 
   const handleRequestOtp = async () => {
     setIsProcessing(true);
@@ -617,6 +629,50 @@ const UrutiBzVerification = () => {
     } catch (error: any) {
       setErrors({ otp: error.message || 'Failed to verify OTP' });
       showToast('Failed to verify OTP. Please try again.', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRequestEmailOtp = async () => {
+    setIsProcessing(true);
+    setErrors({});
+    try {
+      const token = localStorage.getItem('token');
+      const targetEmail = email || JSON.parse(localStorage.getItem('user') || '{}')?.email || '';
+      if (!targetEmail) {
+        setErrors({ email: 'Email required' });
+        setIsProcessing(false);
+        return;
+      }
+      await requestEmailOtp(targetEmail, token);
+      showToast('Email OTP sent!', 'success');
+    } catch (error: any) {
+      setErrors({ email: error.message || 'Failed to request email OTP' });
+      showToast('Failed to request email OTP. Please try again.', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    setIsProcessing(true);
+    setErrors({});
+    try {
+      const token = localStorage.getItem('token');
+      const targetEmail = email || JSON.parse(localStorage.getItem('user') || '{}')?.email || '';
+      if (!targetEmail) {
+        setErrors({ email: 'Email required' });
+        setIsProcessing(false);
+        return;
+      }
+      await verifyEmailOtp(targetEmail, emailOtp, token);
+      showToast('Email verified!', 'success');
+      setEmailVerified(true);
+      setCurrentStep(currentStep + 1);
+    } catch (error: any) {
+      setErrors({ emailOtp: error.message || 'Failed to verify email OTP' });
+      showToast('Failed to verify email OTP. Please try again.', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -1005,6 +1061,18 @@ const UrutiBzVerification = () => {
               errors={errors}
             />
           )}
+          {currentStep === 6 && (
+            <EmailStep
+              email={email}
+              setEmail={setEmail}
+              emailOtp={emailOtp}
+              setEmailOtp={setEmailOtp}
+              onRequestEmailOtp={handleRequestEmailOtp}
+              onVerifyEmailOtp={handleVerifyEmailOtp}
+              isProcessing={isProcessing}
+              errors={errors}
+            />
+          )}
           {currentStep === 1 && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Address Details</h3>
@@ -1035,12 +1103,12 @@ const UrutiBzVerification = () => {
               {/* Submit handled by global Next button to keep controls in one row */}
             </div>
           )}
-          {currentStep === 6 && <CompletionStep verificationData={verificationData} />}
+          {currentStep === 7 && <CompletionStep verificationData={verificationData} />}
         </div>
         )}
 
         {/* Navigation */}
-        {currentStep > 0 && currentStep < 6 && (
+        {currentStep > 0 && currentStep < 7 && (
           <div className="flex justify-between items-center mt-6 gap-3">
             <button
               onClick={prevStep}
@@ -1050,7 +1118,7 @@ const UrutiBzVerification = () => {
               <span>Previous</span>
             </button>
 
-            {currentStep < 5 && (
+            {currentStep < 6 && (
               <button
                 onClick={handleNextStep}
                 disabled={

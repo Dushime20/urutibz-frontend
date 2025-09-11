@@ -9,7 +9,9 @@ import {
   IdCard, 
   Clock,
   ArrowRight,
-  Camera
+  Camera,
+  Mail,
+  Home
 } from 'lucide-react';
 
 // Helper function to fetch real user profile for verification status
@@ -75,17 +77,15 @@ const VerificationBanner: React.FC = () => {
 
   // Create verification object from real user data if available, otherwise use auth context
   const verification = realUserData ? {
-    isProfileComplete: !!(realUserData.first_name && realUserData.last_name),
-    isEmailVerified: !!realUserData.email_verified_at,
-    isPhoneVerified: !!realUserData.phone_verified_at,
-    isIdVerified: realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved',
-    isAddressVerified: !!(realUserData.address || realUserData.city || realUserData.country),
-    isFullyVerified: realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved',
-    verificationStep: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved') ? 'complete' : 
-                     (!realUserData.first_name || !realUserData.last_name) ? 'profile' :
-                     (!realUserData.email_verified_at) ? 'email' :
-                     (!realUserData.phone_verified_at) ? 'phone' :
-                     (!realUserData.kyc_status || realUserData.kyc_status === 'pending') ? 'id' : 'address'
+    // Single source of truth: KYC status only
+    kycVerified: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved'),
+    isFullyVerified: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved'),
+    // The following fields mirror kyc status for banner visuals
+    isPhoneVerified: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved'),
+    isEmailVerified: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved'),
+    isIdVerified: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved'),
+    isAddressVerified: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved'),
+    verificationStep: (realUserData.kyc_status === 'verified' || realUserData.kyc_status === 'approved') ? 'complete' : 'id'
   } : user.verification;
 
   if (!verification) return null;
@@ -143,11 +143,31 @@ const VerificationBanner: React.FC = () => {
       key: 'phone',
       label: 'Verify Phone',
       icon: Phone,
-      completed: verification.isPhoneVerified,
+      completed: verification.isFullyVerified,
       link: '/verify/phone',
       description: realUserData ? 
         `${realUserData.phone || 'No phone'} ${realUserData.phone_verified_at ? '(Verified)' : '(Unverified)'}` :
         'Add your phone number'
+    },
+    {
+      key: 'address',
+      label: 'Address Details',
+      icon: Home,
+      completed: verification.isFullyVerified,
+      link: '/verify/id',
+      description: realUserData ?
+        `${realUserData.address || realUserData.city || realUserData.country ? 'On file' : 'Not added'}` :
+        'Provide your address details'
+    },
+    {
+      key: 'email',
+      label: 'Email Verification',
+      icon: Mail,
+      completed: verification.isFullyVerified,
+      link: '/verify/id',
+      description: realUserData ?
+        `${realUserData.email} ${realUserData.email_verified_at ? '(Verified)' : '(Unverified)'}` :
+        'Confirm your email address'
     },
     {
       key: 'id',
@@ -173,9 +193,7 @@ const VerificationBanner: React.FC = () => {
   const nextStep = requirements.find(req => !req.completed);
   
   // Use real verification data for capabilities
-  const canRent = realUserData ? 
-    (verification.isProfileComplete && verification.isEmailVerified) : 
-    canRentItems();
+  const canRent = realUserData ? verification.isFullyVerified : canRentItems();
   const canList = realUserData ? 
     verification.isFullyVerified : 
     canListItems();
