@@ -10,6 +10,7 @@ interface SelfieStepProps {
   handleRetakeSelfie: () => void;
   errors: Record<string, string>;
   onConfirmSelfie: (imageData: string) => void;
+  isProcessing?: boolean;
 }
 
 const SelfieStep: React.FC<SelfieStepProps> = ({
@@ -21,7 +22,8 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
   setCapturedSelfie,
   handleRetakeSelfie,
   errors,
-  onConfirmSelfie
+  onConfirmSelfie,
+  isProcessing
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -163,7 +165,8 @@ const SelfieStep: React.FC<SelfieStepProps> = ({
           <div className="flex justify-center space-x-4">
             <button
               onClick={handleRetake}
-              className="bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 transition-all duration-300"
+              disabled={isProcessing}
+              className="bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Retake
             </button>

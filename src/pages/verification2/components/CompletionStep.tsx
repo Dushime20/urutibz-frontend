@@ -25,9 +25,6 @@ const CompletionStep: React.FC<CompletionStepProps> = ({ verificationData }) => 
       <div className="bg-white rounded-xl shadow-lg p-6 max-w-lg mx-auto mt-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Summary</h3>
         <ul className="text-left text-gray-700 space-y-2">
-          <li><strong>Document Type:</strong> {verificationData.documentType}</li>
-          <li><strong>Name:</strong> {verificationData.ocrResults?.extractedData?.name}</li>
-          <li><strong>Document #:</strong> {verificationData.ocrResults?.extractedData?.documentNumber}</li>
           <li><strong>Phone:</strong> {verificationData.phoneNumber}</li>
         </ul>
       </div>

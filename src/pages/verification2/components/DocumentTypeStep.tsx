@@ -14,9 +14,10 @@ interface DocumentTypeStepProps {
   setSelectedCountry: (code: string) => void;
   setVerificationData: (fn: (prev: any) => any) => void;
   nextStep: () => void;
+  errors?: Record<string, string>;
 }
 
-const DocumentTypeStep: React.FC<DocumentTypeStepProps> = ({ countries, selectedCountry, setSelectedCountry, setVerificationData, nextStep }) => (
+const DocumentTypeStep: React.FC<DocumentTypeStepProps> = ({ countries, selectedCountry, setSelectedCountry, setVerificationData, nextStep, errors }) => (
   <div className="space-y-6">
     <div className="text-center">
       <h2 className="text-2xl font-bold text-gray-900 mb-2">Select Your Country</h2>
@@ -41,6 +42,9 @@ const DocumentTypeStep: React.FC<DocumentTypeStepProps> = ({ countries, selected
     {selectedCountry && (
       <div className="space-y-4">
         <h3 className="text-xl font-semibold text-gray-900">Select Document Type</h3>
+        {errors?.documentType && (
+          <div className="text-red-600 text-sm">{errors.documentType}</div>
+        )}
         <div className="grid md:grid-cols-3 gap-4">
           {countries.find(c => c.code === selectedCountry)?.documents.map((docType) => (
             <button
