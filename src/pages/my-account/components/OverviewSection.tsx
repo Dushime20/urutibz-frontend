@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Wallet, DollarSign, Shield, ArrowUpRight, Calendar, TrendingUp } from 'lucide-react';
+import { Package, DollarSign, Shield, ArrowUpRight, Calendar, TrendingUp, Euro, PoundSterling, Banknote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Props {
@@ -161,6 +161,25 @@ const EmptyState = ({ icon: Icon, message }: { icon: any, message: string }) => 
 
 const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBookings, recentDashboardTransactions, onGoBookings, onGoWallet }) => {
   const navigate = useNavigate();
+  const preferredCurrency = (dashboardStats as any)?.preferredCurrency || 'USD';
+
+  const getCurrencyIcon = (code: string) => {
+    const upper = (code || '').toUpperCase();
+    switch (upper) {
+      case 'USD':
+        return DollarSign;
+      case 'EUR':
+        return Euro;
+      case 'GBP':
+        return PoundSterling;
+      // For currencies without dedicated icons, use a generic banknote icon
+      case 'RWF':
+      case 'KES':
+      case 'UGX':
+      default:
+        return Banknote;
+    }
+  };
   const formatEarnings = (amount: number) => {
     return amount >= 1000000 
       ? `${(amount / 1000000).toFixed(1)}M`
@@ -204,9 +223,9 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
           onClickSubtitle={goBookings}
         />
         <StatCard 
-          icon={Wallet} 
+          icon={getCurrencyIcon(preferredCurrency)} 
           title="Total Earnings" 
-          value={formatEarnings(dashboardStats.totalEarnings)} 
+          value={`${preferredCurrency} ${formatEarnings(dashboardStats.totalEarnings)}`} 
           subtitle="Available" 
           trend={true} 
           color="text-emerald-600" 
@@ -215,9 +234,9 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
           gradientTo="to-teal-500"
         />
         <StatCard 
-          icon={DollarSign} 
+          icon={getCurrencyIcon(preferredCurrency)} 
           title="Transactions" 
-          value={formatNumber(dashboardStats.totalTransactions)} 
+          value={`${preferredCurrency} ${formatEarnings(dashboardStats.totalTransactions)}`} 
           subtitle="+12% this month" 
           trend={true} 
           color="text-blue-600" 

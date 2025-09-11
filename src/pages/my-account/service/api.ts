@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { convertCurrency } from '../../../lib/utils';
 import { logger } from '../../../lib/logger';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
 
@@ -16,6 +17,7 @@ export type UpdateUserPayload = {
   cell?: string;
   village?: string;
   location?: { lat: number; lng: number };
+  preferred_currency?: string;
 };
 
 // Change user password
@@ -202,12 +204,28 @@ export async function fetchDashboardStats(token: string) {
     const transactions = userTransactionData.success && userTransactionData.data ? userTransactionData.data : [];
     const myProducts = myProductsRes.data?.data?.data || myProductsRes.data?.data || [];
 
+    // Resolve user's preferred currency
+    let preferredCurrency = 'USD';
+    try {
+      const profile = await fetchUserProfile(token);
+      preferredCurrency = (profile?.data?.preferred_currency || profile?.data?.preferredCurrency || preferredCurrency).toString().toUpperCase();
+    } catch {
+      // Fallback to cached user
+      try {
+        const cached = localStorage.getItem('user');
+        if (cached) {
+          const u = JSON.parse(cached);
+          preferredCurrency = (u?.preferred_currency || u?.preferredCurrency || preferredCurrency).toString().toUpperCase();
+        }
+      } catch {}
+    }
+
     // Calculate user-specific stats
     const activeBookings = bookings.filter((booking: any) => 
       booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'active'
     ).length;
 
-    // Calculate total earnings from completed transactions
+    // Calculate total earnings from completed transactions (normalized to preferred currency)
     const completedTransactions = transactions.filter((transaction: any) => 
       transaction.status === 'completed'
     );
@@ -215,14 +233,18 @@ export async function fetchDashboardStats(token: string) {
     const totalEarnings = completedTransactions
       .reduce((sum: number, transaction: any) => {
         const amount = parseFloat(transaction.amount) || 0;
-        return sum + amount;
+        const fromCurrency = (transaction.currency || 'USD').toString().toUpperCase();
+        const converted = convertCurrency(amount, fromCurrency, preferredCurrency);
+        return sum + converted;
       }, 0);
 
-    // Total transaction amount (all transactions)
+    // Total transaction amount (all transactions, normalized to preferred currency)
     const totalTransactions = transactions
       .reduce((sum: number, transaction: any) => {
         const amount = parseFloat(transaction.amount) || 0;
-        return sum + amount;
+        const fromCurrency = (transaction.currency || 'USD').toString().toUpperCase();
+        const converted = convertCurrency(amount, fromCurrency, preferredCurrency);
+        return sum + converted;
       }, 0);
 
     // Count user's active products as wishlist proxy
@@ -234,7 +256,8 @@ export async function fetchDashboardStats(token: string) {
       activeBookings,
       totalEarnings,
       totalTransactions,
-      wishlistItems
+      wishlistItems,
+      preferredCurrency
     };
 
     return userStats;

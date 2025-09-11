@@ -131,10 +131,10 @@ const CategoriesManagement: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">Categories</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Categories</h3>
         <button
           onClick={() => setShowCreateForm(true)}
           className="bg-my-primary hover:bg-my-primary/80 text-white px-4 py-2 rounded-xl transition-colors flex items-center"
@@ -146,11 +146,11 @@ const CategoriesManagement: React.FC = () => {
 
       {/* Create Form */}
       {showCreateForm && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
           <form onSubmit={handleCreateCategory}>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Name
                 </label>
                 <input
@@ -158,11 +158,11 @@ const CategoriesManagement: React.FC = () => {
                   required
                   value={newCategory.name}
                   onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent placeholder:dark:text-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Description
                 </label>
                 <input
@@ -170,11 +170,11 @@ const CategoriesManagement: React.FC = () => {
                   required
                   value={newCategory.description}
                   onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent placeholder:dark:text-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Slug
                 </label>
                 <input
@@ -182,7 +182,7 @@ const CategoriesManagement: React.FC = () => {
                   required
                   value={newCategory.slug}
                   onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent placeholder:dark:text-gray-400"
                 />
               </div>
             </div>
@@ -190,7 +190,7 @@ const CategoriesManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors flex items-center"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors flex items-center"
               >
                 <X className="w-4 h-4 mr-2" />
                 Cancel
@@ -214,7 +214,7 @@ const CategoriesManagement: React.FC = () => {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-xl">
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 rounded-xl">
           {error}
         </div>
       )}
@@ -223,44 +223,44 @@ const CategoriesManagement: React.FC = () => {
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader className="w-6 h-6 text-my-primary animate-spin mr-2" />
-          <span className="text-gray-500">Loading categories...</span>
+          <span className="text-gray-500 dark:text-gray-400">Loading categories...</span>
         </div>
       ) : categories.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           No categories found. Create one to get started.
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Name</th>
-                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Description</th>
-                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Status</th>
-                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Created At</th>
-                <th className="text-right py-4 px-4 text-sm font-semibold text-gray-600">Actions</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Name</th>
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Description</th>
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Created At</th>
+                <th className="text-right py-4 px-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {categories.map((category) => (
-                <tr key={category.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={category.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <td className="py-3 px-4">
-                    <span className="font-medium text-gray-900">{category.name}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{category.name}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-gray-600">{category.description}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{category.description}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                       category.isActive
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     }`}>
                       {category.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-gray-400">
                       {new Date(category.createdAt).toLocaleDateString()}
                     </span>
                   </td>
@@ -268,14 +268,14 @@ const CategoriesManagement: React.FC = () => {
                     <div className="flex items-center justify-end space-x-2">
                       <button 
                         onClick={() => handleEdit(category)}
-                        className="p-1 text-gray-600 hover:text-my-primary transition-colors"
+                        className="p-1 text-gray-600 dark:text-gray-300 hover:text-my-primary dark:hover:text-my-primary transition-colors"
                         title="Edit category"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => handleDelete(category)}
-                        className="p-1 text-gray-600 hover:text-red-600 transition-colors"
+                        className="p-1 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                         title="Delete category"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -292,18 +292,18 @@ const CategoriesManagement: React.FC = () => {
       {/* Edit Category Modal */}
       {showEditModal && editingCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full mx-auto overflow-hidden">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center">
                 <Pencil className="w-6 h-6 text-my-primary mr-3" />
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   Edit Category: {editingCategory.name}
                 </h2>
               </div>
               <button 
                 onClick={() => setShowEditModal(false)} 
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -314,7 +314,7 @@ const CategoriesManagement: React.FC = () => {
               <form onSubmit={handleUpdateCategory}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Name
                     </label>
                     <input
@@ -322,11 +322,11 @@ const CategoriesManagement: React.FC = () => {
                       required
                       value={editCategoryData.name}
                       onChange={(e) => setEditCategoryData({ ...editCategoryData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent placeholder:dark:text-gray-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Slug
                     </label>
                     <input
@@ -334,11 +334,11 @@ const CategoriesManagement: React.FC = () => {
                       required
                       value={editCategoryData.slug}
                       onChange={(e) => setEditCategoryData({ ...editCategoryData, slug: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent placeholder:dark:text-gray-400"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Description
                     </label>
                     <textarea
@@ -346,7 +346,7 @@ const CategoriesManagement: React.FC = () => {
                       rows={3}
                       value={editCategoryData.description}
                       onChange={(e) => setEditCategoryData({ ...editCategoryData, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent placeholder:dark:text-gray-400"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -355,22 +355,22 @@ const CategoriesManagement: React.FC = () => {
                         type="checkbox"
                         checked={editCategoryData.isActive}
                         onChange={(e) => setEditCategoryData({ ...editCategoryData, isActive: e.target.checked })}
-                        className="mr-2 rounded border-gray-300 text-my-primary focus:ring-my-primary"
+                        className="mr-2 rounded border-gray-300 dark:border-gray-600 text-my-primary focus:ring-my-primary"
                       />
-                      <span className="text-sm font-medium text-gray-700">Active</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
                     </label>
                   </div>
                 </div>
 
                 {error && (
-                  <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl">{error}</div>
+                  <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 rounded-xl">{error}</div>
                 )}
 
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors flex items-center"
+                    className="px-6 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors flex items-center"
                   >
                     <X className="w-4 h-4 mr-2" />
                     Cancel
@@ -397,16 +397,16 @@ const CategoriesManagement: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && categoryToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-auto overflow-hidden">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center">
                 <Trash2 className="w-6 h-6 text-red-500 mr-3" />
-                <h2 className="text-xl font-bold text-gray-900">Delete Category</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Delete Category</h2>
               </div>
               <button 
                 onClick={() => setShowDeleteModal(false)} 
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -415,15 +415,15 @@ const CategoriesManagement: React.FC = () => {
             {/* Modal Content */}
             <div className="p-6">
               <div className="mb-6">
-                <p className="text-gray-700 mb-4">
+                <p className="text-gray-700 dark:text-gray-300 mb-4">
                   Are you sure you want to delete <strong>{categoryToDelete.name}</strong>?
                 </p>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
                   <div className="flex items-start">
                     <Trash2 className="w-5 h-5 text-red-500 mr-3 mt-0.5" />
                     <div>
-                      <p className="text-sm text-red-700 font-medium mb-1">Warning</p>
-                      <p className="text-sm text-red-600">
+                      <p className="text-sm text-red-700 dark:text-red-300 font-medium mb-1">Warning</p>
+                      <p className="text-sm text-red-600 dark:text-red-300">
                         This action cannot be undone. All data associated with this category will be permanently removed.
                       </p>
                     </div>
@@ -432,7 +432,7 @@ const CategoriesManagement: React.FC = () => {
               </div>
 
               {error && (
-                <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-xl">{error}</div>
+                <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 rounded-xl">{error}</div>
               )}
 
               <div className="flex justify-end space-x-3">
@@ -440,7 +440,7 @@ const CategoriesManagement: React.FC = () => {
                   type="button"
                   onClick={() => setShowDeleteModal(false)}
                   disabled={deleting}
-                  className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors flex items-center disabled:opacity-50"
+                  className="px-6 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors flex items-center disabled:opacity-50"
                 >
                   Cancel
                 </button>

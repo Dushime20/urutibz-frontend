@@ -223,41 +223,41 @@ export default function InsuranceProvidersManagement() {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">Insurance Providers</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Insurance Providers</h3>
         <div className="flex items-center gap-2">
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="rounded-lg border border-gray-200 px-3 py-2"/>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:dark:text-gray-400"/>
           <button onClick={handleSearch} className="inline-flex items-center px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90"><Search className="w-4 h-4 mr-2"/>Search</button>
           <button onClick={() => setShowCreate(true)} className="inline-flex items-center px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90">Create Insurance</button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">{error}</div>
+        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">{error}</div>
       )}
 
       <div>
         {loading ? (
-          <div className="text-gray-500">Loading...</div>
+          <div className="text-gray-500 dark:text-gray-400">Loading...</div>
         ) : items.length === 0 ? (
-          <div className="text-gray-500">No insurance providers found.</div>
+          <div className="text-gray-500 dark:text-gray-400">No insurance providers found.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {items.map(p => (
-              <div key={p.id} className="border border-gray-100 rounded-2xl p-4">
+              <div key={p.id} className="border border-gray-100 dark:border-gray-700 rounded-2xl p-4 bg-white dark:bg-gray-800">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="font-semibold text-gray-900">{p.display_name}</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{p.display_name}</div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => openDetail(p.id)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"><Eye className="w-4 h-4"/></button>
-                    <button onClick={() => startEdit(p)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"><Edit2 className="w-4 h-4"/></button>
-                    <button onClick={() => handleDelete(p.id)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-4 h-4"/></button>
+                    <button onClick={() => openDetail(p.id)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"><Eye className="w-4 h-4"/></button>
+                    <button onClick={() => startEdit(p)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"><Edit2 className="w-4 h-4"/></button>
+                    <button onClick={() => handleDelete(p.id)} className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800/40"><Trash2 className="w-4 h-4"/></button>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500 mb-2">{p.provider_name} • {p.provider_type}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{p.provider_name} • {p.provider_type}</div>
                 {p.logo_url && (<img src={p.logo_url} alt={p.display_name} className="h-8 object-contain mb-2" />)}
-                <div className="text-sm text-gray-600">Coverage: {Array.isArray(p.coverage_types) ? p.coverage_types.join(', ') : ''}</div>
-                <div className="text-sm text-gray-600">Rating: {p.rating ?? '—'}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">Coverage: {Array.isArray(p.coverage_types) ? p.coverage_types.join(', ') : ''}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">Rating: {p.rating ?? '—'}</div>
               </div>
             ))}
           </div>
@@ -267,10 +267,10 @@ export default function InsuranceProvidersManagement() {
       {/* Create Modal */}
       <Dialog open={showCreate} onClose={() => setShowCreate(false)} className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" onClick={() => setShowCreate(false)} />
-        <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl mx-auto z-50 max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-4xl mx-auto z-50 max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-gray-900">Create Insurance Provider</h4>
-            <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Insurance Provider</h4>
+            <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl">&times;</button>
           </div>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

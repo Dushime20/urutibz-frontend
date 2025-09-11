@@ -209,23 +209,23 @@ export default function CategoryRegulationsManagement() {
 	};
 
 	return (
-		<div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+		<div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
 			<div className="flex items-center justify-between mb-6">
-				<h3 className="text-xl font-bold text-gray-900">Category Regulations</h3>
+				<h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Category Regulations</h3>
 				<div className="flex items-center gap-2">
-					<select value={countryFilter} onChange={e => setCountryFilter(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2">
+					<select value={countryFilter} onChange={e => setCountryFilter(e.target.value)} className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
 						<option value="">All Countries</option>
 						{countries.map(c => (
 							<option key={c.id} value={c.id}>{c.name}</option>
 						))}
 					</select>
-					<select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2">
+					<select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
 						<option value="">All Categories</option>
 						{categories.map(c => (
 							<option key={c.id} value={c.id}>{c.name}</option>
 						))}
 					</select>
-					<input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search regulations..." className="rounded-lg border border-gray-200 px-3 py-2" />
+					<input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search regulations..." className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:dark:text-gray-400" />
 					<button onClick={doSearch} className="inline-flex items-center px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90"><Search className="w-4 h-4 mr-2"/>Search</button>
 					<button onClick={onCreateOpen} className="inline-flex items-center px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90"><Plus className="w-4 h-4 mr-2"/>Create Regulation</button>
 				</div>
@@ -233,47 +233,47 @@ export default function CategoryRegulationsManagement() {
 
 			{stats && (
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-					<div className="bg-white border border-gray-100 rounded-xl p-4">
-						<div className="text-xs text-gray-500">Total</div>
-						<div className="text-2xl font-bold text-gray-900">{stats.total_regulations ?? 0}</div>
+					<div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+						<div className="text-xs text-gray-500 dark:text-gray-400">Total</div>
+						<div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total_regulations ?? 0}</div>
 					</div>
-					<div className="bg-white border border-gray-100 rounded-xl p-4">
-						<div className="text-xs text-gray-500">Active</div>
-						<div className="text-2xl font-bold text-gray-900">{stats.active_regulations ?? 0}</div>
+					<div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+						<div className="text-xs text-gray-500 dark:text-gray-400">Active</div>
+						<div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.active_regulations ?? 0}</div>
 					</div>
-					<div className="bg-white border border-gray-100 rounded-xl p-4">
-						<div className="text-xs text-gray-500">Compliance</div>
-						<div className="text-2xl font-bold text-gray-900">{stats.compliance_rate != null ? `${Number(stats.compliance_rate).toFixed(0)}%` : '—'}</div>
+					<div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+						<div className="text-xs text-gray-500 dark:text-gray-400">Compliance</div>
+						<div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.compliance_rate != null ? `${Number(stats.compliance_rate).toFixed(0)}%` : '—'}</div>
 					</div>
-					<div className="bg-white border border-gray-100 rounded-xl p-4">
-						<div className="text-xs text-gray-500">Upcoming Deadlines</div>
-						<div className="text-2xl font-bold text-gray-900">{stats.upcoming_deadlines ?? 0}</div>
+					<div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+						<div className="text-xs text-gray-500 dark:text-gray-400">Upcoming Deadlines</div>
+						<div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.upcoming_deadlines ?? 0}</div>
 					</div>
 				</div>
 			)}
 
 			{error && (
-				<div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">{error}</div>
+				<div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">{error}</div>
 			)}
 
-			<div className="bg-white rounded-3xl p-4 border border-gray-100 mb-8">
+			<div className="bg-white dark:bg-gray-800 rounded-3xl p-4 border border-gray-100 dark:border-gray-700 mb-8">
 				<div className="flex items-center gap-2 mb-3">
-					<div className="font-semibold text-gray-900">Compliance Check</div>
+					<div className="font-semibold text-gray-900 dark:text-gray-100">Compliance Check</div>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-					<select value={compCountry} onChange={e => setCompCountry(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2">
+					<select value={compCountry} onChange={e => setCompCountry(e.target.value)} className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
 						<option value="" disabled>Country</option>
 						{countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
-					<select value={compCategory} onChange={e => setCompCategory(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2">
+					<select value={compCategory} onChange={e => setCompCategory(e.target.value)} className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
 						<option value="" disabled>Category</option>
 						{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 					<button onClick={doCheckCompliance} className="px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90">Check</button>
 				</div>
 				{compResult && (
-					<div className="mt-3 text-sm text-gray-700">
-						<div>Status: <span className={`px-2 py-1 rounded-full text-xs ${compResult.is_compliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{compResult.is_compliant ? 'Compliant' : 'Not Compliant'}</span></div>
+					<div className="mt-3 text-sm text-gray-700 dark:text-gray-300">
+						<div>Status: <span className={`px-2 py-1 rounded-full text-xs ${compResult.is_compliant ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>{compResult.is_compliant ? 'Compliant' : 'Not Compliant'}</span></div>
 						{Array.isArray(compResult.missing_requirements) && compResult.missing_requirements.length > 0 && (
 							<div className="mt-1">Missing: {compResult.missing_requirements.join(', ')}</div>
 						)}
@@ -282,26 +282,26 @@ export default function CategoryRegulationsManagement() {
 			</div>
 
 			<div>
-				<h4 className="text-lg font-semibold text-gray-900 mb-3">Existing Regulations</h4>
+				<h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Existing Regulations</h4>
 				{loading ? (
-					<div className="text-gray-500">Loading...</div>
+					<div className="text-gray-500 dark:text-gray-400">Loading...</div>
 				) : items.length === 0 ? (
-					<div className="text-gray-500">No regulations found.</div>
+					<div className="text-gray-500 dark:text-gray-400">No regulations found.</div>
 				) : (
 					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 						{items.map(r => (
-							<div key={r.id} className="border border-gray-100 rounded-2xl p-4">
+							<div key={r.id} className="border border-gray-100 dark:border-gray-700 rounded-2xl p-4 bg-white dark:bg-gray-800">
 								<div className="flex items-center justify-between mb-2">
-									<div className="font-semibold text-gray-900">{r.title}</div>
+									<div className="font-semibold text-gray-900 dark:text-gray-100">{r.title}</div>
 									<div className="flex items-center gap-2">
-										<button onClick={() => openDetail(r.id)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"><Eye className="w-4 h-4"/></button>
-										<button onClick={() => startEdit(r)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"><Edit2 className="w-4 h-4"/></button>
-										<button onClick={() => handleDelete(r.id)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-4 h-4"/></button>
+										<button onClick={() => openDetail(r.id)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"><Eye className="w-4 h-4"/></button>
+										<button onClick={() => startEdit(r)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"><Edit2 className="w-4 h-4"/></button>
+										<button onClick={() => handleDelete(r.id)} className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800/40"><Trash2 className="w-4 h-4"/></button>
 									</div>
 								</div>
-								<div className="text-xs text-gray-500 mb-2">{r.regulation_type} • {r.priority} • {r.enforcement_level}</div>
-								<div className="text-sm text-gray-600">Country: {countries.find(c => c.id === r.country_id)?.name || r.country_id}</div>
-								<div className="text-sm text-gray-600">Category: {categories.find(c => c.id === r.category_id)?.name || r.category_id}</div>
+								<div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{r.regulation_type} • {r.priority} • {r.enforcement_level}</div>
+								<div className="text-sm text-gray-600 dark:text-gray-300">Country: {countries.find(c => c.id === r.country_id)?.name || r.country_id}</div>
+								<div className="text-sm text-gray-600 dark:text-gray-300">Category: {categories.find(c => c.id === r.category_id)?.name || r.category_id}</div>
 							</div>
 						))}
 					</div>

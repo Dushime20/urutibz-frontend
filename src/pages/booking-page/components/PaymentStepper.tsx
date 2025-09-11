@@ -328,35 +328,35 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
 
   if (success) {
     return (
-      <div className="max-w-md mx-auto p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
+      <div className="max-w-md mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
         <div className="text-center">
           <div className="w-20 h-20 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-12 h-12 text-success-600" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Payment Successful!</h2>
-          <p className="text-gray-600 mb-2">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Payment Successful!</h2>
+          <p className="text-gray-600 dark:text-slate-300 mb-2">
             Your payment of <span className="font-semibold text-primary-600">
               {conversionInfo ? `${conversionInfo.amount} ${conversionInfo.currency}` : `${amount} ${currency}`}
             </span> has been processed.
             {conversionInfo && conversionInfo.isConverted && (
-              <span className="text-sm text-gray-500 block mt-1">
+              <span className="text-sm text-gray-500 dark:text-slate-400 block mt-1">
                 (Converted from {amount} {currency})
               </span>
             )}
           </p>
-          <p className="text-sm text-gray-500">Redirecting you back to your booking...</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Redirecting you back to your booking...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
+    <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
       {/* Enhanced Stepper */}
       <div className="mb-10">
         <div className="flex items-center justify-between relative">
           {/* Progress Line */}
-          <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-10">
+          <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-slate-700 -z-10">
             <div 
               className="h-full bg-primary-500 transition-all duration-500 ease-out"
               style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
@@ -401,8 +401,8 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
       {step === 1 && (
         <div className="space-y-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Payment Method</h2>
-            <p className="text-gray-600">Select your preferred payment option</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Choose Payment Method</h2>
+            <p className="text-gray-600 dark:text-slate-400">Select your preferred payment option</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -412,7 +412,7 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
               className={`p-6 border-2 rounded-2xl transition-all duration-200 flex flex-col items-center gap-4 ${
                 type === 'card'
                   ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-lg'
-                  : 'border-gray-200 hover:border-gray-300 hover:shadow-md text-gray-600'
+                  : 'border-gray-200 dark:border-slate-700 dark:hover:border-slate-600 hover:border-gray-300 hover:shadow-md text-gray-600 dark:text-slate-300'
               }`}
             >
               <CreditCard className="w-12 h-12" />
@@ -428,7 +428,7 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
               className={`p-6 border-2 rounded-2xl transition-all duration-200 flex flex-col items-center gap-4 ${
                 type === 'mobile_money'
                   ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-lg'
-                  : 'border-gray-200 hover:border-gray-300 hover:shadow-md text-gray-600'
+                  : 'border-gray-200 dark:border-slate-700 dark:hover:border-slate-600 hover:border-gray-300 hover:shadow-md text-gray-600 dark:text-slate-300'
               }`}
             >
               <Smartphone className="w-12 h-12" />
@@ -456,8 +456,8 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
       {step === 2 && (
         <div className="space-y-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Details</h2>
-            <p className="text-gray-600">Enter your {type === 'card' ? 'card' : 'mobile money'} information</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Payment Details</h2>
+            <p className="text-gray-600 dark:text-slate-400">Enter your {type === 'card' ? 'card' : 'mobile money'} information</p>
           </div>
           
           <form onSubmit={handleCreatePaymentMethod} className="space-y-6">
@@ -465,13 +465,13 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Card Provider</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Card Provider</label>
                     <select 
                       name="provider" 
                       value={form.provider || ''} 
                       onChange={handleChange} 
                       required 
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm"
                     >
                       <option value="">Select Provider</option>
                       {availableCardProviders.length > 0 ? (
@@ -489,34 +489,34 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Card Brand</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Card Brand</label>
                     <input 
                       name="card_brand" 
                       value={form.card_brand || ''} 
                       onChange={handleChange} 
                       required 
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200" 
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm" 
                       placeholder="e.g. visa" 
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Last Four Digits</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Last Four Digits</label>
                   <input 
                     name="last_four" 
                     value={form.last_four || ''} 
                     onChange={handleChange} 
                     required 
                     maxLength={4} 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200" 
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm" 
                     placeholder="1234" 
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Exp Month</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Exp Month</label>
                     <input 
                       name="exp_month" 
                       type="number" 
@@ -525,12 +525,12 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                       value={form.exp_month || ''} 
                       onChange={handleChange} 
                       required 
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200" 
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm" 
                       placeholder="MM" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Exp Year</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Exp Year</label>
                     <input 
                       name="exp_year" 
                       type="number" 
@@ -539,19 +539,19 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                       value={form.exp_year || ''} 
                       onChange={handleChange} 
                       required 
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200" 
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm" 
                       placeholder="YYYY" 
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Description (Optional)</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Description (Optional)</label>
                   <input 
                     name="description" 
                     value={form.description || ''} 
                     onChange={handleChange} 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200" 
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm" 
                     placeholder="e.g. My Visa card" 
                   />
                 </div>
@@ -561,13 +561,13 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
             {type === 'mobile_money' && (
               <>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Mobile Money Provider</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Mobile Money Provider</label>
                   <select 
                     name="provider" 
                     value={form.provider || ''} 
                     onChange={handleChange} 
                     required 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm"
                   >
                     <option value="">Select Provider</option>
                     {(availableMobileMoneyProviders.length > 0
@@ -583,23 +583,23 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
 
                 {/* Currency Conversion Display */}
                 {conversionInfo && conversionInfo.isConverted && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/40 rounded-xl p-4">
                     <div className="flex items-center space-x-2 mb-2">
                       <ArrowUpDown className="w-5 h-5 text-blue-600" />
                       <span className="text-sm font-semibold text-blue-800">Currency Conversion</span>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Original Amount:</span>
+                        <span className="text-gray-600 dark:text-slate-400">Original Amount:</span>
                         <span className="font-medium">{formatCurrency(amount, 'en-US', currency)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Exchange Rate:</span>
+                        <span className="text-gray-600 dark:text-slate-400">Exchange Rate:</span>
                         <span className="font-medium">1 {currency} = {conversionInfo.exchangeRate.toFixed(2)} {conversionInfo.currency}</span>
                       </div>
                       <div className="flex justify-between border-t border-blue-200 pt-2">
-                        <span className="text-blue-800 font-semibold">Amount to Pay:</span>
-                        <span className="text-blue-800 font-bold">{formatCurrency(conversionInfo.amount, 'en-US', conversionInfo.currency)}</span>
+                        <span className="text-blue-800 dark:text-blue-300 font-semibold">Amount to Pay:</span>
+                        <span className="text-blue-800 dark:text-blue-300 font-bold">{formatCurrency(conversionInfo.amount, 'en-US', conversionInfo.currency)}</span>
                       </div>
                     </div>
                   </div>
@@ -612,8 +612,8 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                     value={form.phone_number || ''} 
                     onChange={handleChange} 
                     required 
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-primary-500 outline-none transition-all duration-200 ${
-                      phoneError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm ${
+                      phoneError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 focus:ring-primary-500'
                     }`}
                     placeholder="e.g. +250781234567" 
                   />
@@ -668,8 +668,8 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
       {step === 3 && (
         <div className="space-y-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirm Payment</h2>
-            <p className="text-gray-600">Review your payment details and confirm</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Confirm Payment</h2>
+            <p className="text-gray-600 dark:text-slate-400">Review your payment details and confirm</p>
           </div>
 
           {paymentMethods.length === 0 ? (
@@ -680,15 +680,15 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
           ) : (
             <>
               {/* Payment Summary */}
-              <div className="bg-gray-50 rounded-2xl p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Payment Summary</h3>
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-6">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Payment Summary</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Booking ID</span>
+                    <span className="text-gray-600 dark:text-slate-400">Booking ID</span>
                     <span className="font-medium">{bookingId}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-slate-400">
                       {conversionInfo?.isConverted ? 'Original Amount' : 'Amount'}
                     </span>
                     <span className="font-medium">{amount} {currency}</span>
@@ -698,19 +698,19 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                   {conversionInfo && conversionInfo.isConverted && (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Exchange Rate</span>
+                        <span className="text-gray-600 dark:text-slate-400">Exchange Rate</span>
                         <span className="font-medium">1 {currency} = {conversionInfo.exchangeRate.toFixed(2)} {conversionInfo.currency}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Converted Amount</span>
+                        <span className="text-gray-600 dark:text-slate-400">Converted Amount</span>
                         <span className="font-medium">{conversionInfo.amount} {conversionInfo.currency}</span>
                       </div>
                     </>
                   )}
                   
-                  <div className="border-t border-gray-200 pt-3">
+                  <div className="border-t border-gray-200 dark:border-slate-700 pt-3">
                     <div className="flex justify-between">
-                      <span className="font-semibold text-gray-900">Total to Pay</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">Total to Pay</span>
                       <span className="font-bold text-xl text-primary-600">
                         {conversionInfo ? `${conversionInfo.amount} ${conversionInfo.currency}` : `${amount} ${currency}`}
                       </span>
@@ -720,31 +720,31 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
               </div>
 
               {/* Payment Method Details */}
-              <div className="border border-gray-200 rounded-2xl p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Payment Method</h3>
+              <div className="border border-gray-200 dark:border-slate-700 rounded-2xl p-6">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Payment Method</h3>
                 {selectedMethod?.type === 'card' ? (
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
                       <CreditCard className="w-6 h-6 text-primary-600" />
                     </div>
                     <div>
                       <div className="font-medium">{selectedMethod.card_brand?.toUpperCase()} •••• {selectedMethod.last_four}</div>
-                      <div className="text-sm text-gray-600">Expires {selectedMethod.exp_month}/{selectedMethod.exp_year}</div>
+                      <div className="text-sm text-gray-600 dark:text-slate-400">Expires {selectedMethod.exp_month}/{selectedMethod.exp_year}</div>
                       {selectedMethod.metadata?.description && (
-                        <div className="text-sm text-gray-500">{selectedMethod.metadata.description}</div>
+                        <div className="text-sm text-gray-500 dark:text-slate-400">{selectedMethod.metadata.description}</div>
                       )}
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
                       <Smartphone className="w-6 h-6 text-primary-600" />
                     </div>
                     <div>
                       <div className="font-medium">{selectedMethod?.provider?.replace(/_/g, ' ').toUpperCase()}</div>
-                      <div className="text-sm text-gray-600">{selectedMethod?.phone_number}</div>
+                      <div className="text-sm text-gray-600 dark:text-slate-400">{selectedMethod?.phone_number}</div>
                       {selectedMethod?.metadata?.description && (
-                        <div className="text-sm text-gray-500">{selectedMethod.metadata.description}</div>
+                        <div className="text-sm text-gray-500 dark:text-slate-400">{selectedMethod.metadata.description}</div>
                       )}
                     </div>
                   </div>

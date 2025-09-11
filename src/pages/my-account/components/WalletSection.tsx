@@ -1,8 +1,8 @@
 import React from 'react';
-import { Wallet, DollarSign } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 
 interface Props {
-  dashboardStats: { totalEarnings: number; totalTransactions: number };
+  dashboardStats: { totalEarnings: number; totalTransactions: number; preferredCurrency?: string };
   loadingWallet: boolean;
   userTransactions: any[];
   onViewAll: () => void;
@@ -24,7 +24,7 @@ const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTra
               <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">Available</div>
             </div>
             <h4 className="text-lg font-semibold mb-2 text-white/90">Wallet Balance</h4>
-            <p className="text-4xl font-bold mb-6 text-white">${dashboardStats.totalEarnings.toLocaleString()}</p>
+            <p className="text-4xl font-bold mb-6 text-white">{(dashboardStats.preferredCurrency || 'USD')} {dashboardStats.totalEarnings.toLocaleString()}</p>
             <button className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm hover:scale-105 border border-white/20">Withdraw Funds</button>
           </div>
         </div>
@@ -37,7 +37,7 @@ const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTra
               <div className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium backdrop-blur-sm">Total</div>
             </div>
             <h4 className="text-lg font-semibold mb-2 text-white/90">Transaction Volume</h4>
-            <p className="text-4xl font-bold mb-6 text-white">${dashboardStats.totalTransactions.toLocaleString()}</p>
+            <p className="text-4xl font-bold mb-6 text-white">{(dashboardStats.preferredCurrency || 'USD')} {dashboardStats.totalTransactions.toLocaleString()}</p>
             <button onClick={onViewAll} className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm hover:scale-105 border border-white/20">View All Transactions</button>
           </div>
         </div>

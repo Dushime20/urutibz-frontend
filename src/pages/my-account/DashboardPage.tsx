@@ -153,6 +153,7 @@ const DashboardPage: React.FC = () => {
     totalEarnings: 0,
     totalTransactions: 0,
     activeInspections: 0,
+    preferredCurrency: 'USD',
     totalInspections: 0,
     completedInspections: 0
   });
@@ -287,6 +288,7 @@ const DashboardPage: React.FC = () => {
           totalEarnings: stats.totalEarnings || 0,
           totalTransactions: stats.totalTransactions || 0,
           activeInspections: 0,
+          preferredCurrency: (stats as any).preferredCurrency || 'USD',
           totalInspections: 0,
           completedInspections: 0
         });

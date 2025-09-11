@@ -102,7 +102,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex items-center justify-center p-4 overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 overflow-hidden">
       {toast && <Toast message={toast} onClose={() => setToast(null)} type={toastType} />}
       
       <div className="w-full max-w-md mx-auto">
@@ -110,8 +110,8 @@ const LoginPage: React.FC = () => {
         <div className="text-center mb-8">
           {/* Logo and AI Badge in One Row */}
           <div className="flex justify-center items-center space-x-4 mb-2 mt-12">
-            <div className="bg-white px-6 py-3 rounded-lg shadow-sm border border-gray-200">
-              <span className="text-2xl font-bold text-gray-800">UrutiBiz</span>
+            <div className="bg-white dark:bg-slate-800 px-6 py-3 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+              <span className="text-2xl font-bold text-gray-800 dark:text-white">UrutiBiz</span>
             </div>
 
             {/* AI Platform Badge */}
@@ -123,32 +123,32 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Main Form Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 mt-[-10px]">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 mt-[-10px]">
           <div className="px-8 py-4">
             {/* Form Header */}
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Welcome Back
               </h1>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-slate-400 text-sm">
                 Sign in to access your professional dashboard
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
                   {error}
                 </div>
               )}
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
                   <input
                     id="email"
                     name="email"
@@ -157,7 +157,7 @@ const LoginPage: React.FC = () => {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -165,11 +165,11 @@ const LoginPage: React.FC = () => {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
                   <input
                     id="password"
                     name="password"
@@ -178,13 +178,13 @@ const LoginPage: React.FC = () => {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm"
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500"
                     placeholder="Enter your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -198,11 +198,11 @@ const LoginPage: React.FC = () => {
                     type="checkbox"
                     className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 focus:ring-2"
                   />
-                  <span className="text-sm text-gray-700 font-medium">Remember me</span>
+                  <span className="text-sm text-gray-700 dark:text-slate-300 font-medium">Remember me</span>
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-teal-600 hover:text-teal-800 font-semibold transition-colors duration-200"
+                  className="text-sm text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 font-semibold transition-colors duration-200"
                 >
                   Forgot password?
                 </Link>
@@ -232,11 +232,11 @@ const LoginPage: React.FC = () => {
 
         {/* Sign Up Link */}
         <div className="text-center mt-6">
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 dark:text-slate-400 text-sm">
             Don't have an account?{' '}
             <Link 
               to={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} 
-              className="text-teal-600 hover:text-teal-800 font-medium underline transition-colors duration-200"
+              className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 font-medium underline transition-colors duration-200"
             >
               Sign up now
             </Link>

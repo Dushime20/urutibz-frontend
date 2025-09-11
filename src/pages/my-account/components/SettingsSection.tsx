@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '../../../components/ui/DesignSystem';
-import { Lock, Edit2, Shield, Eye, Moon, Sun, Bell } from 'lucide-react';
+import { Lock, Edit2, Shield, Eye, Moon, Sun, Bell, DollarSign } from 'lucide-react';
+import { fetchUserProfile, updateUser } from '../service/api';
+import { useToast } from '../../../contexts/ToastContext';
 import LoginHistoryModal from './LoginHistoryModal';
 import ChangePasswordModal from './ChangePasswordModal';
 
@@ -15,6 +17,73 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [isDark, setIsDark] = useState<boolean>(false);
   const token = (typeof window !== 'undefined' && localStorage.getItem('token')) || '';
+  const [preferredCurrency, setPreferredCurrency] = useState<string>('');
+  const { showToast } = useToast();
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        if (!token) return;
+        const res = await fetchUserProfile(token);
+        const data = res?.data;
+        let found = '';
+        if (data?.preferred_currency) found = String(data.preferred_currency);
+        else if (data?.preferredCurrency) found = String(data.preferredCurrency);
+        // Fallback to cached user object if API omitted the field
+        if (!found) {
+          try {
+            const cached = localStorage.getItem('user');
+            if (cached) {
+              const u = JSON.parse(cached);
+              found = u?.preferred_currency || u?.preferredCurrency || '';
+            }
+          } catch {}
+        }
+        if (found) setPreferredCurrency(found.toUpperCase());
+      } catch {}
+    })();
+  }, [token]);
+
+  const savePreferredCurrency = async (value: string) => {
+    const prev = preferredCurrency;
+    setPreferredCurrency(value);
+    try {
+      // Resolve userId: token first, fallback to localStorage user
+      let userId: string | undefined;
+      try {
+        const payload = JSON.parse(atob((token || '').split('.')[1] || ''));
+        userId = payload?.sub || payload?.userId || payload?.id;
+      } catch {}
+      if (!userId) {
+        const raw = localStorage.getItem('user');
+        if (raw) userId = JSON.parse(raw)?.id;
+      }
+      if (!userId) {
+        showToast('Unable to find user ID to save currency', 'error');
+        setPreferredCurrency(prev);
+        return;
+      }
+      const res = await updateUser(userId, { preferred_currency: value }, token);
+      if (!res.success) {
+        setPreferredCurrency(prev);
+        showToast('Failed to update preferred currency', 'error');
+        return;
+      }
+      // Update cached user object if present so UI stays in sync
+      try {
+        const cached = localStorage.getItem('user');
+        if (cached) {
+          const u = JSON.parse(cached);
+          u.preferred_currency = value;
+          localStorage.setItem('user', JSON.stringify(u));
+        }
+      } catch {}
+      showToast('Preferred currency updated', 'success');
+    } catch (e) {
+      setPreferredCurrency(prev);
+      showToast('Error updating preferred currency', 'error');
+    }
+  };
 
   // Initialize theme from localStorage or system preference
   React.useEffect(() => {
@@ -107,6 +176,28 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
       <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
         <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 dark:text-slate-100">Preferences</h3>
         <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 border-b border-gray-100 dark:border-slate-700">
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-5 h-5 text-gray-400 dark:text-slate-500" />
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-slate-100">Preferred Currency</h4>
+                <p className="text-sm text-gray-500 dark:text-slate-400">Display prices in your favorite currency</p>
+              </div>
+            </div>
+            <select
+              value={preferredCurrency}
+              onChange={(e) => savePreferredCurrency(e.target.value)}
+              className="w-full sm:w-auto px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
+            >
+              <option value="">Select currency</option>
+              <option value="USD">USD ($)</option>
+              <option value="RWF">RWF (R₣)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="KES">KES (KSh)</option>
+              <option value="UGX">UGX (USh)</option>
+            </select>
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 border-b border-gray-100 dark:border-slate-700">
             <div className="flex items-center gap-3">
               <Moon className="w-5 h-5 text-gray-400 dark:text-slate-500" />

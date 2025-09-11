@@ -260,24 +260,24 @@ export default function PaymentProvidersManagement() {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">Payment Providers</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Payment Providers</h3>
         <div className="flex items-center gap-2">
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search providers..."
-            className="rounded-lg border border-gray-200 px-3 py-2"
+            className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:dark:text-gray-400"
           />
           <button onClick={handleSearch} className="inline-flex items-center px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90"><Search className="w-4 h-4 mr-2"/>Search</button>
-          <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2">
+          <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)} className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <option value="">All Countries</option>
             {countries.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <button onClick={handleCountryFilter} className="inline-flex items-center px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800">
+          <button onClick={handleCountryFilter} className="inline-flex items-center px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200">
             <RefreshCw className="w-4 h-4 mr-2" /> Filter
           </button>
           {countryFilter && (
@@ -287,7 +287,7 @@ export default function PaymentProvidersManagement() {
                 setCountryProviders(null);
                 loadProviders();
               }} 
-              className="inline-flex items-center px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-800"
+              className="inline-flex items-center px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/40 text-red-800 dark:text-red-300"
             >
               Clear Filter
             </button>
@@ -298,21 +298,21 @@ export default function PaymentProvidersManagement() {
 
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <div className="text-xs text-gray-500">Total Providers</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalProviders ?? 0}</div>
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+            <div className="text-xs text-gray-500 dark:text-gray-400">Total Providers</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalProviders ?? 0}</div>
           </div>
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <div className="text-xs text-gray-500">Active Providers</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.activeProviders ?? 0}</div>
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+            <div className="text-xs text-gray-500 dark:text-gray-400">Active Providers</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.activeProviders ?? 0}</div>
           </div>
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <div className="text-xs text-gray-500">Avg Fee %</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.avgFeePercentage != null ? stats.avgFeePercentage.toFixed(2) : '—'}%</div>
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+            <div className="text-xs text-gray-500 dark:text-gray-400">Avg Fee %</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.avgFeePercentage != null ? stats.avgFeePercentage.toFixed(2) : '—'}%</div>
           </div>
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <div className="text-xs text-gray-500">Types</div>
-            <div className="text-sm text-gray-700">{stats.byType ? Object.entries(stats.byType).map(([k,v]) => `${k}:${v}`).join(', ') : '—'}</div>
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+            <div className="text-xs text-gray-500 dark:text-gray-400">Types</div>
+            <div className="text-sm text-gray-700 dark:text-gray-300">{stats.byType ? Object.entries(stats.byType).map(([k,v]) => `${k}:${v}`).join(', ') : '—'}</div>
           </div>
         </div>
       )}
@@ -323,7 +323,7 @@ export default function PaymentProvidersManagement() {
 
       {/* Search context indicator */}
       {countryFilter && searchQuery.trim() && (
-        <div className="mb-4 p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+        <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
           <div className="flex items-center">
             <span className="mr-2">🔍</span>
             <span>
@@ -335,41 +335,41 @@ export default function PaymentProvidersManagement() {
 
       {/* Country-specific Payment Providers Information */}
       {countryProviders && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-blue-900">
+            <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-200">
               Payment Providers for {countryProviders.country_name || 'Selected Country'}
             </h4>
-            <div className="text-sm text-blue-700">
+            <div className="text-sm text-blue-700 dark:text-blue-300">
               Country Code: {countryProviders.country_code}
             </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
               <div className="text-sm font-medium text-blue-900">Total Providers</div>
               <div className="text-2xl font-bold text-blue-700">{countryProviders.providers?.length || 0}</div>
             </div>
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
               <div className="text-sm font-medium text-blue-900">Mobile Money</div>
               <div className="text-2xl font-bold text-blue-700">{countryProviders.mobile_money_providers?.length || 0}</div>
             </div>
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
               <div className="text-sm font-medium text-blue-900">Card Providers</div>
               <div className="text-2xl font-bold text-blue-700">{countryProviders.card_providers?.length || 0}</div>
             </div>
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
               <div className="text-sm font-medium text-blue-900">Active Providers</div>
               <div className="text-2xl font-bold text-blue-700">{countryProviders.active_providers?.length || 0}</div>
             </div>
           </div>
 
           {countryProviders.supported_currencies && countryProviders.supported_currencies.length > 0 && (
-            <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
-              <div className="text-sm font-medium text-blue-900 mb-2">Supported Currencies</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800 mb-4">
+              <div className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">Supported Currencies</div>
               <div className="flex flex-wrap gap-2">
                 {countryProviders.supported_currencies.map((currency, index) => (
-                  <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                  <span key={index} className="px-3 py-1 bg-blue-100 dark:bg-blue-800/40 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
                     {currency}
                   </span>
                 ))}
@@ -380,18 +380,18 @@ export default function PaymentProvidersManagement() {
           {/* Provider Type Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {countryProviders.mobile_money_providers && countryProviders.mobile_money_providers.length > 0 && (
-              <div className="bg-white rounded-lg p-4 border border-blue-200">
-                <h5 className="font-medium text-blue-900 mb-3">Mobile Money Providers</h5>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <h5 className="font-medium text-blue-900 dark:text-blue-200 mb-3">Mobile Money Providers</h5>
                 <div className="space-y-2">
                   {countryProviders.mobile_money_providers.map((provider) => (
-                    <div key={provider.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div key={provider.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
                       <div className="flex items-center gap-2">
                         {provider.logo_url && (
                           <img src={provider.logo_url} alt={provider.display_name} className="w-6 h-6 rounded" />
                         )}
-                        <span className="font-medium">{provider.display_name}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{provider.display_name}</span>
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
                         {provider.fee_percentage}% + {provider.fee_fixed}
                       </div>
                     </div>
@@ -401,18 +401,18 @@ export default function PaymentProvidersManagement() {
             )}
 
             {countryProviders.card_providers && countryProviders.card_providers.length > 0 && (
-              <div className="bg-white rounded-lg p-4 border border-blue-200">
-                <h5 className="font-medium text-blue-900 mb-3">Card Providers</h5>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <h5 className="font-medium text-blue-900 dark:text-blue-200 mb-3">Card Providers</h5>
                 <div className="space-y-2">
                   {countryProviders.card_providers.map((provider) => (
-                    <div key={provider.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div key={provider.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
                       <div className="flex items-center gap-2">
                         {provider.logo_url && (
                           <img src={provider.logo_url} alt={provider.display_name} className="w-6 h-6 rounded" />
                         )}
-                        <span className="font-medium">{provider.display_name}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{provider.display_name}</span>
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
                         {provider.fee_percentage}% + {provider.fee_fixed}
                       </div>
                     </div>
@@ -426,10 +426,10 @@ export default function PaymentProvidersManagement() {
 
       <Dialog open={showCreateModal} onClose={() => setShowCreateModal(false)} className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" onClick={() => setShowCreateModal(false)} />
-        <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-3xl mx-auto z-50 max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-3xl mx-auto z-50 max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-gray-900">Create Payment Provider</h4>
-            <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Payment Provider</h4>
+            <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl">&times;</button>
           </div>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -495,29 +495,29 @@ export default function PaymentProvidersManagement() {
           <input type="number" value={form.processing_time_minutes ?? ''} onChange={e => handleChange('processing_time_minutes', e.target.value ? Number(e.target.value) : undefined)} className="w-full rounded-lg border border-gray-200 px-3 py-2" />
         </div>
         <div className="md:col-span-2">
-          <label className="block text-sm text-gray-600 mb-1">Description</label>
-          <textarea value={form.description} onChange={e => handleChange('description', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2" rows={3} />
+          <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Description</label>
+          <textarea value={form.description} onChange={e => handleChange('description', e.target.value)} className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" rows={3} />
         </div>
         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Public Key</label>
-            <input value={form.settings?.public_key || ''} onChange={e => handleSettingsChange('public_key', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2" />
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Public Key</label>
+            <input value={form.settings?.public_key || ''} onChange={e => handleSettingsChange('public_key', e.target.value)} className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Secret Key</label>
-            <input value={form.settings?.secret_key || ''} onChange={e => handleSettingsChange('secret_key', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2" />
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Secret Key</label>
+            <input value={form.settings?.secret_key || ''} onChange={e => handleSettingsChange('secret_key', e.target.value)} className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Webhook Secret</label>
-            <input value={form.settings?.webhook_secret || ''} onChange={e => handleSettingsChange('webhook_secret', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2" />
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Webhook Secret</label>
+            <input value={form.settings?.webhook_secret || ''} onChange={e => handleSettingsChange('webhook_secret', e.target.value)} className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
           </div>
         </div>
         <div className="md:col-span-2">
-          <label className="block text-sm text-gray-600 mb-1">API Endpoint</label>
-          <input value={form.api_endpoint || ''} onChange={e => handleChange('api_endpoint', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2" />
+          <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">API Endpoint</label>
+          <input value={form.api_endpoint || ''} onChange={e => handleChange('api_endpoint', e.target.value)} className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
         </div>
         <div className="md:col-span-2 flex items-center justify-end gap-2">
-          <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200">Cancel</button>
+          <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200">Cancel</button>
           <button type="submit" disabled={submitting} className="inline-flex items-center px-4 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90 disabled:opacity-50">
             <Save className="w-4 h-4 mr-2" /> {submitting ? 'Saving...' : 'Create Provider'}
           </button>
@@ -527,16 +527,16 @@ export default function PaymentProvidersManagement() {
       </Dialog>
 
       {/* Country Fee Tools */}
-      <div className="bg-white rounded-3xl p-4 border border-gray-100 mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-4 border border-gray-100 dark:border-gray-700 mb-8">
         <div className="flex items-center gap-2 mb-3">
           <Calculator className="w-4 h-4 text-my-primary"/>
-          <div className="font-semibold text-gray-900">Fees & Comparison (by Country)</div>
+          <div className="font-semibold text-gray-900 dark:text-gray-100">Fees & Comparison (by Country)</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input value={countryFilter} onChange={e => setCountryFilter(e.target.value)} placeholder="Country ID" className="rounded-lg border border-gray-200 px-3 py-2" />
-          <input type="number" value={calcAmount} onChange={e => setCalcAmount(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Amount" className="rounded-lg border border-gray-200 px-3 py-2" />
-          <input value={calcCurrency} onChange={e => setCalcCurrency(e.target.value)} placeholder="Currency" className="rounded-lg border border-gray-200 px-3 py-2" />
-          <select value={calcType} onChange={e => setCalcType(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2">
+          <input value={countryFilter} onChange={e => setCountryFilter(e.target.value)} placeholder="Country ID" className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+          <input type="number" value={calcAmount} onChange={e => setCalcAmount(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Amount" className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+          <input value={calcCurrency} onChange={e => setCalcCurrency(e.target.value)} placeholder="Currency" className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+          <select value={calcType} onChange={e => setCalcType(e.target.value)} className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <option value="mobile_money">mobile_money</option>
             <option value="card">card</option>
             <option value="bank">bank</option>
@@ -544,14 +544,14 @@ export default function PaymentProvidersManagement() {
           </select>
           <div className="flex gap-2">
             <button onClick={handleCalculate} type="button" className="px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90">Calculate</button>
-            <button onClick={handleCompare} type="button" className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200">Compare</button>
+            <button onClick={handleCompare} type="button" className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200">Compare</button>
           </div>
         </div>
         {calcResults && (
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-600">
+                <tr className="text-left text-gray-600 dark:text-gray-300">
                   <th className="py-2 pr-4">Provider</th>
                   <th className="py-2 pr-4">Currency</th>
                   <th className="py-2 pr-4">Fee %</th>
@@ -562,13 +562,13 @@ export default function PaymentProvidersManagement() {
               </thead>
               <tbody>
                 {calcResults.map((r, idx) => (
-                  <tr key={idx} className="border-t border-gray-100">
-                    <td className="py-2 pr-4">{r.provider_name}</td>
-                    <td className="py-2 pr-4">{r.currency}</td>
-                    <td className="py-2 pr-4">{r.fee_percentage != null ? (r.fee_percentage * 100).toFixed(2) + '%' : '—'}</td>
-                    <td className="py-2 pr-4">{r.fee_fixed ?? 0}</td>
-                    <td className="py-2 pr-4">{r.total_fee}</td>
-                    <td className="py-2 pr-4">{r.total_amount}</td>
+                  <tr key={idx} className="border-t border-gray-100 dark:border-gray-700">
+                    <td className="py-2 pr-4 text-gray-900 dark:text-gray-100">{r.provider_name}</td>
+                    <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{r.currency}</td>
+                    <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{r.fee_percentage != null ? (r.fee_percentage * 100).toFixed(2) + '%' : '—'}</td>
+                    <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{r.fee_fixed ?? 0}</td>
+                    <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{r.total_fee}</td>
+                    <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{r.total_amount}</td>
                   </tr>
                 ))}
               </tbody>
@@ -577,14 +577,14 @@ export default function PaymentProvidersManagement() {
         )}
         {compareItems && (
           <div className="mt-4">
-            <div className="flex items-center gap-2 mb-2"><BarChart3 className="w-4 h-4 text-my-primary"/><div className="text-sm text-gray-600">Comparison</div></div>
+            <div className="flex items-center gap-2 mb-2"><BarChart3 className="w-4 h-4 text-my-primary"/><div className="text-sm text-gray-600 dark:text-gray-300">Comparison</div></div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {compareItems.map((c, idx) => (
-                <div key={idx} className="border border-gray-100 rounded-xl p-3">
-                  <div className="font-medium text-gray-900">{(c as any).display_name || c.provider_name}</div>
-                  <div className="text-xs text-gray-500">{c.provider_type} • {c.currency}</div>
-                  <div className="text-sm text-gray-700 mt-1">Fee: {(c.fee_percentage != null ? (c.fee_percentage*100).toFixed(2)+'%' : '—')} + {c.fee_fixed ?? 0}</div>
-                  <div className="text-sm text-gray-700">Total: {c.total_amount}</div>
+                <div key={idx} className="border border-gray-100 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800">
+                  <div className="font-medium text-gray-900 dark:text-gray-100">{(c as any).display_name || c.provider_name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{c.provider_type} • {c.currency}</div>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">Fee: {(c.fee_percentage != null ? (c.fee_percentage*100).toFixed(2)+'%' : '—')} + {c.fee_fixed ?? 0}</div>
+                  <div className="text-sm text-gray-700 dark:text-gray-300">Total: {c.total_amount}</div>
                 </div>
               ))}
             </div>
@@ -594,11 +594,11 @@ export default function PaymentProvidersManagement() {
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-lg font-semibold text-gray-900">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {countryFilter ? `Payment Providers for ${countries.find(c => c.id === countryFilter)?.name || 'Selected Country'}` : 'All Payment Providers'}
           </h4>
           {countryFilter && (
-            <span className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+            <span className="text-sm text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">
               Filtered by Country
             </span>
           )}
@@ -606,7 +606,7 @@ export default function PaymentProvidersManagement() {
         
         {/* Provider count summary */}
         {!loading && (
-          <div className="mb-4 text-sm text-gray-600">
+          <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">
             {countryFilter ? (
               <span>
                 Showing <strong>{providers.length}</strong> payment providers for {countries.find(c => c.id === countryFilter)?.name || 'selected country'}
@@ -620,44 +620,44 @@ export default function PaymentProvidersManagement() {
         )}
         
         {loading ? (
-          <div className="text-gray-500">Loading...</div>
+          <div className="text-gray-500 dark:text-gray-400">Loading...</div>
         ) : providers.length === 0 ? (
-          <div className="text-gray-500">
+          <div className="text-gray-500 dark:text-gray-400">
             {countryFilter ? `No payment providers found for ${countries.find(c => c.id === countryFilter)?.name || 'selected country'}` : 'No payment providers found.'}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {providers.map(p => (
-              <div key={p.id} className="border border-gray-100 rounded-2xl p-4">
+              <div key={p.id} className="border border-gray-100 dark:border-gray-700 rounded-2xl p-4 bg-white dark:bg-gray-800">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <input type="checkbox" checked={!!selectedIds[p.id]} onChange={() => toggleSelect(p.id)} />
-                    <div className="font-semibold text-gray-900">{p.display_name}</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{p.display_name}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     {editingId === p.id ? (
                       <button onClick={() => saveEdit(p.id)} className="px-3 py-1 rounded-lg bg-my-primary text-white hover:bg-my-primary/90 text-xs">Save</button>
                     ) : (
-                      <button onClick={() => startEdit(p)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"><Edit2 className="w-4 h-4"/></button>
+                      <button onClick={() => startEdit(p)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"><Edit2 className="w-4 h-4"/></button>
                     )}
-                    <button onClick={() => handleDelete(p.id)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
+                    <button onClick={() => handleDelete(p.id)} className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800/40">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500 mb-2">{p.provider_name} • {p.provider_type}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{p.provider_name} • {p.provider_type}</div>
                 {editingId === p.id ? (
                   <div className="space-y-2 mb-2">
-                    <input value={editDisplayName} onChange={e => setEditDisplayName(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2" />
-                    <input value={editLogoUrl} onChange={e => setEditLogoUrl(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2" placeholder="Logo URL" />
-                    <input type="number" value={editProcessingTime} onChange={e => setEditProcessingTime(e.target.value === '' ? '' : Number(e.target.value))} className="w-full rounded-lg border border-gray-200 px-3 py-2" placeholder="Processing minutes" />
+                    <input value={editDisplayName} onChange={e => setEditDisplayName(e.target.value)} className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    <input value={editLogoUrl} onChange={e => setEditLogoUrl(e.target.value)} className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" placeholder="Logo URL" />
+                    <input type="number" value={editProcessingTime} onChange={e => setEditProcessingTime(e.target.value === '' ? '' : Number(e.target.value))} className="w-full rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" placeholder="Processing minutes" />
                   </div>
                 ) : p.logo_url ? (
                   <img src={p.logo_url} alt={p.display_name} className="h-8 object-contain mb-2" />
                 ) : null}
-                <div className="text-sm text-gray-600">Currencies: {p.supported_currencies?.join(', ')}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">Currencies: {p.supported_currencies?.join(', ')}</div>
                 {p.fee_percentage != null && (
-                  <div className="text-sm text-gray-600">Fees: {(p.fee_percentage * 100).toFixed(2)}% + {p.fee_fixed || 0}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">Fees: {(p.fee_percentage * 100).toFixed(2)}% + {p.fee_fixed || 0}</div>
                 )}
               </div>
             ))}
@@ -666,11 +666,11 @@ export default function PaymentProvidersManagement() {
       </div>
 
       {/* Bulk Update */}
-      <div className="mt-8 bg-white rounded-3xl p-4 border border-gray-100">
-        <div className="font-semibold text-gray-900 mb-3">Bulk Update Selected</div>
+      <div className="mt-8 bg-white dark:bg-gray-800 rounded-3xl p-4 border border-gray-100 dark:border-gray-700">
+        <div className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Bulk Update Selected</div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <input type="number" step="0.001" value={bulkFeePct} onChange={e => setBulkFeePct(e.target.value === '' ? '' : Number(e.target.value))} placeholder="fee_percentage (e.g., 0.02)" className="rounded-lg border border-gray-200 px-3 py-2" />
-          <input type="number" value={bulkFeeFixed} onChange={e => setBulkFeeFixed(e.target.value === '' ? '' : Number(e.target.value))} placeholder="fee_fixed" className="rounded-lg border border-gray-200 px-3 py-2" />
+          <input type="number" step="0.001" value={bulkFeePct} onChange={e => setBulkFeePct(e.target.value === '' ? '' : Number(e.target.value))} placeholder="fee_percentage (e.g., 0.02)" className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+          <input type="number" value={bulkFeeFixed} onChange={e => setBulkFeeFixed(e.target.value === '' ? '' : Number(e.target.value))} placeholder="fee_fixed" className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
           <button onClick={handleBulkUpdate} className="px-4 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90">Apply</button>
         </div>
       </div>

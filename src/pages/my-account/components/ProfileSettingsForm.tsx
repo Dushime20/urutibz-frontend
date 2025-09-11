@@ -27,6 +27,7 @@ const schema = z.object({
       lng: z.number().min(-180).max(180).optional(),
     })
     .optional(),
+  preferred_currency: z.string().max(10).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -42,8 +43,7 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
     register,
     handleSubmit,
     reset,
-    formState: { errors, isDirty },
-    watch,
+    formState: { errors },
     setValue,
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: {} });
 
@@ -90,6 +90,7 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
           cell: data.cell,
           village: data.village,
           location: lat !== undefined && lng !== undefined ? { lat, lng } : undefined,
+          preferred_currency: data.preferred_currency || data.preferredCurrency || undefined,
         });
         setAvatarUrl(data.profileImageUrl || data.profile_image || null);
       } finally {
@@ -104,6 +105,7 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
       const payload: UpdateUserPayload = {
         ...values,
         location: values.location && values.location.lat !== undefined && values.location.lng !== undefined ? { lat: values.location.lat, lng: values.location.lng } : undefined,
+        preferred_currency: values.preferred_currency,
       };
       const res = await updateUser(userId, payload, token);
       if (res.success) {
@@ -112,7 +114,7 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
         setSaving(false);
         return;
       }
-      showToast(res.message || 'Failed to update profile', 'error');
+      showToast('Failed to update profile', 'error');
     } catch (e) {
       console.error(e);
       showToast('Failed to save profile. Please try again.', 'error');
@@ -264,6 +266,20 @@ const ProfileSettingsForm: React.FC<Props> = ({ userId, token, onUpdated, formId
           </div>
           <div className="md:col-span-2">
             <button type="button" className="px-3 py-2 rounded-lg border dark:border-slate-700 dark:text-slate-100" onClick={useCurrentLocation}>Use current location</button>
+          </div>
+
+          {/* Preferred Currency */}
+          <div>
+            <label className="block text-sm mb-1 text-gray-700 dark:text-slate-300">Preferred Currency</label>
+            <select className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" {...register('preferred_currency')}>
+              <option value="">Select currency</option>
+              <option value="USD">USD ($)</option>
+              <option value="RWF">RWF (R₣)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="KES">KES (KSh)</option>
+              <option value="UGX">UGX (USh)</option>
+            </select>
           </div>
         </div>
       </div>

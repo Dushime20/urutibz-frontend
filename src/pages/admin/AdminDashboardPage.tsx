@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { TransitionGroup, CSSTransition } from 'react-transition-group';
 
 import { Button } from '../../components/ui/DesignSystem';
 import { itemCategories } from '../../data/mockRentalData';
