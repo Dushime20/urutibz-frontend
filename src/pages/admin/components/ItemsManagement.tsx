@@ -6,6 +6,7 @@ import { fetchProductAvailability } from '../service';
 import { type ProductAvailability } from '../interfaces';
 import { filterCurrentAndFutureAvailability } from '../../../lib/utils';
 import { fetchCategoryById } from '../service';
+import { wkbHexToLatLng, getCityFromCoordinates } from '../../../lib/utils';
 import { fetchCategories } from '../service';
 import type { Category } from '../interfaces';
 import SkeletonTable from './SkeletonTable';
@@ -28,6 +29,15 @@ interface ItemsManagementProps {
   setSelectedItems: (ids: string[]) => void;
   Button: React.FC<any>;
   error?: string;
+  // Optional pagination props
+  page?: number;
+  limit?: number;
+  total?: number;
+  totalPages?: number;
+  hasNext?: boolean;
+  hasPrev?: boolean;
+  onPageChange?: (page: number) => void;
+  onLimitChange?: (limit: number) => void;
 }
 
 const AdminProductDetailModal: React.FC<{
@@ -36,7 +46,8 @@ const AdminProductDetailModal: React.FC<{
   productId: string;
   onApproved?: () => void;
   productPrices: { [productId: string]: ProductPrice[] };
-}> = ({ open, onClose, productId, onApproved, productPrices }) => {
+  productAvailability: { [productId: string]: ProductAvailability[] };
+}> = ({ open, onClose, productId, onApproved, productPrices, productAvailability }) => {
   const [product, setProduct] = useState<any>(null);
   const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,6 +58,7 @@ const AdminProductDetailModal: React.FC<{
   // New state for category and owner details
   const [categoryName, setCategoryName] = useState<string>('N/A');
   const [ownerName, setOwnerName] = useState<string>('Unknown');
+  const [resolvedLocation, setResolvedLocation] = useState<string>('N/A');
 
   // Add moderation state
   const [moderationAction, setModerationAction] = useState<'approve' | 'reject' | 'flag' | 'quarantine'>('approve');
@@ -105,9 +117,31 @@ const AdminProductDetailModal: React.FC<{
       
       setProduct(productData);
 
+      // Resolve human-readable location from WKB hex if available
+      try {
+        const rawLocation = (productData as any)?.location;
+        if (typeof rawLocation === 'string' && rawLocation.length > 0) {
+          const latlng = wkbHexToLatLng(rawLocation);
+          if (latlng && Number.isFinite(latlng.lat) && Number.isFinite(latlng.lng)) {
+            const { city, country } = await getCityFromCoordinates(latlng.lat, latlng.lng);
+            if (city || country) {
+              setResolvedLocation([city, country].filter(Boolean).join(', '));
+            } else {
+              setResolvedLocation('Unknown');
+            }
+          } else {
+            setResolvedLocation('Unknown');
+          }
+        } else {
+          setResolvedLocation('Unknown');
+        }
+      } catch (e) {
+        console.warn('Failed to resolve product location', e);
+        setResolvedLocation('Unknown');
+      }
+
       // Fetch pricing for product and attach for display (daily/weekly/monthly, currency)
       try {
-        const pricesRes = await import('../service/pricingService').then(m => m.default || m.PricingService);
         const { fetchProductPricesByProductId } = await import('../../my-account/service/api');
         const priceList = await fetchProductPricesByProductId(productId);
         const firstPrice = Array.isArray(priceList?.data) ? priceList.data[0] : null;
@@ -251,137 +285,398 @@ const AdminProductDetailModal: React.FC<{
     images[currentImageIndex]?.url || 
     images[currentImageIndex]?.image_url || 
     images[currentImageIndex] || 
-    '/assets/img/placeholder-image.png';
+    '/assets/img/404.png';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-auto overflow-hidden grid grid-cols-1 md:grid-cols-2 max-h-[90vh]">
-        {/* Image Section */}
-        <div className="relative bg-gray-100 flex items-center justify-center p-6">
-          {images.length > 0 ? (
-            <div className="relative w-full aspect-square max-h-[500px]">
-              <img
-                src={currentImageUrl}
-                alt={`Product image ${currentImageIndex + 1}`}
-                className="w-full h-full object-contain rounded-xl"
-                onError={(e) => {
-                  console.error('Image load error:', currentImageUrl);
-                  (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
-                }}
-              />
-              {images.length > 1 && (
-                <>
-                  <button 
-                    onClick={prevImage} 
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white shadow-md rounded-full p-2 z-10"
-                  >
-                    &#8592;
-                  </button>
-                  <button 
-                    onClick={nextImage} 
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white shadow-md rounded-full p-2 z-10"
-                  >
-                    &#8594;
-                  </button>
-                </>
-              )}
-              {images.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                  {currentImageIndex + 1} / {images.length}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-6xl w-full mx-auto overflow-hidden max-h-[95vh] flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {product?.title || product?.name || 'Product Details'}
+            </h2>
+            <div className={`inline-block px-2 py-1 rounded text-xs font-semibold mt-2 ${
+              product?.status === 'active' 
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
+                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+            }`}>
+              {product?.status || 'Unknown'}
+            </div>
+          </div>
+          <button 
+            onClick={onClose} 
+            disabled={moderateLoading || moderationSuccess}
+            className={`text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors ${
+              moderateLoading || moderationSuccess ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Image Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Product Images</h3>
+              {images.length > 0 ? (
+                <div className="relative bg-gray-100 dark:bg-gray-800 rounded-xl p-4">
+                  <div className="relative w-full aspect-square max-h-[400px]">
+                    <img
+                      src={currentImageUrl}
+                      alt={`Product image ${currentImageIndex + 1}`}
+                      className="w-full h-full object-contain rounded-lg"
+                      onError={(e) => {
+                        console.error('Image load error:', currentImageUrl);
+                        (e.target as HTMLImageElement).src = '/assets/img/placeholder-image.png';
+                      }}
+                    />
+                    {images.length > 1 && (
+                      <>
+                        <button 
+                          onClick={prevImage} 
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 shadow-md rounded-full p-2 z-10"
+                        >
+                          &#8592;
+                        </button>
+                        <button 
+                          onClick={nextImage} 
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 shadow-md rounded-full p-2 z-10"
+                        >
+                          &#8594;
+                        </button>
+                      </>
+                    )}
+                    {images.length > 1 && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                        {currentImageIndex + 1} / {images.length}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="relative bg-gray-100 dark:bg-gray-800 rounded-xl p-4">
+                  <div className="relative w-full aspect-square max-h-[400px] flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+                      <Package className="w-16 h-16 mb-3" />
+                      <p className="text-sm">No images available</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center text-gray-400">
-              <Package className="w-16 h-16 mb-4" />
-              <p>No images available</p>
-            </div>
-          )}
-        </div>
 
-        {/* Details Section */}
-        <div className="p-6 overflow-y-auto">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{product?.title || 'Product Title'}</h2>
-              <div className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                product?.status === 'active' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {product?.status || 'Status'}
+            {/* Details Section */}
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Basic Information</h3>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Product ID</div>
+                      <div className="font-mono text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {product?.id || 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Category</div>
+                      <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {categoryName}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Description</div>
+                    <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded min-h-[60px]">
+                      {typeof product?.description === 'string' 
+                        ? product.description 
+                        : typeof product?.description === 'object' 
+                          ? JSON.stringify(product.description, null, 2)
+                          : 'No description available'
+                      }
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Owner</div>
+                      <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {ownerName}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Location</div>
+                      <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {resolvedLocation || 'Unknown'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Condition</div>
+                      <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {typeof product?.condition === 'string' ? product.condition : 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Brand</div>
+                      <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {typeof product?.brand === 'string' ? product.brand : 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Model</div>
+                      <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {typeof product?.model === 'string' ? product.model : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Created At</div>
+                      <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {product?.created_at ? new Date(product.created_at).toLocaleString() : 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Updated At</div>
+                      <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                        {product?.updated_at ? new Date(product.updated_at).toLocaleString() : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <button 
-              onClick={onClose} 
-              disabled={moderateLoading || moderationSuccess}
-              className={`text-gray-400 hover:text-gray-600 transition-colors ${
-                moderateLoading || moderationSuccess ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              <X className="w-6 h-6" />
-            </button>
           </div>
 
-          <div className="space-y-4 mb-6">
-            <p className="text-gray-600">{product?.description || 'No description available'}</p>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs text-gray-500 uppercase mb-1">Category</div>
-                <div className="font-medium text-gray-800">{categoryName}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase mb-1">Pricing</div>
-                <div className="font-semibold text-my-primary space-y-1">
-                  {productPrices[productId]?.length > 0 ? (
-                    <>
+          {/* Full Width Sections */}
+          <div className="mt-8 space-y-6">
+
+            {/* Pricing Information */}
+            <div>
+              <div className="text-xs text-gray-500 uppercase mb-3">Pricing Details</div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                {productPrices[productId]?.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <span className="text-gray-600 font-medium mr-2">Daily:</span>
-                        <span>
+                        <span className="text-gray-600 font-medium">Daily Rate:</span>
+                        <div className="text-lg font-semibold text-my-primary">
                           {productPrices[productId][0].price_per_day} {productPrices[productId][0].currency}
-                        </span>
+                        </div>
                       </div>
                       {productPrices[productId][0].price_per_week && (
                         <div>
-                          <span className="text-gray-600 font-medium mr-2">Weekly:</span>
-                          <span>{productPrices[productId][0].price_per_week} {productPrices[productId][0].currency}</span>
+                          <span className="text-gray-600 font-medium">Weekly Rate:</span>
+                          <div className="text-lg font-semibold text-my-primary">
+                            {productPrices[productId][0].price_per_week} {productPrices[productId][0].currency}
+                          </div>
                         </div>
                       )}
                       {productPrices[productId][0].price_per_month && (
                         <div>
-                          <span className="text-gray-600 font-medium mr-2">Monthly:</span>
-                          <span>{productPrices[productId][0].price_per_month} {productPrices[productId][0].currency}</span>
+                          <span className="text-gray-600 font-medium">Monthly Rate:</span>
+                          <div className="text-lg font-semibold text-my-primary">
+                            {productPrices[productId][0].price_per_month} {productPrices[productId][0].currency}
+                          </div>
                         </div>
                       )}
-                      {productPrices[productId][0].security_deposit > 0 && (
-                        <div>
-                          <span className="text-gray-600 font-medium mr-2">Deposit:</span>
-                          <span className="text-orange-600">{productPrices[productId][0].security_deposit} {productPrices[productId][0].currency}</span>
+                    </div>
+                    {productPrices[productId][0].security_deposit > 0 && (
+                      <div className="border-t pt-3">
+                        <span className="text-gray-600 font-medium">Security Deposit:</span>
+                        <div className="text-lg font-semibold text-orange-600">
+                          {productPrices[productId][0].security_deposit} {productPrices[productId][0].currency}
                         </div>
-                      )}
-                      {productPrices[productId].length > 1 && (
-                        <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full mt-2">
-                          Available in {productPrices[productId].length} countries
+                      </div>
+                    )}
+                    {productPrices[productId].length > 1 && (
+                      <div className="text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-full inline-block">
+                        Available in {productPrices[productId].length} countries
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 italic">No pricing data available</div>
+                )}
+              </div>
+            </div>
+
+            {/* Availability Information */}
+            <div>
+              <div className="text-xs text-gray-500 uppercase mb-3">Availability Status</div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                {(() => {
+                  const currentUnavailableDates = productAvailability[productId]
+                    ? filterCurrentAndFutureAvailability(productAvailability[productId], 'unavailable')
+                    : [];
+                  
+                  if (currentUnavailableDates.length > 0) {
+                    return (
+                      <div className="space-y-3">
+                        <div className="text-red-600 font-medium">Currently Booked ({currentUnavailableDates.length} dates)</div>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {currentUnavailableDates.map((availability, index) => (
+                            <div key={index} className="text-sm text-gray-600 flex items-center justify-between bg-white p-2 rounded">
+                              <div className="flex items-center">
+                                <span className="mr-2 w-2 h-2 rounded-full bg-red-500" />
+                                <span>
+                                  {new Date(availability.date).toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              </div>
+                              {availability.notes && (
+                                <span className="text-xs text-gray-500">({availability.notes})</span>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-gray-500 italic">No pricing data available</div>
+                      </div>
+                    );
+                  } else {
+                    return <span className="text-green-600 font-medium">Available for booking</span>;
+                  }
+                })()}
+              </div>
+            </div>
+
+            {/* Additional Product Details */}
+            {(product?.features || product?.specifications || product?.tags) && (
+              <div>
+                <div className="text-xs text-gray-500 uppercase mb-3">Additional Details</div>
+                <div className="space-y-6">
+                  {/* Features */}
+                  {product?.features && (
+                    <div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Features</div>
+                      <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                        {(() => {
+                          try {
+                            const raw = product.features as any;
+                            if (Array.isArray(raw)) {
+                              return raw.map((f: any, i: number) => (
+                                <li key={i}>{typeof f === 'string' ? f : String(f)}</li>
+                              ));
+                            }
+                            if (typeof raw === 'string') {
+                              // Try to parse JSON array
+                              const trimmed = raw.trim();
+                              if ((trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                                const arr = JSON.parse(trimmed);
+                                if (Array.isArray(arr)) {
+                                  return arr.map((f: any, i: number) => (
+                                    <li key={i}>{typeof f === 'string' ? f : String(f)}</li>
+                                  ));
+                                }
+                              }
+                              // Fallback: split by comma
+                              return trimmed.split(',').map((part, i) => (
+                                <li key={i}>{part.replace(/[\[\]"]+/g, '').trim()}</li>
+                              ));
+                            }
+                            if (typeof raw === 'object') {
+                              return Object.values(raw).map((v: any, i: number) => (
+                                <li key={i}>{typeof v === 'string' ? v : String(v)}</li>
+                              ));
+                            }
+                            return <li>{String(raw)}</li>;
+                          } catch (e) {
+                            return <li>{String((product as any).features)}</li>;
+                          }
+                        })()}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Specifications */}
+                  {product?.specifications && (
+                    <div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Specifications</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-gray-700 dark:text-gray-300">
+                        {(() => {
+                          try {
+                            const raw = (product as any).specifications;
+                            // If string, attempt to parse JSON-like strings; otherwise split by ',' with key:value
+                            if (typeof raw === 'string') {
+                              const trimmed = raw.trim();
+                              if ((trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+                                const obj = JSON.parse(trimmed.replace(/:(\s*)"/g, ': "'));
+                                return Object.entries(obj).map(([k, v], i) => (
+                                  <div key={i} className="flex">
+                                    <span className="w-36 text-gray-500 dark:text-gray-400">{k.replace(/[:]/g, '').trim()}:</span>
+                                    <span className="flex-1 font-medium">{typeof v === 'string' ? v : String(v)}</span>
+                                  </div>
+                                ));
+                              }
+                              // Fallback: split by commas and then by ':'
+                              return trimmed.split(',').map((pair, i) => {
+                                const [k, ...rest] = pair.split(':');
+                                const v = rest.join(':');
+                                return (
+                                  <div key={i} className="flex">
+                                    <span className="w-36 text-gray-500 dark:text-gray-400">{k.replace(/[\{\}"]+/g, '').trim()}:</span>
+                                    <span className="flex-1 font-medium">{v.replace(/[\{\}"]+/g, '').trim()}</span>
+                                  </div>
+                                );
+                              });
+                            }
+                            if (typeof raw === 'object') {
+                              const obj = raw as Record<string, any>;
+                              return Object.entries(obj).map(([k, v], i) => (
+                                <div key={i} className="flex">
+                                  <span className="w-36 text-gray-500 dark:text-gray-400">{k.replace(/[:]/g, '').trim()}:</span>
+                                  <span className="flex-1 font-medium">{typeof v === 'string' ? v : String(v)}</span>
+                                </div>
+                              ));
+                            }
+                            return <div>—</div>;
+                          } catch (e) {
+                            return <div className="text-gray-600">{String((product as any).specifications)}</div>;
+                          }
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {product?.tags && (
+                    <div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags</div>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.isArray((product as any).tags) ? (product as any).tags.map((tag: any, index: number) => (
+                          <span key={index} className="px-2 py-1 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full text-xs">
+                            {typeof tag === 'string' ? tag : String(tag)}
+                          </span>
+                        )) : (
+                          <span className="px-2 py-1 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full text-xs">
+                            {typeof (product as any).tags === 'string' ? (product as any).tags : String((product as any).tags)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase mb-1">Owner</div>
-                <div className="text-gray-800">{ownerName}</div>
-              </div>
-            </div>
+            )}
           </div>
 
-          <div className="flex space-x-3">
+          {/* Action Buttons */}
+          <div className="flex space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button 
               onClick={() => setModerateOpen(true)}
-              className="flex-1 bg-my-primary text-white px-6 py-2 rounded-lg hover:bg-my-primary/90 transition-colors"
+              className="flex-1 bg-my-primary text-white px-6 py-3 rounded-lg hover:bg-my-primary/90 transition-colors font-medium"
             >
               Moderate Product
             </button>
@@ -397,7 +692,7 @@ const AdminProductDetailModal: React.FC<{
                   window.dispatchEvent(event);
                 }, 100);
               }}
-              className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center"
+              className="px-6 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center font-medium"
             >
               <Shield className="w-4 h-4 mr-2" />
               History
@@ -505,8 +800,17 @@ const AdminProductDetailModal: React.FC<{
 
 const ItemsManagement: React.FC<ItemsManagementProps> = ({
   products, owners, loading, itemFilter, setItemFilter,
-  selectedLocation, selectedItems, setSelectedItems, Button, error
+  selectedLocation, selectedItems, setSelectedItems, Button, error,
+  page = 1, limit = 20, total = 0, totalPages = 1, hasNext = false, hasPrev = false,
+  onPageChange,
+  onLimitChange
 }) => {
+  // Derive pagination state if parent didn't pass explicit flags
+  const computedTotalPages = (typeof totalPages === 'number' && totalPages > 0)
+    ? totalPages
+    : (typeof total === 'number' && total > 0 ? Math.max(1, Math.ceil(total / (limit || 20))) : 1);
+  const canPrev = !!hasPrev || page > 1;
+  const canNext = !!hasNext || page < computedTotalPages;
   // State to hold images for each product
   const [productImages, setProductImages] = useState<{ [productId: string]: any[] }>({});
   const [imagesLoading, setImagesLoading] = useState(false);
@@ -699,7 +1003,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   // Listen for custom event to open moderation history
   useEffect(() => {
     const handleOpenModerationHistory = (event: CustomEvent) => {
-      const { productId, productTitle } = event.detail;
+      const { productId } = event.detail;
       setModerationHistoryProductId(productId);
     };
 
@@ -830,6 +1134,43 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
             </div>
           </div>
+          {/* Status Filter */}
+          <div className="relative">
+            <select
+              value={(undefined as any)}
+              onChange={() => {}}
+              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary hidden"
+            />
+          </div>
+          <div className="relative">
+            <select
+              onChange={(e) => (window as any).__setItemStatus?.(e.target.value)}
+              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
+              defaultValue="all"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
+            </div>
+          </div>
+          {/* Sort */}
+          <div className="relative">
+            <select
+              onChange={(e) => (window as any).__setItemSort?.(e.target.value)}
+              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
+              defaultValue="newest"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
+            </div>
+          </div>
           <Button 
             onClick={() => {
               setItemFilter('all');
@@ -840,18 +1181,25 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             <X className="w-4 h-4 mr-2" />
             Reset Filters
           </Button>
-          <Button className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl transition-colors flex items-center">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-          <Button className="bg-my-primary hover:bg-my-primary/90 text-white px-6 py-2 rounded-xl transition-colors flex items-center shadow-sm">
+          <Button 
+            onClick={() => {
+              // Try opening if My Account dashboard is active; else route to My Account with query to auto-open
+              const openListingModal = (window as any).__openNewListingModal;
+              if (typeof openListingModal === 'function') {
+                openListingModal();
+              } else {
+                window.location.href = '/my-account?new-listing=1';
+              }
+            }}
+            className="bg-my-primary hover:bg-my-primary/90 text-white px-6 py-2 rounded-xl transition-colors flex items-center shadow-sm"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Item
           </Button>
         </div>
       </div>
       {/* Items Categories Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+      {/* <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
         {categories.slice(0, 10).map((category) => (
           <div 
             key={category.id} 
@@ -866,7 +1214,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             <p className="text-sm font-medium text-center text-gray-800 dark:text-gray-100">{category.name}</p>
           </div>
         ))}
-      </div>
+      </div> */}
       
       {/* Filter Status Indicator */}
       {(itemFilter !== 'all' || selectedLocation !== 'all') && (
@@ -903,9 +1251,6 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
             <tr>
-              <th scope="col" className="w-12 px-6 py-3 text-left">
-                <input type="checkbox" className="w-4 h-4 text-my-primary rounded border-gray-300 focus:ring-my-primary" />
-              </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Item
               </th>
@@ -931,46 +1276,39 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                 .filter((item: Product) => itemFilter === 'all' || item.category_id === itemFilter)
                 .filter((item: Product) => selectedLocation === 'all' || item.location === selectedLocation)
                 .map((item: Product, idx: number) => (
-                  <tr key={item.id} className={`transition cursor-pointer ${idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'} hover:bg-gray-50 dark:hover:bg-gray-800`}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.includes(item.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedItems([...selectedItems, item.id]);
-                          } else {
-                            setSelectedItems(selectedItems.filter(id => id !== item.id));
-                          }
-                        }}
-                        className="w-4 h-4 text-my-primary rounded border-gray-300 focus:ring-my-primary"
-                      />
-                    </td>
+                  <tr key={item.id} className="bg-white dark:bg-gray-900">
                     <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3">
-                      <img
-                        key={item.id}  // Add key to help React manage image rendering
-                        className="h-12 w-12 rounded-md object-cover"
-                        src={getProductImageUrl(item, productImages)}
-                        alt={item.title || item.name || 'Product Image'}
-                        onError={(e) => {
-                          console.error('Image load error for product:', item.id);
-                          console.log('Product images:', productImages[item.id]);
-                          console.log('Fallback images:', item.image, item.images);
-                          
-                          // Ensure we always have a valid image
-                          const target = e.target as HTMLImageElement;
-                          target.src = PLACEHOLDER_IMAGE;
-                          target.onerror = null; // Prevent infinite error loop
-                        }}
-                      />
+                      {(() => {
+                        const src = getProductImageUrl(item, productImages);
+                        const noImage = !src || src.includes('404.png') || src.includes('placeholder');
+                        if (noImage) {
+                          return (
+                            <div className="h-12 w-12 rounded-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                              <Package className="w-5 h-5" />
+                            </div>
+                          );
+                        }
+                        return (
+                          <img
+                            key={item.id}
+                            className="h-12 w-12 rounded-md object-cover"
+                            src={src}
+                            alt={item.title || item.name || 'Product Image'}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        );
+                      })()}
                       <div>
                         <div className="font-semibold text-gray-900 dark:text-gray-100">{item.title || item.name}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">{categoryNames[item.category_id ?? ''] || 'Loading...'}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{owners[item.owner_id]?.name || 'Loading...'}</span>
-                      <span className="block text-xs text-gray-400">{owners[item.owner_id]?.email || ''}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{owners[item.owner_id]?.firstName || 'Loading...'}</span>
+                      {/* <span className="font-medium text-gray-900 dark:text-gray-100">{owners[item.owner_id]?.lastName || 'Loading...'}</span> */}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{item.status}</span>
@@ -985,8 +1323,8 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                           ) : productPrices[item.id]?.length > 0 ? (
                             <>
                               {/* Primary Price (Daily) */}
-                              <div className="font-semibold flex items-center space-x-2">
-                                <DollarSign className="w-4 h-4 text-green-600" />
+                              <div className=" flex items-center">
+                                {/* <DollarSign className="w-4 h-4 text-green-600" /> */}
                                 <span>
                                   {productPrices[item.id][0].price_per_day} {productPrices[item.id][0].currency}/day
                                 </span>
@@ -1000,7 +1338,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                               )}
                             </>
                           ) : (
-                            <div className="text-gray-500 italic">No pricing data</div>
+                            <div className="text-gray-500 italic text-center">-</div>
                           )}
                         </div>
                       </td>
@@ -1012,35 +1350,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                           : [];
                         
                         if (currentUnavailableDates.length > 0) {
-                          return (
-                            <div className="flex flex-col">
-                              {currentUnavailableDates
-                                .slice(0, 2)
-                                .map((availability, index) => (
-                                  <div 
-                                    key={index} 
-                                    className="text-xs text-gray-600 mb-1 flex items-center"
-                                  >
-                                    <span 
-                                      className="mr-2 w-2 h-2 rounded-full bg-red-500"
-                                    />
-                                    <span>
-                                      {`${new Date(availability.date).toLocaleDateString('en-US', {
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: 'numeric'
-                                      })} (${availability.notes || 'Booked'})`}
-                                    </span>
-                                  </div>
-                                ))
-                              }
-                              {currentUnavailableDates.length > 2 && (
-                                <span className="text-xs text-gray-400">
-                                  +{currentUnavailableDates.length - 2} more
-                                </span>
-                              )}
-                            </div>
-                          );
+                          return <span className="text-xs text-red-600 font-medium">Booked</span>;
                         } else {
                           return <span className="text-xs text-green-600">Available</span>;
                         }
@@ -1056,7 +1366,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                           <MoreHorizontal className="w-5 h-5" />
                         </button>
                         {actionMenuOpen === item.id && (
-                          <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                             <button
                               onClick={() => {
                                 setActionMenuOpen(null);
@@ -1094,11 +1404,50 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             }
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Page <span className="font-medium">{page}</span> of <span className="font-medium">{computedTotalPages}</span>
+            {typeof total === 'number' && total > 0 && (
+              <span className="ml-2">• Total: <span className="font-medium">{total}</span></span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm"
+              value={limit}
+              onChange={(e) => onLimitChange && onLimitChange(Number(e.target.value))}
+            >
+              {[10, 20, 30, 50, 100].map((l) => (
+                <option key={l} value={l}>{l} / page</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-2">
+              <button
+                className={`px-3 py-1 rounded-lg border text-sm ${canPrev ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'} border-gray-200 dark:border-gray-700`}
+                onClick={() => canPrev && onPageChange && onPageChange(Math.max(1, page - 1))}
+                disabled={!canPrev}
+              >
+                Previous
+              </button>
+              <button
+                className={`px-3 py-1 rounded-lg border text-sm ${canNext ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'} border-gray-200 dark:border-gray-700`}
+                onClick={() => canNext && onPageChange && onPageChange(Math.min(computedTotalPages, page + 1))}
+                disabled={!canNext}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+
         <AdminProductDetailModal 
           open={!!viewProductId} 
           onClose={() => setViewProductId(null)} 
           productId={viewProductId || ''} 
           productPrices={productPrices}
+          productAvailability={productAvailability}
           onApproved={() => {
             // Refresh the product list after successful moderation
             // This will trigger a re-render of the component

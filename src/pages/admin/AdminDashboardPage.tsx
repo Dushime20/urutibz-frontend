@@ -36,6 +36,8 @@ import SettingsManagement from './components/SettingsManagement';
 import RecentTransactionsList from './components/RecentTransactionsList';
 import TransactionsManagement from './components/TransactionsManagement';
 import CategoriesManagement from './components/CategoriesManagement';
+import NewListingModal from '../my-account/models/NewListingModal';
+import { createProduct, createProductPricing, createProductImage } from '../my-account/service/api';
 import CountriesManagement from './components/CountriesManagement';
 import PaymentMethodsManagement from './components/PaymentMethodsManagement';
 import PaymentProvidersManagement from './components/PaymentProvidersManagement';
@@ -90,9 +92,14 @@ const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
+  const [itemStatus, setItemStatus] = useState<string>('all');
+  const [itemSort, setItemSort] = useState<'newest' | 'oldest'>('newest');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
   const [products, setProducts] = useState<Product[]>([]);
+  const [itemPage, setItemPage] = useState(1);
+  const [itemLimit, setItemLimit] = useState(20);
+  const [itemMeta, setItemMeta] = useState({ total: 0, totalPages: 1, hasNext: false, hasPrev: false });
   const [owners, setOwners] = useState<Record<string, Owner>>({});
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
@@ -124,6 +131,128 @@ const AdminDashboardPage: React.FC = () => {
   const [pricingStats, setPricingStats] = useState<any>(null);
   const [loadingPricingStats, setLoadingPricingStats] = useState(false);
   const [pricingStatsError, setPricingStatsError] = useState<string | null>(null);
+
+  // Admin-side New Listing Modal state
+  const [showNewListingModalAdmin, setShowNewListingModalAdmin] = useState(false);
+  type AdminNewListingForm = {
+    title: string; slug: string; description: string; category_id: string; condition: string;
+    brand?: string; model?: string; year_manufactured?: string; address_line?: string; delivery_fee?: string;
+    price_per_hour: string; price_per_day: string; price_per_week: string; price_per_month: string; security_deposit: string;
+    currency: string; market_adjustment_factor: string; weekly_discount_percentage: string; monthly_discount_percentage: string;
+    bulk_discount_threshold: string; bulk_discount_percentage: string; dynamic_pricing_enabled: boolean; peak_season_multiplier: string; off_season_multiplier: string;
+    pickup_methods: string[]; country_id: string; specifications: { [k: string]: string }; features?: string[]; included_accessories?: string[];
+    images: File[]; alt_text: string; sort_order: string; isPrimary: string; product_id: string; location: { latitude: string; longitude: string };
+  };
+  const [newListingForm, setNewListingForm] = useState<AdminNewListingForm>({
+    title: '', slug: '', description: '', category_id: '', condition: 'new', brand: '', model: '', year_manufactured: '', address_line: '', delivery_fee: '',
+    price_per_hour: '', price_per_day: '', price_per_week: '', price_per_month: '', security_deposit: '', currency: 'USD', market_adjustment_factor: '1.0',
+    weekly_discount_percentage: '0.1', monthly_discount_percentage: '0.2', bulk_discount_threshold: '5', bulk_discount_percentage: '0.05',
+    dynamic_pricing_enabled: false, peak_season_multiplier: '1.2', off_season_multiplier: '0.8', pickup_methods: [], country_id: '', specifications: { spec1: '' },
+    features: [], included_accessories: [], images: [], alt_text: '', sort_order: '1', isPrimary: 'true', product_id: '', location: { latitude: '', longitude: '' }
+  });
+  const [newListingSubmitting, setNewListingSubmitting] = useState(false);
+  const handleNewListingInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.currentTarget as any;
+    if (type === 'file' && (e.currentTarget as HTMLInputElement).files) {
+      if (name === 'images') {
+        const inputEl = e.currentTarget as HTMLInputElement;
+        setNewListingForm(prev => ({ ...prev, images: inputEl.files ? Array.from(inputEl.files) : [] }));
+      }
+      return;
+    }
+    if (name === 'title') {
+      const slug = value.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-');
+      setNewListingForm(prev => ({ ...prev, title: value, slug }));
+      return;
+    }
+    if (name === 'pickup_methods') {
+      setNewListingForm(prev => ({ ...prev, pickup_methods: Array.from((e.target as HTMLSelectElement).selectedOptions, (o: any) => o.value) }));
+      return;
+    }
+    if (name && name.startsWith('specifications.')) {
+      const key = name.split('.')[1];
+      setNewListingForm(prev => ({ ...prev, specifications: { ...prev.specifications, [key]: value } }));
+      return;
+    }
+    setNewListingForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAdminNewListingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setNewListingSubmitting(true);
+    try {
+      const productPayload: any = {
+        title: newListingForm.title,
+        slug: newListingForm.slug,
+        description: newListingForm.description,
+        category_id: newListingForm.category_id,
+        condition: newListingForm.condition,
+        brand: newListingForm.brand || undefined,
+        model: newListingForm.model || undefined,
+        year_manufactured: newListingForm.year_manufactured ? Number(newListingForm.year_manufactured) : undefined,
+        address_line: newListingForm.address_line || undefined,
+        delivery_fee: newListingForm.delivery_fee ? Number(newListingForm.delivery_fee) : undefined,
+        included_accessories: Array.isArray(newListingForm.included_accessories) ? newListingForm.included_accessories.filter(a => a?.trim()) : undefined,
+        includedAccessories: Array.isArray(newListingForm.included_accessories) ? newListingForm.included_accessories.filter(a => a?.trim()) : undefined,
+        pickup_methods: newListingForm.pickup_methods,
+        country_id: newListingForm.country_id,
+        specifications: newListingForm.specifications,
+        location: newListingForm.location,
+        features: Array.isArray(newListingForm.features) ? newListingForm.features.filter(f => f?.trim()) : [],
+      };
+      const created = await createProduct(productPayload);
+      const productId = created?.data?.id || created?.data?.data?.id || created?.id;
+      if (!productId) throw new Error('Product creation failed');
+
+      const daily = parseFloat(newListingForm.price_per_day);
+      if (!newListingForm.country_id || !newListingForm.currency || Number.isNaN(daily) || daily <= 0) {
+        throw new Error('Missing pricing fields');
+      }
+      const pricingPayload: any = {
+        product_id: String(productId), productId: String(productId),
+        country_id: String(newListingForm.country_id), countryId: String(newListingForm.country_id),
+        currency: newListingForm.currency,
+        price_per_day: daily, pricePerDay: daily,
+        price_per_hour: parseFloat(newListingForm.price_per_hour) || 0, pricePerHour: parseFloat(newListingForm.price_per_hour) || 0,
+        price_per_week: parseFloat(newListingForm.price_per_week) || 0, pricePerWeek: parseFloat(newListingForm.price_per_week) || 0,
+        price_per_month: parseFloat(newListingForm.price_per_month) || 0, pricePerMonth: parseFloat(newListingForm.price_per_month) || 0,
+        security_deposit: parseFloat(newListingForm.security_deposit) || 0, securityDeposit: parseFloat(newListingForm.security_deposit) || 0,
+        market_adjustment_factor: parseFloat(newListingForm.market_adjustment_factor) || 1.0, marketAdjustmentFactor: parseFloat(newListingForm.market_adjustment_factor) || 1.0,
+        weekly_discount_percentage: parseFloat(newListingForm.weekly_discount_percentage) || 0, weeklyDiscountPercentage: parseFloat(newListingForm.weekly_discount_percentage) || 0,
+        monthly_discount_percentage: parseFloat(newListingForm.monthly_discount_percentage) || 0, monthlyDiscountPercentage: parseFloat(newListingForm.monthly_discount_percentage) || 0,
+        bulk_discount_threshold: parseInt(newListingForm.bulk_discount_threshold as any) || 0, bulkDiscountThreshold: parseInt(newListingForm.bulk_discount_threshold as any) || 0,
+        bulk_discount_percentage: parseFloat(newListingForm.bulk_discount_percentage) || 0, bulkDiscountPercentage: parseFloat(newListingForm.bulk_discount_percentage) || 0,
+        dynamic_pricing_enabled: Boolean(newListingForm.dynamic_pricing_enabled), dynamicPricingEnabled: Boolean(newListingForm.dynamic_pricing_enabled),
+        peak_season_multiplier: parseFloat(newListingForm.peak_season_multiplier) || 1.0, peakSeasonMultiplier: parseFloat(newListingForm.peak_season_multiplier) || 1.0,
+        off_season_multiplier: parseFloat(newListingForm.off_season_multiplier) || 1.0, offSeasonMultiplier: parseFloat(newListingForm.off_season_multiplier) || 1.0,
+        is_active: true, isActive: true,
+      };
+      await createProductPricing(pricingPayload);
+
+      if (newListingForm.images && newListingForm.images.length > 0) {
+        const imagePayload = {
+          images: newListingForm.images,
+          product_id: productId,
+          alt_text: newListingForm.alt_text,
+          sort_order: newListingForm.sort_order,
+          isPrimary: 'true',
+        } as any;
+        await createProductImage(imagePayload);
+      }
+      setShowNewListingModalAdmin(false);
+      setNewListingSubmitting(false);
+      showToast('Listing created successfully!', 'success');
+    } catch (err: any) {
+      setNewListingSubmitting(false);
+      showToast(err?.message || 'Failed to create listing', 'error');
+    }
+  };
+
+  // Allow ItemsManagement button to open this modal from Admin
+  useEffect(() => {
+    (window as any).__openNewListingModal = () => setShowNewListingModalAdmin(true);
+    return () => { try { delete (window as any).__openNewListingModal; } catch { } };
+  }, []);
 
   // Add state for pagination and modals
   const [userPage, setUserPage] = useState(1);
@@ -219,15 +348,15 @@ const AdminDashboardPage: React.FC = () => {
           setInspectionsError(null);
           setDisputesError(null);
           setSummaryError(null);
-          
+
           const token = localStorage.getItem('token');
-          
+
           const [inspectionsData, disputesData, summaryData] = await Promise.all([
             fetchAllInspections(inspectionPage, inspectionsPerPage, token || undefined),
             fetchAllDisputes(disputePage, disputesPerPage, token || undefined),
             fetchInspectionSummary(token || undefined)
           ]);
-          
+
           setInspections(inspectionsData.data || []);
           // Fix: Extract disputes from the correct nested structure
           // Now disputesData should already be the extracted data from response.data.data.data
@@ -245,7 +374,7 @@ const AdminDashboardPage: React.FC = () => {
           setLoadingSummary(false);
         }
       };
-      
+
       fetchInspectionsData();
     }
   }, [activeTab, inspectionPage, disputePage]);
@@ -264,37 +393,37 @@ const AdminDashboardPage: React.FC = () => {
 
 
 
-  const AdminNavigationItem: React.FC<AdminNavigationItemProps> = ({ 
-    icon: Icon, 
-    label, 
-    active, 
-    onClick, 
-    hasNotification = false 
+  const AdminNavigationItem: React.FC<AdminNavigationItemProps> = ({
+    icon: Icon,
+    label,
+    active,
+    onClick,
+    hasNotification = false
   }) => (
     <button
       onClick={onClick}
       className={`
         group relative w-full flex items-center px-4 py-3 rounded-lg 
         transition-all duration-300 
-        ${active 
-          ? 'bg-my-primary/10 text-my-primary font-semibold shadow-sm' 
+        ${active
+          ? 'bg-my-primary/10 text-my-primary font-semibold shadow-sm'
           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}
       `}
     >
-      <Icon 
+      <Icon
         className={`
           w-5 h-5 mr-3 
-          ${active 
-            ? 'text-my-primary scale-110' 
+          ${active
+            ? 'text-my-primary scale-110'
             : 'text-gray-500 group-hover:text-gray-700'}
-        `} 
+        `}
       />
       <span className="flex-1 text-left">{label}</span>
-      
+
       {hasNotification && (
         <div className="w-2 h-2 bg-red-500 rounded-full ml-auto animate-pulse"></div>
       )}
-      
+
       {active && (
         <div className="absolute right-0 top-1/2 transform -translate-y-1/2 
           w-1.5 h-7 bg-my-primary rounded-l-full"></div>
@@ -307,7 +436,7 @@ const AdminDashboardPage: React.FC = () => {
     setProductsError(null);
     const tokenRaw = localStorage.getItem('token');
     const token = tokenRaw || undefined;
-    fetchAllProducts(token, true)
+    fetchAllProducts(token, true, itemPage, itemLimit, itemStatus, itemSort)
       .then(async (result) => {
         if (result.error) {
           setProductsError(result.error);
@@ -317,6 +446,15 @@ const AdminDashboardPage: React.FC = () => {
         }
         const productList: Product[] = result.data || [];
         setProducts(productList);
+        // pagination meta
+        if (result.meta) {
+          setItemMeta({
+            total: Number(result.meta.total ?? productList.length ?? 0),
+            totalPages: Number(result.meta.totalPages ?? 1),
+            hasNext: Boolean(result.meta.hasNext),
+            hasPrev: Boolean(result.meta.hasPrev),
+          });
+        }
         // Fetch owners for all products
         const ownerIds = Array.from(new Set(productList.map((p) => p.owner_id)));
         const ownerMap: Record<string, Owner> = {};
@@ -343,7 +481,7 @@ const AdminDashboardPage: React.FC = () => {
         console.error('Failed to load products:', err);
       })
       .finally(() => setLoadingProducts(false));
-  }, []);
+  }, [itemPage, itemLimit, itemStatus, itemSort]);
 
   // Normalized analytics data for charts
   const normalizedBookingTrends = (analytics?.bookingTrends || []).map((trend: any) => ({
@@ -361,6 +499,10 @@ const AdminDashboardPage: React.FC = () => {
     booking_count: Number(prod.booking_count),
     // Optionally handle total_revenue if it's numeric
   }));
+
+  // Expose status/sort setters for ItemsManagement dropdowns
+  (window as any).__setItemStatus = (val: string) => setItemStatus(val);
+  (window as any).__setItemSort = (val: 'newest' | 'oldest') => setItemSort(val);
 
   return (
     <>
@@ -386,7 +528,7 @@ const AdminDashboardPage: React.FC = () => {
                   case 'overview':
                     return (
                       <>
-                                                {/* Real-time Metrics Card */}
+                        {/* Real-time Metrics Card */}
                         <section className="mb-8">
                           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Real-Time Metrics</h2>
                           {loadingRealtime ? (
@@ -394,46 +536,46 @@ const AdminDashboardPage: React.FC = () => {
                           ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                               {realtimeError ? (
-                              <div className="col-span-6 flex items-center justify-center h-20 text-red-500">{realtimeError}</div>
+                                <div className="col-span-6 flex items-center justify-center h-20 text-red-500">{realtimeError}</div>
                               ) : realtimeMetrics ? (
-                              <>
-                                {/* Active Users */}
-                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-my-primary/10 dark:bg-my-primary/20 mb-2"><Users className="w-6 h-6 text-my-primary" aria-label="Active Users" /></div>
-                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.activeUsers}</div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active Users</div>
-                                </div>
-                                {/* Current Bookings */}
-                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-purple-50 dark:bg-purple-900/20 mb-2"><Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" aria-label="Current Bookings" /></div>
-                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.currentBookings}</div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Current Bookings</div>
-                                </div>
-                                {/* System Load */}
-                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-orange-50 dark:bg-orange-900/20 mb-2"><Cpu className="w-6 h-6 text-orange-600 dark:text-orange-400" aria-label="System Load" /></div>
-                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{(realtimeMetrics.systemLoad * 100).toFixed(1)}<span className="text-base font-normal text-gray-400 dark:text-gray-500">%</span></div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">System Load</div>
-                                </div>
-                                {/* Response Time */}
-                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-my-primary/10 dark:bg-my-primary/20 mb-2"><Clock className="w-6 h-6 text-my-primary" aria-label="Response Time" /></div>
-                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{Math.round(realtimeMetrics.responseTime)}<span className="text-base font-normal text-gray-400 dark:text-gray-500"> ms</span></div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Response Time</div>
-                                </div>
-                                {/* Uptime */}
-                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-green-50 dark:bg-green-900/20 mb-2"><CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" aria-label="Uptime" /></div>
-                                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.uptime}</div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Uptime</div>
-                                </div>
-                                {/* Timestamp */}
-                                <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
-                                  <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 mb-2"><Activity className="w-6 h-6 text-gray-500 dark:text-gray-400" aria-label="Timestamp" /></div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">Timestamp</div>
-                                  <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">{new Date(realtimeMetrics.timestamp).toLocaleString()}</div>
-                                </div>
-                              </>
+                                <>
+                                  {/* Active Users */}
+                                  <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                    <div className="p-2 rounded-full bg-my-primary/10 dark:bg-my-primary/20 mb-2"><Users className="w-6 h-6 text-my-primary" aria-label="Active Users" /></div>
+                                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.activeUsers}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active Users</div>
+                                  </div>
+                                  {/* Current Bookings */}
+                                  <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                    <div className="p-2 rounded-full bg-purple-50 dark:bg-purple-900/20 mb-2"><Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" aria-label="Current Bookings" /></div>
+                                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.currentBookings}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Current Bookings</div>
+                                  </div>
+                                  {/* System Load */}
+                                  <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                    <div className="p-2 rounded-full bg-orange-50 dark:bg-orange-900/20 mb-2"><Cpu className="w-6 h-6 text-orange-600 dark:text-orange-400" aria-label="System Load" /></div>
+                                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{(realtimeMetrics.systemLoad * 100).toFixed(1)}<span className="text-base font-normal text-gray-400 dark:text-gray-500">%</span></div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">System Load</div>
+                                  </div>
+                                  {/* Response Time */}
+                                  <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                    <div className="p-2 rounded-full bg-my-primary/10 dark:bg-my-primary/20 mb-2"><Clock className="w-6 h-6 text-my-primary" aria-label="Response Time" /></div>
+                                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{Math.round(realtimeMetrics.responseTime)}<span className="text-base font-normal text-gray-400 dark:text-gray-500"> ms</span></div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Response Time</div>
+                                  </div>
+                                  {/* Uptime */}
+                                  <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                    <div className="p-2 rounded-full bg-green-50 dark:bg-green-900/20 mb-2"><CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" aria-label="Uptime" /></div>
+                                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.uptime}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Uptime</div>
+                                  </div>
+                                  {/* Timestamp */}
+                                  <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
+                                    <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 mb-2"><Activity className="w-6 h-6 text-gray-500 dark:text-gray-400" aria-label="Timestamp" /></div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">Timestamp</div>
+                                    <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">{new Date(realtimeMetrics.timestamp).toLocaleString()}</div>
+                                  </div>
+                                </>
                               ) : (
                                 <div className="col-span-6 flex items-center justify-center h-20 text-gray-500 dark:text-gray-400">No real-time metrics available.</div>
                               )}
@@ -461,8 +603,8 @@ const AdminDashboardPage: React.FC = () => {
                                 <AreaChart data={normalizedBookingTrends} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
                                   <defs>
                                     <linearGradient id="colorBooking" x1="0" y1="0" x2="0" y2="1">
-                                      <stop offset="5%" stopColor="#00aaa9" stopOpacity={0.7}/>
-                                      <stop offset="95%" stopColor="#00aaa9" stopOpacity={0.1}/>
+                                      <stop offset="5%" stopColor="#00aaa9" stopOpacity={0.7} />
+                                      <stop offset="95%" stopColor="#00aaa9" stopOpacity={0.1} />
                                     </linearGradient>
                                   </defs>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -490,8 +632,8 @@ const AdminDashboardPage: React.FC = () => {
                                 <AreaChart data={normalizedUserGrowth} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
                                   <defs>
                                     <linearGradient id="colorUser" x1="0" y1="0" x2="0" y2="1">
-                                      <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.7}/>
-                                      <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.1}/>
+                                      <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.7} />
+                                      <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.1} />
                                     </linearGradient>
                                   </defs>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -554,8 +696,8 @@ const AdminDashboardPage: React.FC = () => {
                                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Price Records</p>
                                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.total_price_records}</p>
                                     </div>
-                                                    <div className="p-3 rounded-full bg-my-primary/10 dark:bg-my-primary/20">
-                  <svg className="w-6 h-6 text-my-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="p-3 rounded-full bg-my-primary/10 dark:bg-my-primary/20">
+                                      <svg className="w-6 h-6 text-my-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                                       </svg>
                                     </div>
@@ -609,68 +751,68 @@ const AdminDashboardPage: React.FC = () => {
                               </div>
 
                               {/* Price Distribution Charts */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                              {/* Price Range Distribution */}
-                              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Price Range Distribution</h3>
-                                <div className="space-y-3">
-                                  {Object.entries(pricingStats.price_distribution?.by_price_range || {}).map(([range, count]) => (
-                                    <div key={range} className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600 dark:text-gray-400">{range}</span>
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                          <div 
-                                            className="bg-my-primary h-2 rounded-full" 
-                                            style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
-                                          ></div>
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                                {/* Price Range Distribution */}
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                                  <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Price Range Distribution</h3>
+                                  <div className="space-y-3">
+                                    {Object.entries(pricingStats.price_distribution?.by_price_range || {}).map(([range, count]) => (
+                                      <div key={range} className="flex items-center justify-between">
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">{range}</span>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                            <div
+                                              className="bg-my-primary h-2 rounded-full"
+                                              style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
+                                            ></div>
+                                          </div>
+                                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{String(count)}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{String(count)}</span>
                                       </div>
-                                    </div>
-                                  ))}
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Currency Distribution */}
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                                  <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Currency Distribution</h3>
+                                  <div className="space-y-3">
+                                    {Object.entries(pricingStats.price_distribution?.by_currency || {}).map(([currency, count]) => (
+                                      <div key={currency} className="flex items-center justify-between">
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">{currency}</span>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                            <div
+                                              className="bg-my-primary h-2 rounded-full"
+                                              style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
+                                            ></div>
+                                          </div>
+                                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{String(count)}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Currency Distribution */}
-                              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Currency Distribution</h3>
-                                <div className="space-y-3">
-                                  {Object.entries(pricingStats.price_distribution?.by_currency || {}).map(([currency, count]) => (
-                                    <div key={currency} className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600 dark:text-gray-400">{currency}</span>
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                          <div 
-                                            className="bg-my-primary h-2 rounded-full" 
-                                            style={{ width: `${(Number(count) / pricingStats.total_price_records) * 100}%` }}
-                                          ></div>
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{String(count)}</span>
-                                      </div>
-                                    </div>
-                                  ))}
+                              {/* Discount Analysis */}
+                              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6">
+                                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Discount Analysis</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-my-primary">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">Weekly Discounts</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{pricingStats.discount_analysis?.products_with_monthly_discount || 0}</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">Monthly Discounts</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{pricingStats.discount_analysis?.products_with_bulk_discount || 0}</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">Bulk Discounts</div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-
-                            {/* Discount Analysis */}
-                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6">
-                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Discount Analysis</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-my-primary">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400">Weekly Discounts</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{pricingStats.discount_analysis?.products_with_monthly_discount || 0}</div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400">Monthly Discounts</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{pricingStats.discount_analysis?.products_with_bulk_discount || 0}</div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400">Bulk Discounts</div>
-                                </div>
-                              </div>
-                            </div>
                             </>
                           ) : (
                             <div className="flex items-center justify-center h-32 text-gray-500">No pricing statistics available.</div>
@@ -705,7 +847,7 @@ const AdminDashboardPage: React.FC = () => {
                                   No recent users found
                                 </div>
                               )}
-                              
+
                               {/* User Detail Modal */}
                               {selectedUser && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -731,7 +873,7 @@ const AdminDashboardPage: React.FC = () => {
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* Recent Bookings Card */}
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
@@ -760,7 +902,7 @@ const AdminDashboardPage: React.FC = () => {
                                   No recent bookings found
                                 </div>
                               )}
-                              
+
                               {/* Booking Detail Modal */}
                               {selectedBooking && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -781,10 +923,10 @@ const AdminDashboardPage: React.FC = () => {
                                         </div>
                                       </div>
                                     </div>
-                                                                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                                       <div>Amount: ${selectedBooking.amount}</div>
-                                       <div>Dates: {selectedBooking.startDate || ''} - {selectedBooking.endDate || ''}</div>
-                                     </div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                      <div>Amount: ${selectedBooking.amount}</div>
+                                      <div>Dates: {selectedBooking.startDate || ''} - {selectedBooking.endDate || ''}</div>
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -795,29 +937,37 @@ const AdminDashboardPage: React.FC = () => {
                             <div className="flex items-center justify-between mb-4">
                               <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Recent Transactions</h3>
                               <a href="/admin/transactions" className="text-my-primary text-sm font-medium hover:underline">View All</a>
-                    </div>
+                            </div>
                             <div className="overflow-x-auto">
-                      <RecentTransactionsList limit={5} />
-                    </div>
+                              <RecentTransactionsList limit={5} />
+                            </div>
                           </div>
                         </section>
                       </>
                     );
                   case 'items':
                     return (
-              <ItemsManagement
-                products={products}
-                owners={owners}
-                loading={loadingProducts}
-                itemCategories={itemCategories}
-                itemFilter={itemFilter}
-                setItemFilter={setItemFilter}
-                selectedLocation={selectedLocation}
-                selectedItems={selectedItems}
-                setSelectedItems={setSelectedItems}
-                Button={Button}
-                error={productsError || undefined}
-              />
+                      <ItemsManagement
+                        products={products}
+                        owners={owners}
+                        loading={loadingProducts}
+                        itemCategories={itemCategories}
+                        itemFilter={itemFilter}
+                        setItemFilter={setItemFilter}
+                        selectedLocation={selectedLocation}
+                        selectedItems={selectedItems}
+                        setSelectedItems={setSelectedItems}
+                        Button={Button}
+                        error={productsError || undefined}
+                        page={itemPage}
+                        limit={itemLimit}
+                        total={itemMeta.total}
+                        totalPages={itemMeta.totalPages}
+                        hasNext={itemMeta.hasNext}
+                        hasPrev={itemMeta.hasPrev}
+                        onPageChange={setItemPage}
+                        onLimitChange={(l) => { setItemLimit(l); setItemPage(1); }}
+                      />
                     );
                   case 'users':
                     return <UserManagement Button={Button} />;
@@ -934,12 +1084,11 @@ const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status:</span>
-                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedInspection.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${selectedInspection.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                       selectedInspection.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                      selectedInspection.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
+                        selectedInspection.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      }`}>
                       {selectedInspection.status}
                     </span>
                   </div>
@@ -1029,12 +1178,11 @@ const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status:</span>
-                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedDispute.status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${selectedDispute.status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                       selectedDispute.status === 'under_review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                      selectedDispute.status === 'open' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
+                        selectedDispute.status === 'open' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      }`}>
                       {selectedDispute.status}
                     </span>
                   </div>
@@ -1108,6 +1256,19 @@ const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Admin New Listing Modal */}
+      {showNewListingModalAdmin && (
+        <NewListingModal
+          open={showNewListingModalAdmin}
+          onClose={() => setShowNewListingModalAdmin(false)}
+          onSubmit={handleAdminNewListingSubmit}
+          form={newListingForm as any}
+          setForm={setNewListingForm as any}
+          isSubmitting={newListingSubmitting}
+          handleInputChange={handleNewListingInputChange}
+        />
       )}
     </>
   );

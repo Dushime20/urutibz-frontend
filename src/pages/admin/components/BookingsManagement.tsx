@@ -171,9 +171,6 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
             <thead className="bg-gray-50 dark:bg-slate-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Booking Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   Customer
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
@@ -193,14 +190,6 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
             <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
               {bookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
-                      {booking.booking_number}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-slate-400">
-                      {format(new Date(booking.created_at), 'MMM d, yyyy')}
-                    </div>
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
                       {booking.renter_first_name} {booking.renter_last_name}

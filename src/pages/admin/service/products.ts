@@ -16,35 +16,61 @@ interface ProductImage {
 }
 
 // Product Management Functions
-export async function fetchAllProducts(token?: string, isAdminDashboard: boolean = false) {
-  const url = `${API_BASE_URL}/products`;
+export async function fetchAllProducts(
+  token?: string,
+  isAdminDashboard: boolean = false,
+  page?: number,
+  limit?: number,
+  status?: string,
+  sort?: 'newest' | 'oldest'
+) {
+  const params = new URLSearchParams();
+  if (page) params.append('page', String(page));
+  if (limit) params.append('limit', String(limit));
+  if (status && status !== 'all') params.append('status', status);
+  if (sort) params.append('sort', sort);
+  const url = `${API_BASE_URL}/products${params.toString() ? `?${params.toString()}` : ''}`;
   try {
     const headers = createAuthHeaders(token);
     const response = await axios.get(url, { headers });
     
+    // Normalize server response shape
+    const payload = response?.data?.data || {};
+    const list = Array.isArray(payload?.data) ? payload.data : Array.isArray(response?.data?.data) ? response.data.data : [];
+    const meta = {
+      page: Number(payload?.page ?? page ?? 1),
+      limit: Number(payload?.limit ?? limit ?? 20),
+      total: Number(payload?.total ?? list.length ?? 0),
+      totalPages: Number(payload?.totalPages ?? (payload?.total && (payload?.limit || limit) ? Math.max(1, Math.ceil(Number(payload.total) / Number(payload.limit || limit))) : 1)),
+      hasNext: Boolean(payload?.hasNext ?? false),
+      hasPrev: Boolean(payload?.hasPrev ?? false),
+    };
+
     // For admin dashboard, return all products without filtering
     if (isAdminDashboard) {
       return { 
-        data: response.data.data.data, 
+        data: list, 
         error: null,
-        total: response.data.data.data.length
+        total: meta.total,
+        meta,
       };
     }
 
     // Filter for active products for other views
-    const activeProducts = response.data.data.data.filter((product: any) => 
+    const activeProducts = list.filter((product: any) => 
       !product.status || product.status.toLowerCase() === 'active'
     );
 
     return { 
       data: activeProducts, 
       error: null,
-      total: activeProducts.length
+      total: activeProducts.length,
+      meta,
     };
   } catch (err: any) {
     const errorMsg = handleApiError(err, 'Failed to fetch products');
     console.error('Error fetching products:', errorMsg);
-    return { data: null, error: errorMsg, total: 0 };
+    return { data: null, error: errorMsg, total: 0, meta: { page: page ?? 1, limit: limit ?? 20, total: 0, totalPages: 1, hasNext: false, hasPrev: false } };
   }
 }
 
@@ -167,7 +193,7 @@ export async function fetchProductImages(productId: string, token?: string) {
 
 // Product Pricing Functions
 export async function fetchProductPricesByProductId(productId: string, options?: { page?: number; limit?: number }) {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') || undefined;
   const params = new URLSearchParams();
   if (options?.page) params.append('page', String(options.page));
   if (options?.limit) params.append('limit', String(options.limit));

@@ -704,6 +704,21 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Expose a global opener so Admin can open this modal directly
+  useEffect(() => {
+    (window as any).__openNewListingModal = () => setShowModal(true);
+    // Auto-open if navigated with ?new-listing=1
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('new-listing') === '1') {
+        setTimeout(() => setShowModal(true), 50);
+      }
+    } catch {}
+    return () => {
+      try { delete (window as any).__openNewListingModal; } catch {}
+    };
+  }, []);
+
 
   const handleCloseModal = () => {
     setShowModal(false);

@@ -467,15 +467,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Email
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Role
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              </th> */}
+              {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              </th> */}
+              {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 KYC Status
-              </th>
+              </th> */}
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Joined
               </th>
@@ -516,17 +516,17 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900 dark:text-gray-100">{user.email}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                {/* <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(user.role)}`}>
                     {user.role}
                   </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                </td> */}
+                {/* <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(user.status)}`}>
                     {user.status}
                   </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                </td> */}
+                {/* <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-2">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getKycStatusColor(user.kyc_status)}`}>
                       {user.kyc_status || 'pending'}
@@ -544,7 +544,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                       Update
                     </button>
                   </div>
-                </td>
+                </td> */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(user.created_at || user.createdAt || '')}
                 </td>
