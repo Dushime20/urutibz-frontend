@@ -301,7 +301,7 @@ const SettingsPage: React.FC = () => {
               <button
                 onClick={handleExportSettings}
                 disabled={isExporting}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
+                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export
@@ -350,7 +350,7 @@ const SettingsPage: React.FC = () => {
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center ${
                         isActive
-                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 border border-blue-200 dark:border-blue-700'
+                            ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-900 dark:text-white border border-teal-200 dark:border-teal-600'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >
@@ -436,7 +436,7 @@ const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   {isSaving && (
-                    <div className="flex items-center text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center text-teal-600 dark:text-teal-400">
                       <Clock className="w-4 h-4 mr-2 animate-spin" />
                       <span className="text-sm">Saving...</span>
                     </div>

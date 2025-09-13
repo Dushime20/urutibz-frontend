@@ -18,6 +18,7 @@ import type {
   BackupSettings,
   AnalyticsSettings,
 } from '../types/adminSettings.types';
+import { DEFAULT_SECURITY_SETTINGS, DEFAULT_NOTIFICATION_SETTINGS, DEFAULT_PLATFORM_SETTINGS } from '../types/adminSettings.types';
 
 // Service class for comprehensive admin settings management
 export class AdminSettingsService {
@@ -265,15 +266,69 @@ export class AdminSettingsService {
    * Fetch system settings
    */
   async fetchSystemSettings(): Promise<SystemSettings> {
-    const response = await this.apiCall<{ data: SystemSettings }>('GET', '/admin/settings/system');
-    return response.data;
+    const response = await this.apiCall<{ 
+      success: boolean;
+      message: string;
+      data: Record<string, { value: any; type: string; description: string }>;
+    }>('GET', '/admin/settings/system');
+    
+    // Transform the API response format to SystemSettings format
+    const systemData: Partial<SystemSettings> = {};
+    
+    Object.entries(response.data).forEach(([key, setting]) => {
+      // Convert string values to appropriate types
+      let value = setting.value;
+      
+      // Boolean fields
+      if (['maintenanceMode', 'registrationEnabled', 'emailNotifications', 'smsNotifications', 
+           'analyticsEnabled', 'autoApproveProducts', 'autoBackupEnabled', 'cacheEnabled', 
+           'contentModerationEnabled'].includes(key)) {
+        value = setting.value === 'true' || setting.value === true;
+      } 
+      // Number fields
+      else if (['maxFileSize', 'sessionTimeout', 'apiRateLimit', 'maxLoginAttempts', 'passwordMinLength'].includes(key)) {
+        value = parseInt(setting.value) || 0;
+      }
+      // String fields (default)
+      else {
+        value = setting.value;
+      }
+      
+      (systemData as any)[key] = value;
+    });
+    
+    console.log('Transformed system settings:', systemData);
+    return systemData as SystemSettings;
   }
 
   /**
    * Update system settings
    */
   async updateSystemSettings(settings: Partial<SystemSettings>): Promise<SystemSettings> {
-    const response = await this.apiCall<{ data: SystemSettings }>('PUT', '/admin/settings/system', settings, createJsonHeaders(this.token));
+    // Transform the settings to the API format
+    const apiSettings: Record<string, string> = {};
+    
+    Object.entries(settings).forEach(([key, value]) => {
+      // Convert values to strings as expected by the API
+      if (typeof value === 'boolean') {
+        apiSettings[key] = value.toString();
+      } else if (typeof value === 'number') {
+        apiSettings[key] = value.toString();
+      } else {
+        apiSettings[key] = value as string;
+      }
+    });
+    
+    const payload = { settings: apiSettings };
+    console.log('Sending system settings to API:', payload);
+    
+    const response = await this.apiCall<{ 
+      success: boolean;
+      message: string;
+      data: SystemSettings;
+    }>('PUT', '/admin/settings/system', payload, createJsonHeaders(this.token));
+    
+    console.log('System settings update response:', response);
     return response.data;
   }
 
@@ -281,8 +336,57 @@ export class AdminSettingsService {
    * Fetch security settings
    */
   async fetchSecuritySettings(): Promise<SecuritySettings> {
-    const response = await this.apiCall<{ data: SecuritySettings }>('GET', '/admin/settings/security');
-    return response.data;
+    const response = await this.apiCall<{ 
+      success: boolean;
+      message: string;
+      data: Record<string, {
+        value: string;
+        type: string;
+        description: string;
+      }>;
+    }>('GET', '/admin/settings/security');
+    
+    // Transform the API response format to SecuritySettings format
+    const securityData: Partial<SecuritySettings> = {};
+    
+    Object.entries(response.data).forEach(([key, setting]) => {
+      try {
+        let parsedValue: any = setting.value;
+        
+        // Parse JSON strings for complex objects
+        if (setting.type === 'object' || setting.value.startsWith('{')) {
+          const parsed = JSON.parse(setting.value);
+          parsedValue = parsed.value || parsed;
+        }
+        
+        // Convert values to appropriate types based on field
+        if (key === 'auditLogRetention' || key === 'maxLoginAttempts' || key === 'sessionTimeout') {
+          (securityData as any)[key] = parseInt(parsedValue) || 0;
+        } else if (key === 'twoFactorRequired') {
+          (securityData as any)[key] = parsedValue === 'true' || parsedValue === true;
+        } else if (key === 'ipWhitelist') {
+          (securityData as any)[key] = Array.isArray(parsedValue) ? parsedValue : [];
+        } else if (key === 'passwordPolicy') {
+          // Handle password policy object
+          (securityData as any)[key] = {
+            minLength: parseInt(parsedValue.minLength) || 8,
+            requireUppercase: parsedValue.requireUppercase === 'true' || parsedValue.requireUppercase === true,
+            requireNumbers: parsedValue.requireNumbers === 'true' || parsedValue.requireNumbers === true,
+            requireSymbols: parsedValue.requireSymbols === 'true' || parsedValue.requireSymbols === true,
+          };
+        } else {
+          // Default case - keep as string
+          (securityData as any)[key] = parsedValue;
+        }
+      } catch (error) {
+        console.warn(`Failed to parse security setting ${key}:`, error);
+        // Use default value if parsing fails
+        (securityData as any)[key] = (DEFAULT_SECURITY_SETTINGS as any)[key];
+      }
+    });
+    
+    console.log('Transformed security settings:', securityData);
+    return securityData as SecuritySettings;
   }
 
   /**
@@ -297,15 +401,62 @@ export class AdminSettingsService {
    * Fetch notification settings
    */
   async fetchNotificationSettings(): Promise<NotificationSettings> {
-    const response = await this.apiCall<{ data: NotificationSettings }>('GET', '/admin/settings/notifications');
-    return response.data;
+    const response = await this.apiCall<{ 
+      success: boolean;
+      message: string;
+      data: Record<string, {
+        value: any;
+        type: string;
+        description: string;
+      }>;
+    }>('GET', '/admin/settings/notifications');
+    
+    // Transform the API response format to NotificationSettings format
+    const notificationData: Partial<NotificationSettings> = {};
+    
+    Object.entries(response.data).forEach(([key, setting]) => {
+      try {
+        let value = setting.value;
+        
+        // Parse JSON strings for complex objects
+        if (setting.type === 'object' && typeof setting.value === 'string') {
+          value = JSON.parse(setting.value);
+        }
+        
+        // Convert values to appropriate types based on field
+        if (['emailEnabled', 'smsEnabled', 'pushEnabled', 'adminAlerts'].includes(key)) {
+          value = value === 'true' || value === true;
+        } else if (key === 'quietHours') {
+          value = {
+            enabled: value.enabled === 'true' || value.enabled === true,
+            start: value.start || '22:00',
+            end: value.end || '08:00',
+          };
+        } else if (key === 'systemMaintenance') {
+          value = {
+            enabled: value.enabled === 'true' || value.enabled === true,
+            message: value.message || '',
+            scheduledAt: value.scheduledAt || null,
+          };
+        }
+        
+        (notificationData as any)[key] = value;
+      } catch (error) {
+        console.warn(`Failed to parse notification setting ${key}:`, error);
+        // Use default value if parsing fails
+        (notificationData as any)[key] = (DEFAULT_NOTIFICATION_SETTINGS as any)[key];
+      }
+    });
+    
+    console.log('Transformed notification settings:', notificationData);
+    return notificationData as NotificationSettings;
   }
 
   /**
    * Update notification settings
    */
   async updateNotificationSettings(settings: Partial<NotificationSettings>): Promise<NotificationSettings> {
-    const response = await this.apiCall<{ data: NotificationSettings }>('PUT', '/notifications', settings, createJsonHeaders(this.token));
+    const response = await this.apiCall<{ data: NotificationSettings }>('PUT', '/admin/settings/notifications', settings, createJsonHeaders(this.token));
     return response.data;
   }
 
@@ -313,15 +464,56 @@ export class AdminSettingsService {
    * Fetch platform settings
    */
   async fetchPlatformSettings(): Promise<PlatformSettings> {
-    const response = await this.apiCall<{ data: PlatformSettings }>('GET', '/platform');
-    return response.data;
+    const response = await this.apiCall<{ 
+      success: boolean;
+      message: string;
+      data: Record<string, {
+        value: any;
+        type: string;
+        description: string;
+      }>;
+    }>('GET', '/admin/settings/platform');
+    
+    // Transform the API response format to PlatformSettings format
+    const platformData: Partial<PlatformSettings> = {};
+    
+    Object.entries(response.data).forEach(([key, setting]) => {
+      try {
+        let value = setting.value;
+        
+        // Convert values to appropriate types based on field
+        if (['allowUserRegistration', 'requireEmailVerification', 'allowGuestBookings', 'autoApproveListings', 'requireListingVerification', 'moderationEnabled', 'enableCookies'].includes(key)) {
+          value = value === 'true' || value === true;
+        } else if (['searchRadius', 'maxSearchResults', 'featuredListingsCount'].includes(key)) {
+          value = parseInt(value) || 0;
+        } else if (key === 'supportedLanguages') {
+          // Handle array values
+          if (typeof value === 'string') {
+            try {
+              value = JSON.parse(value);
+            } catch {
+              value = value.split(',').map((item: string) => item.trim());
+            }
+          }
+        }
+        
+        (platformData as any)[key] = value;
+      } catch (error) {
+        console.warn(`Failed to parse platform setting ${key}:`, error);
+        // Use default value if parsing fails
+        (platformData as any)[key] = (DEFAULT_PLATFORM_SETTINGS as any)[key];
+      }
+    });
+    
+    console.log('Transformed platform settings:', platformData);
+    return platformData as PlatformSettings;
   }
 
   /**
    * Update platform settings
    */
   async updatePlatformSettings(settings: Partial<PlatformSettings>): Promise<PlatformSettings> {
-    const response = await this.apiCall<{ data: PlatformSettings }>('PUT', '/platform', settings, createJsonHeaders(this.token));
+    const response = await this.apiCall<{ data: PlatformSettings }>('PUT', '/admin/settings/platform', settings, createJsonHeaders(this.token));
     return response.data;
   }
 
@@ -532,6 +724,50 @@ export class AdminSettingsService {
   async rollbackSettings(historyId: string): Promise<AdminSettings> {
     const response = await this.apiCall<SettingsResponse>('POST', `/history/${historyId}/rollback`);
     return response.data;
+  }
+
+  /**
+   * Fetch all settings
+   */
+  async fetchAllSettings(): Promise<AdminSettings> {
+    try {
+      const [
+        themeSettings,
+        businessSettings,
+        systemSettings,
+        securitySettings,
+        notificationSettings,
+        platformSettings,
+        // TODO: Add other settings when implemented
+        // backupSettings,
+        // analyticsSettings,
+      ] = await Promise.all([
+        this.fetchThemeSettings(),
+        this.fetchBusinessSettings(),
+        this.fetchSystemSettings(),
+        this.fetchSecuritySettings(),
+        this.fetchNotificationSettings(),
+        this.fetchPlatformSettings(),
+        // TODO: Add other settings when implemented
+        // this.fetchBackupSettings(),
+        // this.fetchAnalyticsSettings(),
+      ]);
+
+      return {
+        theme: themeSettings,
+        business: businessSettings,
+        system: systemSettings,
+        security: securitySettings,
+        notifications: notificationSettings,
+        platform: platformSettings,
+        // TODO: Add other settings when implemented
+        // backup: backupSettings,
+        // analytics: analyticsSettings,
+      } as AdminSettings;
+    } catch (error) {
+      console.error('Failed to fetch all settings:', error);
+      throw error;
+    }
   }
 }
 

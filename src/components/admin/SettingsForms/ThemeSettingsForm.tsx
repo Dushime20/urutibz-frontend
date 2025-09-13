@@ -196,23 +196,23 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
               onClick={() => handleChange('mode', value)}
               className={`p-4 rounded-lg border-2 transition-colors text-left ${
                 formData.mode === value
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                  ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30'
                   : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
               }`}
             >
               <Icon className={`w-6 h-6 mb-2 ${
                 formData.mode === value
-                  ? 'text-blue-600 dark:text-blue-400'
+                  ? 'text-teal-600 dark:text-teal-400'
                   : 'text-gray-600 dark:text-gray-400'
               }`} />
               <div className={`font-medium ${
                 formData.mode === value
-                  ? 'text-blue-900 dark:text-blue-100'
+                  ? 'text-gray-900 dark:text-white'
                   : 'text-gray-900 dark:text-white'
               }`}>{label}</div>
               <div className={`text-sm ${
                 formData.mode === value
-                  ? 'text-blue-700 dark:text-blue-200'
+                  ? 'text-gray-700 dark:text-gray-300'
                   : 'text-gray-600 dark:text-gray-400'
               }`}>{description}</div>
             </button>
@@ -427,7 +427,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
           
           <button
             onClick={handleExport}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
           >
             <Download className="w-4 h-4 mr-2" />
             Export

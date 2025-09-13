@@ -52,111 +52,95 @@ export interface BusinessSettings {
 
 // System Settings
 export interface SystemSettings {
-  cacheEnabled: boolean;
-  cacheTimeout: number;
-  backupEnabled: boolean;
-  backupFrequency: 'daily' | 'weekly' | 'monthly';
-  logLevel: 'error' | 'warn' | 'info' | 'debug';
-  debugMode: boolean;
-  apiRateLimit: number;
-  maxConcurrentUsers: number;
+  appName: string;
+  appVersion: string;
   maintenanceMode: boolean;
-  maintenanceMessage?: string;
-  autoUpdates: boolean;
-  performanceMonitoring: boolean;
-  errorReporting: boolean;
+  registrationEnabled: boolean;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  maxFileSize: number;
+  sessionTimeout: number;
+  defaultCurrency: string;
+  fromEmail: string;
+  analyticsEnabled: boolean;
+  apiRateLimit: number;
+  autoApproveProducts: boolean;
+  autoBackupEnabled: boolean;
+  backupFrequency: string;
+  cacheEnabled: boolean;
+  contentModerationEnabled: boolean;
+  logLevel: string;
+  maxLoginAttempts: number;
+  passwordMinLength: number;
 }
 
 // Security Settings
 export interface SecuritySettings {
-  sessionTimeout: number;
-  maxLoginAttempts: number;
-  passwordMinLength: number;
-  passwordRequireSpecialChars: boolean;
-  passwordRequireNumbers: boolean;
-  passwordRequireUppercase: boolean;
-  requireTwoFactor: boolean;
-  enableCaptcha: boolean;
-  captchaProvider: 'google' | 'hcaptcha' | 'custom';
-  captchaSiteKey?: string;
+  auditLogRetention: number;
   ipWhitelist: string[];
-  allowedFileTypes: string[];
-  maxFileSize: number;
-  enableAuditLog: boolean;
-  dataRetentionDays: number;
-  encryptionEnabled: boolean;
-  sslRequired: boolean;
-  corsOrigins: string[];
+  maxLoginAttempts: number;
+  passwordPolicy: {
+    minLength: number;
+    requireUppercase: boolean;
+    requireNumbers: boolean;
+    requireSymbols: boolean;
+  };
+  sessionTimeout: number;
+  twoFactorRequired: boolean;
 }
 
 // Notification Settings
 export interface NotificationSettings {
-  emailNotifications: boolean;
-  smsNotifications: boolean;
-  pushNotifications: boolean;
-  adminAlerts: boolean;
-  bookingNotifications: boolean;
-  paymentNotifications: boolean;
-  reviewNotifications: boolean;
-  systemMaintenanceAlerts: boolean;
-  marketingEmails: boolean;
-  weeklyReports: boolean;
-  monthlyReports: boolean;
-  realTimeUpdates: boolean;
-  notificationChannels: {
-    email: boolean;
-    sms: boolean;
-    push: boolean;
-    inApp: boolean;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  pushEnabled: boolean;
+  quietHours: {
+    enabled: boolean;
+    start: string;
+    end: string;
   };
-  notificationTemplates: {
-    welcome: boolean;
-    bookingConfirmation: boolean;
-    paymentReceived: boolean;
-    reviewRequest: boolean;
-    maintenanceAlert: boolean;
+  adminAlerts: boolean;
+  systemMaintenance: {
+    enabled: boolean;
+    message: string;
+    scheduledAt: string | null;
   };
 }
 
 // Platform Settings
 export interface PlatformSettings {
   siteName: string;
+  siteTagline: string;
   siteDescription: string;
-  siteKeywords: string[];
-  siteLogo?: string;
-  siteFavicon?: string;
+  siteKeywords: string;
+  primaryColor: string;
+  secondaryColor: string;
+  logoUrl: string;
+  faviconUrl: string;
   defaultLanguage: string;
-  supportedLanguages: Array<{
-    code: string;
-    label: string;
-    nativeName: string;
-    flag: string;
-    enabled: boolean;
-    rtl: boolean;
-  }>;
+  supportedLanguages: string[];
   timezone: string;
   dateFormat: string;
-  timeFormat: '12h' | '24h';
-  registrationEnabled: boolean;
-  emailVerificationRequired: boolean;
-  phoneVerificationRequired: boolean;
-  kycRequired: boolean;
-  maxImagesPerProduct: number;
-  maxProductsPerUser: number;
-  autoApproveProducts: boolean;
-  autoApproveUsers: boolean;
-  featuredProductsLimit: number;
-  searchResultsPerPage: number;
-  enableReviews: boolean;
-  enableRatings: boolean;
-  enableWishlist: boolean;
-  enableSocialLogin: boolean;
-  socialProviders: {
-    google: boolean;
-    facebook: boolean;
-    twitter: boolean;
-    github: boolean;
-  };
+  currency: string;
+  currencySymbol: string;
+  allowUserRegistration: boolean;
+  requireEmailVerification: boolean;
+  allowGuestBookings: boolean;
+  autoApproveListings: boolean;
+  requireListingVerification: boolean;
+  moderationEnabled: boolean;
+  searchRadius: number;
+  maxSearchResults: number;
+  featuredListingsCount: number;
+  contactEmail: string;
+  contactPhone: string;
+  supportHours: string;
+  termsOfServiceUrl: string;
+  privacyPolicyUrl: string;
+  cookiePolicyUrl: string;
+  googleAnalyticsId: string;
+  facebookPixelId: string;
+  enableCookies: boolean;
 }
 
 // Backup Settings
@@ -323,9 +307,8 @@ export interface SettingsConflictEvent {
 // Utility Types
 export type SettingsSection = keyof AdminSettings;
 export type ThemeMode = ThemeSettings['mode'];
-export type LogLevel = SystemSettings['logLevel'];
 export type BackupFrequency = BackupSettings['frequency'];
-export type NotificationChannel = keyof NotificationSettings['notificationChannels'];
+export type NotificationChannel = 'emailEnabled' | 'smsEnabled' | 'pushEnabled';
 
 // Default Settings
 export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
@@ -370,101 +353,92 @@ export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
 };
 
 export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
-  cacheEnabled: true,
-  cacheTimeout: 300,
-  backupEnabled: true,
-  backupFrequency: 'daily',
-  logLevel: 'info',
-  debugMode: false,
-  apiRateLimit: 1000,
-  maxConcurrentUsers: 1000,
+  appName: 'UruTiBiz',
+  appVersion: '1.0.0',
   maintenanceMode: false,
-  autoUpdates: true,
-  performanceMonitoring: true,
-  errorReporting: true,
+  registrationEnabled: true,
+  emailNotifications: true,
+  smsNotifications: false,
+  maxFileSize: 10485760, // 10MB in bytes
+  sessionTimeout: 3600, // 1 hour in seconds
+  defaultCurrency: 'RWF',
+  fromEmail: 'noreply@urutibiz.com',
+  analyticsEnabled: true,
+  apiRateLimit: 1000,
+  autoApproveProducts: false,
+  autoBackupEnabled: true,
+  backupFrequency: 'daily',
+  cacheEnabled: true,
+  contentModerationEnabled: true,
+  logLevel: 'info',
+  maxLoginAttempts: 5,
+  passwordMinLength: 8,
 };
 
 export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
-  sessionTimeout: 3600,
-  maxLoginAttempts: 5,
-  passwordMinLength: 8,
-  passwordRequireSpecialChars: true,
-  passwordRequireNumbers: true,
-  passwordRequireUppercase: true,
-  requireTwoFactor: false,
-  enableCaptcha: false,
-  captchaProvider: 'google',
+  auditLogRetention: 90,
   ipWhitelist: [],
-  allowedFileTypes: ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'],
-  maxFileSize: 10485760, // 10MB
-  enableAuditLog: true,
-  dataRetentionDays: 365,
-  encryptionEnabled: true,
-  sslRequired: true,
-  corsOrigins: [],
+  maxLoginAttempts: 5,
+  passwordPolicy: {
+    minLength: 8,
+    requireUppercase: true,
+    requireNumbers: true,
+    requireSymbols: true,
+  },
+  sessionTimeout: 3600,
+  twoFactorRequired: false,
 };
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
-  emailNotifications: true,
-  smsNotifications: false,
-  pushNotifications: true,
-  adminAlerts: true,
-  bookingNotifications: true,
-  paymentNotifications: true,
-  reviewNotifications: true,
-  systemMaintenanceAlerts: true,
-  marketingEmails: false,
-  weeklyReports: true,
-  monthlyReports: true,
-  realTimeUpdates: true,
-  notificationChannels: {
-    email: true,
-    sms: false,
-    push: true,
-    inApp: true,
+  emailEnabled: true,
+  smsEnabled: false,
+  pushEnabled: true,
+  quietHours: {
+    enabled: false,
+    start: '22:00',
+    end: '08:00',
   },
-  notificationTemplates: {
-    welcome: true,
-    bookingConfirmation: true,
-    paymentReceived: true,
-    reviewRequest: true,
-    maintenanceAlert: true,
+  adminAlerts: true,
+  systemMaintenance: {
+    enabled: false,
+    message: '',
+    scheduledAt: null,
   },
 };
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
-  siteName: 'Urutibz',
-  siteDescription: 'Your trusted marketplace for rentals',
-  siteKeywords: ['rental', 'marketplace', 'items', 'equipment'],
+  siteName: 'UruTiBiz',
+  siteTagline: 'Your trusted rental marketplace',
+  siteDescription: 'A comprehensive rental marketplace platform',
+  siteKeywords: 'rental, marketplace, equipment, tools',
+  primaryColor: '#3B82F6',
+  secondaryColor: '#10B981',
+  logoUrl: '',
+  faviconUrl: '',
   defaultLanguage: 'en',
-  supportedLanguages: [
-    { code: 'en', label: 'English', nativeName: 'English', flag: '🇺🇸', enabled: true, rtl: false },
-    { code: 'fr', label: 'French', nativeName: 'Français', flag: '🇫🇷', enabled: true, rtl: false },
-    { code: 'rw', label: 'Kinyarwanda', nativeName: 'Ikinyarwanda', flag: '🇷🇼', enabled: true, rtl: false },
-  ],
-  timezone: 'UTC',
-  dateFormat: 'MM/DD/YYYY',
-  timeFormat: '12h',
-  registrationEnabled: true,
-  emailVerificationRequired: true,
-  phoneVerificationRequired: false,
-  kycRequired: false,
-  maxImagesPerProduct: 10,
-  maxProductsPerUser: 50,
-  autoApproveProducts: false,
-  autoApproveUsers: false,
-  featuredProductsLimit: 20,
-  searchResultsPerPage: 20,
-  enableReviews: true,
-  enableRatings: true,
-  enableWishlist: true,
-  enableSocialLogin: false,
-  socialProviders: {
-    google: false,
-    facebook: false,
-    twitter: false,
-    github: false,
-  },
+  supportedLanguages: ['en', 'fr', 'sw'],
+  timezone: 'Africa/Kigali',
+  dateFormat: 'DD/MM/YYYY',
+  currency: 'RWF',
+  currencySymbol: '₣',
+  allowUserRegistration: true,
+  requireEmailVerification: true,
+  allowGuestBookings: false,
+  autoApproveListings: false,
+  requireListingVerification: true,
+  moderationEnabled: true,
+  searchRadius: 50,
+  maxSearchResults: 50,
+  featuredListingsCount: 6,
+  contactEmail: 'support@urutibiz.com',
+  contactPhone: '+250 123 456 789',
+  supportHours: 'Mon-Fri 8AM-6PM',
+  termsOfServiceUrl: '/terms',
+  privacyPolicyUrl: '/privacy',
+  cookiePolicyUrl: '/cookies',
+  googleAnalyticsId: '',
+  facebookPixelId: '',
+  enableCookies: true,
 };
 
 export const DEFAULT_BACKUP_SETTINGS: BackupSettings = {

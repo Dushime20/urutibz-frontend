@@ -431,7 +431,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-              <Facebook className="w-4 h-4 mr-2 text-blue-600" />
+              <Facebook className="w-4 h-4 mr-2 text-teal-600" />
               Facebook
             </label>
             <input
@@ -445,7 +445,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-              <Twitter className="w-4 h-4 mr-2 text-blue-400" />
+              <Twitter className="w-4 h-4 mr-2 text-teal-400" />
               Twitter
             </label>
             <input
@@ -473,7 +473,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-              <Linkedin className="w-4 h-4 mr-2 text-blue-700" />
+              <Linkedin className="w-4 h-4 mr-2 text-teal-700" />
               LinkedIn
             </label>
             <input
