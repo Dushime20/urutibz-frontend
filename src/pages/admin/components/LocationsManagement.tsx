@@ -175,30 +175,30 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Locations</h3>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Manage platform locations and regional settings
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-3">
           <button 
             onClick={() => setShowFilters(!showFilters)}
             className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-colors flex items-center"
           >
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </button>
+          <Filter className="w-4 h-4 mr-2" />
+          Filter
+        </button>
           <button 
             onClick={() => setShowAddModal(true)}
             className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Location
-          </button>
-        </div>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Location
+        </button>
       </div>
+    </div>
 
       {/* Filters */}
       {showFilters && (
@@ -405,7 +405,7 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
               ))}
             </tbody>
           </table>
-        </div>
+    </div>
       </div>
 
       {/* Empty State */}
@@ -422,8 +422,8 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
           </p>
         </div>
       )}
-    </div>
-  );
+  </div>
+);
 };
 
 export default LocationsManagement; 

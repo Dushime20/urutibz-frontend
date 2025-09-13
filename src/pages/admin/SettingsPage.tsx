@@ -61,6 +61,7 @@ const SettingsPage: React.FC = () => {
     updateSettings,
     resetSettings,
     uploadCompanyLogo,
+    createManualBackup,
     exportSettings,
     importSettings,
     loadSystemHealth,
@@ -532,6 +533,7 @@ const SettingsPage: React.FC = () => {
                   settings={settings[activeTab]}
                   onUpdate={(updates: any) => handleSettingsUpdate(updates, activeTab)}
                   onLogoUpload={activeTab === 'business' ? uploadCompanyLogo : undefined}
+                  onCreateManualBackup={activeTab === 'backup' ? createManualBackup : undefined}
                   isLoading={isSaving}
                   theme={{ isDarkMode }}
                 />

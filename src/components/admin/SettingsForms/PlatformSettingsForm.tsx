@@ -51,8 +51,8 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
     handleChange('supportedLanguages', languages);
   };
 
-  const formatSupportedLanguages = (languages: string[]) => {
-    return languages ? languages.join(', ') : '';
+  const formatSupportedLanguages = (languages: string[] | undefined) => {
+    return languages && Array.isArray(languages) ? languages.join(', ') : '';
   };
 
   return (

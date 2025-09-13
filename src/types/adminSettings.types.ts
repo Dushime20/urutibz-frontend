@@ -145,24 +145,38 @@ export interface PlatformSettings {
 
 // Backup Settings
 export interface BackupSettings {
-  enabled: boolean;
-  frequency: 'daily' | 'weekly' | 'monthly';
-  retentionDays: number;
+  autoBackupEnabled: boolean;
+  backupFrequency: 'hourly' | 'daily' | 'weekly' | 'monthly';
+  backupRetentionDays: number;
+  backupTime: string;
+  includeUsers: boolean;
+  includeProducts: boolean;
+  includeBookings: boolean;
+  includeSettings: boolean;
   includeMedia: boolean;
-  includeDatabase: boolean;
   includeLogs: boolean;
-  compressionEnabled: boolean;
-  encryptionEnabled: boolean;
-  storageProvider: 'local' | 'aws' | 'google' | 'azure';
-  storageConfig?: {
-    bucket?: string;
-    region?: string;
-    accessKey?: string;
-    secretKey?: string;
-  };
-  lastBackup?: string;
-  nextBackup?: string;
-  backupSize?: number;
+  backupStorageType: 'local' | 'cloud' | 'ftp';
+  backupStoragePath: string;
+  cloudStorageProvider: 'aws' | 'gcp' | 'azure';
+  cloudBucketName: string;
+  ftpHost: string;
+  ftpPort: number;
+  ftpUsername: string;
+  ftpPassword: string;
+  compressBackups: boolean;
+  encryptBackups: boolean;
+  encryptionKey: string;
+  recoveryModeEnabled: boolean;
+  recoveryTimeout: number;
+  allowPartialRecovery: boolean;
+  notifyOnBackupSuccess: boolean;
+  notifyOnBackupFailure: boolean;
+  notifyOnRecoveryComplete: boolean;
+  backupNotificationEmail: string;
+  backupMaintenanceMode: boolean;
+  backupMaintenanceMessage: string;
+  cleanupOldBackups: boolean;
+  maxBackupSize: number;
 }
 
 // Analytics Settings
@@ -442,15 +456,38 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
 };
 
 export const DEFAULT_BACKUP_SETTINGS: BackupSettings = {
-  enabled: true,
-  frequency: 'daily',
-  retentionDays: 30,
-  includeMedia: true,
-  includeDatabase: true,
+  autoBackupEnabled: true,
+  backupFrequency: 'daily',
+  backupRetentionDays: 30,
+  backupTime: '02:00',
+  includeUsers: true,
+  includeProducts: true,
+  includeBookings: true,
+  includeSettings: true,
+  includeMedia: false,
   includeLogs: false,
-  compressionEnabled: true,
-  encryptionEnabled: false,
-  storageProvider: 'local',
+  backupStorageType: 'local',
+  backupStoragePath: '/backups',
+  cloudStorageProvider: 'aws',
+  cloudBucketName: '',
+  ftpHost: '',
+  ftpPort: 21,
+  ftpUsername: '',
+  ftpPassword: '',
+  compressBackups: true,
+  encryptBackups: false,
+  encryptionKey: '',
+  recoveryModeEnabled: true,
+  recoveryTimeout: 3600,
+  allowPartialRecovery: true,
+  notifyOnBackupSuccess: true,
+  notifyOnBackupFailure: true,
+  notifyOnRecoveryComplete: true,
+  backupNotificationEmail: 'admin@urutibiz.com',
+  backupMaintenanceMode: true,
+  backupMaintenanceMessage: 'System backup in progress. Please try again later.',
+  cleanupOldBackups: true,
+  maxBackupSize: 1024,
 };
 
 export const DEFAULT_ANALYTICS_SETTINGS: AnalyticsSettings = {

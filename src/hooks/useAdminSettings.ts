@@ -37,6 +37,7 @@ interface UseAdminSettingsReturn {
   updateSettings: (updates: Partial<AdminSettings>, section?: SettingsSection) => Promise<void>;
   resetSettings: () => Promise<void>;
   uploadCompanyLogo: (logoFile: File) => Promise<{ success: boolean; message: string; logoUrl?: string }>;
+  createManualBackup: (backupData: { type: 'full' | 'settings' | 'users' | 'products' | 'bookings'; description: string }) => Promise<{ success: boolean; message: string; backupId?: string }>;
   exportSettings: () => Promise<SettingsExport>;
   importSettings: (importData: SettingsImport) => Promise<void>;
   validateSettings: (settings: Partial<AdminSettings>, section?: SettingsSection) => Promise<boolean>;
@@ -184,6 +185,14 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
         // For notification updates, call the specific notification update method
         const updatedNotifications = await settingsService.updateNotificationSettings(updates as any);
         updatedSettings = { ...settings, notifications: updatedNotifications } as AdminSettings;
+      } else if (section === 'platform') {
+        // For platform updates, call the specific platform update method
+        const updatedPlatform = await settingsService.updatePlatformSettings(updates as any);
+        updatedSettings = { ...settings, platform: updatedPlatform } as AdminSettings;
+      } else if (section === 'backup') {
+        // For backup updates, call the specific backup update method
+        const updatedBackup = await settingsService.updateBackupSettings(updates as any);
+        updatedSettings = { ...settings, backup: updatedBackup } as AdminSettings;
       } else {
         // For general updates, use the structured format
         const structuredUpdates = { [section || 'system']: updates };
@@ -254,6 +263,22 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
       return result;
     } catch (err: any) {
       console.error('Failed to upload logo:', err);
+      throw err;
+    }
+  }, [token]);
+
+  // Create manual backup
+  const createManualBackup = useCallback(async (backupData: { type: 'full' | 'settings' | 'users' | 'products' | 'bookings'; description: string }): Promise<{ success: boolean; message: string; backupId?: string }> => {
+    if (!token) {
+      throw new Error('Authentication token required');
+    }
+
+    try {
+      const settingsService = getAdminSettingsService(token);
+      const result = await settingsService.createManualBackup(backupData);
+      return result;
+    } catch (err: any) {
+      console.error('Failed to create manual backup:', err);
       throw err;
     }
   }, [token]);
@@ -441,6 +466,7 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
     updateSettings,
     resetSettings,
     uploadCompanyLogo,
+    createManualBackup,
     exportSettings,
     importSettings,
     validateSettings,

@@ -18,7 +18,7 @@ import type {
   BackupSettings,
   AnalyticsSettings,
 } from '../types/adminSettings.types';
-import { DEFAULT_SECURITY_SETTINGS, DEFAULT_NOTIFICATION_SETTINGS, DEFAULT_PLATFORM_SETTINGS } from '../types/adminSettings.types';
+import { DEFAULT_SECURITY_SETTINGS, DEFAULT_NOTIFICATION_SETTINGS, DEFAULT_PLATFORM_SETTINGS, DEFAULT_BACKUP_SETTINGS } from '../types/adminSettings.types';
 
 // Service class for comprehensive admin settings management
 export class AdminSettingsService {
@@ -481,20 +481,16 @@ export class AdminSettingsService {
       try {
         let value = setting.value;
         
-        // Convert values to appropriate types based on field
-        if (['allowUserRegistration', 'requireEmailVerification', 'allowGuestBookings', 'autoApproveListings', 'requireListingVerification', 'moderationEnabled', 'enableCookies'].includes(key)) {
-          value = value === 'true' || value === true;
+        // The API already returns values in the correct format, so we just need to handle special cases
+        if (key === 'supportedLanguages' && Array.isArray(value)) {
+          // supportedLanguages is already an array from the API
+          value = value;
         } else if (['searchRadius', 'maxSearchResults', 'featuredListingsCount'].includes(key)) {
-          value = parseInt(value) || 0;
-        } else if (key === 'supportedLanguages') {
-          // Handle array values
-          if (typeof value === 'string') {
-            try {
-              value = JSON.parse(value);
-            } catch {
-              value = value.split(',').map((item: string) => item.trim());
-            }
-          }
+          // Ensure numbers are properly converted
+          value = typeof value === 'string' ? parseInt(value) || 0 : value;
+        } else if (['allowUserRegistration', 'requireEmailVerification', 'allowGuestBookings', 'autoApproveListings', 'requireListingVerification', 'moderationEnabled', 'enableCookies'].includes(key)) {
+          // Ensure booleans are properly converted
+          value = typeof value === 'string' ? value === 'true' : value;
         }
         
         (platformData as any)[key] = value;
@@ -505,7 +501,6 @@ export class AdminSettingsService {
       }
     });
     
-    console.log('Transformed platform settings:', platformData);
     return platformData as PlatformSettings;
   }
 
@@ -521,16 +516,55 @@ export class AdminSettingsService {
    * Fetch backup settings
    */
   async fetchBackupSettings(): Promise<BackupSettings> {
-    const response = await this.apiCall<{ data: BackupSettings }>('GET', '/backup');
-    return response.data;
+    const response = await this.apiCall<{ 
+      success: boolean;
+      message: string;
+      data: Record<string, {
+        value: any;
+        type: string;
+        description: string;
+      }>;
+    }>('GET', '/admin/settings/backup-recovery');
+    
+    // Transform the API response format to BackupSettings format
+    const backupData: Partial<BackupSettings> = {};
+    
+    Object.entries(response.data).forEach(([key, setting]) => {
+      try {
+        let value = setting.value;
+        
+        // Convert values to appropriate types based on field
+        if (['autoBackupEnabled', 'includeUsers', 'includeProducts', 'includeBookings', 'includeSettings', 'includeMedia', 'includeLogs', 'compressBackups', 'encryptBackups', 'recoveryModeEnabled', 'allowPartialRecovery', 'notifyOnBackupSuccess', 'notifyOnBackupFailure', 'notifyOnRecoveryComplete', 'backupMaintenanceMode', 'cleanupOldBackups'].includes(key)) {
+          value = typeof value === 'string' ? value === 'true' : value;
+        } else if (['backupRetentionDays', 'ftpPort', 'recoveryTimeout', 'maxBackupSize'].includes(key)) {
+          value = typeof value === 'string' ? parseInt(value) || 0 : value;
+        }
+        
+        (backupData as any)[key] = value;
+      } catch (error) {
+        console.warn(`Failed to parse backup setting ${key}:`, error);
+        // Use default value if parsing fails
+        (backupData as any)[key] = (DEFAULT_BACKUP_SETTINGS as any)[key];
+      }
+    });
+    
+    return backupData as BackupSettings;
   }
 
   /**
    * Update backup settings
    */
   async updateBackupSettings(settings: Partial<BackupSettings>): Promise<BackupSettings> {
-    const response = await this.apiCall<{ data: BackupSettings }>('PUT', '/backup', settings, createJsonHeaders(this.token));
+    const response = await this.apiCall<{ data: BackupSettings }>('PUT', '/admin/settings/backup-recovery', settings, createJsonHeaders(this.token));
     return response.data;
+  }
+
+  /**
+   * Create manual backup
+   */
+  async createManualBackup(backupData: { type: 'full' | 'settings' | 'users' | 'products' | 'bookings'; description: string }): Promise<{ success: boolean; message: string; backupId?: string }> {
+    const response = await this.apiCall<{ success: boolean; message: string; backupId?: string }>('POST', '/admin/settings/backup', backupData, createJsonHeaders(this.token));
+    return response;
   }
 
   /**
@@ -738,8 +772,8 @@ export class AdminSettingsService {
         securitySettings,
         notificationSettings,
         platformSettings,
+        backupSettings,
         // TODO: Add other settings when implemented
-        // backupSettings,
         // analyticsSettings,
       ] = await Promise.all([
         this.fetchThemeSettings(),
@@ -748,8 +782,8 @@ export class AdminSettingsService {
         this.fetchSecuritySettings(),
         this.fetchNotificationSettings(),
         this.fetchPlatformSettings(),
+        this.fetchBackupSettings(),
         // TODO: Add other settings when implemented
-        // this.fetchBackupSettings(),
         // this.fetchAnalyticsSettings(),
       ]);
 
@@ -760,8 +794,8 @@ export class AdminSettingsService {
         security: securitySettings,
         notifications: notificationSettings,
         platform: platformSettings,
+        backup: backupSettings,
         // TODO: Add other settings when implemented
-        // backup: backupSettings,
         // analytics: analyticsSettings,
       } as AdminSettings;
     } catch (error) {
