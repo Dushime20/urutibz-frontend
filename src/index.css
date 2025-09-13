@@ -4,6 +4,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Custom Properties for Theme */
+:root {
+  --primary-color: #0d9488;
+  --secondary-color: #64748b;
+  --accent-color: #f59e0b;
+  --background-color: #ffffff;
+  --surface-color: #f8fafc;
+  --text-color: #1e293b;
+  --border-color: #e2e8f0;
+  --font-family: 'Inter', sans-serif;
+  --font-size: 16px;
+  --border-radius: 8px;
+}
+
+/* Dark mode theme variables */
+.dark {
+  --primary-color: #14b8a6;
+  --secondary-color: #94a3b8;
+  --accent-color: #fbbf24;
+  --background-color: #0f172a;
+  --surface-color: #1e293b;
+  --text-color: #f1f5f9;
+  --border-color: #334155;
+  --font-family: 'Inter', sans-serif;
+  --font-size: 16px;
+  --border-radius: 8px;
+}
+
+/* Apply theme globally */
+html, body {
+  background-color: var(--background-color) !important;
+  color: var(--text-color) !important;
+  font-family: var(--font-family) !important;
+  font-size: var(--font-size) !important;
+}
+
 /* Custom scrollbar styles */
 @layer utilities {
   /* Webkit (Chrome, Safari, newer versions of Opera) */
@@ -50,9 +86,159 @@
   }
 }
 
+/* Theme-aware classes */
+.theme-bg {
+  background-color: var(--background-color);
+}
+
+.theme-surface {
+  background-color: var(--surface-color);
+}
+
+.theme-text {
+  color: var(--text-color);
+}
+
+.theme-border {
+  border-color: var(--border-color);
+}
+
+.theme-primary {
+  background-color: var(--primary-color);
+}
+
+.theme-primary-text {
+  color: var(--primary-color);
+}
+
+.theme-secondary {
+  background-color: var(--secondary-color);
+}
+
+.theme-secondary-text {
+  color: var(--secondary-color);
+}
+
+.theme-accent {
+  background-color: var(--accent-color);
+}
+
+.theme-accent-text {
+  color: var(--accent-color);
+}
+
 /* Global button styles */
 .btn-primary {
   @apply rounded-lg bg-my-primary text-white hover:bg-opacity-90 transition-colors duration-300;
+}
+
+/* Theme-aware button */
+.btn-theme-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+}
+
+.btn-theme-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Theme-aware UI classes */
+.theme-primary-bg {
+  background-color: var(--primary-color) !important;
+}
+
+.theme-primary-text {
+  color: var(--primary-color) !important;
+}
+
+.theme-primary-border {
+  border-color: var(--primary-color) !important;
+}
+
+.theme-secondary-bg {
+  background-color: var(--secondary-color) !important;
+}
+
+.theme-secondary-text {
+  color: var(--secondary-color) !important;
+}
+
+.theme-accent-bg {
+  background-color: var(--accent-color) !important;
+}
+
+.theme-accent-text {
+  color: var(--accent-color) !important;
+}
+
+/* Override Tailwind classes with theme variables */
+.bg-teal-600 {
+  background-color: var(--primary-color) !important;
+}
+
+.hover\:bg-teal-700:hover {
+  background-color: var(--primary-color) !important;
+  opacity: 0.8;
+}
+
+.text-teal-600 {
+  color: var(--primary-color) !important;
+}
+
+.text-teal-700 {
+  color: var(--primary-color) !important;
+}
+
+.text-teal-300 {
+  color: var(--primary-color) !important;
+}
+
+.border-teal-200 {
+  border-color: var(--primary-color) !important;
+}
+
+.border-teal-700 {
+  border-color: var(--primary-color) !important;
+}
+
+.bg-teal-50 {
+  background-color: var(--primary-color) !important;
+  opacity: 0.1;
+}
+
+.dark\:bg-teal-900\/30 {
+  background-color: var(--primary-color) !important;
+  opacity: 0.3;
+}
+
+/* Apply theme colors to common UI elements */
+button[class*="bg-teal"] {
+  background-color: var(--primary-color) !important;
+}
+
+button[class*="text-teal"] {
+  color: var(--primary-color) !important;
+}
+
+[class*="border-teal"] {
+  border-color: var(--primary-color) !important;
+}
+
+/* Apply theme to focus states */
+.focus\:ring-teal-500:focus {
+  --tw-ring-color: var(--primary-color) !important;
+}
+
+.focus\:border-teal-500:focus {
+  border-color: var(--primary-color) !important;
+}
+
+/* Apply theme to active states */
+.active\:bg-teal-600:active {
+  background-color: var(--primary-color) !important;
 }
 
 /* Custom styles for popovers, modals, toast notifications, and backgrounds */

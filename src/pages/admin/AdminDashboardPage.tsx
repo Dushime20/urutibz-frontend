@@ -32,7 +32,6 @@ import LocationsManagement from './components/LocationsManagement';
 import LanguagesManagement from './components/LanguagesManagement';
 import MessagingManagement from './components/MessagingManagement';
 import NotificationsManagement from './components/NotificationsManagement';
-import SettingsManagement from './components/SettingsManagement';
 import AdminProfilePage from './components/AdminProfilePage';
 import RecentTransactionsList from './components/RecentTransactionsList';
 import TransactionsManagement from './components/TransactionsManagement';
@@ -52,6 +51,7 @@ import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import InspectionsManagement from './components/InspectionsManagement';
 import RiskManagementPage from '../risk-management/RiskManagementPage';
 import HandoverReturnPage from '../handover-return/HandoverReturnPage';
+import SettingsPage from './SettingsPage';
 
 import SkeletonPricingStats from './components/SkeletonPricingStats';
 import SkeletonAdminStats from '../../components/ui/SkeletonAdminStats';
@@ -90,7 +90,7 @@ interface Owner {
 
 const AdminDashboardPage: React.FC = () => {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'admin-settings'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [itemStatus, setItemStatus] = useState<string>('all');
@@ -1065,8 +1065,8 @@ const AdminDashboardPage: React.FC = () => {
                     return <RiskManagementPage />;
                   case 'handover-return':
                     return <HandoverReturnPage />;
-                  case 'settings':
-                    return <SettingsManagement />;
+                  case 'admin-settings':
+                    return <SettingsPage />;
                   case 'profile':
                     return <AdminProfilePage />;
                   default:
