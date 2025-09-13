@@ -72,6 +72,41 @@ export async function fetchAdminUsers(
   }
 }
 
+// Admin user registration interface
+export interface AdminUserRegistration {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: 'renter' | 'inspector' | 'admin';
+}
+
+// Register new user as admin
+export async function registerUserAsAdmin(
+  userData: AdminUserRegistration,
+  token?: string
+): Promise<{ success: boolean; data?: AdminUser; error?: string }> {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/admin/users/register`, userData, {
+      headers: createAuthHeaders(token),
+    });
+    
+    return {
+      success: true,
+      data: response.data?.data,
+      error: undefined
+    };
+  } catch (error: any) {
+    console.error('Error registering user as admin:', error);
+    const errorMessage = error?.response?.data?.message || error?.message || 'Failed to register user';
+    return {
+      success: false,
+      data: undefined,
+      error: errorMessage
+    };
+  }
+}
+
 // Inspections Management Functions
 export async function fetchAllInspections(
   page: number = 1,

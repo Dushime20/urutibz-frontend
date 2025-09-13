@@ -36,6 +36,7 @@ const Header: React.FC = () => {
   // Integrated search state
   const params = new URLSearchParams(location.search);
   const [q, setQ] = useState<string>(params.get('q') || '');
+  const [category, setCategory] = useState<string>(params.get('category') || 'all');
   const [checkIn, setCheckIn] = useState<string>(params.get('checkIn') || '');
   const [checkOut, setCheckOut] = useState<string>(params.get('checkOut') || '');
   // Guests removed per business request
@@ -43,21 +44,29 @@ const Header: React.FC = () => {
   const [lat, setLat] = useState<string>(params.get('lat') || '');
   const [lng, setLng] = useState<string>(params.get('lng') || '');
   const [radiusKm, setRadiusKm] = useState<number>(Number(params.get('radiusKm') || 25));
+  const [priceMin, setPriceMin] = useState<string>(params.get('priceMin') || '');
+  const [priceMax, setPriceMax] = useState<string>(params.get('priceMax') || '');
 
   useEffect(() => {
     const p = new URLSearchParams(location.search);
     setQ(p.get('q') || '');
+    setCategory(p.get('category') || 'all');
     setCheckIn(p.get('checkIn') || '');
     setCheckOut(p.get('checkOut') || '');
     setNearMe(p.get('nearMe') === 'true');
     setLat(p.get('lat') || '');
     setLng(p.get('lng') || '');
     setRadiusKm(Number(p.get('radiusKm') || 25));
+    setPriceMin(p.get('priceMin') || '');
+    setPriceMax(p.get('priceMax') || '');
   }, [location.search]);
 
   const submitSearch = () => {
     const sp = new URLSearchParams();
     if (q) sp.set('q', q);
+    if (category && category !== 'all') sp.set('category', category);
+    if (priceMin) sp.set('priceMin', priceMin);
+    if (priceMax) sp.set('priceMax', priceMax);
     if (checkIn) sp.set('checkIn', checkIn);
     if (checkOut) sp.set('checkOut', checkOut);
     if (nearMe && lat && lng) {
@@ -66,8 +75,8 @@ const Header: React.FC = () => {
       sp.set('lng', lng);
       if (radiusKm) sp.set('radiusKm', String(radiusKm));
     }
-    // Navigate to homepage so the list can react (or to a dedicated items page)
-    navigate(`/${sp.toString() ? `?${sp.toString()}` : ''}`);
+    // Navigate to search page with parameters
+    navigate(`/items/search${sp.toString() ? `?${sp.toString()}` : ''}`);
     setIsMenuOpen(false);
   };
 
@@ -342,39 +351,87 @@ const Header: React.FC = () => {
         <div className="hidden md:block pb-3">
           <div className="flex items-center justify-center">
             <div className="flex items-stretch divide-x divide-gray-200 dark:divide-slate-600 border border-gray-200 dark:border-slate-600 rounded-full overflow-hidden bg-white dark:bg-slate-800 w-full max-w-4xl">
-              {/* Where */}
+              {/* What */}
               <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Where</div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">What</div>
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search destinations"
+                  onKeyPress={(e) => e.key === 'Enter' && submitSearch()}
+                  placeholder="Search items, categories..."
                   className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-56"
                 />
               </div>
 
-              {/* Check in */}
+              {/* Category */}
               <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Check in</div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Category</div>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="mt-0.5 text-sm outline-none text-gray-900 dark:text-slate-100 bg-transparent w-32 border-none"
+                >
+                  <option value="all">All Items</option>
+                  <option value="vehicles">🚗 Vehicles</option>
+                  <option value="electronics">📱 Electronics</option>
+                  <option value="tools">🔧 Tools</option>
+                  <option value="photography">📷 Photography</option>
+                  <option value="outdoor">⛺ Outdoor</option>
+                  <option value="events">🎉 Events</option>
+                  <option value="sports">⚽ Sports</option>
+                  <option value="home">🏠 Home</option>
+                  <option value="fashion">👕 Fashion</option>
+                  <option value="fitness">💪 Fitness</option>
+                  <option value="travel">✈️ Travel</option>
+                  <option value="books">📚 Books</option>
+                  <option value="art">🎨 Art</option>
+                </select>
+              </div>
+
+              {/* Price Range */}
+              <div className="px-5 py-3 text-left">
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Price Range</div>
+                <div className="mt-0.5 flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                    placeholder="Min"
+                    className="text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-16 border-none"
+                  />
+                  <span className="text-gray-500 dark:text-slate-400">-</span>
+                  <input
+                    type="number"
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                    placeholder="Max"
+                    className="text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-16 border-none"
+                  />
+                </div>
+              </div>
+
+              {/* Start Date */}
+              <div className="px-5 py-3 text-left">
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Start Date</div>
                 <input
                   type="text"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
-                  placeholder="Add dates"
+                  placeholder="When do you need it?"
                   className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-36"
                   onFocus={(e) => { e.currentTarget.type = 'date'; }}
                   onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
                 />
               </div>
 
-              {/* Check out */}
+              {/* End Date */}
               <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Check out</div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">End Date</div>
                 <input
                   type="text"
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
-                  placeholder="Add dates"
+                  placeholder="Return date"
                   className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-36"
                   onFocus={(e) => { e.currentTarget.type = 'date'; }}
                   onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}

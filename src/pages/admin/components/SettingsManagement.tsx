@@ -114,6 +114,9 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
 
   // Load settings on component mount
   useEffect(() => {
+    // Force dark mode for admin settings page
+    document.documentElement.classList.add('dark');
+    
     const loadSettings = async () => {
       try {
         setIsLoadingSettings(true);
@@ -133,6 +136,14 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
     };
 
     loadSettings();
+
+    // Cleanup: restore original dark mode state when component unmounts
+    return () => {
+      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+      if (!savedDarkMode) {
+        document.documentElement.classList.remove('dark');
+      }
+    };
   }, []);
 
   const handleSaveSettings = async () => {
@@ -194,8 +205,8 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
       onClick={onClick}
       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
         active
-          ? 'bg-primary-50 text-primary-700 border border-primary-200'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-700'
+          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700'
       }`}
     >
       <Icon className="w-5 h-5" />
@@ -209,14 +220,14 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
     description: string;
     children: React.ReactNode;
   }> = ({ icon: Icon, title, description, children }) => (
-    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-primary-50 rounded-lg">
-          <Icon className="w-5 h-5 text-primary-600" />
+        <div className="p-2 bg-teal-50 dark:bg-teal-900/30 rounded-lg">
+          <Icon className="w-5 h-5 text-teal-600 dark:text-teal-400" />
         </div>
         <div>
-          <h4 className="font-semibold text-gray-900">{title}</h4>
-          <p className="text-sm text-gray-500">{description}</p>
+          <h4 className="font-semibold text-gray-900 dark:text-white">{title}</h4>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
         </div>
       </div>
       {children}
@@ -226,8 +237,8 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
   if (isLoadingSettings) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        <span className="ml-3 text-gray-600">Loading settings...</span>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading settings...</span>
       </div>
     );
   }
@@ -237,8 +248,8 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-gray-900">Admin Settings</h3>
-          <p className="text-gray-600">Manage platform configuration and system preferences</p>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Settings</h3>
+          <p className="text-gray-600 dark:text-gray-400">Manage platform configuration and system preferences</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -268,10 +279,10 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
       {saveStatus !== 'idle' && (
         <div className={`flex items-center gap-2 p-4 rounded-xl ${
           saveStatus === 'success' 
-            ? 'bg-green-50 text-green-700 border border-green-200' 
+            ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700' 
             : saveStatus === 'error'
-            ? 'bg-red-50 text-red-700 border border-red-200'
-                          : 'bg-my-primary/10 text-my-primary border border-my-primary/20'
+            ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700'
+            : 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-700'
         }`}>
           {saveStatus === 'success' ? (
             <CheckCircle className="w-5 h-5" />
@@ -292,7 +303,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-xl">
+      <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
         <TabButton
           icon={Globe}
           label="Platform"
@@ -331,48 +342,48 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
             >
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Site Name
                   </label>
                   <input
                     type="text"
                     value={platformSettings.siteName}
                     onChange={(e) => setPlatformSettings(prev => ({ ...prev, siteName: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Site Description
                   </label>
                   <textarea
                     value={platformSettings.siteDescription}
                     onChange={(e) => setPlatformSettings(prev => ({ ...prev, siteDescription: e.target.value }))}
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Contact Email
                     </label>
                     <input
                       type="email"
                       value={platformSettings.contactEmail}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, contactEmail: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Support Phone
                     </label>
                     <input
                       type="tel"
                       value={platformSettings.supportPhone}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, supportPhone: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -388,13 +399,13 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Default Currency
                     </label>
                     <select
                       value={platformSettings.defaultCurrency}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, defaultCurrency: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="USD">USD ($)</option>
                       <option value="RWF">RWF (₨)</option>
@@ -403,13 +414,13 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Default Language
                     </label>
                     <select
                       value={platformSettings.defaultLanguage}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, defaultLanguage: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="en">English</option>
                       <option value="fr">French</option>
@@ -419,13 +430,13 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Timezone
                   </label>
                   <select
                     value={platformSettings.timezone}
                     onChange={(e) => setPlatformSettings(prev => ({ ...prev, timezone: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
                     <option value="Africa/Kigali">Africa/Kigali</option>
                     <option value="UTC">UTC</option>
@@ -445,25 +456,25 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Max Images Per Product
                     </label>
                     <input
                       type="number"
                       value={platformSettings.maxImagesPerProduct}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, maxImagesPerProduct: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Max Products Per User
                     </label>
                     <input
                       type="number"
                       value={platformSettings.maxProductsPerUser}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, maxProductsPerUser: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -473,27 +484,27 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
                       type="checkbox"
                       checked={platformSettings.maintenanceMode}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, maintenanceMode: e.target.checked }))}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 bg-white dark:bg-gray-700"
                     />
-                    <span className="text-sm font-medium text-gray-700">Maintenance Mode</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Maintenance Mode</span>
                   </label>
                   <label className="flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={platformSettings.registrationEnabled}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, registrationEnabled: e.target.checked }))}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 bg-white dark:bg-gray-700"
                     />
-                    <span className="text-sm font-medium text-gray-700">Enable User Registration</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable User Registration</span>
                   </label>
                   <label className="flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={platformSettings.autoApproveProducts}
                       onChange={(e) => setPlatformSettings(prev => ({ ...prev, autoApproveProducts: e.target.checked }))}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 bg-white dark:bg-gray-700"
                     />
-                    <span className="text-sm font-medium text-gray-700">Auto-approve Products</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Auto-approve Products</span>
                   </label>
                 </div>
               </div>
@@ -511,27 +522,27 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
                     type="checkbox"
                     checked={platformSettings.emailVerificationRequired}
                     onChange={(e) => setPlatformSettings(prev => ({ ...prev, emailVerificationRequired: e.target.checked }))}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 bg-white dark:bg-gray-700"
                   />
-                  <span className="text-sm font-medium text-gray-700">Require Email Verification</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Require Email Verification</span>
                 </label>
                 <label className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     checked={platformSettings.phoneVerificationRequired}
                     onChange={(e) => setPlatformSettings(prev => ({ ...prev, phoneVerificationRequired: e.target.checked }))}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 bg-white dark:bg-gray-700"
                   />
-                  <span className="text-sm font-medium text-gray-700">Require Phone Verification</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Require Phone Verification</span>
                 </label>
                 <label className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     checked={platformSettings.kycRequired}
                     onChange={(e) => setPlatformSettings(prev => ({ ...prev, kycRequired: e.target.checked }))}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 bg-white dark:bg-gray-700"
                   />
-                  <span className="text-sm font-medium text-gray-700">Require KYC Verification</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Require KYC Verification</span>
                 </label>
               </div>
             </SettingCard>

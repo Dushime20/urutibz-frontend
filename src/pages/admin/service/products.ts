@@ -237,33 +237,13 @@ export async function fetchPricingStats(token?: string) {
 export async function fetchProductAvailability(productId: string, token?: string) {
   try {
     const headers = createAuthHeaders(token);
-
-    console.group(`Fetching Product Availability for Product ${productId}`);
-    console.log('Request URL:', `${API_BASE_URL}/product-availability/product/${productId}`);
-    console.log('Request Headers:', headers);
-
     const response = await axios.get(`${API_BASE_URL}/product-availability/product/${productId}`, { headers });
-
-    console.log('Raw Response:', response.data);
 
     // Normalize response to ensure we always return an array
     const availabilityData = response.data?.data || response.data || [];
 
-    console.log('Processed Availability Data:', availabilityData);
-    console.log('Availability Count:', availabilityData.length);
-    console.groupEnd();
-
     return availabilityData;
   } catch (err: any) {
-    console.group(`Error Fetching Product Availability for Product ${productId}`);
-    console.error('Error Details:', {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status,
-      url: `${API_BASE_URL}/product-availability/product/${productId}`
-    });
-    console.groupEnd();
-
     return []; // Return empty array on error
   }
 }
@@ -271,18 +251,34 @@ export async function fetchProductAvailability(productId: string, token?: string
 // Product Availability Check
 export async function fetchAvailableProducts(token?: string, skipAvailabilityCheck: boolean = false) {
   try {
-    // First, get all active products
-    const productsResult = await fetchAllProducts(token, false);
+    // Get ALL active products by fetching all pages
+    let allActiveProducts: string | any[] = [];
+    let page = 1;
+    let hasMore = true;
+    const limit = 100; // Fetch 100 products per page
     
-    if (productsResult.error || !productsResult.data) {
-      return productsResult;
-    }
+    while (hasMore) {
+      const productsResult = await fetchAllProducts(token, false, page, limit, 'active');
+      
+      if (productsResult.error || !productsResult.data) {
+        if (page === 1) {
+          return productsResult; // Return error only on first page
+        }
+        break; // If later pages fail, just stop fetching more
+      }
 
-    const activeProducts = productsResult.data;
+      const pageProducts = productsResult.data;
+      allActiveProducts = [...allActiveProducts, ...pageProducts];
+      
+      // Check if there are more pages
+      hasMore = pageProducts.length === limit && productsResult.meta?.hasNext;
+      page++;
+      
+    }
+    const activeProducts = allActiveProducts;
     
     // If skipping availability check, return all active products
     if (skipAvailabilityCheck) {
-      console.log(`Returning ${activeProducts.length} active products (skipped availability check)`);
       return {
         data: activeProducts,
         error: null,

@@ -93,6 +93,7 @@ function App() {
                 <Route index element={<HomePage />} />
                 <Route path="cars" element={<ItemSearchPage />} />
                 <Route path="items" element={<ItemSearchPage />} />
+                <Route path="items/search" element={<ItemSearchPage />} />
                 <Route path="browse" element={<ItemSearchPage />} />
                 <Route path="favorites" element={
                   <ProtectedRoute>

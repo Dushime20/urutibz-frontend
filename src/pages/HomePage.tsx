@@ -45,6 +45,12 @@ const HomePage: React.FC = () => {
 
   // Simple in-page search state (visual UX only for now)
   const [where] = useState('');
+  
+  // Pagination state for showing more products
+  const [visibleCount, setVisibleCount] = useState(100);
+  
+  // Loading state for fetching more products
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -60,17 +66,19 @@ const HomePage: React.FC = () => {
       setProducts(initial);
 
       // Background load: get fully filtered products (with availability check)
+      // But only update if we don't lose too many products
       setTimeout(async () => {
         try {
           const filteredResult = await fetchAvailableProducts(token, false);
-          if (filteredResult.data) {
+          if (filteredResult.data && filteredResult.data.length >= initial.length * 0.7) {
+            // Only update if we don't lose more than 30% of products
             setProducts(filteredResult.data);
           }
         } catch (backgroundError) {
           console.warn('Background product fetch failed:', backgroundError);
           // Don't show error for background fetch, just log it
         }
-      }, 1000);
+      }, 2000);
       
     } catch (err: any) {
       console.error('Failed to fetch products:', err);
@@ -499,14 +507,25 @@ const HomePage: React.FC = () => {
                 onClick={handleRefresh}
                 className="text-sm text-gray-600 dark:text-slate-400 hover:text-my-primary dark:hover:text-teal-400 transition-colors"
                 title="Refresh products"
+                disabled={loading}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={() => {
+                  setLoadingMore(true);
+                  fetchProducts().finally(() => setLoadingMore(false));
+                }}
+                disabled={loading || loadingMore}
+                className="text-sm text-my-primary dark:text-teal-400 hover:underline disabled:opacity-50"
+              >
+                {loadingMore ? 'Fetching...' : 'Fetch All Products'}
               </button>
               <Link to="/search" className="text-sm text-my-primary dark:text-teal-400 hover:underline">View all</Link>
             </div>
           </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {filtered.slice(0, 15).map((item, index) => (
+          {filtered.slice(0, visibleCount).map((item, index) => (
             <Link key={item.id} to={`/it/${item.id}`} className="group"
               onClick={() => {
                 const token = localStorage.getItem('token') || undefined;
@@ -659,6 +678,23 @@ const HomePage: React.FC = () => {
           ))}
         </div>
 
+        {/* Load More Button */}
+        {filtered.length > visibleCount && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={() => setVisibleCount(prev => Math.min(prev + 15, filtered.length))}
+              className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary transition-colors"
+            >
+              <Package className="w-4 h-4 mr-2" />
+              Load More Products ({filtered.length - visibleCount} remaining)
+            </button>
+          </div>
+        )}
+
+        {/* Show total count */}
+        <div className="text-center mt-4 text-sm text-gray-600 dark:text-slate-400">
+          Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} products
+        </div>
        
         </div>
       </div>

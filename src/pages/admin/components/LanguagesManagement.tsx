@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Languages, Filter, Plus, Search } from 'lucide-react';
+import { Languages, Filter, Plus, Search, Globe, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import { fetchCountries, fetchAdminSettings, updateAdminSettings } from '../service';
 import type { AdminSettings } from '../service';
 
@@ -30,6 +30,19 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [editableLanguages, setEditableLanguages] = useState<Array<{ code: string; label?: string; nativeName?: string; flag?: string; enabled?: boolean }>>([]);
   const [savingAll, setSavingAll] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Force dark mode for languages page
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    
+    return () => {
+      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+      if (!savedDarkMode) {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -104,43 +117,63 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
     );
   }, [languages, query]);
 
+  if (loading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading languages...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-    <div className="flex items-center justify-between mb-6">
-      <h3 className="text-xl font-bold text-gray-900">Languages</h3>
-      <div className="flex items-center space-x-3">
+    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Languages</h3>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Manage platform languages and localization settings
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
           <div className="relative">
-            <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by code or country"
-              className="pl-9 pr-3 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-my-primary focus:border-transparent text-sm"
+              placeholder="Search by code or country..."
+              className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
             />
           </div>
-        <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
-          <Filter className="w-4 h-4 mr-2" />
-          Filter
-        </button>
-        <button className="bg-my-primary hover:bg-my-primary/80 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Language
-        </button>
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-colors flex items-center"
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filter
+          </button>
+          <button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Language
+          </button>
+        </div>
       </div>
-    </div>
 
       {/* Default Language Selector */}
-      <div className="mb-6 p-4 rounded-xl border border-gray-100 bg-gray-50">
+      <div className="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-sm text-gray-600">Default Platform Language</div>
-            <div className="text-gray-900 font-semibold">{defaultLang ? defaultLang.toUpperCase() : 'Not set'}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Default Platform Language</div>
+            <div className="text-gray-900 dark:text-white font-semibold">{defaultLang ? defaultLang.toUpperCase() : 'Not set'}</div>
           </div>
           <div className="flex items-center gap-3">
             <select
               value={defaultLang}
               onChange={(e) => setDefaultLang(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-my-primary focus:border-transparent text-sm"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
             >
               <option value="">Select language</option>
               {languages.map(l => (
@@ -162,23 +195,23 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                 }
               }}
               disabled={!defaultLang || savingDefault}
-              className="px-4 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90 disabled:opacity-50 text-sm"
+              className="px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 text-sm transition-colors"
             >
               {savingDefault ? 'Saving…' : 'Save'}
             </button>
           </div>
         </div>
         {saveMsg && (
-          <div className="mt-2 text-sm text-gray-700">{saveMsg}</div>
+          <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">{saveMsg}</div>
         )}
       </div>
 
       {/* Editable Supported Languages */}
-      <div className="mb-6 p-4 rounded-xl border border-gray-100">
+      <div className="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="text-sm text-gray-600">Supported Languages</div>
-            <div className="text-gray-900 font-semibold">{editableLanguages.length} configured</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Supported Languages</div>
+            <div className="text-gray-900 dark:text-white font-semibold">{editableLanguages.length} configured</div>
           </div>
           <button
             onClick={async () => {
@@ -195,52 +228,53 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
               }
             }}
             disabled={savingAll}
-            className="px-4 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90 disabled:opacity-50 text-sm"
+            className="px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 text-sm transition-colors"
           >
             {savingAll ? 'Saving…' : 'Save All'}
           </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Enabled</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Code</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Label</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Native Name</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Flag</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Enabled</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Code</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Label</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Native Name</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Flag</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {editableLanguages.map((l, idx) => (
-                <tr key={l.code}>
+                <tr key={l.code} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-4 py-2">
                     <input
                       type="checkbox"
                       checked={Boolean(l.enabled)}
                       onChange={(e) => setEditableLanguages(prev => prev.map((x,i) => i===idx ? { ...x, enabled: e.target.checked } : x))}
+                      className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 bg-white dark:bg-gray-700"
                     />
                   </td>
-                  <td className="px-4 py-2 text-gray-900 font-medium">{l.code.toUpperCase()}</td>
+                  <td className="px-4 py-2 text-gray-900 dark:text-white font-medium">{l.code.toUpperCase()}</td>
                   <td className="px-4 py-2">
                     <input
-                      className="w-40 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                      className="w-40 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                       value={l.label || ''}
                       onChange={(e) => setEditableLanguages(prev => prev.map((x,i) => i===idx ? { ...x, label: e.target.value } : x))}
                     />
                   </td>
                   <td className="px-4 py-2">
                     <input
-                      className="w-48 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                      className="w-48 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                       value={l.nativeName || ''}
                       onChange={(e) => setEditableLanguages(prev => prev.map((x,i) => i===idx ? { ...x, nativeName: e.target.value } : x))}
                     />
                   </td>
                   <td className="px-4 py-2">
                     <input
-                      className="w-36 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                      className="w-36 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                       placeholder="e.g. 🇺🇸"
                       value={l.flag || ''}
                       onChange={(e) => setEditableLanguages(prev => prev.map((x,i) => i===idx ? { ...x, flag: e.target.value } : x))}
@@ -249,14 +283,14 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                   <td className="px-4 py-2 text-right">
                     <button
                       onClick={() => setEditableLanguages(prev => prev.filter((_, i) => i !== idx))}
-                      className="text-sm text-red-600 hover:underline"
+                      className="text-sm text-red-600 dark:text-red-400 hover:underline"
                     >Remove</button>
                   </td>
                 </tr>
               ))}
               {editableLanguages.length === 0 && (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-500" colSpan={6}>No languages configured.</td>
+                  <td className="px-4 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={6}>No languages configured.</td>
                 </tr>
               )}
             </tbody>
@@ -266,61 +300,79 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
         <div className="mt-3">
           <button
             onClick={() => setEditableLanguages(prev => [...prev, { code: '', label: '', nativeName: '', flag: '', enabled: true }])}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
           >Add Row</button>
         </div>
       </div>
 
-      {loading && (
-        <div className="flex items-center justify-center h-32 text-gray-500">Loading languages…</div>
-      )}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-red-700">{error}</div>
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4 text-red-700 dark:text-red-400">{error}</div>
       )}
 
       {!loading && !error && (
         <>
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="p-4 rounded-xl border border-gray-100 bg-gray-50">
-              <div className="text-sm text-gray-500">Total Countries</div>
-              <div className="text-2xl font-bold text-gray-900">{countries.length}</div>
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <div className="flex items-center">
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                  <Globe className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                </div>
+                <div className="ml-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Countries</div>
+                  <div className="text-xl font-bold text-gray-900 dark:text-white">{countries.length}</div>
+                </div>
+              </div>
             </div>
-            <div className="p-4 rounded-xl border border-gray-100 bg-gray-50">
-              <div className="text-sm text-gray-500">Languages Detected</div>
-              <div className="text-2xl font-bold text-gray-900">{languages.length}</div>
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Languages className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="ml-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Languages Detected</div>
+                  <div className="text-xl font-bold text-gray-900 dark:text-white">{languages.length}</div>
+                </div>
+              </div>
             </div>
-            <div className="p-4 rounded-xl border border-gray-100 bg-gray-50">
-              <div className="text-sm text-gray-500">Most Common</div>
-              <div className="text-lg font-semibold text-gray-900">
-                {languages[0] ? `${languages[0].code.toUpperCase()} (${languages[0].countriesCount} countries)` : '—'}
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="ml-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Most Common</div>
+                  <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {languages[0] ? `${languages[0].code.toUpperCase()} (${languages[0].countriesCount} countries)` : '—'}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-2xl border border-gray-100">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Code</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Countries</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Examples</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Code</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Countries</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Examples</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filtered.map((lang) => (
-                  <tr key={lang.code}>
-                    <td className="px-6 py-3 font-semibold text-gray-900">{lang.code.toUpperCase()}</td>
-                    <td className="px-6 py-3 text-gray-700">{lang.countriesCount}</td>
-                    <td className="px-6 py-3 text-gray-700">
+                  <tr key={lang.code} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-3 font-semibold text-gray-900 dark:text-white">{lang.code.toUpperCase()}</td>
+                    <td className="px-6 py-3 text-gray-700 dark:text-gray-300">{lang.countriesCount}</td>
+                    <td className="px-6 py-3 text-gray-700 dark:text-gray-300">
                       {lang.countryNames.length > 0 ? lang.countryNames.join(', ') : '—'}
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td className="px-6 py-6 text-center text-gray-500" colSpan={3}>No languages match your search.</td>
+                    <td className="px-6 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={3}>No languages match your search.</td>
                   </tr>
                 )}
               </tbody>

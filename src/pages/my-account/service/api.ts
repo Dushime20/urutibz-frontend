@@ -667,12 +667,51 @@ export async function fetchReviewById(reviewId: string, token?: string) {
 // Fetch reviews by product ID
 export async function fetchProductReviews(productId: string, token?: string) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/review/product/${productId}`, {
+    // Clean and validate product ID
+    const cleanProductId = productId.trim();
+    if (!cleanProductId) {
+      console.warn('Empty product ID provided to fetchProductReviews');
+      return [];
+    }
+
+    // Validate UUID format (basic check)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(cleanProductId)) {
+      console.warn('Invalid product ID format:', cleanProductId);
+      return [];
+    }
+
+    // Try the primary endpoint first
+    const url = `${API_BASE_URL}/review/product/${encodeURIComponent(cleanProductId)}`;
+    console.log('Fetching reviews for product:', cleanProductId, 'URL:', url);
+    
+    const response = await axios.get(url, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     return response.data?.data || [];
-  } catch (error) {
-    console.error('Error fetching product reviews:', error);
+  } catch (error: any) {
+    // Handle specific error cases gracefully
+    if (error.response?.status === 404) {
+      console.log('No reviews found for product:', productId, '(404 - Product may not exist or have no reviews)');
+      return [];
+    } else if (error.response?.status === 403) {
+      console.log('Access denied for product reviews:', productId);
+      return [];
+    } else {
+      console.error('Error fetching product reviews:', {
+        productId,
+        url: `${API_BASE_URL}/review/product/${productId}`,
+        status: error.response?.status,
+        message: error.message,
+        response: error.response?.data
+      });
+      
+      // If the endpoint doesn't exist, try alternative approach
+      if (error.response?.status === 404 || error.code === 'ERR_BAD_REQUEST') {
+        console.log('Product reviews endpoint not available, returning empty array');
+        return [];
+      }
+    }
     return [];
   }
 }

@@ -165,9 +165,12 @@ const ItemDetailsPage: React.FC = () => {
     (async () => {
       try {
         const token = localStorage.getItem('token') || undefined;
+        console.log('Fetching reviews for product ID:', item.id, 'Type:', typeof item.id);
         const reviews = await fetchProductReviews(item.id, token);
         setProductReviews(Array.isArray(reviews) ? reviews : []);
-      } catch {
+      } catch (error) {
+        console.error('Error in ItemDetailsPage review fetch:', error);
+        // Set empty array as fallback - page will still work without reviews
         setProductReviews([]);
       }
     })();

@@ -33,6 +33,7 @@ import LanguagesManagement from './components/LanguagesManagement';
 import MessagingManagement from './components/MessagingManagement';
 import NotificationsManagement from './components/NotificationsManagement';
 import SettingsManagement from './components/SettingsManagement';
+import AdminProfilePage from './components/AdminProfilePage';
 import RecentTransactionsList from './components/RecentTransactionsList';
 import TransactionsManagement from './components/TransactionsManagement';
 import CategoriesManagement from './components/CategoriesManagement';
@@ -89,12 +90,13 @@ interface Owner {
 
 const AdminDashboardPage: React.FC = () => {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [itemStatus, setItemStatus] = useState<string>('all');
   const [itemSort, setItemSort] = useState<'newest' | 'oldest'>('newest');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
+  const [availabilityFilter, setAvailabilityFilter] = useState<string>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
   const [products, setProducts] = useState<Product[]>([]);
   const [itemPage, setItemPage] = useState(1);
@@ -252,6 +254,21 @@ const AdminDashboardPage: React.FC = () => {
   useEffect(() => {
     (window as any).__openNewListingModal = () => setShowNewListingModalAdmin(true);
     return () => { try { delete (window as any).__openNewListingModal; } catch { } };
+  }, []);
+
+  // Listen for navigation events from header
+  useEffect(() => {
+    const handleNavigation = (event: CustomEvent) => {
+      const { tab } = event.detail;
+      if (tab === 'profile') {
+        setActiveTab('profile');
+      }
+    };
+
+    window.addEventListener('admin-navigate', handleNavigation as EventListener);
+    return () => {
+      window.removeEventListener('admin-navigate', handleNavigation as EventListener);
+    };
   }, []);
 
   // Add state for pagination and modals
@@ -959,6 +976,8 @@ const AdminDashboardPage: React.FC = () => {
                         setSelectedItems={setSelectedItems}
                         Button={Button}
                         error={productsError || undefined}
+                        availabilityFilter={availabilityFilter}
+                        setAvailabilityFilter={setAvailabilityFilter}
                         page={itemPage}
                         limit={itemLimit}
                         total={itemMeta.total}
@@ -1048,6 +1067,8 @@ const AdminDashboardPage: React.FC = () => {
                     return <HandoverReturnPage />;
                   case 'settings':
                     return <SettingsManagement />;
+                  case 'profile':
+                    return <AdminProfilePage />;
                   default:
                     return null;
                 }

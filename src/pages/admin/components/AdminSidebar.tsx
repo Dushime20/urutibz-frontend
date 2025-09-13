@@ -19,7 +19,8 @@ import {
   Shield,
   Brain,
   Activity,
-  ArrowRightLeft
+  ArrowRightLeft,
+  User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,8 +38,8 @@ interface AdminNavigationItemProps {
 }
 
 interface AdminSidebarProps {
-  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return';
-  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return') => void;
+  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return';
+  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return') => void;
   AdminNavigationItem: React.FC<AdminNavigationItemProps>;
 }
 
@@ -161,6 +162,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: 'System',
       icon: Settings,
       items: [
+        { icon: User, label: 'Profile', tab: 'profile' },
         { icon: Settings, label: 'Settings', tab: 'settings' },
         { icon: Globe, label: 'Locations', tab: 'locations' },
         { icon: Languages, label: 'Languages', tab: 'languages' }

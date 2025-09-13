@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Filter, MoreHorizontal, X, Package, Check, Shield, DollarSign } from 'lucide-react';
+import { Plus, Filter, MoreHorizontal, X, Package, Check, Shield } from 'lucide-react';
 import type { Product, Owner, ItemCategory } from '../types';
 import { fetchProductImages, getProductById, fetchUserById } from '../service';
 import { fetchProductAvailability } from '../service';
@@ -16,6 +16,7 @@ import { moderateAdminProduct } from '../service';
 import ProductModerationHistory from './ProductModerationHistory';
 import { PricingService } from '../service/pricingService';
 import type { ProductPrice } from '../types/pricing';
+import Pagination from '../../../components/ui/Pagination';
 
 interface ItemsManagementProps {
   products: Product[];
@@ -29,6 +30,8 @@ interface ItemsManagementProps {
   setSelectedItems: (ids: string[]) => void;
   Button: React.FC<any>;
   error?: string;
+  availabilityFilter?: string;
+  setAvailabilityFilter?: (val: string) => void;
   // Optional pagination props
   page?: number;
   limit?: number;
@@ -801,6 +804,7 @@ const AdminProductDetailModal: React.FC<{
 const ItemsManagement: React.FC<ItemsManagementProps> = ({
   products, owners, loading, itemFilter, setItemFilter,
   selectedLocation, selectedItems, setSelectedItems, Button, error,
+  availabilityFilter = 'all', setAvailabilityFilter,
   page = 1, limit = 20, total = 0, totalPages = 1, hasNext = false, hasPrev = false,
   onPageChange,
   onLimitChange
@@ -1112,6 +1116,28 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
     return validImageUrl || PLACEHOLDER_IMAGE;
   };
 
+  // Helper function to determine if a product is currently available or booked
+  const isProductAvailable = (productId: string) => {
+    const availability = productAvailability[productId] || [];
+    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // Check if there are any unavailable dates from today onwards
+    const futureUnavailableDates = availability.filter(av => 
+      av.availability_type === 'unavailable' && av.date >= currentDate
+    );
+    
+    return futureUnavailableDates.length === 0;
+  };
+
+  // Calculate availability counts for the filter dropdown
+  const getAvailabilityCounts = () => {
+    const availableCount = products.filter(item => isProductAvailable(item.id)).length;
+    const bookedCount = products.filter(item => !isProductAvailable(item.id)).length;
+    return { availableCount, bookedCount };
+  };
+
+  const { availableCount, bookedCount } = getAvailabilityCounts();
+
   return (
     <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
       <div className="flex items-center justify-between mb-8">
@@ -1157,6 +1183,21 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
             </div>
           </div>
+          {/* Availability Filter */}
+          <div className="relative">
+            <select
+              value={availabilityFilter}
+              onChange={(e) => setAvailabilityFilter?.(e.target.value)}
+              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
+            >
+              <option value="all">All Availability ({products.length})</option>
+              <option value="available">Available ({availableCount})</option>
+              <option value="booked">Booked ({bookedCount})</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
+            </div>
+          </div>
           {/* Sort */}
           <div className="relative">
             <select
@@ -1174,6 +1215,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
           <Button 
             onClick={() => {
               setItemFilter('all');
+              setAvailabilityFilter?.('all');
               // Reset other filters if available
             }}
             className="bg-red-100 hover:bg-red-200 border border-red-200 text-red-700 px-4 py-2 rounded-xl transition-colors flex items-center"
@@ -1217,7 +1259,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
       </div> */}
       
       {/* Filter Status Indicator */}
-      {(itemFilter !== 'all' || selectedLocation !== 'all') && (
+      {(itemFilter !== 'all' || selectedLocation !== 'all' || availabilityFilter !== 'all') && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-blue-700">
@@ -1233,10 +1275,16 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                   Location: {selectedLocation}
                 </span>
               )}
+              {availabilityFilter !== 'all' && (
+                <span className="px-2 py-1 bg-blue-100 rounded-full text-xs">
+                  Availability: {availabilityFilter === 'available' ? 'Available' : 'Booked'}
+                </span>
+              )}
             </div>
             <button
               onClick={() => {
                 setItemFilter('all');
+                setAvailabilityFilter?.('all');
                 // Reset location filter if available through props
               }}
               className="text-sm text-blue-600 hover:text-blue-800 underline"
@@ -1275,6 +1323,12 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             {products
                 .filter((item: Product) => itemFilter === 'all' || item.category_id === itemFilter)
                 .filter((item: Product) => selectedLocation === 'all' || item.location === selectedLocation)
+                .filter((item: Product) => {
+                  if (availabilityFilter === 'all') return true;
+                  if (availabilityFilter === 'available') return isProductAvailable(item.id);
+                  if (availabilityFilter === 'booked') return !isProductAvailable(item.id);
+                  return true;
+                })
                 .map((item: Product, idx: number) => (
                   <tr key={item.id} className="bg-white dark:bg-gray-900">
                     <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3">
@@ -1407,39 +1461,31 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
 
         {/* Pagination Controls */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Page <span className="font-medium">{page}</span> of <span className="font-medium">{computedTotalPages}</span>
-            {typeof total === 'number' && total > 0 && (
-              <span className="ml-2">• Total: <span className="font-medium">{total}</span></span>
-            )}
-          </div>
+          {/* Items per page selector */}
           <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
             <select
               className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm"
               value={limit}
               onChange={(e) => onLimitChange && onLimitChange(Number(e.target.value))}
             >
               {[10, 20, 30, 50, 100].map((l) => (
-                <option key={l} value={l}>{l} / page</option>
+                <option key={l} value={l}>{l}</option>
               ))}
             </select>
-            <div className="flex items-center gap-2">
-              <button
-                className={`px-3 py-1 rounded-lg border text-sm ${canPrev ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'} border-gray-200 dark:border-gray-700`}
-                onClick={() => canPrev && onPageChange && onPageChange(Math.max(1, page - 1))}
-                disabled={!canPrev}
-              >
-                Previous
-              </button>
-              <button
-                className={`px-3 py-1 rounded-lg border text-sm ${canNext ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'} border-gray-200 dark:border-gray-700`}
-                onClick={() => canNext && onPageChange && onPageChange(Math.min(computedTotalPages, page + 1))}
-                disabled={!canNext}
-              >
-                Next
-              </button>
-            </div>
           </div>
+          
+          {/* Pagination Component */}
+          {onPageChange && (
+            <Pagination
+              currentPage={page}
+              totalPages={computedTotalPages}
+              onPageChange={onPageChange}
+              totalItems={total}
+              itemsPerPage={limit}
+              showItemCount={true}
+            />
+          )}
         </div>
 
         <AdminProductDetailModal 

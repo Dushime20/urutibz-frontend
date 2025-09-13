@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Users, CheckCircle, Calendar, Package, Filter, Plus, Eye, MoreVertical, UserCircle, Shield, FileText } from 'lucide-react';
+import { Users, CheckCircle, Calendar, Package, Filter, Plus, Eye, MoreVertical, UserCircle, Shield, FileText, X, Search } from 'lucide-react';
 import type { AdminUser, UserVerification, VerificationStats } from '../interfaces';
 import { fetchAdminUsers, fetchAdminUserById, moderateAdminUser, fetchAllVerifications, updateVerificationStatus, fetchPendingVerifications, fetchVerificationStats, bulkReviewVerifications, updateUserKycStatus } from '../service';
 import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
 import VerificationDetailsModal from './VerificationDetailsModal';
+import Pagination from '../../../components/ui/Pagination';
+import UserRegistrationModal from './UserRegistrationModal';
 import { Users as UsersIcon } from 'lucide-react';
 
 interface UserManagementProps {
@@ -22,6 +24,19 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
     pending: 0,
     hosts: 0
   });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  
+  // Handle items per page change
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+  
   const [viewUser, setViewUser] = useState<any>(null);
   const [viewUserLoading, setViewUserLoading] = useState(false);
   const [viewUserError, setViewUserError] = useState<string | null>(null);
@@ -76,14 +91,104 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
   const [kycUpdating, setKycUpdating] = useState(false);
   const [kycMessage, setKycMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // User filters state
+  const [userFilters, setUserFilters] = useState({
+    role: 'all',
+    status: 'all',
+    kycStatus: 'all',
+    search: '',
+    dateFrom: '',
+    dateTo: ''
+  });
+  const [showUserFilters, setShowUserFilters] = useState(false);
+  
+  // User registration modal state
+  const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
+  
+  // Handle successful user registration
+  const handleUserRegistrationSuccess = (newUser: AdminUser) => {
+    // Add the new user to the current users list
+    setUsers(prev => [newUser, ...prev]);
+    setTotalUsers(prev => prev + 1);
+    setRegistrationModalOpen(false);
+  };
+
+  // Filter users based on current filter state
+  const filteredUsers = users.filter((user) => {
+    // Role filter
+    if (userFilters.role !== 'all' && user.role.toLowerCase() !== userFilters.role.toLowerCase()) {
+      return false;
+    }
+
+    // Status filter
+    if (userFilters.status !== 'all' && user.status.toLowerCase() !== userFilters.status.toLowerCase()) {
+      return false;
+    }
+
+    // KYC status filter
+    if (userFilters.kycStatus !== 'all' && user.kyc_status.toLowerCase() !== userFilters.kycStatus.toLowerCase()) {
+      return false;
+    }
+
+    // Date range filter
+    if (userFilters.dateFrom) {
+      const userCreatedDate = new Date(user.created_at);
+      const filterFromDate = new Date(userFilters.dateFrom);
+      if (userCreatedDate < filterFromDate) {
+        return false;
+      }
+    }
+    if (userFilters.dateTo) {
+      const userCreatedDate = new Date(user.created_at);
+      const filterToDate = new Date(userFilters.dateTo);
+      if (userCreatedDate > filterToDate) {
+        return false;
+      }
+    }
+
+    // Search filter
+    if (userFilters.search) {
+      const userName = `${user.first_name} ${user.last_name}`.toLowerCase();
+      const userEmail = user.email.toLowerCase();
+      const searchTerm = userFilters.search.toLowerCase();
+      if (!userName.includes(searchTerm) && !userEmail.includes(searchTerm)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Clear all user filters
+  const clearUserFilters = () => {
+    setUserFilters({
+      role: 'all',
+      status: 'all',
+      kycStatus: 'all',
+      search: '',
+      dateFrom: '',
+      dateTo: ''
+    });
+  };
+
+  // Check if any user filters are active
+  const hasActiveUserFilters = userFilters.role !== 'all' || 
+    userFilters.status !== 'all' || 
+    userFilters.kycStatus !== 'all' || 
+    userFilters.search || 
+    userFilters.dateFrom || 
+    userFilters.dateTo;
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const response = await fetchAdminUsers(1, 50, token || undefined);
+        const response = await fetchAdminUsers(currentPage, itemsPerPage, token || undefined);
         if (response.items) {
           setUsers(response.items);
+          setTotalPages(response.pagination.totalPages);
+          setTotalUsers(response.pagination.total);
           
           // Debug: Log the first user to see what fields are available
           if (response.items.length > 0) {
@@ -119,7 +224,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       }
     };
     fetchUsers();
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -366,15 +471,33 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">User Management</h3>
         <div className="flex items-center space-x-3">
-          <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Total Users: {totalUsers} | Showing: {filteredUsers.length}
+          </span>
+          <button
+            onClick={() => setShowUserFilters(!showUserFilters)}
+            className={`inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium transition-colors ${
+              showUserFilters || hasActiveUserFilters
+                ? 'bg-my-primary text-white border-my-primary'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
             <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
+            Filters
+            {hasActiveUserFilters && (
+              <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                {[userFilters.role !== 'all', userFilters.status !== 'all', userFilters.kycStatus !== 'all', userFilters.search, userFilters.dateFrom, userFilters.dateTo].filter(Boolean).length}
+              </span>
+            )}
+          </button>
           {activeTab === 'users' && (
-            <Button className="bg-my-primary hover:bg-my-primary/80 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
+            <button
+              onClick={() => setRegistrationModalOpen(true)}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center"
+            >
               <Plus className="w-4 h-4 mr-2" />
-              Add User
-            </Button>
+              Register User
+            </button>
           )}
         </div>
       </div>
@@ -415,6 +538,131 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            <span>Pending</span>
          </button>
       </div>
+
+      {/* User Filters Panel */}
+      {activeTab === 'users' && showUserFilters && (
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6 border border-gray-200 dark:border-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {/* Role Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Role
+              </label>
+              <select
+                value={userFilters.role}
+                onChange={(e) => setUserFilters(prev => ({ ...prev, role: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+              >
+                <option value="all">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+                <option value="moderator">Moderator</option>
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Status
+              </label>
+              <select
+                value={userFilters.status}
+                onChange={(e) => setUserFilters(prev => ({ ...prev, status: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="banned">Banned</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+
+            {/* KYC Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                KYC Status
+              </label>
+              <select
+                value={userFilters.kycStatus}
+                onChange={(e) => setUserFilters(prev => ({ ...prev, kycStatus: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+              >
+                <option value="all">All KYC</option>
+                <option value="verified">Verified</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            {/* Registration Date From */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Registered From
+              </label>
+              <input
+                type="date"
+                value={userFilters.dateFrom}
+                onChange={(e) => setUserFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+              />
+            </div>
+
+            {/* Registration Date To */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Registered To
+              </label>
+              <input
+                type="date"
+                value={userFilters.dateTo}
+                onChange={(e) => setUserFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+              />
+            </div>
+
+            {/* User Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Search Users
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Name or email..."
+                  value={userFilters.search}
+                  onChange={(e) => setUserFilters(prev => ({ ...prev, search: e.target.value }))}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Actions */}
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <div className="flex items-center space-x-2">
+              {hasActiveUserFilters && (
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {filteredUsers.length} of {totalUsers} users match your filters
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              {hasActiveUserFilters && (
+                <button
+                  onClick={clearUserFilters}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content based on active tab */}
       {activeTab === 'users' ? (
         <>
@@ -485,7 +733,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {users.map((user) => (
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center">
+                  <div className="text-gray-500 dark:text-gray-400">
+                    {hasActiveUserFilters ? (
+                      <div>
+                        <p className="text-lg font-medium mb-2">No users match your filters</p>
+                        <p className="text-sm">Try adjusting your filter criteria or clear all filters to see all users.</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-lg font-medium mb-2">No users found</p>
+                        <p className="text-sm">There are currently no users in the system.</p>
+                      </div>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredUsers.map((user) => (
               <tr key={user.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -596,9 +863,37 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                   )}
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
+      </div>
+      
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
+        {/* Items per page selector */}
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-600 dark:text-gray-400">Users per page:</span>
+          <select
+            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm"
+            value={itemsPerPage}
+            onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+          >
+            {[10, 20, 30, 50, 100].map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Pagination Component */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={totalUsers}
+          itemsPerPage={itemsPerPage}
+          showItemCount={true}
+        />
       </div>
         </>
       ) : activeTab === 'verifications' ? (
@@ -1299,6 +1594,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         isOpen={verificationDetailsModal.isOpen}
         verificationId={verificationDetailsModal.verificationId}
         onClose={closeVerificationDetails}
+        token={localStorage.getItem('token') || undefined}
+      />
+
+      {/* User Registration Modal */}
+      <UserRegistrationModal
+        isOpen={registrationModalOpen}
+        onClose={() => setRegistrationModalOpen(false)}
+        onSuccess={handleUserRegistrationSuccess}
         token={localStorage.getItem('token') || undefined}
       />
     </div>
