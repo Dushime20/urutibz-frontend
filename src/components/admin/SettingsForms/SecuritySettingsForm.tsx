@@ -197,12 +197,12 @@ const SecuritySettingsForm: React.FC<SecuritySettingsFormProps> = ({
           </div>
 
           {/* Password Policy Preview */}
-          <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-teal-800 dark:text-teal-200 mb-2 flex items-center">
+          <div className="bg-my-primary/10 dark:bg-my-primary/20 border border-my-primary/30 dark:border-my-primary/50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-my-primary dark:text-my-primary mb-2 flex items-center">
               <CheckCircle className="w-4 h-4 mr-2" />
               Current Password Policy
             </h4>
-            <div className="text-sm text-teal-700 dark:text-teal-300 space-y-1">
+            <div className="text-sm text-my-primary dark:text-my-primary space-y-1">
               <p>• Minimum length: {formData.passwordPolicy.minLength} characters</p>
               <p>• Uppercase letters: {formData.passwordPolicy.requireUppercase ? 'Required' : 'Optional'}</p>
               <p>• Numbers: {formData.passwordPolicy.requireNumbers ? 'Required' : 'Optional'}</p>
@@ -311,7 +311,7 @@ const SecuritySettingsForm: React.FC<SecuritySettingsFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
+          className="bg-my-primary hover:bg-opacity-80 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
         >
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>

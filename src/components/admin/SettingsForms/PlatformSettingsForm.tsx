@@ -83,7 +83,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="text"
               value={formData.siteName}
               onChange={(e) => handleChange('siteName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="Enter site name"
             />
           </div>
@@ -95,7 +95,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="text"
               value={formData.siteTagline}
               onChange={(e) => handleChange('siteTagline', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="Enter site tagline"
             />
           </div>
@@ -108,7 +108,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
           <textarea
             value={formData.siteDescription}
             onChange={(e) => handleChange('siteDescription', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             rows={3}
             placeholder="Enter site description"
           />
@@ -122,7 +122,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
             type="text"
             value={formData.siteKeywords}
             onChange={(e) => handleChange('siteKeywords', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             placeholder="rental, marketplace, equipment, tools"
           />
         </div>
@@ -151,7 +151,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
                 type="text"
                 value={formData.primaryColor}
                 onChange={(e) => handleChange('primaryColor', e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 placeholder="#3B82F6"
               />
             </div>
@@ -171,7 +171,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
                 type="text"
                 value={formData.secondaryColor}
                 onChange={(e) => handleChange('secondaryColor', e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 placeholder="#10B981"
               />
             </div>
@@ -187,7 +187,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="url"
               value={formData.logoUrl}
               onChange={(e) => handleChange('logoUrl', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="https://example.com/logo.png"
             />
           </div>
@@ -199,7 +199,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="url"
               value={formData.faviconUrl}
               onChange={(e) => handleChange('faviconUrl', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="https://example.com/favicon.ico"
             />
           </div>
@@ -221,7 +221,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
             <select
               value={formData.defaultLanguage}
               onChange={(e) => handleChange('defaultLanguage', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               <option value="en">English</option>
               <option value="fr">French</option>
@@ -235,7 +235,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
             <select
               value={formData.timezone}
               onChange={(e) => handleChange('timezone', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               <option value="Africa/Kigali">Africa/Kigali</option>
               <option value="UTC">UTC</option>
@@ -253,7 +253,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
             <select
               value={formData.dateFormat}
               onChange={(e) => handleChange('dateFormat', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               <option value="DD/MM/YYYY">DD/MM/YYYY</option>
               <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -267,7 +267,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
             <select
               value={formData.currency}
               onChange={(e) => handleChange('currency', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               <option value="RWF">RWF (Rwandan Franc)</option>
               <option value="USD">USD (US Dollar)</option>
@@ -282,7 +282,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="text"
               value={formData.currencySymbol}
               onChange={(e) => handleChange('currencySymbol', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="₣"
             />
           </div>
@@ -296,7 +296,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
             type="text"
             value={formatSupportedLanguages(formData.supportedLanguages || [])}
             onChange={(e) => handleSupportedLanguagesChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             placeholder="en, fr, sw"
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -318,7 +318,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="checkbox"
               checked={formData.allowUserRegistration}
               onChange={(e) => handleChange('allowUserRegistration', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -335,7 +335,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="checkbox"
               checked={formData.requireEmailVerification}
               onChange={(e) => handleChange('requireEmailVerification', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -352,7 +352,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="checkbox"
               checked={formData.allowGuestBookings}
               onChange={(e) => handleChange('allowGuestBookings', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -379,7 +379,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="checkbox"
               checked={formData.autoApproveListings}
               onChange={(e) => handleChange('autoApproveListings', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -396,7 +396,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="checkbox"
               checked={formData.requireListingVerification}
               onChange={(e) => handleChange('requireListingVerification', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -413,7 +413,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="checkbox"
               checked={formData.moderationEnabled}
               onChange={(e) => handleChange('moderationEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -443,7 +443,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="number"
               value={formData.searchRadius}
               onChange={(e) => handleChange('searchRadius', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               min="1"
               max="1000"
             />
@@ -456,7 +456,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="number"
               value={formData.maxSearchResults}
               onChange={(e) => handleChange('maxSearchResults', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               min="10"
               max="200"
             />
@@ -469,7 +469,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="number"
               value={formData.featuredListingsCount}
               onChange={(e) => handleChange('featuredListingsCount', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               min="1"
               max="20"
             />
@@ -493,7 +493,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="email"
               value={formData.contactEmail}
               onChange={(e) => handleChange('contactEmail', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="support@urutibiz.com"
             />
           </div>
@@ -505,7 +505,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="tel"
               value={formData.contactPhone}
               onChange={(e) => handleChange('contactPhone', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="+250 123 456 789"
             />
           </div>
@@ -519,7 +519,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
             type="text"
             value={formData.supportHours}
             onChange={(e) => handleChange('supportHours', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             placeholder="Mon-Fri 8AM-6PM"
           />
         </div>
@@ -541,7 +541,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="url"
               value={formData.termsOfServiceUrl}
               onChange={(e) => handleChange('termsOfServiceUrl', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="/terms"
             />
           </div>
@@ -553,7 +553,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="url"
               value={formData.privacyPolicyUrl}
               onChange={(e) => handleChange('privacyPolicyUrl', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="/privacy"
             />
           </div>
@@ -565,7 +565,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="url"
               value={formData.cookiePolicyUrl}
               onChange={(e) => handleChange('cookiePolicyUrl', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="/cookies"
             />
           </div>
@@ -588,7 +588,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="text"
               value={formData.googleAnalyticsId}
               onChange={(e) => handleChange('googleAnalyticsId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="GA-XXXXXXXXX-X"
             />
           </div>
@@ -600,7 +600,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="text"
               value={formData.facebookPixelId}
               onChange={(e) => handleChange('facebookPixelId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="123456789012345"
             />
           </div>
@@ -612,7 +612,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
               type="checkbox"
               checked={formData.enableCookies}
               onChange={(e) => handleChange('enableCookies', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -631,7 +631,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
+          className="bg-my-primary hover:bg-opacity-80 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
         >
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>

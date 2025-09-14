@@ -79,7 +79,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-            <Database className="w-5 h-5 mr-2 text-teal-600" />
+            <Database className="w-5 h-5 mr-2 text-my-primary" />
             Automatic Backup Settings
           </h3>
           
@@ -87,7 +87,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
             {/* Basic Settings */}
             <div className="space-y-4">
               <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 flex items-center">
-                <Settings className="w-4 h-4 mr-2 text-teal-600" />
+                <Settings className="w-4 h-4 mr-2 text-my-primary" />
                 Basic Settings
               </h4>
               
@@ -96,7 +96,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.autoBackupEnabled}
                   onChange={(e) => handleChange('autoBackupEnabled', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
                   Enable automatic backups
@@ -110,7 +110,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                 <select
                   value={formData.backupFrequency}
                   onChange={(e) => handleChange('backupFrequency', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 >
                   <option value="hourly">Hourly</option>
                   <option value="daily">Daily</option>
@@ -127,7 +127,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="time"
                   value={formData.backupTime}
                   onChange={(e) => handleChange('backupTime', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
 
@@ -141,7 +141,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   max="365"
                   value={formData.backupRetentionDays}
                   onChange={(e) => handleChange('backupRetentionDays', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
             </div>
@@ -149,7 +149,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
             {/* Data Selection */}
             <div className="space-y-4">
               <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 flex items-center">
-                <FileText className="w-4 h-4 mr-2 text-teal-600" />
+                <FileText className="w-4 h-4 mr-2 text-my-primary" />
                 Data Selection
               </h4>
               
@@ -158,7 +158,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.includeUsers}
                   onChange={(e) => handleChange('includeUsers', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <Users className="w-4 h-4 ml-3 mr-2 text-gray-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Include Users</span>
@@ -169,7 +169,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.includeProducts}
                   onChange={(e) => handleChange('includeProducts', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <Package className="w-4 h-4 ml-3 mr-2 text-gray-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Include Products</span>
@@ -180,7 +180,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.includeBookings}
                   onChange={(e) => handleChange('includeBookings', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <Calendar className="w-4 h-4 ml-3 mr-2 text-gray-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Include Bookings</span>
@@ -191,7 +191,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.includeSettings}
                   onChange={(e) => handleChange('includeSettings', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <Settings className="w-4 h-4 ml-3 mr-2 text-gray-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Include Settings</span>
@@ -202,7 +202,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.includeMedia}
                   onChange={(e) => handleChange('includeMedia', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <Upload className="w-4 h-4 ml-3 mr-2 text-gray-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Include Media</span>
@@ -213,7 +213,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.includeLogs}
                   onChange={(e) => handleChange('includeLogs', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <FileText className="w-4 h-4 ml-3 mr-2 text-gray-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Include Logs</span>
@@ -225,7 +225,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
         {/* Storage Settings */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-            <HardDrive className="w-5 h-5 mr-2 text-teal-600" />
+            <HardDrive className="w-5 h-5 mr-2 text-my-primary" />
             Storage Settings
           </h3>
           
@@ -238,7 +238,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                 <select
                   value={formData.backupStorageType}
                   onChange={(e) => handleChange('backupStorageType', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 >
                   <option value="local">Local Storage</option>
                   <option value="cloud">Cloud Storage</option>
@@ -256,7 +256,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                     value={formData.backupStoragePath}
                     onChange={(e) => handleChange('backupStoragePath', e.target.value)}
                     placeholder="/backups"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
               )}
@@ -270,7 +270,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                     <select
                       value={formData.cloudStorageProvider}
                       onChange={(e) => handleChange('cloudStorageProvider', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                     >
                       <option value="aws">Amazon Web Services</option>
                       <option value="gcp">Google Cloud Platform</option>
@@ -286,7 +286,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                       value={formData.cloudBucketName}
                       onChange={(e) => handleChange('cloudBucketName', e.target.value)}
                       placeholder="my-backup-bucket"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                     />
                   </div>
                 </>
@@ -303,7 +303,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                       value={formData.ftpHost}
                       onChange={(e) => handleChange('ftpHost', e.target.value)}
                       placeholder="ftp.example.com"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                     />
                   </div>
                   <div>
@@ -316,7 +316,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                       max="65535"
                       value={formData.ftpPort}
                       onChange={(e) => handleChange('ftpPort', parseInt(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                     />
                   </div>
                   <div>
@@ -327,7 +327,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                       type="text"
                       value={formData.ftpUsername}
                       onChange={(e) => handleChange('ftpUsername', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                     />
                   </div>
                   <div>
@@ -338,7 +338,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                       type="password"
                       value={formData.ftpPassword}
                       onChange={(e) => handleChange('ftpPassword', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                     />
                   </div>
                 </>
@@ -347,7 +347,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
 
             <div className="space-y-4">
               <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 flex items-center">
-                <Shield className="w-4 h-4 mr-2 text-teal-600" />
+                <Shield className="w-4 h-4 mr-2 text-my-primary" />
                 Security & Compression
               </h4>
               
@@ -356,7 +356,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.compressBackups}
                   onChange={(e) => handleChange('compressBackups', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
                   Compress backup files
@@ -368,7 +368,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.encryptBackups}
                   onChange={(e) => handleChange('encryptBackups', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
                   Encrypt backup files
@@ -385,7 +385,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                     value={formData.encryptionKey}
                     onChange={(e) => handleChange('encryptionKey', e.target.value)}
                     placeholder="Enter encryption key"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
               )}
@@ -400,7 +400,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   max="10240"
                   value={formData.maxBackupSize}
                   onChange={(e) => handleChange('maxBackupSize', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
             </div>
@@ -410,7 +410,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
         {/* Recovery Settings */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-            <Download className="w-5 h-5 mr-2 text-teal-600" />
+            <Download className="w-5 h-5 mr-2 text-my-primary" />
             Recovery Settings
           </h3>
           
@@ -421,7 +421,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.recoveryModeEnabled}
                   onChange={(e) => handleChange('recoveryModeEnabled', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
                   Enable recovery mode
@@ -438,7 +438,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   max="86400"
                   value={formData.recoveryTimeout}
                   onChange={(e) => handleChange('recoveryTimeout', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
 
@@ -447,7 +447,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.allowPartialRecovery}
                   onChange={(e) => handleChange('allowPartialRecovery', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
                   Allow partial data recovery
@@ -457,7 +457,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
 
             <div className="space-y-4">
               <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 flex items-center">
-                <Bell className="w-4 h-4 mr-2 text-teal-600" />
+                <Bell className="w-4 h-4 mr-2 text-my-primary" />
                 Notifications
               </h4>
               
@@ -466,7 +466,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.notifyOnBackupSuccess}
                   onChange={(e) => handleChange('notifyOnBackupSuccess', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <CheckCircle className="w-4 h-4 ml-3 mr-2 text-green-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Notify on backup success</span>
@@ -477,7 +477,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.notifyOnBackupFailure}
                   onChange={(e) => handleChange('notifyOnBackupFailure', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <AlertTriangle className="w-4 h-4 ml-3 mr-2 text-red-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Notify on backup failure</span>
@@ -488,7 +488,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.notifyOnRecoveryComplete}
                   onChange={(e) => handleChange('notifyOnRecoveryComplete', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <Download className="w-4 h-4 ml-3 mr-2 text-blue-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Notify on recovery completion</span>
@@ -502,7 +502,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="email"
                   value={formData.backupNotificationEmail}
                   onChange={(e) => handleChange('backupNotificationEmail', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
             </div>
@@ -512,7 +512,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
         {/* Maintenance Settings */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-            <Server className="w-5 h-5 mr-2 text-teal-600" />
+            <Server className="w-5 h-5 mr-2 text-my-primary" />
             Maintenance Settings
           </h3>
           
@@ -523,7 +523,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.backupMaintenanceMode}
                   onChange={(e) => handleChange('backupMaintenanceMode', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
                   Enable maintenance mode during backup
@@ -538,7 +538,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   value={formData.backupMaintenanceMessage}
                   onChange={(e) => handleChange('backupMaintenanceMessage', e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
             </div>
@@ -549,7 +549,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   type="checkbox"
                   checked={formData.cleanupOldBackups}
                   onChange={(e) => handleChange('cleanupOldBackups', e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
                   Automatically cleanup old backups
@@ -563,7 +563,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
+            className="bg-my-primary hover:bg-opacity-80 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
           >
             {isLoading ? 'Saving...' : 'Save Changes'}
           </button>
@@ -574,7 +574,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
       {onCreateManualBackup && (
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-            <Database className="w-5 h-5 mr-2 text-teal-600" />
+            <Database className="w-5 h-5 mr-2 text-my-primary" />
             Manual Backup
           </h3>
           
@@ -587,7 +587,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                 <select
                   value={manualBackupData.type}
                   onChange={(e) => setManualBackupData(prev => ({ ...prev, type: e.target.value as any }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 >
                   <option value="full">Full System Backup</option>
                   <option value="settings">Settings Only</option>
@@ -606,7 +606,7 @@ const BackupSettingsForm: React.FC<BackupSettingsFormProps> = ({
                   value={manualBackupData.description}
                   onChange={(e) => setManualBackupData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="e.g., Manual backup before system update"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
             </div>

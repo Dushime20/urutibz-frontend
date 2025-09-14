@@ -116,7 +116,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               type="text"
               value={formData.companyName}
               onChange={(e) => handleChange('companyName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               required
             />
           </div>
@@ -128,7 +128,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
             <select
               value={formData.businessType}
               onChange={(e) => handleChange('businessType', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               {businessTypes.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -146,7 +146,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               type="checkbox"
               checked={formData.autoApproval || false}
               onChange={(e) => handleChange('autoApproval', e.target.checked)}
-              className="w-4 h-4 text-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              className="w-4 h-4 text-my-primary bg-gray-100 border-gray-300 rounded focus:ring-my-primary dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
             <div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -185,7 +185,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                 <Upload className="w-6 h-6 text-gray-400" />
               </div>
             )}
-            <label className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg cursor-pointer transition-colors">
+            <label className="bg-my-primary hover:bg-opacity-80 text-white px-4 py-2 rounded-lg cursor-pointer transition-colors">
               Upload Logo
               <input
                 type="file"
@@ -222,7 +222,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
             <select
               value={formData.currency}
               onChange={(e) => handleChange('currency', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               {currencies.map((currency) => (
                 <option key={currency.code} value={currency.code}>
@@ -243,7 +243,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               step="0.1"
               value={formData.taxRate}
               onChange={(e) => handleChange('taxRate', parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -258,7 +258,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               step="0.1"
               value={formData.commissionRate}
               onChange={(e) => handleChange('commissionRate', parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
         </div>
@@ -281,7 +281,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                       handleChange('supportedCurrencies', currencies.filter(c => c !== currency.code));
                     }
                   }}
-                  className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+                  className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
                 />
                 <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                   {currency.code} - {currency.name}
@@ -308,7 +308,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               min="1"
               value={formData.minimumBookingDuration}
               onChange={(e) => handleChange('minimumBookingDuration', parseInt(e.target.value) || 1)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -321,7 +321,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               min="1"
               value={formData.maximumBookingDuration}
               onChange={(e) => handleChange('maximumBookingDuration', parseInt(e.target.value) || 365)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
         </div>
@@ -342,7 +342,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
             <select
               value={formData.timezone}
               onChange={(e) => handleChange('timezone', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               <option value="Africa/Kigali">Africa/Kigali (GMT+2)</option>
               <option value="Africa/Nairobi">Africa/Nairobi (GMT+3)</option>
@@ -379,7 +379,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               type="email"
               value={formData.contactInfo?.email || ''}
               onChange={(e) => handleNestedChange('contactInfo', 'email', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -391,7 +391,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               type="tel"
               value={formData.contactInfo?.phone || ''}
               onChange={(e) => handleNestedChange('contactInfo', 'phone', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -403,7 +403,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               type="url"
               value={formData.contactInfo?.website || ''}
               onChange={(e) => handleNestedChange('contactInfo', 'website', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -415,7 +415,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               value={formData.contactInfo?.address || ''}
               onChange={(e) => handleNestedChange('contactInfo', 'address', e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
         </div>
@@ -431,7 +431,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-              <Facebook className="w-4 h-4 mr-2 text-teal-600" />
+              <Facebook className="w-4 h-4 mr-2 text-my-primary" />
               Facebook
             </label>
             <input
@@ -439,7 +439,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               value={formData.socialMedia?.facebook || ''}
               onChange={(e) => handleNestedChange('socialMedia', 'facebook', e.target.value)}
               placeholder="https://facebook.com/yourpage"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -453,7 +453,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               value={formData.socialMedia?.twitter || ''}
               onChange={(e) => handleNestedChange('socialMedia', 'twitter', e.target.value)}
               placeholder="https://twitter.com/yourhandle"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -467,7 +467,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               value={formData.socialMedia?.instagram || ''}
               onChange={(e) => handleNestedChange('socialMedia', 'instagram', e.target.value)}
               placeholder="https://instagram.com/yourhandle"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -481,7 +481,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               value={formData.socialMedia?.linkedin || ''}
               onChange={(e) => handleNestedChange('socialMedia', 'linkedin', e.target.value)}
               placeholder="https://linkedin.com/company/yourcompany"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
         </div>
@@ -503,7 +503,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               onChange={(e) => handleChange('cancellationPolicy', e.target.value)}
               rows={4}
               placeholder="Describe your cancellation policy..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -516,7 +516,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               onChange={(e) => handleChange('refundPolicy', e.target.value)}
               rows={4}
               placeholder="Describe your refund policy..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -529,7 +529,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               onChange={(e) => handleChange('termsOfService', e.target.value)}
               rows={4}
               placeholder="Enter your terms of service..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
 
@@ -542,7 +542,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
               onChange={(e) => handleChange('privacyPolicy', e.target.value)}
               rows={4}
               placeholder="Enter your privacy policy..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
         </div>
@@ -553,7 +553,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
+          className="bg-my-primary hover:bg-opacity-80 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
         >
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>

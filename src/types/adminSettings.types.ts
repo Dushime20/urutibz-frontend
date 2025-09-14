@@ -181,23 +181,151 @@ export interface BackupSettings {
 
 // Analytics Settings
 export interface AnalyticsSettings {
-  googleAnalytics: {
+  core: {
     enabled: boolean;
-    trackingId?: string;
+    trackingLevel: 'minimal' | 'standard' | 'comprehensive';
+    dataCollectionMode: 'client-side' | 'server-side' | 'hybrid';
+    sessionTracking: boolean;
+    userJourneyTracking: boolean;
+    conversionTracking: boolean;
+    performanceMonitoring: boolean;
+    errorTracking: boolean;
   };
-  facebookPixel: {
+  privacy: {
+    gdprCompliant: boolean;
+    dataAnonymization: boolean;
+    ipAddressMasking: boolean;
+    userConsentRequired: boolean;
+    cookieConsent: boolean;
+    dataMinimization: boolean;
+    rightToErasure: boolean;
+    dataPortability: boolean;
+  };
+  retention: {
+    userSessions: number;
+    pageViews: number;
+    userInteractions: number;
+    conversionEvents: number;
+    performanceData: number;
+    errorLogs: number;
+    auditLogs: number;
+    rawAnalyticsData: number;
+    aggregatedData: number;
+    archivedData: number;
+  };
+  realTime: {
     enabled: boolean;
-    pixelId?: string;
+    refreshInterval: number;
+    webSocketEnabled: boolean;
+    liveDashboard: boolean;
+    alertThresholds: {
+      highTraffic: number;
+      lowConversion: number;
+      highErrorRate: number;
+      slowResponseTime: number;
+    };
+    maxConnections: number;
+    dataBufferSize: number;
   };
-  customAnalytics: {
+  integrations: {
+    googleAnalytics: {
+      enabled: boolean;
+      trackingId: string;
+      measurementId: string;
+      enhancedEcommerce: boolean;
+      customDimensions: string[];
+      goals: string[];
+    };
+    facebookPixel: {
+      enabled: boolean;
+      pixelId: string;
+      events: string[];
+      customAudiences: boolean;
+    };
+    customAnalytics: {
+      enabled: boolean;
+      endpoints: string[];
+    };
+  };
+  reporting: {
+    automatedReports: {
+      enabled: boolean;
+      frequency: 'daily' | 'weekly' | 'monthly';
+      recipients: string[];
+      format: 'pdf' | 'excel' | 'csv';
+    };
+    dashboard: {
+      defaultDateRange: string;
+      refreshInterval: number;
+      maxWidgets: number;
+    };
+    export: {
+      enabled: boolean;
+      formats: string[];
+      maxRecords: number;
+      compression: boolean;
+      encryption: boolean;
+    };
+  };
+  performance: {
+    dataProcessing: {
+      batchSize: number;
+      processingInterval: number;
+      parallelWorkers: number;
+    };
+    storage: {
+      compressionEnabled: boolean;
+      indexingStrategy: 'full' | 'partial' | 'none';
+      archiveThreshold: number;
+    };
+    caching: {
+      enabled: boolean;
+      ttl: number;
+      maxSize: number;
+      strategy: 'lru' | 'fifo' | 'ttl';
+    };
+  };
+  security: {
+    accessControl: {
+      roleBasedAccess: boolean;
+      allowedRoles: string[];
+      ipWhitelist: string[];
+      apiRateLimiting: {
+        enabled: boolean;
+        requestsPerMinute: number;
+      };
+    };
+    dataProtection: {
+      encryptionAtRest: boolean;
+      encryptionInTransit: boolean;
+      auditLogging: boolean;
+      accessLogging: boolean;
+    };
+  };
+  alerting: {
     enabled: boolean;
-    script?: string;
+    channels: {
+      email: {
+        enabled: boolean;
+        recipients: string[];
+      };
+      slack: {
+        enabled: boolean;
+        webhookUrl: string;
+        channels: string[];
+      };
+    };
+    rules: string[];
   };
-  performanceTracking: boolean;
-  userBehaviorTracking: boolean;
-  conversionTracking: boolean;
-  privacyCompliant: boolean;
-  cookieConsent: boolean;
+  system: {
+    timezone: string;
+    currency: string;
+    language: string;
+    dateFormat: string;
+    maintenanceMode: boolean;
+    debugMode: boolean;
+    logLevel: 'debug' | 'info' | 'warn' | 'error';
+  };
 }
 
 // Complete Admin Settings Interface
@@ -321,7 +449,7 @@ export interface SettingsConflictEvent {
 // Utility Types
 export type SettingsSection = keyof AdminSettings;
 export type ThemeMode = ThemeSettings['mode'];
-export type BackupFrequency = BackupSettings['frequency'];
+export type BackupFrequency = BackupSettings['backupFrequency'];
 export type NotificationChannel = 'emailEnabled' | 'smsEnabled' | 'pushEnabled';
 
 // Default Settings
@@ -491,14 +619,151 @@ export const DEFAULT_BACKUP_SETTINGS: BackupSettings = {
 };
 
 export const DEFAULT_ANALYTICS_SETTINGS: AnalyticsSettings = {
-  googleAnalytics: { enabled: false },
-  facebookPixel: { enabled: false },
-  customAnalytics: { enabled: false },
-  performanceTracking: true,
-  userBehaviorTracking: true,
-  conversionTracking: true,
-  privacyCompliant: true,
-  cookieConsent: true,
+  core: {
+    enabled: true,
+    trackingLevel: 'standard',
+    dataCollectionMode: 'hybrid',
+    sessionTracking: true,
+    userJourneyTracking: true,
+    conversionTracking: true,
+    performanceMonitoring: true,
+    errorTracking: true
+  },
+  privacy: {
+    gdprCompliant: true,
+    dataAnonymization: true,
+    ipAddressMasking: true,
+    userConsentRequired: true,
+    cookieConsent: true,
+    dataMinimization: true,
+    rightToErasure: true,
+    dataPortability: true
+  },
+  retention: {
+    userSessions: 90,
+    pageViews: 30,
+    userInteractions: 30,
+    conversionEvents: 365,
+    performanceData: 30,
+    errorLogs: 90,
+    auditLogs: 365,
+    rawAnalyticsData: 30,
+    aggregatedData: 365,
+    archivedData: 2555
+  },
+  realTime: {
+    enabled: true,
+    refreshInterval: 30,
+    webSocketEnabled: true,
+    liveDashboard: true,
+    alertThresholds: {
+      highTraffic: 1000,
+      lowConversion: 5,
+      highErrorRate: 10,
+      slowResponseTime: 2000
+    },
+    maxConnections: 100,
+    dataBufferSize: 1000
+  },
+  integrations: {
+    googleAnalytics: {
+      enabled: false,
+      trackingId: '',
+      measurementId: '',
+      enhancedEcommerce: false,
+      customDimensions: [],
+      goals: []
+    },
+    facebookPixel: {
+      enabled: false,
+      pixelId: '',
+      events: [],
+      customAudiences: false
+    },
+    customAnalytics: {
+      enabled: false,
+      endpoints: []
+    }
+  },
+  reporting: {
+    automatedReports: {
+      enabled: false,
+      frequency: 'weekly',
+      recipients: [],
+      format: 'pdf'
+    },
+    dashboard: {
+      defaultDateRange: '30d',
+      refreshInterval: 60,
+      maxWidgets: 20
+    },
+    export: {
+      enabled: true,
+      formats: ['csv', 'excel', 'json'],
+      maxRecords: 10000,
+      compression: true,
+      encryption: false
+    }
+  },
+  performance: {
+    dataProcessing: {
+      batchSize: 1000,
+      processingInterval: 15,
+      parallelWorkers: 4
+    },
+    storage: {
+      compressionEnabled: true,
+      indexingStrategy: 'partial',
+      archiveThreshold: 90
+    },
+    caching: {
+      enabled: true,
+      ttl: 300,
+      maxSize: 100,
+      strategy: 'lru'
+    }
+  },
+  security: {
+    accessControl: {
+      roleBasedAccess: true,
+      allowedRoles: ['admin', 'super_admin'],
+      ipWhitelist: [],
+      apiRateLimiting: {
+        enabled: true,
+        requestsPerMinute: 60
+      }
+    },
+    dataProtection: {
+      encryptionAtRest: false,
+      encryptionInTransit: true,
+      auditLogging: true,
+      accessLogging: true
+    }
+  },
+  alerting: {
+    enabled: false,
+    channels: {
+      email: {
+        enabled: false,
+        recipients: []
+      },
+      slack: {
+        enabled: false,
+        webhookUrl: '',
+        channels: []
+      }
+    },
+    rules: []
+  },
+  system: {
+    timezone: 'Africa/Kigali',
+    currency: 'RWF',
+    language: 'en',
+    dateFormat: 'DD/MM/YYYY',
+    maintenanceMode: false,
+    debugMode: false,
+    logLevel: 'info'
+  }
 };
 
 export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {

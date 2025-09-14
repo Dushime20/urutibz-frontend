@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAdminSettingsService } from '../services/adminSettings.service';
+import { analyticsService } from '../services/analyticsService';
 import type { 
   AdminSettings, 
   SettingsSection, 
@@ -46,6 +47,12 @@ interface UseAdminSettingsReturn {
   loadSystemHealth: () => Promise<void>;
   triggerBackup: () => Promise<BackupResponse['data']>;
   clearCache: () => Promise<void>;
+  
+  // Analytics operations
+  loadAnalyticsConfig: () => Promise<void>;
+  updateAnalyticsConfig: (config: any) => Promise<void>;
+  getAnalyticsHealth: () => Promise<any>;
+  exportAnalyticsData: (request: any) => Promise<Blob>;
   
   // Utilities
   refreshSettings: () => Promise<void>;
@@ -438,6 +445,93 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
     cacheRef.current.isValid = false;
   }, []);
 
+  // Analytics operations
+  const loadAnalyticsConfig = useCallback(async () => {
+    if (!token) {
+      setError('Authentication token required');
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await analyticsService.getAnalyticsConfig();
+      
+      if (response.success && response.data.config && settings) {
+        setSettings(prev => ({
+          ...prev!,
+          analytics: response.data.config
+        }));
+      }
+    } catch (err: any) {
+      console.error('Failed to load analytics config:', err);
+      setError(err.message || 'Failed to load analytics configuration');
+    }
+  }, [token]);
+
+  const updateAnalyticsConfig = useCallback(async (config: any) => {
+    if (!token) {
+      setError('Authentication token required');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setError(null);
+      
+      const response = await analyticsService.updateAnalyticsConfig(config);
+      
+      if (response.success && settings) {
+        setSettings(prev => ({
+          ...prev!,
+          analytics: response.data.config
+        }));
+        
+        // Update cache timestamp
+        cacheRef.current.timestamp = Date.now();
+      }
+    } catch (err: any) {
+      console.error('Failed to update analytics config:', err);
+      setError(err.message || 'Failed to update analytics configuration');
+      throw err;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [token]);
+
+  const getAnalyticsHealth = useCallback(async () => {
+    if (!token) {
+      setError('Authentication token required');
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await analyticsService.getAnalyticsHealth();
+      return response.data;
+    } catch (err: any) {
+      console.error('Failed to get analytics health:', err);
+      setError(err.message || 'Failed to get analytics health status');
+      throw err;
+    }
+  }, [token]);
+
+  const exportAnalyticsData = useCallback(async (request: any): Promise<Blob> => {
+    if (!token) {
+      setError('Authentication token required');
+      throw new Error('Authentication token required');
+    }
+
+    try {
+      setError(null);
+      const blob = await analyticsService.exportAnalyticsData(request);
+      return blob;
+    } catch (err: any) {
+      console.error('Failed to export analytics data:', err);
+      setError(err.message || 'Failed to export analytics data');
+      throw err;
+    }
+  }, [token]);
+
   // Auto-load settings on mount
   useEffect(() => {
     if (autoLoad && token) {
@@ -475,6 +569,12 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
     loadSystemHealth,
     triggerBackup,
     clearCache,
+    
+    // Analytics operations
+    loadAnalyticsConfig,
+    updateAnalyticsConfig,
+    getAnalyticsHealth,
+    exportAnalyticsData,
     
     // Utilities
     refreshSettings,

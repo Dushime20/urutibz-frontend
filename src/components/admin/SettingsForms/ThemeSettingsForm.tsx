@@ -194,26 +194,26 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
             <button
               key={value}
               onClick={() => handleChange('mode', value)}
-              className={`p-4 rounded-lg border-2 transition-colors text-left ${
+              className={`p-4 rounded-lg transition-colors text-left ${
                 formData.mode === value
-                  ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30'
-                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                  ? 'border-2 border-my-primary bg-blue-50 dark:bg-blue-900/50'
+                  : 'border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
               }`}
             >
               <Icon className={`w-6 h-6 mb-2 ${
                 formData.mode === value
-                  ? 'text-teal-600 dark:text-teal-400'
-                  : 'text-gray-600 dark:text-gray-400'
+                  ? 'text-my-primary dark:text-blue-300'
+                  : 'text-gray-600 dark:text-gray-300'
               }`} />
               <div className={`font-medium ${
                 formData.mode === value
-                  ? 'text-gray-900 dark:text-white'
-                  : 'text-gray-900 dark:text-white'
+                  ? 'text-my-primary dark:text-white font-semibold'
+                  : 'text-gray-600 dark:text-gray-300'
               }`}>{label}</div>
               <div className={`text-sm ${
                 formData.mode === value
-                  ? 'text-gray-700 dark:text-gray-300'
-                  : 'text-gray-600 dark:text-gray-400'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-500 dark:text-gray-300 opacity-75'
               }`}>{description}</div>
             </button>
           ))}
@@ -236,7 +236,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
             <select
               value={formData.fontFamily}
               onChange={(e) => handleChange('fontFamily', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               {fontFamilies.map((font) => (
                 <option key={font} value={font} style={{ fontFamily: font }}>
@@ -253,7 +253,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
             <select
               value={formData.fontSize}
               onChange={(e) => handleChange('fontSize', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               <option value="14px">Small (14px)</option>
               <option value="16px">Medium (16px)</option>
@@ -279,7 +279,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
             <select
               value={formData.borderRadius}
               onChange={(e) => handleChange('borderRadius', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               <option value="0px">None (0px)</option>
               <option value="4px">Small (4px)</option>
@@ -296,7 +296,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
             <select
               value={formData.spacing}
               onChange={(e) => handleChange('spacing', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               <option value="compact">Compact</option>
               <option value="comfortable">Comfortable</option>
@@ -319,7 +319,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
               type="checkbox"
               checked={formData.animations}
               onChange={(e) => handleChange('animations', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
               Enable animations and transitions
@@ -331,7 +331,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
               type="checkbox"
               checked={formData.transitions}
               onChange={(e) => handleChange('transitions', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
               Enable smooth transitions
@@ -417,7 +417,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
             onClick={() => setShowPreview(!showPreview)}
             className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
               showPreview
-                ? 'bg-teal-600 text-white'
+                ? 'bg-my-primary text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
@@ -427,7 +427,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
           
           <button
             onClick={handleExport}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+            className="bg-my-primary hover:bg-opacity-80 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -456,7 +456,7 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
         <button
           onClick={handleSubmit}
           disabled={isLoading}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
+          className="bg-my-primary hover:bg-opacity-80 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
         >
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>

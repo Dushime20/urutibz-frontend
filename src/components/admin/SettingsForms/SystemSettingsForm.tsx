@@ -106,7 +106,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="text"
               value={formData.appName}
               onChange={(e) => handleChange('appName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="Enter application name"
             />
           </div>
@@ -118,7 +118,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="text"
               value={formData.appVersion}
               onChange={(e) => handleChange('appVersion', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="e.g., 1.0.0"
             />
           </div>
@@ -138,7 +138,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.maintenanceMode}
               onChange={(e) => handleChange('maintenanceMode', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -165,7 +165,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.registrationEnabled}
               onChange={(e) => handleChange('registrationEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -181,7 +181,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.autoApproveProducts}
               onChange={(e) => handleChange('autoApproveProducts', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -208,7 +208,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.emailNotifications}
               onChange={(e) => handleChange('emailNotifications', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -224,7 +224,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.smsNotifications}
               onChange={(e) => handleChange('smsNotifications', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -243,7 +243,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="email"
               value={formData.fromEmail}
               onChange={(e) => handleChange('fromEmail', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="noreply@urutibiz.com"
             />
           </div>
@@ -269,7 +269,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               step="1048576"
               value={formData.maxFileSize}
               onChange={(e) => handleChange('maxFileSize', parseInt(e.target.value) || 10485760)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Current: {formatFileSize(formData.maxFileSize)}
@@ -287,7 +287,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               step="300"
               value={formData.sessionTimeout}
               onChange={(e) => handleChange('sessionTimeout', parseInt(e.target.value) || 3600)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Current: {formatDuration(formData.sessionTimeout)}
@@ -314,7 +314,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               max="10"
               value={formData.maxLoginAttempts}
               onChange={(e) => handleChange('maxLoginAttempts', parseInt(e.target.value) || 5)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
           <div>
@@ -327,7 +327,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               max="20"
               value={formData.passwordMinLength}
               onChange={(e) => handleChange('passwordMinLength', parseInt(e.target.value) || 8)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
         </div>
@@ -346,7 +346,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.cacheEnabled}
               onChange={(e) => handleChange('cacheEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -367,7 +367,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               max="10000"
               value={formData.apiRateLimit}
               onChange={(e) => handleChange('apiRateLimit', parseInt(e.target.value) || 1000)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
           </div>
         </div>
@@ -386,7 +386,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.autoBackupEnabled}
               onChange={(e) => handleChange('autoBackupEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -404,7 +404,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
             <select
               value={formData.backupFrequency}
               onChange={(e) => handleChange('backupFrequency', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               {backupFrequencies.map((freq) => (
                 <option key={freq.value} value={freq.value}>
@@ -431,7 +431,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
             <select
               value={formData.logLevel}
               onChange={(e) => handleChange('logLevel', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
               {logLevels.map((level) => (
                 <option key={level.value} value={level.value}>
@@ -445,7 +445,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.analyticsEnabled}
               onChange={(e) => handleChange('analyticsEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -472,7 +472,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               type="checkbox"
               checked={formData.contentModerationEnabled}
               onChange={(e) => handleChange('contentModerationEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -500,7 +500,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
           <select
             value={formData.defaultCurrency}
             onChange={(e) => handleChange('defaultCurrency', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
           >
             {currencies.map((currency) => (
               <option key={currency.value} value={currency.value}>
@@ -516,7 +516,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
+          className="bg-my-primary hover:bg-opacity-80 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
         >
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>

@@ -3,7 +3,6 @@ import { useDarkMode } from '../../contexts/DarkModeContext';
 import { useAdminSettings } from '../../hooks/useAdminSettings';
 import { useToast } from '../../contexts/ToastContext';
 import { 
-  Settings, 
   Palette, 
   Building, 
   Shield, 
@@ -11,7 +10,6 @@ import {
   Globe, 
   Database, 
   BarChart3,
-  Save,
   RotateCcw,
   Download,
   Upload,
@@ -20,10 +18,10 @@ import {
   CheckCircle,
   Clock,
   Server,
-  HardDrive,
-  Activity
+  HardDrive
 } from 'lucide-react';
 import type { SettingsSection } from '../../types/adminSettings.types';
+import { DEFAULT_ANALYTICS_SETTINGS } from '../../types/adminSettings.types';
 
 // Import form components (we'll create these next)
 import ThemeSettingsForm from '../../components/admin/SettingsForms/ThemeSettingsForm';
@@ -57,7 +55,6 @@ const SettingsPage: React.FC = () => {
     isBackingUp,
     error,
     validationErrors,
-    loadSettings,
     updateSettings,
     resetSettings,
     uploadCompanyLogo,
@@ -70,6 +67,7 @@ const SettingsPage: React.FC = () => {
     refreshSettings,
     clearError,
     clearValidationErrors,
+    loadAnalyticsConfig
   } = useAdminSettings({
     token: localStorage.getItem('token') || undefined,
     autoLoad: true,
@@ -79,6 +77,13 @@ const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsSection>('theme');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // Load analytics config when analytics tab is active
+  useEffect(() => {
+    if (activeTab === 'analytics' && !settings?.analytics) {
+      loadAnalyticsConfig();
+    }
+  }, [activeTab, settings?.analytics, loadAnalyticsConfig]);
 
   // Settings tabs configuration
   const settingsTabs: SettingsTab[] = [
@@ -201,7 +206,7 @@ const SettingsPage: React.FC = () => {
     reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
-        const importData = JSON.parse(content);
+        JSON.parse(content);
         
         if (!confirm('Are you sure you want to import these settings? This will overwrite your current settings.')) {
           return;
@@ -333,143 +338,157 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Settings Categories</h3>
-              
-              <nav className="space-y-2">
-                {settingsTabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center ${
-                        isActive
-                            ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-900 dark:text-white border border-teal-200 dark:border-teal-600'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5 mr-3" />
-                      <div>
-                        <div className="font-medium">{tab.label}</div>
-                        <div className="text-sm opacity-75">{tab.description}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </nav>
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Compact Top Tab Navigation */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Server className="w-4 h-4 text-my-primary" />
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Settings Categories</h3>
             </div>
+          </div>
+          <nav className="flex gap-1 border-b border-gray-200 dark:border-gray-700 pb-3">
+            {settingsTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all duration-200 whitespace-nowrap ${
+                    isActive
+                      ? 'bg-my-primary text-white shadow-sm transform scale-105'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-my-primary'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`} />
+                  <span className="text-sm font-medium">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-            {/* System Health */}
-            {systemHealth && systemHealth.status && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Health</h3>
+        {/* System Health & Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* System Health */}
+          {systemHealth && systemHealth.status && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
+                System Health
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    systemHealth.status === 'healthy' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                      : systemHealth.status === 'warning'
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {systemHealth.status}
+                  </span>
+                </div>
                 
-                <div className="space-y-3">
+                {systemHealth.uptime && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      systemHealth.status === 'healthy' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        : systemHealth.status === 'warning'
-                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>
-                      {systemHealth.status}
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Uptime</span>
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {Math.floor(systemHealth.uptime / 3600)}h {Math.floor((systemHealth.uptime % 3600) / 60)}m
                     </span>
                   </div>
-                  
-                  {systemHealth.uptime && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Uptime</span>
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {Math.floor(systemHealth.uptime / 3600)}h {Math.floor((systemHealth.uptime % 3600) / 60)}m
-                      </span>
-                    </div>
-                  )}
-                  
-                  {systemHealth.memory && systemHealth.memory.percentage && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Memory</span>
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {systemHealth.memory.percentage.toFixed(1)}%
-                      </span>
-                    </div>
-                  )}
-                  
-                  {systemHealth.database && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Database</span>
-                      <span className={`text-sm ${
-                        systemHealth.database.connected 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        {systemHealth.database.connected ? 'Connected' : 'Disconnected'}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                )}
                 
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={handleClearCache}
-                    className="w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg transition-colors text-sm flex items-center justify-center"
-                  >
-                    <HardDrive className="w-4 h-4 mr-2" />
-                    Clear Cache
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {/* Status Bar */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  {isSaving && (
-                    <div className="flex items-center text-teal-600 dark:text-teal-400">
-                      <Clock className="w-4 h-4 mr-2 animate-spin" />
-                      <span className="text-sm">Saving...</span>
-                    </div>
-                  )}
-                  
-                  {lastSaved && (
-                    <div className="flex items-center text-green-600 dark:text-green-400">
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      <span className="text-sm">Last saved: {lastSaved.toLocaleTimeString()}</span>
-                    </div>
-                  )}
-                  
-                  {hasUnsavedChanges && (
-                    <div className="flex items-center text-yellow-600 dark:text-yellow-400">
-                      <AlertCircle className="w-4 h-4 mr-2" />
-                      <span className="text-sm">Unsaved changes</span>
-                    </div>
-                  )}
-                </div>
+                {systemHealth.memory && systemHealth.memory.percentage && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Memory</span>
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {systemHealth.memory.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
                 
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleTriggerBackup}
-                    disabled={isBackingUp}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm flex items-center disabled:opacity-50"
-                  >
-                    <Database className={`w-4 h-4 mr-2 ${isBackingUp ? 'animate-spin' : ''}`} />
-                    {isBackingUp ? 'Backing up...' : 'Backup'}
-                  </button>
-                </div>
+                {systemHealth.database && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Database</span>
+                    <span className={`text-sm ${
+                      systemHealth.database.connected 
+                        ? 'text-green-600 dark:text-green-400' 
+                        : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {systemHealth.database.connected ? 'Connected' : 'Disconnected'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <HardDrive className="w-5 h-5 mr-2 text-blue-500" />
+              Quick Actions
+            </h3>
+            
+            <div className="space-y-3">
+              <button
+                onClick={handleClearCache}
+                className="w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg transition-colors text-sm flex items-center justify-center"
+              >
+                <HardDrive className="w-4 h-4 mr-2" />
+                Clear Cache
+              </button>
+              
+              <button
+                onClick={handleTriggerBackup}
+                disabled={isBackingUp}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm flex items-center justify-center disabled:opacity-50"
+              >
+                <Database className={`w-4 h-4 mr-2 ${isBackingUp ? 'animate-spin' : ''}`} />
+                {isBackingUp ? 'Backing up...' : 'Create Backup'}
+              </button>
+            </div>
+          </div>
+
+          {/* Status Info */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-orange-500" />
+              Status
+            </h3>
+            
+            <div className="space-y-3">
+              {isSaving && (
+                <div className="flex items-center text-teal-600 dark:text-teal-400">
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  <span className="text-sm">Saving...</span>
+                </div>
+              )}
+              
+              {lastSaved && (
+                <div className="flex items-center text-green-600 dark:text-green-400">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  <span className="text-sm">Last saved: {lastSaved.toLocaleTimeString()}</span>
+                </div>
+              )}
+              
+              {hasUnsavedChanges && (
+                <div className="flex items-center text-yellow-600 dark:text-yellow-400">
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  <span className="text-sm">Unsaved changes</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="space-y-6">
 
             {/* Error Display */}
             {error && (
@@ -517,29 +536,35 @@ const SettingsPage: React.FC = () => {
               </div>
             )}
 
-            {/* Settings Form */}
-            {ActiveComponent && settings && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="mb-6">
+          {/* Settings Form */}
+          {ActiveComponent && settings && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-my-primary/10 dark:bg-my-primary/20 rounded-lg">
+                    {React.createElement(activeTabConfig?.icon || Server, {
+                      className: "w-5 h-5 text-my-primary"
+                    })}
+                  </div>
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {activeTabConfig?.label}
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
-                    {activeTabConfig?.description}
-                  </p>
                 </div>
-                
-                <ActiveComponent
-                  settings={settings[activeTab]}
-                  onUpdate={(updates: any) => handleSettingsUpdate(updates, activeTab)}
-                  onLogoUpload={activeTab === 'business' ? uploadCompanyLogo : undefined}
-                  onCreateManualBackup={activeTab === 'backup' ? createManualBackup : undefined}
-                  isLoading={isSaving}
-                  theme={{ isDarkMode }}
-                />
+                <p className="text-gray-600 dark:text-gray-400 ml-11">
+                  {activeTabConfig?.description}
+                </p>
               </div>
-            )}
-          </div>
+              
+              <ActiveComponent
+                settings={settings[activeTab] || (activeTab === 'analytics' ? DEFAULT_ANALYTICS_SETTINGS : undefined)}
+                onUpdate={(updates: any) => handleSettingsUpdate(updates, activeTab)}
+                onLogoUpload={activeTab === 'business' ? uploadCompanyLogo : undefined}
+                onCreateManualBackup={activeTab === 'backup' ? createManualBackup : undefined}
+                isLoading={isSaving}
+                theme={{ isDarkMode }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

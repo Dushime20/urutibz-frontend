@@ -74,10 +74,10 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
               type="checkbox"
               checked={formData.emailEnabled}
               onChange={(e) => handleChange('emailEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3 flex items-center">
-              <Mail className="w-5 h-5 text-teal-600 mr-3" />
+              <Mail className="w-5 h-5 text-my-primary mr-3" />
               <div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email Notifications
@@ -94,10 +94,10 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
               type="checkbox"
               checked={formData.smsEnabled}
               onChange={(e) => handleChange('smsEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3 flex items-center">
-              <Smartphone className="w-5 h-5 text-teal-600 mr-3" />
+              <Smartphone className="w-5 h-5 text-my-primary mr-3" />
               <div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   SMS Notifications
@@ -114,10 +114,10 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
               type="checkbox"
               checked={formData.pushEnabled}
               onChange={(e) => handleChange('pushEnabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3 flex items-center">
-              <Bell className="w-5 h-5 text-teal-600 mr-3" />
+              <Bell className="w-5 h-5 text-my-primary mr-3" />
               <div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Push Notifications
@@ -144,7 +144,7 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
               type="checkbox"
               checked={formData.quietHours.enabled}
               onChange={(e) => handleQuietHoursChange('enabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -166,7 +166,7 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
                   type="time"
                   value={formData.quietHours.start}
                   onChange={(e) => handleQuietHoursChange('start', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
               <div>
@@ -177,7 +177,7 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
                   type="time"
                   value={formData.quietHours.end}
                   onChange={(e) => handleQuietHoursChange('end', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
             </div>
@@ -198,7 +198,7 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
               type="checkbox"
               checked={formData.adminAlerts}
               onChange={(e) => handleChange('adminAlerts', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -225,7 +225,7 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
               type="checkbox"
               checked={formData.systemMaintenance.enabled}
               onChange={(e) => handleSystemMaintenanceChange('enabled', e.target.checked)}
-              className="w-4 h-4 text-teal-600 border-gray-300 dark:border-gray-600 rounded focus:ring-teal-500 dark:bg-gray-800"
+              className="w-4 h-4 text-my-primary border-gray-300 dark:border-gray-600 rounded focus:ring-my-primary dark:bg-gray-800"
             />
             <div className="ml-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -246,7 +246,7 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
                 <textarea
                   value={formData.systemMaintenance.message}
                   onChange={(e) => handleSystemMaintenanceChange('message', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   rows={3}
                   placeholder="Enter maintenance message..."
                 />
@@ -259,7 +259,7 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
                   type="datetime-local"
                   value={formData.systemMaintenance.scheduledAt ? new Date(formData.systemMaintenance.scheduledAt).toISOString().slice(0, 16) : ''}
                   onChange={(e) => handleSystemMaintenanceChange('scheduledAt', e.target.value ? new Date(e.target.value).toISOString() : null)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 />
               </div>
             </div>
@@ -272,7 +272,7 @@ const NotificationSettingsForm: React.FC<NotificationSettingsFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
+          className="bg-my-primary hover:bg-opacity-80 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
         >
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>
