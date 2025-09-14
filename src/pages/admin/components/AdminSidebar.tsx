@@ -197,10 +197,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     <div 
       className="fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-900 
         shadow-sm border-r border-gray-100 dark:border-gray-800 
-        z-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 
-        dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 
-        dark:scrollbar-track-gray-800 scrollbar-thumb-rounded-full
-        scrollbar-track-rounded-full pt-16"
+        z-40 overflow-y-auto scrollbar-hide pt-16"
     >
       {/* Navigation */}
       <nav className="space-y-2 px-4 pt-4">

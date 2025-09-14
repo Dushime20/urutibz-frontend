@@ -67,6 +67,16 @@ html, body {
     background: theme('colors.gray.800');
   }
 
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: theme('colors.gray.300');
     border-radius: 10px;
