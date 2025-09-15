@@ -1,48 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowLeft, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { loginUser, fetchUserProfile } from './service/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
+import { useToast } from '../../contexts/ToastContext';
 
-// Toast component aligned with RegisterPage
-function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onClose, 300);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-  const icon = type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />;
-
-  return (
-    <div className={`fixed top-4 right-4 z-50 ${bgColor} text-white px-4 py-3 rounded-lg shadow-xl flex items-center space-x-3 transition-all duration-300 transform ${
-      isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-    } max-w-sm`}>
-      {icon}
-      <span className="text-sm font-medium">{message}</span>
-      <button 
-        onClick={() => {
-          setIsVisible(false);
-          setTimeout(onClose, 300);
-        }} 
-        className="ml-2 text-white/80 hover:text-white transition-colors"
-      >
-        ×
-      </button>
-    </div>
-  );
-}
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setAuthenticatedUser } = useAuth();
+  const { settings } = useAdminSettingsContext();
+  const { showToast } = useToast();
+  const [attempts, setAttempts] = useState(0);
+  const [successMsg, setSuccessMsg] = useState('');
   
   const [formData, setFormData] = useState({
     email: '',
@@ -51,8 +23,7 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [toast, setToast] = useState<string | null>(null);
-  const [toastType, setToastType] = useState<'error' | 'success'>('error');
+  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -60,13 +31,32 @@ const LoginPage: React.FC = () => {
       [e.target.name]: e.target.value
     }));
     setError('');
+    setSuccessMsg('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    setToast(null);
+    
+    // If registration is required to be verified before login (example gate)
+    if (settings?.platform?.requireEmailVerification && !formData.email) {
+      setIsLoading(false);
+      setError('Please verify your email before logging in.');
+      return;
+    }
+    // Enforce max login attempts (frontend guard)
+    const storedMax = Number(localStorage.getItem('security.maxLoginAttempts') || '0');
+    const maxAttempts = (settings?.security?.maxLoginAttempts || settings?.system?.maxLoginAttempts || storedMax || 3);
+    const key = 'loginAttempts';
+    const map = JSON.parse(localStorage.getItem(key) || '{}');
+    const current = Number(map[formData.email] || 0);
+    if (maxAttempts > 0 && current >= maxAttempts) {
+      setIsLoading(false);
+      const message = 'Too many failed attempts. Please try again later.';
+      setError(message);
+      return;
+    }
 
     try {
       const data = await loginUser(formData.email, formData.password);
@@ -79,8 +69,12 @@ const LoginPage: React.FC = () => {
           const userProfile = await fetchUserProfile(data.token);
           setAuthenticatedUser(userProfile);
         }
-        setToast('Login successful! Welcome back.');
-        setToastType('success');
+        // reset attempts on success
+        const key = 'loginAttempts';
+        const map = JSON.parse(localStorage.getItem(key) || '{}');
+        map[formData.email] = 0;
+        localStorage.setItem(key, JSON.stringify(map));
+        setSuccessMsg('User logged in successfully!');
       }
       setTimeout(() => {
         if (data.user.role === "admin") {
@@ -93,9 +87,17 @@ const LoginPage: React.FC = () => {
       }, 1500);
     } catch (err: any) {
       const message = err?.message || 'Invalid email or password. Please try again.';
-      setError(message);
-      setToast(message);
-      setToastType('error');
+      // track attempt
+      map[formData.email] = current + 1;
+      localStorage.setItem(key, JSON.stringify(map));
+      setAttempts(current + 1);
+      // If threshold reached, show lockout message
+      if (maxAttempts > 0 && map[formData.email] >= maxAttempts) {
+        const lockMsg = 'Too many failed attempts. Please try again later.';
+        setError(lockMsg);
+      } else {
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +105,6 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 overflow-hidden">
-      {toast && <Toast message={toast} onClose={() => setToast(null)} type={toastType} />}
       
       <div className="w-full max-w-md mx-auto">
         {/* Header Section */}
@@ -136,6 +137,12 @@ const LoginPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {successMsg && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/40 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg text-sm flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  <span>{successMsg}</span>
+                </div>
+              )}
               {error && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
                   {error}

@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, type ReactNode } from 'react';
+import { useAdminSettingsContext } from './AdminSettingsContext';
 
 // Define verification status
 export interface VerificationStatus {
@@ -77,6 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { settings } = useAdminSettingsContext();
 
   // Check for existing user session on initial load
   useEffect(() => {
@@ -147,6 +149,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkAuthStatus();
   }, []);
+
+  // Auto-logout on inactivity based on admin security/session settings
+  useEffect(() => {
+    if (!user) return;
+    const timeoutSec = settings?.security?.sessionTimeout || settings?.system?.sessionTimeout || 0;
+    if (!timeoutSec) return;
+
+    let timer: number | undefined;
+    const resetTimer = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        try { localStorage.removeItem('user'); } catch {}
+        setUser(null);
+      }, timeoutSec * 1000);
+    };
+
+    const onActivity = () => resetTimer();
+    resetTimer();
+    window.addEventListener('mousemove', onActivity);
+    window.addEventListener('keydown', onActivity);
+    return () => {
+      window.removeEventListener('mousemove', onActivity);
+      window.removeEventListener('keydown', onActivity);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [user, settings?.security?.sessionTimeout, settings?.system?.sessionTimeout]);
 
   // Mock login function
   const login = async (email: string, password: string): Promise<boolean> => {

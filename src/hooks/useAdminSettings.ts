@@ -129,6 +129,8 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
       }
       
       setSettings(newSettings);
+      // Persist key platform flags for unauthenticated contexts (e.g., header/register before login)
+      // Do not persist registration flags to localStorage; rely on API-driven context only
       cacheRef.current = {
         data: newSettings,
         timestamp: Date.now(),
@@ -213,6 +215,16 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
         isValid: true,
       };
       lastUpdatedRef.current = new Date();
+
+      // Broadcast settings update to other providers/listeners
+      try {
+        window.dispatchEvent(new CustomEvent('admin:settings-updated', {
+          detail: { section: section || 'all', timestamp: Date.now() }
+        }));
+      } catch {}
+
+      // Persist platform allowUserRegistration on updates to platform section
+      // Do not persist registration flags to localStorage; rely on API-driven context only
       
     } catch (err: any) {
       console.error('Failed to update settings:', err);

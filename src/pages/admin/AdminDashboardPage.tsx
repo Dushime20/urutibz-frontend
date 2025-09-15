@@ -52,6 +52,7 @@ import InspectionsManagement from './components/InspectionsManagement';
 import RiskManagementPage from '../risk-management/RiskManagementPage';
 import HandoverReturnPage from '../handover-return/HandoverReturnPage';
 import SettingsPage from './SettingsPage';
+import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 
 import SkeletonPricingStats from './components/SkeletonPricingStats';
 import SkeletonAdminStats from '../../components/ui/SkeletonAdminStats';
@@ -89,6 +90,7 @@ interface Owner {
 }
 
 const AdminDashboardPage: React.FC = () => {
+  const { formatCurrency, formatDate, settings } = useAdminSettingsContext();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'admin-settings'>('overview');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -201,6 +203,7 @@ const AdminDashboardPage: React.FC = () => {
         specifications: newListingForm.specifications,
         location: newListingForm.location,
         features: Array.isArray(newListingForm.features) ? newListingForm.features.filter(f => f?.trim()) : [],
+        status: settings?.system?.autoApproveProducts ? 'approved' : 'pending',
       };
       const created = await createProduct(productPayload);
       const productId = created?.data?.id || created?.data?.data?.id || created?.id;
@@ -590,7 +593,7 @@ const AdminDashboardPage: React.FC = () => {
                                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
                                     <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 mb-2"><Activity className="w-6 h-6 text-gray-500 dark:text-gray-400" aria-label="Timestamp" /></div>
                                     <div className="text-xs text-gray-500 dark:text-gray-400">Timestamp</div>
-                                    <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">{new Date(realtimeMetrics.timestamp).toLocaleString()}</div>
+                                    <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">{formatDate(realtimeMetrics.timestamp)}</div>
                                   </div>
                                 </>
                               ) : (
@@ -909,7 +912,7 @@ const AdminDashboardPage: React.FC = () => {
                                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${booking.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
                                         {booking.status}
                                       </span>
-                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">${booking.amount}</div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formatCurrency(Number(booking.amount) || 0)}</div>
                                     </div>
                                   </div>
                                 ))}
@@ -941,7 +944,7 @@ const AdminDashboardPage: React.FC = () => {
                                       </div>
                                     </div>
                                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      <div>Amount: ${selectedBooking.amount}</div>
+                                      <div>Amount: {formatCurrency(Number(selectedBooking.amount) || 0)}</div>
                                       <div>Dates: {selectedBooking.startDate || ''} - {selectedBooking.endDate || ''}</div>
                                     </div>
                                   </div>
@@ -1130,19 +1133,19 @@ const AdminDashboardPage: React.FC = () => {
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Scheduled:</span>
                     <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
-                      {selectedInspection.scheduledAt ? new Date(selectedInspection.scheduledAt).toLocaleString() : 'N/A'}
+                      {selectedInspection.scheduledAt ? formatDate(selectedInspection.scheduledAt) : 'N/A'}
                     </span>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Started:</span>
                     <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
-                      {selectedInspection.startedAt ? new Date(selectedInspection.startedAt).toLocaleString() : 'N/A'}
+                      {selectedInspection.startedAt ? formatDate(selectedInspection.startedAt) : 'N/A'}
                     </span>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Completed:</span>
                     <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
-                      {selectedInspection.completedAt ? new Date(selectedInspection.completedAt).toLocaleString() : 'N/A'}
+                      {selectedInspection.completedAt ? formatDate(selectedInspection.completedAt) : 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -1220,20 +1223,20 @@ const AdminDashboardPage: React.FC = () => {
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Created:</span>
                     <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
-                      {selectedDispute.createdAt ? new Date(selectedDispute.createdAt).toLocaleString() : 'N/A'}
+                      {selectedDispute.createdAt ? formatDate(selectedDispute.createdAt) : 'N/A'}
                     </span>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Updated:</span>
                     <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
-                      {selectedDispute.updatedAt ? new Date(selectedDispute.updatedAt).toLocaleString() : 'N/A'}
+                      {selectedDispute.updatedAt ? formatDate(selectedDispute.updatedAt) : 'N/A'}
                     </span>
                   </div>
                   {selectedDispute.resolvedAt && (
                     <div>
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Resolved:</span>
                       <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
-                        {new Date(selectedDispute.resolvedAt).toLocaleString()}
+                        {formatDate(selectedDispute.resolvedAt)}
                       </span>
                     </div>
                   )}

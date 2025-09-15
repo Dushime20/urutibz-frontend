@@ -17,6 +17,7 @@ import ReviewForm from './components/ReviewForm';
 import PaymentStepper from './components/PaymentStepper';
 import Button from '../../components/ui/Button';
 import { getCityFromCoordinates, wkbHexToLatLng } from '../../lib/utils';
+import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 
 const steps = [
   { label: 'Booking Details', icon: CalendarIcon, description: 'Select dates and preferences' },
@@ -29,6 +30,7 @@ const BookingPage: React.FC = () => {
   const navigate = useNavigate();
   const { itemId } = useParams<{ itemId: string }>();
   const { showToast } = useToast();
+  const { formatCurrency, formatDate } = useAdminSettingsContext();
 
   // State
   const [bookingItem, setBookingItem] = useState<any>(null);
@@ -670,10 +672,7 @@ const BookingPage: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-slate-400">Daily Rate</span>
                       <span className="font-medium">
-                        {rentalDetails.itemPrice.toLocaleString('en-US', { 
-                          style: 'currency', 
-                          currency: bookingItem?.base_currency || 'USD' 
-                        })}
+                        {formatCurrency(rentalDetails.itemPrice, bookingItem?.base_currency)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -685,29 +684,20 @@ const BookingPage: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-slate-400">Subtotal</span>
                       <span className="font-medium">
-                        {rentalDetails.amount.toLocaleString('en-US', { 
-                          style: 'currency', 
-                          currency: bookingItem?.base_currency || 'USD' 
-                        })}
+                        {formatCurrency(rentalDetails.amount, bookingItem?.base_currency)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-slate-400">Service Fee (10%)</span>
                       <span className="font-medium">
-                        {rentalDetails.serviceFee.toLocaleString('en-US', { 
-                          style: 'currency', 
-                          currency: bookingItem?.base_currency || 'USD' 
-                        })}
+                        {formatCurrency(rentalDetails.serviceFee, bookingItem?.base_currency)}
                       </span>
                     </div>
                     <div className="border-t border-gray-200 dark:border-slate-700 pt-3">
                       <div className="flex justify-between">
                         <span className="font-bold text-gray-900 dark:text-white">Total</span>
                         <span className="font-bold text-xl text-[#00aaa9]">
-                          {rentalDetails.totalCost.toLocaleString('en-US', { 
-                            style: 'currency', 
-                            currency: bookingItem?.base_currency || 'USD' 
-                          })}
+                          {formatCurrency(rentalDetails.totalCost, bookingItem?.base_currency)}
                         </span>
                       </div>
                     </div>

@@ -243,6 +243,18 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // Handle local storage clear
+  const handleClearLocalStorage = () => {
+    const confirmed = confirm('This will clear all app data stored in your browser (including saved sessions). Continue?');
+    if (!confirmed) return;
+    try {
+      localStorage.clear();
+      showToast('Local storage cleared. You may need to sign in again.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to clear local storage', 'error');
+    }
+  };
+
   // Render loading state
   if (isLoading && !settings) {
     return (
@@ -404,6 +416,15 @@ const SettingsPage: React.FC = () => {
             >
               <HardDrive className="w-4 h-4 mr-2" />
               Clear Cache
+            </button>
+
+            <button
+              onClick={handleClearLocalStorage}
+              className="bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-800/50 text-orange-700 dark:text-orange-300 px-4 py-2 rounded-lg transition-colors text-sm flex items-center"
+              title="Clears all local browser data for this app"
+            >
+              <HardDrive className="w-4 h-4 mr-2" />
+              Clear Local Storage
             </button>
             
             <button

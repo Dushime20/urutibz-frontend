@@ -1,42 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, Bot, Sparkles, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Bot, Sparkles, ArrowLeft, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { registerUser } from './service/api';
+import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 
-function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onClose, 300);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-  const icon = type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />;
-
-  return (
-    <div className={`fixed top-4 right-4 z-50 ${bgColor} text-white px-4 py-3 rounded-lg shadow-xl flex items-center space-x-3 transition-all duration-300 transform ${
-      isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-    } max-w-sm`}>
-      {icon}
-      <span className="text-sm font-medium">{message}</span>
-      <button 
-        onClick={() => {
-          setIsVisible(false);
-          setTimeout(onClose, 300);
-        }} 
-        className="ml-2 text-white/80 hover:text-white transition-colors"
-      >
-        ×
-      </button>
-    </div>
-  );
-}
+function Toast(_: { message: string; onClose: () => void; type?: 'error' | 'success' }) { return null; }
 
 // Compact Password strength indicator
 function PasswordStrength({ password }: { password: string }) {
@@ -96,6 +65,7 @@ const RegisterPage: React.FC = () => {
   const [toast, setToast] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'error' | 'success'>('error');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const { settings } = useAdminSettingsContext();
 
   const navigate = useNavigate();
 
@@ -138,7 +108,17 @@ const RegisterPage: React.FC = () => {
         break;
       case 'password':
         if (!value) error = 'Password is required';
-        else if (value.length < 8) error = 'Password must be at least 8 characters';
+        else {
+          const policy = settings?.security?.passwordPolicy;
+          const minLen = policy?.minLength ?? 8;
+          const requireUpper = policy?.requireUppercase ?? true;
+          const requireNumbers = policy?.requireNumbers ?? true;
+          const requireSymbols = policy?.requireSymbols ?? true;
+          if (value.length < minLen) error = `Password must be at least ${minLen} characters`;
+          else if (requireUpper && !/[A-Z]/.test(value)) error = 'Password must include an uppercase letter';
+          else if (requireNumbers && !/[0-9]/.test(value)) error = 'Password must include a number';
+          else if (requireSymbols && !/[^A-Za-z0-9]/.test(value)) error = 'Password must include a symbol';
+        }
         break;
       case 'confirmPassword':
         if (!value) error = 'Please confirm your password';
@@ -167,6 +147,16 @@ const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Block registration if disabled in platform settings
+    const allow = Boolean(settings?.platform?.allowUserRegistration);
+    const sysAllow = Boolean((settings?.system as any)?.registrationEnabled);
+    if (!allow || !sysAllow) {
+      const msg = 'User registration is currently disabled by the administrator.';
+      setToast(msg);
+      setToastType('error');
+      return;
+    }
 
     const allFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'agreeToTerms'];
     setTouched(Object.fromEntries(allFields.map(field => [field, true])));
@@ -197,8 +187,10 @@ const RegisterPage: React.FC = () => {
       console.log('Registration API response:', response);
       
       if (response.success) {
-        setToast('Account created successfully! Welcome to UrutiBz!');
+        // Inline success message banner
+        setToast('User registered successfully!');
         setToastType('success');
+        // Success handled by redirection below
 
         // Store user data if returned
         if (response.data && response.data.token) {
@@ -220,13 +212,14 @@ const RegisterPage: React.FC = () => {
           setErrors({});
         }, 2000);
       } else {
-        setToast(response.message || 'Registration failed. Please try again.');
+        const msg = (response as any)?.message || 'Registration failed. Please try again.';
+        setToast(msg);
         setToastType('error');
       }
 
     } catch (err: any) {
       console.error('Registration error:', err);
-      const errorMessage = err.message || 'Registration failed. Please try again.';
+      const errorMessage = err?.message || 'Registration failed. Please try again.';
       setToast(errorMessage);
       setToastType('error');
     } finally {
@@ -236,8 +229,6 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 overflow-hidden">
-      {toast && <Toast message={toast} onClose={() => setToast(null)} type={toastType} />}
-      
       <div className="w-full max-w-md mx-auto">
         {/* Header Section */}
         <div className="text-center mb-8">
@@ -264,6 +255,15 @@ const RegisterPage: React.FC = () => {
         {/* Main Form Card */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 mt-[-10px]">
           <div className="px-8 py-4">
+            {toast && (
+              <div className={`${toastType === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'} px-4 py-3 rounded-lg mb-4 flex items-center justify-between`}> 
+                <div className="flex items-center gap-2">
+                  {toastType === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                  <span className="text-sm font-medium">{toast}</span>
+                </div>
+                <button className="text-current/70 hover:text-current" onClick={() => setToast(null)}>×</button>
+              </div>
+            )}
             {/* Form Header */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">

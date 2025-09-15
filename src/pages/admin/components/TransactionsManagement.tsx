@@ -17,9 +17,11 @@ import {
   User,
   Building
 } from 'lucide-react';
+import { useAdminSettingsContext } from '../../../contexts/AdminSettingsContext';
 
 const TransactionsManagement: React.FC = () => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
+  const { formatCurrency, formatDate } = useAdminSettingsContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -266,7 +268,7 @@ const TransactionsManagement: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">${totalAmount.toLocaleString()}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalAmount)}</p>
             </div>
           </div>
         </div>
@@ -327,7 +329,7 @@ const TransactionsManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {typeof txn.amount === 'string' ? parseFloat(txn.amount).toLocaleString() : txn.amount.toLocaleString()} {txn.currency}
+                        {formatCurrency(typeof txn.amount === 'string' ? parseFloat(txn.amount) : txn.amount, txn.currency)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -336,7 +338,7 @@ const TransactionsManagement: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <Calendar className="w-4 h-4 mr-1" />
-                        {txn.created_at ? new Date(txn.created_at).toLocaleDateString() : '-'}
+                        {txn.created_at ? formatDate(txn.created_at) : '-'}
                       </div>
                     </td>
                   </tr>

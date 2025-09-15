@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChevronDown, Globe, Menu, X, Bot, Moon, Sun, Search, User, PlusCircle } from 'lucide-react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 
 const languages = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -24,6 +25,7 @@ const topCategories = [
 const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { settings } = useAdminSettingsContext();
   const [, setLanguage] = useState(languages[0]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
@@ -122,15 +124,15 @@ const Header: React.FC = () => {
             <Link to="/" className="flex items-center space-x-2 lg:space-x-3">
               <div className="flex items-center">
                 <img 
-                  src="/assets/img/yacht/urutilogo2.png" 
-                  alt="UrutiBz" 
+                  src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'} 
+                  alt={settings?.business?.companyName || settings?.platform?.siteName || 'UrutiBz'} 
                   className="h-24 w-52  lg:w-auto object-contain opacity-100 flex-shrink-0 drop-shadow-sm" 
                 />
               </div>
-              <div className="hidden md:flex items-center space-x-1 bg-gradient-to-r from-active/10 to-active/20 px-2 lg:px-3 py-1 rounded-full border border-active/20">
+              {/* <div className="hidden md:flex items-center space-x-1 bg-gradient-to-r from-active/10 to-active/20 px-2 lg:px-3 py-1 rounded-full border border-active/20">
                 <Bot className="h-3 w-3 lg:h-4 lg:w-4 text-active" />
-                <span className="text-xs font-medium text-active">AI-Powered</span>
-              </div>
+                <span className="text-xs font-medium text-active">{settings?.platform?.siteTagline || 'AI-Powered'}</span>
+              </div> */}
             </Link>
 
             {/* Main Navigation - Desktop */}
@@ -327,12 +329,14 @@ const Header: React.FC = () => {
                 >
                   Log In
                 </Link>
-                <Link 
-                  to="/register" 
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium bg-[#01aaa7] text-white rounded-platform hover:opacity-90"
-                >
-                  Sign Up
-                </Link>
+                {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
+                  <Link 
+                    to="/register" 
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium bg-[#01aaa7] text-white rounded-platform hover:opacity-90"
+                  >
+                    Sign Up
+                  </Link>
+                )}
               </div>
             )}
 

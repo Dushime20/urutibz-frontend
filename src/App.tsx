@@ -30,6 +30,7 @@ import RiskAssessmentPage from './pages/risk-management/RiskAssessmentPage';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ui/ToastContainer';
 import { DarkModeProvider } from './contexts/DarkModeContext';
+import { AdminSettingsProvider } from './contexts/AdminSettingsContext';
 import NotificationsPage from './features/notifications/pages/NotificationsPage';
 import SessionMessagesPage from './pages/my-account/SessionMessagesPage';
 import HandoverReturnDemoPage from './pages/handover-return/HandoverReturnDemoPage';
@@ -38,10 +39,11 @@ import HandoverReturnDemoPage from './pages/handover-return/HandoverReturnDemoPa
 function App() {
   return (
     <DarkModeProvider>
-      <ToastProvider>
-        <ToastContainer />
-        <AuthProvider>
-          <Router>
+      <AdminSettingsProvider token={localStorage.getItem('token') || undefined}>
+        <ToastProvider>
+          <ToastContainer />
+          <AuthProvider>
+            <Router>
             <Routes>
               {/* Auth routes - handle their own layout */}
               <Route path="login" element={<LoginPage />} />
@@ -153,7 +155,8 @@ function App() {
 
           </Router>
         </AuthProvider>
-      </ToastProvider>
+        </ToastProvider>
+      </AdminSettingsProvider>
     </DarkModeProvider>
   );
 }
