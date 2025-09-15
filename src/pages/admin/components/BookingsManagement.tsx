@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { type AdminBooking, fetchAdminBookings, overrideBooking } from '../service';
-import BookingEditModal from './BookingEditModal';
 import { Eye, MoreVertical, Edit, RefreshCw, Filter, X, Search } from 'lucide-react';
 import BookingDetailsModal from './BookingDetailsModal';
 import Pagination from '../../../components/ui/Pagination';
-import { 
-  type BookingOverridePayload 
-} from '../interfaces';
 
 interface BookingsManagementProps {
   // ... keep any existing props ...
@@ -132,25 +128,8 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
     loadBookings();
   }, [currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      // Check if the click is outside the action menu
-      const actionMenuElement = document.querySelector('.action-menu-container');
-      if (actionMenuElement && !actionMenuElement.contains(event.target as Node)) {
-        setActionMenuOpen(null);
-      }
-    }
-
-    // Add event listener when action menu is open
-    if (actionMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    // Cleanup the event listener
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [actionMenuOpen]);
+  // Removed problematic click-outside handler that only affected first row
+  // Menu state is now properly managed by toggling on button click and closing after actions
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {

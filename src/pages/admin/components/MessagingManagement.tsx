@@ -14,24 +14,60 @@ import {
   Clock,
   FileText} from 'lucide-react';
 import { MessagingService } from '../service/messagingService';
-import type { 
-  Chat, 
-  Message, 
-  MessageTemplate, 
-  AdminMessageStats 
-} from '../../../types/messaging';
+import handoverReturnService from '../../../services/handoverReturnService';
+// Local lightweight types to avoid external dependency
+type Chat = {
+  id: string;
+  participants: string[];
+  participantNames: Record<string, string>;
+  lastMessage?: { content?: string };
+  isActive?: boolean;
+  type?: string;
+  unreadCount?: number;
+  updatedAt: string;
+};
+
+type Message = {
+  id: string;
+  senderId: string;
+  content: string;
+  timestamp: string;
+};
+
+type MessageTemplate = {
+  id: string;
+  name: string;
+  content: string;
+  category: 'general' | 'booking' | 'support' | 'custom';
+  language: string;
+  usageCount: number;
+  updatedAt: string;
+};
+
+type AdminMessageStats = {
+  totalMessages?: number;
+  activeChats?: number;
+  averageResponseTime?: number;
+  messagesToday?: number;
+  topChatCategories?: Array<{ category: string; count: number; percentage: number }>;
+  sentimentDistribution?: Array<{ emotion: string; count: number; percentage: number }>;
+} | null;
 
 interface MessagingManagementProps {
   // Add props for messaging data as needed
 }
 
 const MessagingManagement: React.FC<MessagingManagementProps> = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'chats' | 'templates' | 'ai-features'>('overview');
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'chats' | 'templates' | 'ai-features' | 'handover-return'>('overview');
+  const [hrView, setHrView] = useState<'all' | 'handover' | 'return'>('all');
+  const [hrMessages, setHrMessages] = useState<any[]>([]);
+  const [hrLoading, setHrLoading] = useState(false);
+  const [hrError, setHrError] = useState<string | null>(null);
+  const [chats] = useState<Chat[]>([]);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
-  const [messageStats, setMessageStats] = useState<AdminMessageStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [messageStats] = useState<AdminMessageStats>(null);
+  const [loading] = useState(false);
+  const [error] = useState<string | null>(null);
   
   // Chat management
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
@@ -52,7 +88,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
 
   // AI features
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
-  const [sentimentAnalysis, setSentimentAnalysis] = useState<any>(null);
+  const [sentimentAnalysis] = useState<any>(null);
   const [conflictDetection, setConflictDetection] = useState<any>(null);
 
   const token = localStorage.getItem('token');
@@ -87,6 +123,42 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
   //     setLoading(false);
   //   }
   // };
+
+  const loadHandoverReturnMessages = async () => {
+    setHrLoading(true);
+    setHrError(null);
+    try {
+      const res = await handoverReturnService.getAdminMessages({
+        view: hrView === 'all' ? undefined : (hrView as 'handover' | 'return'),
+        page: 1,
+        limit: 50,
+      });
+      // Normalize to display shape similar to sample
+      const items = (res.data || []).map((m: any) => ({
+        id: m.id,
+        sessionId: m.sessionId,
+        sessiontype: m.sessiontype || m.sessionType || m.type,
+        bookingId: m.bookingId,
+        senderId: m.senderId,
+        senderType: m.senderType,
+        message: m.message || m.content,
+        messageType: m.messageType || m.type || 'text',
+        attachments: m.attachments || [],
+        timestamp: m.timestamp || m.sentAt,
+      }));
+      setHrMessages(items);
+    } catch (e: any) {
+      setHrError(e?.message || 'Failed to load messages');
+    } finally {
+      setHrLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'handover-return') {
+      loadHandoverReturnMessages();
+    }
+  }, [activeTab, hrView]);
 
   const handleChatSelect = async (chat: Chat) => {
     setSelectedChat(chat);
@@ -143,12 +215,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
     }
   };
 
-  const handleAnalyzeSentiment = async (messageId: string) => {
-    const result = await MessagingService.analyzeSentiment(messageId, token || undefined);
-    if (result.data) {
-      setSentimentAnalysis(result.data);
-    }
-  };
+  // sentiment analysis handler can be re-enabled when UI adds trigger
 
   const handleDetectConflict = async (chatId: string) => {
     const result = await MessagingService.detectConflict(chatId, token || undefined);
@@ -164,13 +231,13 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
     }
   };
 
-  const filteredChats = chats.filter(chat => {
+  const filteredChats = chats.filter((chat: Chat) => {
     if (chatFilter === 'all') return true;
     if (chatFilter === 'active' && chat.isActive) return true;
     if (chatFilter === 'support' && chat.type === 'support') return true;
-    if (chatFilter === 'unread' && chat.unreadCount > 0) return true;
+    if (chatFilter === 'unread' && Number((chat.unreadCount as number) || 0) > 0) return true;
     return false;
-  }).filter(chat => 
+  }).filter((chat: Chat) => 
     chat.participantNames[chat.participants[0]]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     chat.lastMessage?.content?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -196,7 +263,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
           <p className="text-lg text-red-600 mb-2">Error loading messaging data</p>
           <p className="text-gray-500 mb-4">{error}</p>
           <button
-            onClick={fetchData}
+            onClick={() => window.location.reload()}
             className="bg-my-primary hover:bg-my-primary/80 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Try Again
@@ -222,11 +289,12 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
-          {[
+          {[ 
             { id: 'overview', label: 'Overview', icon: TrendingUp },
             { id: 'chats', label: 'Chats', icon: MessageSquare },
             { id: 'templates', label: 'Templates', icon: FileText },
-            { id: 'ai-features', label: 'AI Features', icon: Bot }
+            { id: 'ai-features', label: 'AI Features', icon: Bot },
+            { id: 'handover-return', label: 'Handover & Return', icon: MessageSquare }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -304,7 +372,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
               <div className="bg-white rounded-xl shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Chat Categories</h3>
                 <div className="space-y-3">
-                  {messageStats?.topChatCategories?.map((category, index) => (
+                  {messageStats?.topChatCategories?.map((category: { category: string; count: number; percentage: number }, index: number) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">{category.category}</span>
                       <div className="flex items-center space-x-2">
@@ -324,7 +392,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
               <div className="bg-white rounded-xl shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Distribution</h3>
                 <div className="space-y-3">
-                  {messageStats?.sentimentDistribution?.map((sentiment, index) => (
+                  {messageStats?.sentimentDistribution?.map((sentiment: { emotion: string; count: number; percentage: number }, index: number) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 capitalize">{sentiment.emotion}</span>
                       <div className="flex items-center space-x-2">
@@ -365,9 +433,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                       <p className="text-sm text-gray-600">
                         {new Date(chat.updatedAt).toLocaleDateString()}
                       </p>
-                      {chat.unreadCount > 0 && (
+                      {Number((chat.unreadCount as number) || 0) > 0 && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-my-primary text-white">
-                          {chat.unreadCount}
+                          {Number((chat.unreadCount as number) || 0)}
                         </span>
                       )}
                     </div>
@@ -430,9 +498,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                     <p className="text-sm text-gray-600 truncate">
                       {chat.lastMessage?.content || 'No messages yet'}
                     </p>
-                    {chat.unreadCount > 0 && (
+                    {Number((chat.unreadCount as number) || 0) > 0 && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-my-primary text-white mt-2">
-                        {chat.unreadCount}
+                        {Number((chat.unreadCount as number) || 0)}
                       </span>
                     )}
                   </div>
@@ -685,6 +753,65 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                 </div>
               ) : (
                 <p className="text-gray-500 text-sm">No conflict detection performed yet. Select a chat and use the conflict detection feature.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'handover-return' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Handover & Return Messages</h3>
+              <div className="flex items-center gap-2">
+                {(['all','handover','return'] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setHrView(v)}
+                    className={`px-3 py-1 text-xs rounded-full ${hrView === v ? 'bg-my-primary text-white' : 'bg-gray-100 text-gray-700'}`}
+                  >
+                    {v.charAt(0).toUpperCase()+v.slice(1)}
+                  </button>
+                ))}
+                <button
+                  onClick={loadHandoverReturnMessages}
+                  className="px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-700"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border">
+              {hrLoading && (
+                <div className="p-4 text-sm text-gray-500">Loading…</div>
+              )}
+              {hrError && (
+                <div className="p-4 text-sm text-red-600">{hrError}</div>
+              )}
+              {!hrLoading && !hrError && (
+                <div className="divide-y">
+                  {hrMessages.length === 0 ? (
+                    <div className="p-4 text-sm text-gray-500">No messages found.</div>
+                  ) : (
+                    hrMessages.map((m) => (
+                      <div key={m.id} className="p-4">
+                        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`${m.sessiontype === 'return' 
+                              ? 'px-2 py-0.5 rounded-full bg-purple-700 text-white ring-1 ring-purple-800'
+                              : 'px-2 py-0.5 rounded-full bg-teal-700 text-white ring-1 ring-teal-800'}`}>
+                              {(m.sessiontype || 'handover').toUpperCase()}
+                            </span>
+                            <span>Booking: {m.bookingId?.slice(0,8)}…</span>
+                            <span>Sender: {m.senderType || m.senderId?.slice(0,6)}</span>
+                          </div>
+                          <span>{new Date(m.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div className="text-sm text-gray-900 whitespace-pre-wrap">{m.message}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
             </div>
           </div>

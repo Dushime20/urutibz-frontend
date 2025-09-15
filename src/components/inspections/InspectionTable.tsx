@@ -136,7 +136,7 @@ const InspectionTable: React.FC<InspectionTableProps> = ({
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-gray-900">
-                  {inspection.product?.name || `Product ${inspection.productId}`}
+                  {inspection.product?.name || 'Product'}
                 </h4>
                 <p className="text-xs text-gray-500 mt-1">
                   {getTypeLabel(inspection.inspectionType)}
@@ -203,11 +203,9 @@ const InspectionTable: React.FC<InspectionTableProps> = ({
                 <tr key={inspection.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {inspection.product?.name || `Product ${inspection.productId}`}
+                      {inspection.product?.name || 'Product'}
                     </div>
-                    <div className="text-sm text-gray-500">
-                      ID: {inspection.id.slice(0, 8)}...
-                    </div>
+                    {/* ID hidden in table view; available in detail view */}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-gray-900">
@@ -223,7 +221,7 @@ const InspectionTable: React.FC<InspectionTableProps> = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{inspection.location}</div>
+                    <div className="text-sm text-gray-900">{inspection.location || inspection.inspectionLocation || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">

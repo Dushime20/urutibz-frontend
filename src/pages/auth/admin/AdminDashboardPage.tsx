@@ -904,7 +904,7 @@ const AdminDashboardPage: React.FC = () => {
       {/* Inspection Details Modal */}
       {showInspectionDetailsModal && selectedInspection && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowInspectionDetailsModal(false)} />
+          <div className="absolute inset-0 bg-black/40 " onClick={() => setShowInspectionDetailsModal(false)} />
           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Inspection Details</h3>
@@ -927,6 +927,14 @@ const AdminDashboardPage: React.FC = () => {
                     <span className="ml-2 text-sm text-gray-900">{selectedInspection.id}</span>
                   </div>
                   <div>
+                    <span className="text-sm font-medium text-gray-500">Product ID:</span>
+                    <span className="ml-2 text-sm text-gray-900">{selectedInspection.productId || selectedInspection.product_id || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Product:</span>
+                    <span className="ml-2 text-sm text-gray-900">{selectedInspection.product?.name || selectedInspection.productName || 'N/A'}</span>
+                  </div>
+                  <div>
                     <span className="text-sm font-medium text-gray-500">Status:</span>
                     <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       selectedInspection.status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -944,6 +952,10 @@ const AdminDashboardPage: React.FC = () => {
                   <div>
                     <span className="text-sm font-medium text-gray-500">Location:</span>
                     <span className="ml-2 text-sm text-gray-900">{selectedInspection.location || selectedInspection.inspectionLocation}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Inspector:</span>
+                    <span className="ml-2 text-sm text-gray-900">{(selectedInspection.inspector && (selectedInspection.inspector.userId || selectedInspection.inspector.name)) || selectedInspection.inspectorId || 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -973,12 +985,39 @@ const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {selectedInspection.notes && (
+            {(selectedInspection.notes || selectedInspection.generalNotes) && (
               <div className="mt-6">
                 <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
                 <p className="text-sm text-gray-700">{selectedInspection.notes || selectedInspection.generalNotes}</p>
               </div>
             )}
+
+            {/* Actions */}
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { if (selectedInspection.status === 'pending') window.location.href = `/inspections/${selectedInspection.id}/start`; }}
+                  disabled={selectedInspection.status !== 'pending'}
+                  className={`px-4 py-2 rounded-md text-sm ${selectedInspection.status === 'pending' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                >
+                  Start Inspection
+                </button>
+                <button
+                  onClick={() => { if (selectedInspection.status === 'in_progress') window.location.href = `/inspections/${selectedInspection.id}/complete`; }}
+                  disabled={selectedInspection.status !== 'in_progress'}
+                  className={`px-4 py-2 rounded-md text-sm ${selectedInspection.status === 'in_progress' ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                >
+                  Complete Inspection
+                </button>
+              </div>
+
+              {/* Quick link to related disputes (if any) */}
+              {Array.isArray(disputes) && disputes.some(d => d.inspectionId === selectedInspection.id) && (
+                <div className="text-sm text-gray-600">
+                  Related disputes: {disputes.filter(d => d.inspectionId === selectedInspection.id).length}
+                </div>
+              )}
+            </div>
 
             <div className="mt-6 flex justify-end">
               <button

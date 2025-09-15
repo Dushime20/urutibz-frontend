@@ -5,7 +5,6 @@ import { itemCategories } from '../../data/mockRentalData';
 import type { AdminStats, RecentUser, RecentBooking, AdminUser } from './interfaces';
 import {
   fetchAllProducts,
-  fetchUserById,
   fetchAdminStats,
   fetchRecentUsers,
   fetchRecentBookings,
@@ -21,8 +20,6 @@ import {
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
 import AdminStatCards from './components/AdminStatCards';
-import RecentUsersList from './components/RecentUsersList';
-import RecentBookingsList from './components/RecentBookingsList';
 import ItemsManagement from './components/ItemsManagement';
 import UserManagement from './components/UserManagement';
 import BookingsManagement from './components/BookingsManagement';
@@ -37,7 +34,8 @@ import RecentTransactionsList from './components/RecentTransactionsList';
 import TransactionsManagement from './components/TransactionsManagement';
 import CategoriesManagement from './components/CategoriesManagement';
 import NewListingModal from '../my-account/models/NewListingModal';
-import { createProduct, createProductPricing, createProductImage } from '../my-account/service/api';
+import { createProduct, createProductPricing, createProductImage, getProductById } from '../my-account/service/api';
+import { fetchUserById } from './service';
 import CountriesManagement from './components/CountriesManagement';
 import PaymentMethodsManagement from './components/PaymentMethodsManagement';
 import PaymentProvidersManagement from './components/PaymentProvidersManagement';
@@ -60,8 +58,9 @@ import SkeletonMetrics from '../../components/ui/SkeletonMetrics';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { Users, Calendar, Cpu, Clock, CheckCircle, Activity } from 'lucide-react';
+import { Users, Calendar, Cpu, Clock, CheckCircle, Activity, User as UserIcon, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { inspectionService, inspectionItemService } from '../../services/inspectionService';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -288,7 +287,7 @@ const AdminDashboardPage: React.FC = () => {
   const [inspectionsError, setInspectionsError] = useState<string | null>(null);
   const [inspectionPage, setInspectionPage] = useState(1);
   const [inspectionsPerPage] = useState(10);
-  const [selectedInspection, setSelectedInspection] = useState<any>(null);
+  // const [selectedInspection, setSelectedInspection] = useState<any>(null);
 
   // Disputes Management State
   const [disputes, setDisputes] = useState<any[]>([]);
@@ -307,6 +306,160 @@ const AdminDashboardPage: React.FC = () => {
 
   const [showInspectionDetailsModal, setShowInspectionDetailsModal] = useState(false);
   const [showDisputeDetailsModal, setShowDisputeDetailsModal] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<any>(null);
+  const [modalProductName, setModalProductName] = useState<string>('');
+  const [modalInspectorName, setModalInspectorName] = useState<string>('');
+  const [adminInspectionDetails, setAdminInspectionDetails] = useState<any>(null);
+  const [isStartingInspection, setIsStartingInspection] = useState(false);
+  const [isCompletingInspection, setIsCompletingInspection] = useState(false);
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [newItemForm, setNewItemForm] = useState({
+    itemName: '',
+    description: '',
+    condition: 'good',
+    repairCost: '',
+    replacementCost: ''
+  });
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completeForm, setCompleteForm] = useState({
+    verificationCode: '',
+    handoverSignature: '',
+    overallCondition: 'good',
+    conditionScore: 5,
+    notes: '',
+    inspectorNotes: '',
+    generalNotes: '',
+    ownerNotes: '',
+    renterNotes: '',
+    inspectionLocation: ''
+  });
+  const [completeItems, setCompleteItems] = useState<Array<{ itemName: string; condition: string; description: string }>>([
+    { itemName: '', condition: 'good', description: '' }
+  ]);
+
+  useEffect(() => {
+    const loadFriendlyNames = async () => {
+      try {
+        if (!showInspectionDetailsModal || !selectedInspection) return;
+        // Load full inspection details (participants, items)
+        try {
+          const details = await inspectionService.getInspection(selectedInspection.id);
+          setAdminInspectionDetails(details);
+        } catch {}
+        // Product name
+        const inlineName = selectedInspection.product?.name || selectedInspection.productName;
+        if (inlineName) setModalProductName(String(inlineName));
+        else if (selectedInspection.productId || selectedInspection.product_id) {
+          try {
+            const pid = selectedInspection.productId || selectedInspection.product_id;
+            const prod = await getProductById(pid);
+            const name = prod?.title || prod?.name || prod?.productName;
+            if (name) setModalProductName(String(name));
+          } catch {}
+        }
+        // Inspector name
+        const inspectorInline = selectedInspection.inspector?.name || selectedInspection.inspectorName;
+        if (inspectorInline) setModalInspectorName(String(inspectorInline));
+        else if (selectedInspection.inspector && selectedInspection.inspector.userId) setModalInspectorName(String(selectedInspection.inspector.userId));
+        else if (selectedInspection.inspectorId) setModalInspectorName(String(selectedInspection.inspectorId));
+      } catch {}
+    };
+    loadFriendlyNames();
+  }, [showInspectionDetailsModal, selectedInspection]);
+
+  const refreshSelectedInspection = async () => {
+    try {
+      if (!selectedInspection) return;
+      const details = await inspectionService.getInspection(selectedInspection.id);
+      setSelectedInspection(details.inspection);
+    } catch {}
+  };
+
+  const handleAdminStartInspection = async () => {
+    if (!selectedInspection || isStartingInspection) return;
+    try {
+      setIsStartingInspection(true);
+      await inspectionService.startInspection(selectedInspection.id, {});
+      await refreshSelectedInspection();
+      try { showToast && showToast('Inspection started successfully', 'success'); } catch {}
+    } catch (e) {
+      console.error('Failed to start inspection:', e);
+      try { showToast && showToast('Failed to start inspection', 'error'); } catch {}
+    } finally {
+      setIsStartingInspection(false);
+    }
+  };
+
+  const handleAdminCompleteInspection = async () => {
+    if (!selectedInspection || isCompletingInspection) return;
+    // Validate items
+    const validItems = completeItems.filter(it => it.itemName.trim() && it.description.trim());
+    if (validItems.length === 0) {
+      try { showToast && showToast('Add at least one item with name and description', 'error'); } catch {}
+      return;
+    }
+    try {
+      setIsCompletingInspection(true);
+      await inspectionService.completeInspection(selectedInspection.id, {
+        verificationCode: completeForm.verificationCode,
+        handoverSignature: completeForm.handoverSignature,
+        items: validItems,
+        inspectorNotes: completeForm.inspectorNotes,
+        generalNotes: completeForm.generalNotes || completeForm.notes,
+        ownerNotes: completeForm.ownerNotes,
+        renterNotes: completeForm.renterNotes,
+        inspectionLocation: completeForm.inspectionLocation,
+        conditionAssessment: {
+          overallCondition: completeForm.overallCondition as any,
+          conditionScore: Number(completeForm.conditionScore),
+          damages: [],
+          accessories: [],
+          notes: completeForm.notes,
+          assessedBy: 'admin',
+          assessedAt: new Date().toISOString()
+        }
+      } as any);
+      await refreshSelectedInspection();
+      setShowCompleteModal(false);
+      try { showToast && showToast('Inspection completed successfully', 'success'); } catch {}
+    } catch (e) {
+      console.error('Failed to complete inspection:', e);
+      try { showToast && showToast('Failed to complete inspection', 'error'); } catch {}
+    } finally {
+      setIsCompletingInspection(false);
+    }
+  };
+
+  const handleOpenAddItem = () => {
+    setNewItemForm({ itemName: '', description: '', condition: 'good', repairCost: '', replacementCost: '' });
+    setShowAddItemModal(true);
+  };
+
+  const handleSubmitAddItem = async () => {
+    if (!selectedInspection || isAddingItem) return;
+    try {
+      setIsAddingItem(true);
+      const payload: any = {
+        itemName: newItemForm.itemName,
+        description: newItemForm.description,
+        condition: newItemForm.condition,
+      };
+      if (newItemForm.repairCost) payload.repairCost = Number(newItemForm.repairCost);
+      if (newItemForm.replacementCost) payload.replacementCost = Number(newItemForm.replacementCost);
+      await inspectionItemService.addItem(selectedInspection.id, payload);
+      try { showToast && showToast('Item added to inspection', 'success'); } catch {}
+      setShowAddItemModal(false);
+      // reload details list
+      const details = await inspectionService.getInspection(selectedInspection.id);
+      setAdminInspectionDetails(details);
+    } catch (e) {
+      console.error('Failed to add item:', e);
+      try { showToast && showToast('Failed to add item', 'error'); } catch {}
+    } finally {
+      setIsAddingItem(false);
+    }
+  };
 
   // Fetch overview data
   useEffect(() => {
@@ -851,7 +1004,24 @@ const AdminDashboardPage: React.FC = () => {
                               <div className="space-y-3">
                                 {recentUsers.slice(0, 3).map(user => (
                                   <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onClick={() => setSelectedUser(user)}>
-                                    <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                                    <div className="relative">
+                                      {(user as any).profileImageUrl || (user as any).avatar ? (
+                                        <img
+                                          src={(user as any).profileImageUrl || (user as any).avatar}
+                                          alt={user.name}
+                                          className="w-10 h-10 rounded-full object-cover"
+                                          onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            const fallback = target.nextElementSibling as HTMLDivElement | null;
+                                            if (fallback) fallback.classList.remove('hidden');
+                                          }}
+                                        />
+                                      ) : null}
+                                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white bg-gray-200 dark:bg-gray-700 ring-1 ring-gray-300 dark:ring-gray-600 ${(((user as any).profileImageUrl) || ((user as any).avatar)) ? 'hidden' : ''}`}>
+                                        <UserIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                                      </div>
+                                    </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{user.name}</div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
@@ -877,7 +1047,24 @@ const AdminDashboardPage: React.FC = () => {
                                       <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-my-primary text-xl">&times;</button>
                                     </div>
                                     <div className="flex items-center gap-4 mb-4">
-                                      <img src={selectedUser.avatar || '/assets/img/profiles/avatar-01.jpg'} alt={selectedUser.name || ''} className="w-16 h-16 rounded-full object-cover" />
+                                      <div className="relative">
+                                        {(selectedUser as any).profileImageUrl || (selectedUser as any).avatar ? (
+                                          <img
+                                            src={(selectedUser as any).profileImageUrl || (selectedUser as any).avatar}
+                                            alt={selectedUser.name || ''}
+                                            className="w-16 h-16 rounded-full object-cover"
+                                            onError={(e) => {
+                                              const target = e.target as HTMLImageElement;
+                                              target.style.display = 'none';
+                                              const fallback = target.nextElementSibling as HTMLDivElement | null;
+                                              if (fallback) fallback.classList.remove('hidden');
+                                            }}
+                                          />
+                                        ) : null}
+                                        <div className={`w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 ring-1 ring-gray-300 dark:ring-gray-600 flex items-center justify-center ${((selectedUser as any).profileImageUrl || (selectedUser as any).avatar) ? 'hidden' : ''}`}>
+                                          <UserIcon className="w-7 h-7 text-gray-600 dark:text-gray-300" />
+                                        </div>
+                                      </div>
                                       <div>
                                         <div className="font-semibold text-lg text-gray-900 dark:text-gray-100">{selectedUser.name || ''}</div>
                                         <div className="text-gray-500 dark:text-gray-400 text-sm">{selectedUser.email || ''}</div>
@@ -903,7 +1090,22 @@ const AdminDashboardPage: React.FC = () => {
                               <div className="space-y-3">
                                 {recentBookings.slice(0, 3).map(booking => (
                                   <div key={booking.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onClick={() => setSelectedBooking(booking)}>
-                                    <img src={booking.itemImage} alt={booking.itemName} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                                    {booking.itemImage ? (
+                                      <img
+                                        src={booking.itemImage}
+                                        alt={booking.itemName}
+                                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.style.display = 'none';
+                                          const fallback = target.nextElementSibling as HTMLDivElement | null;
+                                          if (fallback) fallback.classList.remove('hidden');
+                                        }}
+                                      />
+                                    ) : null}
+                                    <div className={`w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 ring-1 ring-gray-300 dark:ring-gray-600 flex items-center justify-center ${booking.itemImage ? 'hidden' : ''}`}>
+                                      <ImageIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                                    </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{booking.itemName}</div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{booking.customerName}</div>
@@ -932,7 +1134,24 @@ const AdminDashboardPage: React.FC = () => {
                                       <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-my-primary text-xl">&times;</button>
                                     </div>
                                     <div className="flex items-center gap-4 mb-4">
-                                      <img src={selectedBooking.itemImage || ''} alt={selectedBooking.itemName || ''} className="w-16 h-16 rounded-lg object-cover" />
+                                      <div className="relative">
+                                        {selectedBooking.itemImage ? (
+                                          <img
+                                            src={selectedBooking.itemImage}
+                                            alt={selectedBooking.itemName || ''}
+                                            className="w-16 h-16 rounded-lg object-cover"
+                                            onError={(e) => {
+                                              const target = e.target as HTMLImageElement;
+                                              target.style.display = 'none';
+                                              const fallback = target.nextElementSibling as HTMLDivElement | null;
+                                              if (fallback) fallback.classList.remove('hidden');
+                                            }}
+                                          />
+                                        ) : null}
+                                        <div className={`w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 ring-1 ring-gray-300 dark:ring-gray-600 flex items-center justify-center ${selectedBooking.itemImage ? 'hidden' : ''}`}>
+                                          <ImageIcon className="w-7 h-7 text-gray-600 dark:text-gray-300" />
+                                        </div>
+                                      </div>
                                       <div>
                                         <div className="font-semibold text-lg text-gray-900 dark:text-gray-100">{selectedBooking.itemName || ''}</div>
                                         <div className="text-gray-500 dark:text-gray-400 text-sm">{selectedBooking.customerName || ''}</div>
@@ -1107,6 +1326,13 @@ const AdminDashboardPage: React.FC = () => {
                     <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedInspection.id}</span>
                   </div>
                   <div>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Product:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{modalProductName || selectedInspection.product?.name || selectedInspection.productName || 'N/A'}</span>
+                    {selectedInspection.productId && (
+                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(ID: {selectedInspection.productId})</span>
+                    )}
+                  </div>
+                  <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status:</span>
                     <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${selectedInspection.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                       selectedInspection.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
@@ -1122,7 +1348,11 @@ const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Location:</span>
-                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedInspection.location || selectedInspection.inspectionLocation}</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{selectedInspection.location || selectedInspection.inspectionLocation || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Inspector:</span>
+                    <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">{modalInspectorName || (selectedInspection.inspector && (selectedInspection.inspector.userId || selectedInspection.inspector.name)) || selectedInspection.inspectorId || 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -1152,12 +1382,91 @@ const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {selectedInspection.notes && (
+            {(selectedInspection.notes || selectedInspection.generalNotes) && (
               <div className="mt-6">
                 <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Notes</h4>
                 <p className="text-sm text-gray-700 dark:text-gray-300">{selectedInspection.notes || selectedInspection.generalNotes}</p>
               </div>
             )}
+
+            {/* Participants */}
+            {adminInspectionDetails?.participants && (
+              <div className="mt-6">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Participants</h4>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Inspector:</span>
+                    <span className="ml-2 text-gray-900 dark:text-gray-100">{adminInspectionDetails.participants.inspector?.name || modalInspectorName || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Renter:</span>
+                    <span className="ml-2 text-gray-900 dark:text-gray-100">{adminInspectionDetails.participants.renter?.name || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Owner:</span>
+                    <span className="ml-2 text-gray-900 dark:text-gray-100">{adminInspectionDetails.participants.owner?.name || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Items Preview */}
+            {Array.isArray(adminInspectionDetails?.items) && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Inspection Items</h4>
+                  <button
+                    onClick={handleOpenAddItem}
+                    className="inline-flex items-center px-3 py-1.5 rounded-md text-sm bg-teal-600 text-white hover:bg-teal-700"
+                  >
+                    Add Item
+                  </button>
+                </div>
+                {adminInspectionDetails.items.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No items added.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {adminInspectionDetails.items.slice(0, 5).map((it: any) => (
+                      <div key={it.id} className="border border-gray-200 dark:border-gray-700 rounded-md p-3">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{it.itemName || it.name || 'Item'}</div>
+                        {it.description && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-words">{it.description}</div>
+                        )}
+                      </div>
+                    ))}
+                    {adminInspectionDetails.items.length > 5 && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">and {adminInspectionDetails.items.length - 5} more…</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAdminStartInspection}
+                  disabled={selectedInspection.status !== 'pending' || isStartingInspection}
+                  className={`px-4 py-2 rounded-md text-sm ${selectedInspection.status === 'pending' && !isStartingInspection ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                >
+                  {isStartingInspection ? 'Starting…' : 'Start Inspection'}
+                </button>
+                <button
+                  onClick={() => setShowCompleteModal(true)}
+                  disabled={selectedInspection.status !== 'in_progress'}
+                  className={`px-4 py-2 rounded-md text-sm ${selectedInspection.status === 'in_progress' && !isCompletingInspection ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                >
+                  Complete Inspection
+                </button>
+              </div>
+
+              {Array.isArray(disputes) && disputes.some(d => d.inspectionId === selectedInspection.id) && (
+                <div className="text-sm text-gray-600 dark:text-gray-300">
+                  Related disputes: {disputes.filter(d => d.inspectionId === selectedInspection.id).length}
+                </div>
+              )}
+            </div>
 
             <div className="mt-6 flex justify-end">
               <button
@@ -1293,6 +1602,268 @@ const AdminDashboardPage: React.FC = () => {
           isSubmitting={newListingSubmitting}
           handleInputChange={handleNewListingInputChange}
         />
+      )}
+
+      {/* Add Item Modal */}
+      {showAddItemModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowAddItemModal(false)} />
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Add Inspection Item</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Item name</label>
+                <input
+                  value={newItemForm.itemName}
+                  onChange={(e) => setNewItemForm({ ...newItemForm, itemName: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="e.g., Front bumper"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                <textarea
+                  value={newItemForm.description}
+                  onChange={(e) => setNewItemForm({ ...newItemForm, description: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Condition</label>
+                <select
+                  value={newItemForm.condition}
+                  onChange={(e) => setNewItemForm({ ...newItemForm, condition: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="excellent">Excellent</option>
+                  <option value="good">Good</option>
+                  <option value="fair">Fair</option>
+                  <option value="poor">Poor</option>
+                  <option value="damaged">Damaged</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Repair cost</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newItemForm.repairCost}
+                    onChange={(e) => setNewItemForm({ ...newItemForm, repairCost: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Replacement cost</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newItemForm.replacementCost}
+                    onChange={(e) => setNewItemForm({ ...newItemForm, replacementCost: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setShowAddItemModal(false)}
+                className="px-4 py-2 rounded-md border text-sm text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitAddItem}
+                disabled={isAddingItem || !newItemForm.itemName.trim()}
+                className={`px-4 py-2 rounded-md text-sm ${isAddingItem ? 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300' : 'bg-teal-600 hover:bg-teal-700 text-white'}`}
+              >
+                {isAddingItem ? 'Adding…' : 'Add Item'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Inspection Modal */}
+      {showCompleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowCompleteModal(false)} />
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Complete Inspection</h3>
+            <div className="space-y-4">
+              {/* Items Editor */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Items</label>
+                  <button
+                    onClick={() => setCompleteItems([...completeItems, { itemName: '', condition: 'good', description: '' }])}
+                    className="px-2 py-1 rounded-md text-xs bg-teal-600 text-white hover:bg-teal-700"
+                  >
+                    Add Row
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {completeItems.map((it, idx) => (
+                    <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input
+                        value={it.itemName}
+                        onChange={(e) => {
+                          const next = [...completeItems];
+                          next[idx] = { ...next[idx], itemName: e.target.value };
+                          setCompleteItems(next);
+                        }}
+                        placeholder="Item name"
+                        className="px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <select
+                        value={it.condition}
+                        onChange={(e) => {
+                          const next = [...completeItems];
+                          next[idx] = { ...next[idx], condition: e.target.value };
+                          setCompleteItems(next);
+                        }}
+                        className="px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="excellent">Excellent</option>
+                        <option value="good">Good</option>
+                        <option value="fair">Fair</option>
+                        <option value="poor">Poor</option>
+                        <option value="damaged">Damaged</option>
+                      </select>
+                      <input
+                        value={it.description}
+                        onChange={(e) => {
+                          const next = [...completeItems];
+                          next[idx] = { ...next[idx], description: e.target.value };
+                          setCompleteItems(next);
+                        }}
+                        placeholder="Description (required)"
+                        className="px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Required/Optional fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Verification code</label>
+                  <input
+                    value={completeForm.verificationCode}
+                    onChange={(e) => setCompleteForm({ ...completeForm, verificationCode: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Enter code"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Handover signature</label>
+                  <input
+                    value={completeForm.handoverSignature}
+                    onChange={(e) => setCompleteForm({ ...completeForm, handoverSignature: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Signer or signature ref"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Overall condition</label>
+                  <select
+                    value={completeForm.overallCondition}
+                    onChange={(e) => setCompleteForm({ ...completeForm, overallCondition: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="excellent">Excellent</option>
+                    <option value="good">Good</option>
+                    <option value="fair">Fair</option>
+                    <option value="poor">Poor</option>
+                    <option value="damaged">Damaged</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Condition score (1–5)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={completeForm.conditionScore}
+                    onChange={(e) => setCompleteForm({ ...completeForm, conditionScore: Number(e.target.value) })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Inspector notes</label>
+                  <textarea
+                    value={completeForm.inspectorNotes}
+                    onChange={(e) => setCompleteForm({ ...completeForm, inspectorNotes: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">General notes</label>
+                  <textarea
+                    value={completeForm.generalNotes}
+                    onChange={(e) => setCompleteForm({ ...completeForm, generalNotes: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Owner notes</label>
+                  <textarea
+                    value={completeForm.ownerNotes}
+                    onChange={(e) => setCompleteForm({ ...completeForm, ownerNotes: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Renter notes</label>
+                  <textarea
+                    value={completeForm.renterNotes}
+                    onChange={(e) => setCompleteForm({ ...completeForm, renterNotes: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Inspection location</label>
+                <input
+                  value={completeForm.inspectionLocation}
+                  onChange={(e) => setCompleteForm({ ...completeForm, inspectionLocation: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Warehouse A - Bay 3"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setShowCompleteModal(false)}
+                className="px-4 py-2 rounded-md border text-sm text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdminCompleteInspection}
+                disabled={isCompletingInspection || !completeForm.verificationCode.trim() || completeItems.every(i => !i.itemName.trim() || !i.description.trim())}
+                className={`px-4 py-2 rounded-md text-sm ${isCompletingInspection ? 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+              >
+                {isCompletingInspection ? 'Completing…' : 'Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

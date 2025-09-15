@@ -414,6 +414,42 @@ export const handoverReturnService = {
     }
   },
 
+  // ADMIN: Get all handover & return messages feed
+  getAdminMessages: async (params?: { view?: 'handover' | 'return'; page?: number; limit?: number }): Promise<{ success: boolean; message: string; data: any[]; meta?: any }> => {
+    try {
+      const query = new URLSearchParams();
+      if (params?.view) query.set('view', params.view);
+      if (params?.page) query.set('page', String(params.page));
+      if (params?.limit) query.set('limit', String(params.limit));
+      const url = `${API_BASE_URL}/admin/handover-return/messages${query.toString() ? `?${query.toString()}` : ''}`;
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      const { data } = await axios.get(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const body = data || {};
+      // Normalize to items array compatible with provided sample
+      let items: any[] = [];
+      let meta: any = undefined;
+      if (Array.isArray(body?.data?.items)) {
+        items = body.data.items;
+        meta = body?.data?.meta || body?.meta;
+      } else if (Array.isArray(body?.data)) {
+        items = body.data;
+        meta = body?.meta;
+      } else {
+        items = [];
+        meta = body?.meta || { total: 0, page: params?.page || 1, limit: params?.limit || 50 };
+      }
+      return { success: !!body.success, message: body.message, data: items, meta };
+    } catch (error: any) {
+      console.error('Error fetching admin messages:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch admin messages');
+    }
+  },
+
   // Get messages (supports bookingId/sessionId)
   getMessages: async (params: GetMessagesParams): Promise<GetMessagesResponse> => {
     try {

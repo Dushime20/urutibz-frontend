@@ -34,6 +34,7 @@ const InspectionDetailsPage: React.FC = () => {
   const [inspectionDetails, setInspectionDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [productName, setProductName] = useState<string>('');
+  const [inspectorName, setInspectorName] = useState<string>('');
   const { user, logout } = useAuth();
   const isInspector = user?.role === 'inspector' || user?.role === 'admin';
 
@@ -152,6 +153,21 @@ const InspectionDetailsPage: React.FC = () => {
         const inspectionData = await inspectionService.getInspection(id);
         setInspection(inspectionData.inspection);
         setInspectionDetails(inspectionData);
+        // Resolve inspector name from response or fallback to ID
+        try {
+          const inlineInspectorName =
+            inspectionData?.participants?.inspector?.name ||
+            inspectionData?.inspection?.inspector?.name || '';
+          if (inlineInspectorName) {
+            setInspectorName(String(inlineInspectorName));
+          } else {
+            const iid =
+              inspectionData?.inspection?.inspectorId ||
+              inspectionData?.inspection?.inspector?.userId || '';
+            if (iid) setInspectorName(`ID: ${iid}`);
+            else setInspectorName('Unassigned');
+          }
+        } catch {}
         try {
           const pid = inspectionData?.inspection?.productId;
           if (pid) {

@@ -240,12 +240,14 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDisputeStatusColor(dispute.status)}`}>
                                 {dispute.status}
                               </span>
-                              <button
-                                onClick={() => handleResolveDispute(dispute)}
-                                className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 text-sm font-medium"
-                              >
-                                Resolve
-                              </button>
+                              {dispute.status !== 'resolved' && (
+                                <button
+                                  onClick={() => handleResolveDispute(dispute)}
+                                  className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 text-sm font-medium"
+                                >
+                                  Resolve
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -272,9 +274,9 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                     <thead className="bg-gray-50 dark:bg-slate-700">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                        {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                           Inspection
-                        </th>
+                        </th> */}
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                           Type
                         </th>
@@ -295,7 +297,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                     <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                       {inspections.map((inspection) => (
                         <tr key={inspection.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          {/* <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
                                 <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -307,7 +309,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                                 <div className="text-sm text-gray-500 dark:text-slate-400">ID: {inspection.id}</div>
                               </div>
                             </div>
-                          </td>
+                          </td> */}
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">
                             {inspection.inspectionType?.replace('_', ' ')}
                           </td>
@@ -320,7 +322,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                             {formatDate(inspection.scheduledAt)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">
-                            {inspection.location}
+                            {inspection.location || inspection.inspectionLocation || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <button
@@ -360,9 +362,9 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                     <thead className="bg-gray-50 dark:bg-slate-700">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                        {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                           Dispute
-                        </th>
+                        </th> */}
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                           Type
                         </th>
@@ -383,19 +385,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                     <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                       {disputes.map((dispute) => (
                         <tr key={dispute.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
-                                  Inspection {dispute.inspectionId}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-slate-400">ID: {dispute.id}</div>
-                              </div>
-                            </div>
-                          </td>
+                        
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">
                             {dispute.disputeType?.replace('_', ' ')}
                           </td>
