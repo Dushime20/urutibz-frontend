@@ -8,7 +8,6 @@ import {
   Server,
   Activity,
   Bell,
-  Lock,
   CheckCircle
 } from 'lucide-react';
 import type { SystemSettings } from '../../../types/adminSettings.types';
@@ -49,14 +48,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const formatDuration = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
+  
 
   const backupFrequencies = [
     { value: 'hourly', label: 'Hourly', description: 'Backup every hour' },
@@ -250,11 +242,11 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
         </div>
       </div>
 
-      {/* File & Session Settings */}
+      {/* File Settings */}
       <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
           <FileText className="w-5 h-5 mr-2" />
-          File & Session Settings
+          File Settings
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -275,63 +267,10 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               Current: {formatFileSize(formData.maxFileSize)}
             </p>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Session Timeout
-            </label>
-            <input
-              type="number"
-              min="300"
-              max="86400"
-              step="300"
-              value={formData.sessionTimeout}
-              onChange={(e) => handleChange('sessionTimeout', parseInt(e.target.value) || 3600)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
-            />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Current: {formatDuration(formData.sessionTimeout)}
-            </p>
-          </div>
         </div>
       </div>
 
-      {/* Security Settings */}
-      <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <Lock className="w-5 h-5 mr-2" />
-          Security Settings
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Max Login Attempts
-            </label>
-            <input
-              type="number"
-              min="3"
-              max="10"
-              value={formData.maxLoginAttempts}
-              onChange={(e) => handleChange('maxLoginAttempts', parseInt(e.target.value) || 5)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Minimum Password Length
-            </label>
-            <input
-              type="number"
-              min="6"
-              max="20"
-              value={formData.passwordMinLength}
-              onChange={(e) => handleChange('passwordMinLength', parseInt(e.target.value) || 8)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
-            />
-          </div>
-        </div>
-      </div>
+      {/* Security Settings moved to dedicated Security settings form */}
 
       {/* Performance & Cache */}
       <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">

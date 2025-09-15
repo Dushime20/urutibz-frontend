@@ -129,6 +129,12 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
       }
       
       setSettings(newSettings);
+      // Persist key security values for runtime fallbacks (e.g., session timeout)
+      try {
+        if (newSettings?.security?.sessionTimeout != null) {
+          localStorage.setItem('security.sessionTimeout', String(newSettings.security.sessionTimeout));
+        }
+      } catch {}
       // Persist key platform flags for unauthenticated contexts (e.g., header/register before login)
       // Do not persist registration flags to localStorage; rely on API-driven context only
       cacheRef.current = {
@@ -215,6 +221,13 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
         isValid: true,
       };
       lastUpdatedRef.current = new Date();
+
+      // Persist key security values for runtime fallbacks (e.g., session timeout)
+      try {
+        if (section === 'security' && (updates as any)?.sessionTimeout != null) {
+          localStorage.setItem('security.sessionTimeout', String((updates as any).sessionTimeout));
+        }
+      } catch {}
 
       // Broadcast settings update to other providers/listeners
       try {

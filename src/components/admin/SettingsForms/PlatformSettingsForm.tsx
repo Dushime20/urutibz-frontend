@@ -178,32 +178,7 @@ const PlatformSettingsForm: React.FC<PlatformSettingsFormProps> = ({
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Logo URL
-            </label>
-            <input
-              type="url"
-              value={formData.logoUrl}
-              onChange={(e) => handleChange('logoUrl', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
-              placeholder="https://example.com/logo.png"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Favicon URL
-            </label>
-            <input
-              type="url"
-              value={formData.faviconUrl}
-              onChange={(e) => handleChange('faviconUrl', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
-              placeholder="https://example.com/favicon.ico"
-            />
-          </div>
-        </div>
+        {/* Logo and favicon URL fields removed per requirements */}
       </div>
 
       {/* Localization */}

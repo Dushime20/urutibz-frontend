@@ -153,7 +153,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Auto-logout on inactivity based on admin security/session settings
   useEffect(() => {
     if (!user) return;
-    const timeoutSec = settings?.security?.sessionTimeout || settings?.system?.sessionTimeout || 0;
+    // Read from security first, then system, then fallback to localStorage persisted value
+    const storedTimeout = (() => {
+      try { return parseInt(localStorage.getItem('security.sessionTimeout') || '0') || 0; } catch { return 0; }
+    })();
+    const timeoutSec = settings?.security?.sessionTimeout || settings?.system?.sessionTimeout || storedTimeout || 0;
     if (!timeoutSec) return;
 
     let timer: number | undefined;
