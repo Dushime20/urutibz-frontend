@@ -103,7 +103,11 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if ((target as HTMLElement)?.closest?.('[data-sticky-portal]')) {
+        return; // ignore clicks inside sticky portals (e.g., Notification modal)
+      }
+      if (profileRef.current && !profileRef.current.contains(target)) {
         setIsProfileOpen(false);
       }
     }

@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { SendNotificationInputSchema, SendTemplatedInputSchema } from '../schemas';
 import { useSendNotificationMutation, useScheduleNotificationMutation, useSendTemplatedNotificationMutation } from '../queries';
 import { useToast } from '../../../contexts/ToastContext';
+import { searchUsers } from '../api';
 
 export const SendNotificationForm: React.FC = () => {
   const [isTemplated, setIsTemplated] = useState(false);
@@ -31,6 +32,32 @@ export const SendNotificationForm: React.FC = () => {
   });
 
   const scheduledAt = watch('scheduledAt');
+
+  // Recipient autocomplete state
+  const [recipientQuery, setRecipientQuery] = useState('');
+  const [recipientOptions, setRecipientOptions] = useState<Array<{ id: string; name?: string; email?: string; label: string }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setIsSearching(true);
+      const results = await searchUsers(recipientQuery, 10);
+      if (!cancelled) {
+        setRecipientOptions(results.map(r => ({
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          label: r.name && r.email ? `${r.name} — ${r.email}` : (r.name || r.email || r.id),
+        })));
+        setIsSearching(false);
+      }
+    };
+    // Trigger on mount (list first page) and when query changes (debounce simple)
+    const h = setTimeout(run, 250);
+    return () => { cancelled = true; clearTimeout(h); };
+  }, [recipientQuery]);
 
   const rowsObject = useMemo(() => {
     const obj: Record<string, any> = {};
@@ -171,13 +198,41 @@ export const SendNotificationForm: React.FC = () => {
         {isTemplated ? (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Recipient ID *</label>
-              <input
-                {...register('recipientId')}
-                type="text"
-                placeholder="Enter recipient UUID"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Recipient *</label>
+              <div className="relative">
+                <input
+                  value={recipientQuery}
+                  onChange={(e) => setRecipientQuery(e.target.value)}
+                  onFocus={() => { setIsFocused(true); }}
+                  onBlur={() => { setTimeout(() => setIsFocused(false), 150); }}
+                  placeholder="Search name or email"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <input type="hidden" {...register('recipientId')} />
+                {(isFocused) && (
+                  <div
+                    className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow max-h-48 overflow-auto"
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    {recipientOptions.map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => { setValue('recipientId', opt.id, { shouldValidate: true }); setRecipientQuery(opt.label); setRecipientOptions([]); }}
+                        className="w-full text-left px-3 py-2 hover:bg-gray-50"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                    {isSearching && <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>}
+                    {!isSearching && recipientOptions.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        {recipientQuery ? 'No users found' : 'Type to search users'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               {errors.recipientId && (
                 <p className="text-red-500 text-sm mt-1">{String(errors.recipientId.message)}</p>
               )}
@@ -236,13 +291,41 @@ export const SendNotificationForm: React.FC = () => {
         ) : (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Recipient ID *</label>
-              <input
-                {...register('recipientId')}
-                type="text"
-                placeholder="Enter recipient UUID"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Recipient *</label>
+              <div className="relative">
+                <input
+                  value={recipientQuery}
+                  onChange={(e) => setRecipientQuery(e.target.value)}
+                  onFocus={() => { setIsFocused(true); }}
+                  onBlur={() => { setTimeout(() => setIsFocused(false), 150); }}
+                  placeholder="Search name or email"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <input type="hidden" {...register('recipientId')} />
+                {(isFocused) && (
+                  <div
+                    className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow max-h-48 overflow-auto"
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    {recipientOptions.map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => { setValue('recipientId', opt.id, { shouldValidate: true }); setRecipientQuery(opt.label); setRecipientOptions([]); }}
+                        className="w-full text-left px-3 py-2 hover:bg-gray-50"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                    {isSearching && <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>}
+                    {!isSearching && recipientOptions.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        {recipientQuery ? 'No users found' : 'Type to search users'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               {errors.recipientId && (
                 <p className="text-red-500 text-sm mt-1">{String(errors.recipientId.message)}</p>
               )}

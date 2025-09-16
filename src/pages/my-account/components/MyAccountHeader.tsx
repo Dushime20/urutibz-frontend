@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, Sun, Moon, Menu, X } from 'lucide-react';
+import { Bell, Search, Sun, Moon, Menu, X, UserCircle } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getMyNotifications } from '../../../features/notifications/api';
 import { fetchUserProfile } from '../service/api';
-import { useMarkReadMutation } from '../../../features/notifications/queries';
+import { useMarkReadMutation, useNotificationsQuery } from '../../../features/notifications/queries';
+import Portal from '../../../components/ui/Portal';
 
 type HeaderProps = { 
   onToggleSidebar?: () => void;
@@ -28,6 +29,18 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   const notifRef = useRef<HTMLDivElement | null>(null);
   const [isDark, setIsDark] = useState<boolean>(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [showAllModal, setShowAllModal] = useState(false);
+  const [modalPage, setModalPage] = useState(1);
+  const modalQuery = useNotificationsQuery({ page: modalPage, limit: 50 });
+  const modalItems = (
+    (modalQuery.data as any)?.items ??
+    (modalQuery.data as any)?.data?.items ??
+    (modalQuery.data as any)?.data?.data ??
+    (Array.isArray(modalQuery.data) ? modalQuery.data : [])
+  ) as any[];
+  
+  // Use the full notifications data for dropdown
+  const dropdownItems = notificationsData;
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
@@ -50,6 +63,9 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
+      if ((target as HTMLElement)?.closest?.('[data-sticky-portal]')) {
+        return; // ignore clicks inside sticky portals (e.g., Notification modal)
+      }
       if (notifRef.current && !notifRef.current.contains(target)) {
         setIsNotifOpen(false);
       }
@@ -80,7 +96,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
     (async () => {
       try {
         setNotificationsLoading(true);
-        const items = await getMyNotifications({ page: 1, limit: 10 });
+        const items = await getMyNotifications({ page: 1, limit: 100 });
         setNotificationsData(Array.isArray(items) ? items : []);
       } catch {
         setNotificationsData([]);
@@ -95,7 +111,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
       if (!isNotifOpen) return;
       try {
         setNotificationsLoading(true);
-        const items = await getMyNotifications({ page: 1, limit: 10 });
+        const items = await getMyNotifications({ page: 1, limit: 100 });
         setNotificationsData(Array.isArray(items) ? items : []);
       } catch {
         setNotificationsData([]);
@@ -196,9 +212,9 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <div className="relative">
+            <div className="relative" ref={notifRef} style={{ zIndex: 3000 }}>
               <button
-                onClick={() => setIsNotifOpen((v) => !v)}
+                onClick={(e) => { e.stopPropagation(); setIsNotifOpen((v) => !v); }}
                 className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200"
               >
                 <Bell className="w-5 h-5" />
@@ -211,7 +227,13 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                 )}
               </button>
               {isNotifOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 dark:bg-slate-900 dark:border-slate-700">
+                <div
+                  className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl dark:bg-slate-900 dark:border-slate-700"
+                  style={{ zIndex: 3001, pointerEvents: 'auto' }}
+                  onPointerDownCapture={(e) => e.stopPropagation()}
+                  onMouseDownCapture={(e) => e.stopPropagation()}
+                  onClickCapture={(e) => e.stopPropagation()}
+                >
                   <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between dark:border-slate-700">
                     <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">Notifications</span>
                     <div className="flex items-center gap-3">
@@ -219,11 +241,11 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                       <button onClick={handleMarkAllRead} className="text-xs text-primary-600 hover:text-primary-700 font-medium">Mark all as read</button>
                     </div>
                   </div>
-                  <div className="max-h-80 overflow-auto">
+                  <div className="max-h-96 overflow-auto">
                     {notificationsLoading ? (
                       <div className="px-4 py-6 text-center text-gray-400 text-sm dark:text-slate-500">Loading...</div>
-                    ) : notificationsData.length > 0 ? (
-                      notificationsData.map((n: any) => (
+                    ) : dropdownItems.length > 0 ? (
+                      dropdownItems.map((n: any) => (
                         <button
                           key={n.id}
                           onClick={() => markRead(n.id)}
@@ -233,8 +255,8 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                         >
                           <div className={`mt-1 w-2 h-2 rounded-full ${n.read ? 'bg-gray-300 dark:bg-slate-600' : 'bg-primary-500'}`}></div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 truncate dark:text-slate-100">{n.title || 'Notification'}</div>
-                            <div className="text-xs text-gray-500 truncate dark:text-slate-400">{n.message || n.content}</div>
+                            <div className="text-sm font-medium text-gray-900 truncate dark:text-slate-100">{n.title || n.type || 'Notification'}</div>
+                            <div className="text-xs text-gray-500 truncate dark:text-slate-400">{n.message || n.content || n.body || n.description || ''}</div>
                           </div>
                           <div className="ml-2 text-[10px] text-gray-400 whitespace-nowrap dark:text-slate-500">
                             {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : ''}
@@ -245,8 +267,8 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                       <div className="px-4 py-8 text-center text-gray-500 text-sm dark:text-slate-400">No notifications</div>
                     )}
                   </div>
-                  <div className="px-4 py-2 border-t border-gray-100 text-center dark:border-slate-700">
-                    <button onClick={() => navigate('/dashboard/notifications')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                  <div className="px-4 py-2 border-t border-gray-100 text-center dark:border-slate-700" >
+                    <button type="button" onPointerDownCapture={(e)=>e.stopPropagation()} onMouseDown={(e)=>e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setIsNotifOpen(false); setShowAllModal(true); setModalPage(1); }} className="text-sm text-teal-600 hover:text-primary-700 font-medium" style={{ zIndex: 3002, pointerEvents: 'auto' }}>
                       View all
                     </button>
                   </div>
@@ -266,7 +288,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">🙍\u00a0</div>
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm"><UserCircle></UserCircle></div>
                   )}
                 </div>
               </button>
@@ -315,6 +337,59 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
             </button>
           </div>
         </div>
+      )}
+      {/* All Notifications Modal */}
+      {showAllModal && (
+        <Portal>
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 h-screen bg-black/50" data-sticky-portal>
+            <div className="fixed inset-0 bg-black/30" />
+            <div className="relative z-[2001] bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6 max-h-[80vh] overflow-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">All Notifications</h3>
+                <button type="button" onClick={() => setShowAllModal(false)} className="text-gray-600 dark:text-slate-300 hover:text-gray-800 dark:hover:text-slate-100">Close</button>
+              </div>
+              {modalQuery.isLoading ? (
+                <div className="text-center py-12 text-gray-700 dark:text-slate-300">Loading...</div>
+              ) : modalItems.length === 0 ? (
+                <div className="text-center py-12">
+                  <Bell className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-700 dark:text-slate-300">No notifications yet</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-gray-100 dark:divide-slate-800">
+                  {modalItems.map((n: any) => (
+                    <li
+                      key={n.id}
+                      className="py-4 flex items-start gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg p-2"
+                      onClick={() => {
+                        if (!n.read) { markRead(n.id); }
+                      }}
+                    >
+                      <div className={`mt-1 w-2 h-2 rounded-full ${ n.read ? 'bg-gray-300 dark:bg-slate-600' : 'bg-emerald-500'}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-gray-900 dark:text-slate-100 truncate">{n.title || n.type || 'Notification'}</h4>
+                          {!n.read && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
+                              className="text-xs text-teal-600 dark:text-teal-400 hover:underline"
+                            >Mark read</button>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-slate-300 mt-1 whitespace-pre-line break-words">{n.message || n.content || n.body || n.description || ''}</p>
+                        <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">{new Date(n.createdAt || n.created_at || Date.now()).toLocaleString()}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="mt-4 flex justify-between">
+                <button type="button" onClick={() => setModalPage(p => Math.max(1, p - 1))} className="text-sm px-3 py-1 rounded border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800">Prev</button>
+                <button type="button" onClick={() => setModalPage(p => p + 1)} className="text-sm px-3 py-1 rounded border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800">Next</button>
+              </div>
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );

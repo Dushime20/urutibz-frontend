@@ -85,7 +85,12 @@ export async function getMyNotifications(params?: {
 }): Promise<any[]> {
   const { data } = await api.get('/my', { params });
   const container = data?.data ?? data;
-  const rawItems = container?.data ?? container?.items ?? [];
+  // Try multiple shapes for items
+  const rawItems =
+    container?.data?.data ??
+    container?.items ??
+    container?.data ??
+    [];
   const items = Array.isArray(rawItems) ? rawItems : [];
   return items;
 }
@@ -158,6 +163,53 @@ export async function getChannelStatus(): Promise<Record<string, any>> {
   const token = localStorage.getItem('access_token') || localStorage.getItem('token');
   const { data } = await api.get('/status', token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
   return data?.data ?? data ?? {};
+}
+
+// Lightweight users search for recipient autocomplete (admin only endpoint assumed)
+export async function searchUsers(query: string, limit = 10): Promise<Array<{ id: string; name?: string; email?: string }>> {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+
+  const normalize = (arr: any[]) => (Array.isArray(arr) ? arr : []).map((u: any) => ({
+    id: u?.id ?? u?.userId ?? u?._id,
+    name: (u?.name ?? `${u?.firstName ?? ''} ${u?.lastName ?? ''}`.trim()) || undefined,
+    email: u?.email,
+  })).filter((u: any) => Boolean(u.id));
+
+  // Try a few common endpoints/param names for compatibility
+  const attempts: Array<() => Promise<any[]>> = [
+    async () => {
+      const { data } = await axios.get(`${API_BASE_URL}/users`, { headers, params: { q: query || undefined, limit, page: 1 } });
+      const container = data?.data ?? data;
+      return container?.items ?? container?.data ?? container ?? [];
+    },
+    async () => {
+      const { data } = await axios.get(`${API_BASE_URL}/users`, { headers, params: { search: query || undefined, limit, page: 1 } });
+      const container = data?.data ?? data;
+      return container?.items ?? container?.data ?? container ?? [];
+    },
+    async () => {
+      const { data } = await axios.get(`${API_BASE_URL}/users/search`, { headers, params: { q: query || undefined, limit } });
+      const container = data?.data ?? data;
+      return container?.items ?? container?.data ?? container ?? [];
+    },
+    async () => {
+      const { data } = await axios.get(`${API_BASE_URL}/admin/users`, { headers, params: { q: query || undefined, limit } });
+      const container = data?.data ?? data;
+      return container?.items ?? container?.data ?? container ?? [];
+    },
+  ];
+
+  for (const fn of attempts) {
+    try {
+      const raw = await fn();
+      const normalized = normalize(raw);
+      if (normalized.length > 0 || query === '') return normalized;
+    } catch {
+      // continue to next attempt
+    }
+  }
+  return [];
 }
 
 
