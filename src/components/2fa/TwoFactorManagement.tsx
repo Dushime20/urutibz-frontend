@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Shield, Smartphone, Key, AlertCircle, CheckCircle, XCircle, RefreshCw, Download, Copy } from 'lucide-react';
-import { twoFactorDisableSchema, type TwoFactorDisableFormData } from '../../validations/2faSchemas';
+import { Shield, Smartphone, Key, AlertCircle, CheckCircle, XCircle, RefreshCw, Download, Copy, Eye, EyeOff } from 'lucide-react';
+import { z } from 'zod';
 import { twoFactorService } from '../../services/2faService';
 import { useToast } from '../../contexts/ToastContext';
 import { TwoFactorSetup } from './TwoFactorSetup';
@@ -28,12 +28,15 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
   const [showBackupCodes, setShowBackupCodes] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { showToast } = useToast();
 
-  const disableForm = useForm<TwoFactorDisableFormData>({
-    resolver: zodResolver(twoFactorDisableSchema),
-    mode: 'onChange',
-  });
+  // Frontend validation schema for current password
+  const currentPasswordSchema = z.object({ currentPassword: z.string().min(1, 'Current password is required') });
+  type CurrentPasswordForm = z.infer<typeof currentPasswordSchema>;
+  const disableForm = useForm<CurrentPasswordForm>({ resolver: zodResolver(currentPasswordSchema), mode: 'onChange' });
 
   // Fetch 2FA status on component mount
   useEffect(() => {
@@ -71,21 +74,25 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
     showToast('Two-factor authentication enabled successfully!', 'success');
   };
 
-  const handleDisable2FA = async (data: TwoFactorDisableFormData) => {
+  const handleDisable2FA = async (data: CurrentPasswordForm) => {
     setIsLoading(true);
     
     try {
-      const response = await twoFactorService.disable(data.code);
-      if (response.success) {
+      const response = await twoFactorService.disable(data.currentPassword);
+      if ((response as any).success) {
         showToast('Two-factor authentication disabled successfully', 'success');
         setShowDisable(false);
         disableForm.reset();
         fetchStatus();
       } else {
-        showToast('Failed to disable 2FA. Please check your code.', 'error');
+        showToast((response as any).message || 'Failed to disable 2FA. Please check your password.', 'error');
       }
     } catch (err) {
-      showToast('Failed to disable 2FA. Please try again.', 'error');
+      const status = (err as any)?.response?.status;
+      const message = (err as any)?.response?.data?.message;
+      if (status === 400) showToast(message || 'Invalid current password', 'error');
+      else if (status === 401) showToast('You must be logged in to perform this action', 'error');
+      else showToast('Failed to disable 2FA. Please try again.', 'error');
       console.error('Error disabling 2FA:', err);
     } finally {
       setIsLoading(false);
@@ -93,19 +100,37 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
   };
 
   const handleGenerateBackupCodes = async () => {
+    setShowPasswordPrompt(true);
+  };
+
+  const confirmGenerateBackupCodes = async () => {
+    if (!currentPassword || typeof currentPassword !== 'string') {
+      showToast('Please enter your current password', 'error');
+      return;
+    }
     setIsLoading(true);
-    
     try {
-      const response = await twoFactorService.generateBackupCodes();
-      if (response.success) {
+      const response = await twoFactorService.generateBackupCodes(currentPassword);
+      if ((response as any).success) {
         setBackupCodes(response.data.backupCodes);
         setShowBackupCodes(true);
+        setShowPasswordPrompt(false);
+        setCurrentPassword('');
         showToast('New backup codes generated successfully!', 'success');
       } else {
-        showToast('Failed to generate backup codes', 'error');
+        const msg = (response as any).message || 'Failed to generate backup codes';
+        showToast(msg, 'error');
       }
-    } catch (err) {
-      showToast('Failed to generate backup codes. Please try again.', 'error');
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message;
+      if (status === 400) {
+        showToast(message || 'Invalid current password', 'error');
+      } else if (status === 401) {
+        showToast('You must be logged in to perform this action', 'error');
+      } else {
+        showToast('Failed to generate backup codes. Please try again.', 'error');
+      }
       console.error('Error generating backup codes:', err);
     } finally {
       setIsLoading(false);
@@ -165,30 +190,29 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
             <Shield className="w-8 h-8 text-red-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Disable 2FA</h2>
-          <p className="text-gray-600">Enter your current 2FA code to confirm</p>
+          <p className="text-gray-600">Enter your current password to confirm</p>
         </div>
 
         <form onSubmit={disableForm.handleSubmit(handleDisable2FA)} className="space-y-6">
           <div>
-            <label htmlFor="disable-code" className="block text-sm font-medium text-gray-700 mb-2">
-              Current 2FA Code
+            <label htmlFor="disable-password" className="block text-sm font-medium text-gray-700 mb-2">
+              Current Password
             </label>
             <input
-              {...disableForm.register('code')}
-              type="text"
-              id="disable-code"
-              maxLength={6}
-              placeholder="000000"
-              className={`w-full px-4 py-3 border rounded-lg text-center text-lg font-mono tracking-widest ${
-                disableForm.formState.errors.code
+              {...disableForm.register('currentPassword')}
+              type="password"
+              id="disable-password"
+              placeholder="Enter your current password"
+              className={`w-full px-4 py-3 border rounded-lg ${
+                disableForm.formState.errors.currentPassword
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                   : 'border-gray-300 focus:border-my-primary focus:ring-my-primary'
               } focus:outline-none focus:ring-2`}
-              autoComplete="one-time-code"
+              autoComplete="current-password"
               autoFocus
             />
-            {disableForm.formState.errors.code && (
-              <p className="mt-1 text-sm text-red-600">{disableForm.formState.errors.code.message}</p>
+            {disableForm.formState.errors.currentPassword && (
+              <p className="mt-1 text-sm text-red-600">{disableForm.formState.errors.currentPassword.message}</p>
             )}
           </div>
 
@@ -286,8 +310,49 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
     );
   }
 
+  // Password prompt modal
+  const PasswordPrompt = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-3">
+      <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Confirm Your Password</h3>
+          <button onClick={() => setShowPasswordPrompt(false)} className="p-2 hover:bg-gray-100 rounded-md">
+            <XCircle className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+        <div className="p-4 space-y-3">
+          <p className="text-sm text-gray-600">Enter your current password to generate new backup codes.</p>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent"
+              placeholder="Current password"
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button onClick={() => setShowPasswordPrompt(false)} className="flex-1 px-4 py-2 border rounded-lg">Cancel</button>
+            <button onClick={confirmGenerateBackupCodes} disabled={isLoading} className="flex-1 px-4 py-2 bg-my-primary text-white rounded-lg disabled:opacity-50">
+              {isLoading ? 'Generating…' : 'Confirm'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="max-w-2xl mx-auto p-6">
+      {showPasswordPrompt && <PasswordPrompt />}
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-my-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
           <Shield className="w-8 h-8 text-my-primary" />
@@ -297,7 +362,7 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
       </div>
 
       {/* Status Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Current Status</h3>
           <button
@@ -388,7 +453,7 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
         {!status.enabled ? (
           <button
             onClick={() => setShowSetup(true)}
-            className="w-full flex items-center justify-center space-x-2 bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
+            className="w-full flex items-center justify-center space-x-2 bg-my-primary text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
           >
             <Smartphone className="w-5 h-5" />
             <span>Enable Two-Factor Authentication</span>
@@ -398,7 +463,7 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
             <button
               onClick={handleGenerateBackupCodes}
               disabled={isLoading}
-              className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="w-full flex items-center justify-center space-x-2 bg-my-primary text-white px-6 py-3 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
             >
               <Key className="w-5 h-5" />
               <span>Generate New Backup Codes</span>

@@ -96,38 +96,57 @@ export async function fetchLoginHistory(token: string, page = 1, limit = 20) {
 // Fetch current user profile
 export async function fetchUserProfile(token: string) {
   try {
-    // Extract user ID from JWT token
-    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-    const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
-    
-    if (!userId) {
-      return {
-        data: null,
-        success: false,
-        error: 'No user ID found in token'
-      };
+    if (!token) {
+      return { data: null, success: false, error: 'Missing token' };
     }
 
-    // Use the /users/{userId} endpoint instead of /auth/me
-    const response = await axios.get(`${API_BASE_URL}/users/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    // Canonical profile endpoint with full flags
+    const response = await axios.get(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
-    
-    const data = response.data.data || response.data;
-    return {
-      data,
-      success: true,
-      error: null
+
+    const raw = response?.data?.data ?? response?.data ?? {};
+
+    // Normalize to camelCase fields used by the UI
+    const data = {
+      id: raw.id,
+      email: raw.email,
+      firstName: raw.firstName ?? raw.first_name,
+      lastName: raw.lastName ?? raw.last_name,
+      role: raw.role,
+      status: raw.status,
+      phone: raw.phone ?? null,
+      countryId: raw.countryId ?? raw.country_id ?? null,
+      emailVerified: (raw.emailVerified ?? raw.email_verified) === true,
+      phoneVerified: (raw.phoneVerified ?? raw.phone_verified) === true,
+      profileImageUrl: raw.profileImageUrl ?? raw.profile_image_url ?? null,
+      profileImagePublicId: raw.profileImagePublicId ?? raw.profile_image_public_id ?? null,
+      kyc_status: raw.kyc_status ?? raw.kycStatus,
+      createdAt: raw.createdAt ?? raw.created_at,
+      updatedAt: raw.updatedAt ?? raw.updated_at,
+      district: raw.district,
+      sector: raw.sector,
+      cell: raw.cell,
+      village: raw.village,
+      gender: raw.gender,
+      province: raw.province,
+      addressLine: raw.addressLine ?? raw.address_line,
+      location: raw.location,
+      bio: raw.bio,
+      dateOfBirth: raw.dateOfBirth ?? raw.date_of_birth,
+      twoFactorEnabled: raw.twoFactorEnabled ?? raw.two_factor_enabled,
+      twoFactorVerified: raw.twoFactorVerified ?? raw.two_factor_verified,
+      preferred_currency: raw.preferred_currency ?? raw.preferredCurrency,
+      verifications: raw.verifications ?? [],
+      kycProgress: raw.kycProgress ?? undefined,
+      // Keep any extra fields untouched as a fallback
+      ...raw,
     };
+
+    return { data, success: true, error: null };
   } catch (error: any) {
     const errorMsg = error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Failed to fetch user profile';
-    return {
-      data: null,
-      success: false,
-      error: errorMsg
-    };
+    return { data: null, success: false, error: errorMsg };
   }
 }
 

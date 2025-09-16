@@ -2,11 +2,7 @@ import axios from 'axios';
 import type {
   TwoFactorSetupResponse,
   TwoFactorStatusResponse,
-  TwoFactorVerifyRequest,
   TwoFactorVerifyResponse,
-  TwoFactorBackupVerifyRequest,
-  TwoFactorSetupRequest,
-  TwoFactorDisableRequest,
   TwoFactorDisableResponse,
   TwoFactorBackupCodesResponse,
 } from '../types/2fa';
@@ -49,22 +45,22 @@ export const twoFactorService = {
   },
 
   // Verify 2FA token during login (public endpoint)
-  async verifyToken(token: string): Promise<TwoFactorVerifyResponse> {
-    const response = await axios.post(`${API_BASE_URL}/2fa/verify-token`, { token });
+  async verifyToken(userId: string, token: string): Promise<TwoFactorVerifyResponse> {
+    const response = await axios.post(`${API_BASE_URL}/2fa/verify-token`, { userId, token });
     return response.data;
   },
 
   // Verify backup code during login (public endpoint)
-  async verifyBackup(backupCode: string): Promise<TwoFactorVerifyResponse> {
-    const response = await axios.post(`${API_BASE_URL}/2fa/verify-backup`, { backupCode });
+  async verifyBackup(userId: string, backupCode: string): Promise<TwoFactorVerifyResponse> {
+    const response = await axios.post(`${API_BASE_URL}/2fa/verify-backup`, { userId, backupCode });
     return response.data;
   },
 
-  // Disable 2FA
-  async disable(code: string): Promise<TwoFactorDisableResponse> {
+  // Disable 2FA (requires current password)
+  async disable(currentPassword: string): Promise<TwoFactorDisableResponse> {
     const response = await axios.post(
       `${API_BASE_URL}/2fa/disable`,
-      { code },
+      { currentPassword },
       { headers: createAuthHeaders() }
     );
     return response.data;
@@ -78,11 +74,11 @@ export const twoFactorService = {
     return response.data;
   },
 
-  // Generate new backup codes
-  async generateBackupCodes(): Promise<TwoFactorBackupCodesResponse> {
+  // Generate new backup codes (requires current password)
+  async generateBackupCodes(currentPassword: string): Promise<TwoFactorBackupCodesResponse> {
     const response = await axios.post(
       `${API_BASE_URL}/2fa/backup-codes`,
-      {},
+      { currentPassword },
       { headers: createAuthHeaders() }
     );
     return response.data;

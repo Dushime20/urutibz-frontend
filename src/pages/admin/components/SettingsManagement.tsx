@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Settings, 
   Shield, 
   Bell, 
   Globe, 
-  DollarSign, 
   Database, 
   Lock, 
-  Eye, 
   Mail, 
   Smartphone, 
   AlertTriangle, 
@@ -15,21 +12,11 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
-  Info,
-  Users,
-  Calendar,
-  CreditCard,
   MapPin,
-  Languages,
-  Moon,
-  Sun,
   Zap,
   Activity,
   BarChart3,
   FileText,
-  Key,
-  Server,
-  Wifi,
   HardDrive
 } from 'lucide-react';
 import { Button } from '../../../components/ui/DesignSystem';
@@ -43,6 +30,10 @@ import {
   type NotificationSettings,
   type SystemSettings
 } from '../service';
+import { TwoFactorManagement, useTwoFactor } from '../../../components/2fa';
+import ChangePasswordModal from '../../my-account/components/ChangePasswordModal';
+import { useToast } from '../../../contexts/ToastContext';
+import Portal from '../../../components/ui/Portal';
 
 interface SettingsManagementProps {
   // Add props for settings data as needed
@@ -53,6 +44,11 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const token = (typeof window !== 'undefined' && localStorage.getItem('token')) || '';
+  const { status: twoFactorStatus } = useTwoFactor();
+  const { showToast } = useToast();
 
   // Platform Settings State
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
@@ -603,6 +599,60 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
               </div>
             </SettingCard>
 
+            {/* Account Security (Admin personal controls) */}
+            <SettingCard
+              icon={Shield}
+              title="Account Security"
+              description="Manage your own admin account security"
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Lock className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">Password</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Update your account password</div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="px-3 py-2"
+                    onClick={() => {
+                      showToast('Opening Change Password…', 'info');
+                      setShowChangePassword(true);
+                    }}
+                  >
+                    Change Password
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">Two-Factor Authentication</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Add an extra layer of security</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm ${twoFactorStatus?.isLoading ? 'text-gray-400' : twoFactorStatus?.enabled ? 'text-green-600' : 'text-gray-500'}`}>
+                      {twoFactorStatus?.isLoading ? 'Loading...' : twoFactorStatus?.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                    <Button
+                      className={`px-3 py-2 ${twoFactorStatus?.enabled ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-my-primary hover:bg-primary-700 text-white'}`}
+                      onClick={() => {
+                        showToast('Opening Two-Factor Authentication…', 'info');
+                        setShow2FAModal(true);
+                      }}
+                      disabled={twoFactorStatus?.isLoading}
+                    >
+                      {twoFactorStatus?.isLoading ? 'Loading...' : twoFactorStatus?.enabled ? 'Manage' : 'Enable'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </SettingCard>
+
             {/* File Upload Security */}
             <SettingCard
               icon={FileText}
@@ -925,6 +975,48 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
           </div>
         )}
       </div>
+
+      {/* 2FA Management Modal */}
+      {show2FAModal && (
+        <Portal>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-3">
+            <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-lg overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-my-primary/10 rounded-md">
+                    <Smartphone className="w-4 h-4 text-my-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Two-Factor Authentication</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Manage your 2FA settings</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShow2FAModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                  aria-label="Close 2FA"
+                >
+                  <XCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+              <div className="p-3">
+                <div className="max-h-[70vh] overflow-y-auto scale-95 origin-top">
+                  <TwoFactorManagement onStatusChange={() => {}} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <ChangePasswordModal
+          isOpen={showChangePassword}
+          onClose={() => setShowChangePassword(false)}
+          token={token}
+        />
+      )}
     </div>
   );
 };

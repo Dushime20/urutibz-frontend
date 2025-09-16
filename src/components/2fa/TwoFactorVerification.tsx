@@ -19,8 +19,9 @@ export const TwoFactorVerification: React.FC<TwoFactorVerificationProps> = ({
   onBackToLogin,
 }) => {
   const [mode, setMode] = useState<'totp' | 'backup'>('totp');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [hasVerified, setHasVerified] = useState<boolean>(false);
   const { showToast } = useToast();
 
   const totpForm = useForm<TwoFactorVerificationFormData>({
@@ -38,27 +39,37 @@ export const TwoFactorVerification: React.FC<TwoFactorVerificationProps> = ({
 
   // Auto-submit when 6 digits are entered for TOTP
   React.useEffect(() => {
+    if (hasVerified || isLoading) return;
     if (watchedTOTPCode && watchedTOTPCode.length === 6) {
       totpForm.handleSubmit(onVerifyTOTP)();
     }
-  }, [watchedTOTPCode]);
+  }, [watchedTOTPCode, hasVerified, isLoading]);
 
   // Auto-submit when backup code is entered
   React.useEffect(() => {
+    if (hasVerified || isLoading) return;
     if (watchedBackupCode && watchedBackupCode.length >= 6) {
       backupForm.handleSubmit(onVerifyBackup)();
     }
-  }, [watchedBackupCode]);
+  }, [watchedBackupCode, hasVerified, isLoading]);
 
   const onVerifyTOTP = async (data: TwoFactorVerificationFormData) => {
+    if (isLoading || hasVerified) return;
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await twoFactorService.verifyToken(data.code);
+      const userId = (JSON.parse(localStorage.getItem('user') || '{}')?.id) || undefined;
+      if (!userId) {
+        setError('Missing user context. Please login again.');
+        setIsLoading(false);
+        return;
+      }
+      const response = await twoFactorService.verifyToken(userId, data.code);
       if (response.success) {
         showToast('Two-factor authentication verified successfully!', 'success');
-        onVerificationSuccess(response.data.token);
+        setHasVerified(true);
+        onVerificationSuccess(response.data?.token);
       } else {
         setError('Invalid verification code. Please try again.');
       }
@@ -71,14 +82,22 @@ export const TwoFactorVerification: React.FC<TwoFactorVerificationProps> = ({
   };
 
   const onVerifyBackup = async (data: TwoFactorBackupFormData) => {
+    if (isLoading || hasVerified) return;
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await twoFactorService.verifyBackup(data.backupCode);
+      const userId = (JSON.parse(localStorage.getItem('user') || '{}')?.id) || undefined;
+      if (!userId) {
+        setError('Missing user context. Please login again.');
+        setIsLoading(false);
+        return;
+      }
+      const response = await twoFactorService.verifyBackup(userId, data.backupCode);
       if (response.success) {
         showToast('Backup code verified successfully!', 'success');
-        onVerificationSuccess(response.data.token);
+        setHasVerified(true);
+        onVerificationSuccess(response.data?.token);
       } else {
         setError('Invalid backup code. Please try again.');
       }
@@ -151,7 +170,7 @@ export const TwoFactorVerification: React.FC<TwoFactorVerificationProps> = ({
               id="totp-code"
               maxLength={6}
               placeholder="000000"
-              className={`w-full px-4 py-3 border rounded-lg text-center text-lg font-mono tracking-widest ${
+              className={`w-full px-4 py-3 border rounded-lg text-center text-lg font-mono tracking-widest placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${
                 totpForm.formState.errors.code
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                   : 'border-gray-300 focus:border-my-primary focus:ring-my-primary'
@@ -189,7 +208,7 @@ export const TwoFactorVerification: React.FC<TwoFactorVerificationProps> = ({
               type="text"
               id="backup-code"
               placeholder="ABC123"
-              className={`w-full px-4 py-3 border rounded-lg text-center text-lg font-mono tracking-wider ${
+              className={`w-full px-4 py-3 border rounded-lg text-center text-lg font-mono tracking-wider placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${
                 backupForm.formState.errors.backupCode
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                   : 'border-gray-300 focus:border-my-primary focus:ring-my-primary'

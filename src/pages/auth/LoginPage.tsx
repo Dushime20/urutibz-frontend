@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowLeft, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { loginUser, fetchUserProfile } from './service/api';
+import { TwoFactorVerification } from '../../components/2fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
-import { useToast } from '../../contexts/ToastContext';
+// import { useToast } from '../../contexts/ToastContext';
 
 
 const LoginPage: React.FC = () => {
@@ -12,8 +13,7 @@ const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { setAuthenticatedUser } = useAuth();
   const { settings } = useAdminSettingsContext();
-  const { showToast } = useToast();
-  const [attempts, setAttempts] = useState(0);
+  // const { showToast } = useToast();
   const [successMsg, setSuccessMsg] = useState('');
   
   const [formData, setFormData] = useState({
@@ -23,6 +23,8 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [requireTwoFactor, setRequireTwoFactor] = useState(false);
+  const [pendingUserRole, setPendingUserRole] = useState<string | null>(null);
   
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,35 +64,41 @@ const LoginPage: React.FC = () => {
       const data = await loginUser(formData.email, formData.password);
       if (data && data.token) {
         localStorage.setItem('token', data.token);
-        if (data.user) {
-          setAuthenticatedUser(data.user);
-        } else {
-          // Fetch user profile using the token if not returned by login
-          const userProfile = await fetchUserProfile(data.token);
-          setAuthenticatedUser(userProfile);
-        }
+        // ALWAYS fetch full user profile after login to ensure complete fields
+        const profileRes: any = await fetchUserProfile(data.token);
+        const userObj = profileRes?.data ?? profileRes; // support both {success,data} and raw
+        if (userObj) setAuthenticatedUser(userObj);
+
         // reset attempts on success
         const key = 'loginAttempts';
         const map = JSON.parse(localStorage.getItem(key) || '{}');
         map[formData.email] = 0;
         localStorage.setItem(key, JSON.stringify(map));
         setSuccessMsg('User logged in successfully!');
-      }
-      setTimeout(() => {
-        if (data.user.role === "admin") {
-          navigate("/admin");
-        } else if (data.user.role === "inspector") {
-          navigate("/inspector");
-        } else {
-          navigate("/dashboard");
+
+        // Check 2FA flag from whichever user object we have
+        const twoFAEnabled = userObj?.twoFactorEnabled === true || userObj?.two_factor_enabled === true;
+        const role = userObj?.role;
+        // Require 2FA on every login when 2FA is enabled (even if previously verified)
+        if (twoFAEnabled) {
+          setRequireTwoFactor(true);
+          setPendingUserRole(role || null);
+          return; // Do not navigate until TOTP verification passes
         }
-      }, 1500);
+
+        // No 2FA required → navigate normally
+        setTimeout(() => {
+          if (role === "admin") navigate("/admin");
+          else if (role === "inspector") navigate("/inspector");
+          else navigate("/dashboard");
+        }, 1500);
+      }
     } catch (err: any) {
       const message = err?.message || 'Invalid email or password. Please try again.';
       // track attempt
       map[formData.email] = current + 1;
       localStorage.setItem(key, JSON.stringify(map));
-      setAttempts(current + 1);
+      // track attempts (UI counter removed)
       // If threshold reached, show lockout message
       if (maxAttempts > 0 && map[formData.email] >= maxAttempts) {
         const lockMsg = 'Too many failed attempts. Please try again later.';
@@ -250,6 +258,26 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
       </div>
+      {requireTwoFactor && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-3">
+          <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md overflow-hidden">
+            <TwoFactorVerification
+              onVerificationSuccess={() => {
+                setRequireTwoFactor(false);
+                const role = pendingUserRole;
+                // Defer navigation to next tick to avoid race with modal unmount
+                setTimeout(() => {
+                  if (role === 'admin') navigate('/admin');
+                  else if (role === 'inspector') navigate('/inspector');
+                  else navigate('/dashboard');
+                }, 0);
+              }}
+              onCancel={() => setRequireTwoFactor(false)}
+              onBackToLogin={() => setRequireTwoFactor(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
