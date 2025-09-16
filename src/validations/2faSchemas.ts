@@ -19,8 +19,9 @@ export const twoFactorVerificationSchema = z.object({
 export const twoFactorBackupSchema = z.object({
   backupCode: z
     .string()
-    .min(1, 'Backup code is required')
-    .regex(/^[A-Z0-9]{6,8}$/, 'Backup code format is invalid'),
+    .min(8, 'Backup code must be exactly 7 characters')
+    .max(8, 'Backup code must be exactly 7 characters')
+    .regex(/^[A-Z0-9]{8}$/, 'Backup code must be 7 uppercase letters/numbers'),
 });
 
 export const twoFactorDisableSchema = z.object({

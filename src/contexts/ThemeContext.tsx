@@ -102,6 +102,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
     // Apply dark mode class
     const isDark = theme.mode === 'dark' || (theme.mode === 'auto' && getSystemPreference() === 'dark');
     if (isDark) {
+      // Respect chosen theme; only add when dark is selected
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');

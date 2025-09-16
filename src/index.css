@@ -184,72 +184,7 @@ html, body {
   color: var(--accent-color) !important;
 }
 
-/* Override Tailwind classes with theme variables */
-.bg-teal-600 {
-  background-color: var(--primary-color) !important;
-}
-
-.hover\:bg-teal-700:hover {
-  background-color: var(--primary-color) !important;
-  opacity: 0.8;
-}
-
-.text-teal-600 {
-  color: var(--primary-color) !important;
-}
-
-.text-teal-700 {
-  color: var(--primary-color) !important;
-}
-
-.text-teal-300 {
-  color: var(--primary-color) !important;
-}
-
-.border-teal-200 {
-  border-color: var(--primary-color) !important;
-}
-
-.border-teal-700 {
-  border-color: var(--primary-color) !important;
-}
-
-.bg-teal-50 {
-  background-color: var(--primary-color) !important;
-  opacity: 0.1;
-}
-
-.dark\:bg-teal-900\/30 {
-  background-color: var(--primary-color) !important;
-  opacity: 0.3;
-}
-
-/* Apply theme colors to common UI elements */
-button[class*="bg-teal"] {
-  background-color: var(--primary-color) !important;
-}
-
-button[class*="text-teal"] {
-  color: var(--primary-color) !important;
-}
-
-[class*="border-teal"] {
-  border-color: var(--primary-color) !important;
-}
-
-/* Apply theme to focus states */
-.focus\:ring-teal-500:focus {
-  --tw-ring-color: var(--primary-color) !important;
-}
-
-.focus\:border-teal-500:focus {
-  border-color: var(--primary-color) !important;
-}
-
-/* Apply theme to active states */
-.active\:bg-teal-600:active {
-  background-color: var(--primary-color) !important;
-}
+/* Removed global teal overrides to restore Tailwind defaults and improve contrast */
 
 /* Custom styles for popovers, modals, toast notifications, and backgrounds */
 #react-tiny-popover-container {

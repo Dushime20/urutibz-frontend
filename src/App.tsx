@@ -33,14 +33,16 @@ import { DarkModeProvider } from './contexts/DarkModeContext';
 import { AdminSettingsProvider } from './contexts/AdminSettingsContext';
 import NotificationsPage from './features/notifications/pages/NotificationsPage';
 import SessionMessagesPage from './pages/my-account/SessionMessagesPage';
+import { ThemeProvider } from './contexts/ThemeContext';
 import HandoverReturnDemoPage from './pages/handover-return/HandoverReturnDemoPage';
 
 
 function App() {
   return (
     <DarkModeProvider>
-      <AdminSettingsProvider token={localStorage.getItem('token') || undefined}>
-        <ToastProvider>
+      <ThemeProvider token={localStorage.getItem('token') || undefined}>
+        <AdminSettingsProvider token={localStorage.getItem('token') || undefined}>
+          <ToastProvider>
           <ToastContainer />
           <AuthProvider>
             <Router>
@@ -156,7 +158,8 @@ function App() {
           </Router>
         </AuthProvider>
         </ToastProvider>
-      </AdminSettingsProvider>
+        </AdminSettingsProvider>
+      </ThemeProvider>
     </DarkModeProvider>
   );
 }

@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Settings, 
   Shield, 
   Bell, 
   Globe, 
-  DollarSign, 
   Database, 
   Lock, 
-  Eye, 
   Mail, 
   Smartphone, 
   AlertTriangle, 
@@ -15,21 +12,11 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
-  Info,
-  Users,
-  Calendar,
-  CreditCard,
   MapPin,
-  Languages,
-  Moon,
-  Sun,
   Zap,
   Activity,
   BarChart3,
   FileText,
-  Key,
-  Server,
-  Wifi,
   HardDrive
 } from 'lucide-react';
 import { Button } from '../../../components/ui/DesignSystem';
@@ -43,6 +30,8 @@ import {
   type NotificationSettings,
   type SystemSettings
 } from '../service';
+import { TwoFactorManagement } from '../../../../components/2fa';
+import Portal from '../../../../components/ui/Portal';
 
 interface SettingsManagementProps {
   // Add props for settings data as needed
@@ -53,6 +42,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [show2FAModal, setShow2FAModal] = useState(false);
 
   // Platform Settings State
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
@@ -111,6 +101,34 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
     apiRateLimit: 1000,
     maxConcurrentUsers: 10000,
   });
+
+  // Mirror requireTwoFactor to localStorage so admin route guards react immediately
+  useEffect(() => {
+    try { localStorage.setItem('security.requireTwoFactor', String(securitySettings.requireTwoFactor)); } catch {}
+  }, [securitySettings.requireTwoFactor]);
+
+  // Open 2FA when redirected with force2fa or flagged in localStorage; listen for enforcement event
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const forced = params.get('force2fa') === '1' || localStorage.getItem('force2fa') === '1';
+      if (forced) {
+        setActiveTab('security');
+        setShow2FAModal(true);
+        params.delete('force2fa');
+        const url = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+        window.history.replaceState({}, '', url);
+        try { localStorage.removeItem('force2fa'); } catch {}
+      }
+
+      const onForce = () => {
+        setActiveTab('security');
+        setShow2FAModal(true);
+      };
+      window.addEventListener('admin:force2fa', onForce as EventListener);
+      return () => window.removeEventListener('admin:force2fa', onForce as EventListener);
+    } catch {}
+  }, []);
 
   // Load settings on component mount
   useEffect(() => {
@@ -914,6 +932,25 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
           </div>
         )}
       </div>
+
+      {show2FAModal && (
+        <Portal>
+          <div className="fixed inset-0 bg-red-500 flex items-center justify-center z-50 p-3">
+            <div className="bg-white rounded-xl w-full max-w-lg overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Two-Factor Authentication</h2>
+                  <p className="text-xs text-gray-500">Complete 2FA setup to continue</p>
+                </div>
+                <button onClick={() => setShow2FAModal(false)} className="p-2 hover:bg-gray-100 rounded-md transition-colors" aria-label="Close 2FA">×</button>
+              </div>
+              <div className="p-3 max-h-[70vh] overflow-y-auto">
+                <TwoFactorManagement onStatusChange={() => {}} />
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 };

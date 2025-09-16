@@ -135,6 +135,17 @@ const AdminDashboardPage: React.FC = () => {
   const [loadingPricingStats, setLoadingPricingStats] = useState(false);
   const [pricingStatsError, setPricingStatsError] = useState<string | null>(null);
 
+  // If 2FA is being enforced, jump to Admin Settings so the modal can open
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('force2fa') === '1') {
+        setActiveTab('admin-settings');
+        try { localStorage.setItem('force2fa', '1'); } catch {}
+      }
+    } catch {}
+  }, []);
+
   // Admin-side New Listing Modal state
   const [showNewListingModalAdmin, setShowNewListingModalAdmin] = useState(false);
   type AdminNewListingForm = {

@@ -32,16 +32,9 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
   const [savingAll, setSavingAll] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Force dark mode for languages page
+  // Respect global theme; do not force dark mode here
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    
-    return () => {
-      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-      if (!savedDarkMode) {
-        document.documentElement.classList.remove('dark');
-      }
-    };
+    // no-op
   }, []);
 
   useEffect(() => {

@@ -12,115 +12,57 @@ import {
   RotateCcw
 } from 'lucide-react';
 import type { ThemeSettings } from '../../../types/adminSettings.types';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ThemeSettingsFormProps {
-  settings: ThemeSettings;
-  onUpdate: (updates: Partial<ThemeSettings>) => Promise<void>;
-  isLoading: boolean;
-  theme: ThemeSettings;
+  // Deprecated. Component now uses ThemeContext; props are ignored if provided.
+  settings?: ThemeSettings;
+  onUpdate?: (updates: Partial<ThemeSettings>) => Promise<void>;
+  isLoading?: boolean;
 }
 
-const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
-  settings,
-  onUpdate,
-  isLoading,
-}) => {
-  const [formData, setFormData] = useState<ThemeSettings>(settings);
+const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = () => {
+  const { theme, applyTheme, updateTheme, resetTheme, isSaving } = useTheme();
+  const [formData, setFormData] = useState<ThemeSettings>(theme);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Apply theme to the UI
-  const applyTheme = (theme: ThemeSettings) => {
-    const root = document.documentElement;
-    const body = document.body;
-    
-    // Apply CSS custom properties
-    root.style.setProperty('--primary-color', theme.primaryColor);
-    root.style.setProperty('--secondary-color', theme.secondaryColor);
-    root.style.setProperty('--accent-color', theme.accentColor);
-    root.style.setProperty('--background-color', theme.backgroundColor);
-    root.style.setProperty('--surface-color', theme.surfaceColor);
-    root.style.setProperty('--text-color', theme.textColor);
-    root.style.setProperty('--border-color', theme.borderColor);
-    root.style.setProperty('--font-family', theme.fontFamily);
-    root.style.setProperty('--font-size', theme.fontSize);
-    root.style.setProperty('--border-radius', theme.borderRadius);
-    
-    // Apply dark/light mode
-    if (theme.mode === 'dark') {
-      root.classList.add('dark');
-      body.classList.add('dark');
-    } else if (theme.mode === 'light') {
-      root.classList.remove('dark');
-      body.classList.remove('dark');
-    } else {
-      // For 'auto', check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        root.classList.add('dark');
-        body.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-        body.classList.remove('dark');
-      }
-    }
-    
-    console.log('Theme applied:', theme);
-  };
+  // applyTheme comes from ThemeContext
 
-  // Update form data when settings change
+  // Sync with ThemeContext theme changes
   useEffect(() => {
-    setFormData(settings);
-    // Apply theme when settings are loaded
-    applyTheme(settings);
-  }, [settings]);
+    setFormData(theme);
+    applyTheme(theme);
+  }, [theme, applyTheme]);
 
   // Handle form field changes
   const handleChange = (field: keyof ThemeSettings, value: any) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
     
-    // Apply preview immediately if preview mode is enabled
-    if (showPreview) {
-      applyTheme(newData);
+    // Always reflect changes immediately in the UI
+    applyTheme(newData);
+    
+    // Persist mode toggle instantly so dark/light applies globally without Save
+    if (field === 'mode') {
+      updateTheme({ mode: value });
     }
   };
 
-  // Handle form submission
+  // Handle form submission via ThemeContext
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await onUpdate(formData);
-      // Apply theme after successful update
-      applyTheme(formData);
+      await updateTheme(formData);
     } catch (error) {
       console.error('Failed to update theme:', error);
     }
   };
 
-  // Reset to defaults
+  // Reset to defaults via ThemeContext
   const handleReset = async () => {
     if (confirm('Reset theme to default values?')) {
-      const defaultTheme: ThemeSettings = {
-        mode: 'auto',
-        primaryColor: '#0d9488',
-        secondaryColor: '#64748b',
-        accentColor: '#f59e0b',
-        backgroundColor: '#ffffff',
-        surfaceColor: '#f8fafc',
-        textColor: '#1e293b',
-        borderColor: '#e2e8f0',
-        fontFamily: 'Inter',
-        fontSize: '16px',
-        borderRadius: '8px',
-        spacing: 'comfortable',
-        animations: true,
-        transitions: true,
-      };
-      setFormData(defaultTheme);
       try {
-        await onUpdate(defaultTheme);
-        // Apply the default theme after successful update
-        applyTheme(defaultTheme);
+        await resetTheme();
       } catch (error) {
         console.error('Failed to reset theme:', error);
       }
@@ -455,10 +397,10 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = ({
         
         <button
           onClick={handleSubmit}
-          disabled={isLoading}
+          disabled={isSaving}
           className="bg-my-primary hover:bg-opacity-80 text-white px-6 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
         >
-          {isLoading ? 'Saving...' : 'Save Changes'}
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>

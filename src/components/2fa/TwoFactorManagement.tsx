@@ -31,6 +31,7 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const passwordInputRef = React.useRef<HTMLInputElement | null>(null);
   const { showToast } = useToast();
 
   // Frontend validation schema for current password
@@ -326,10 +327,17 @@ export const TwoFactorManagement: React.FC<TwoFactorManagementProps> = ({
             <input
               type={showPassword ? 'text' : 'password'}
               value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value);
+                // keep focus stable if anything causes a re-render
+                requestAnimationFrame(() => passwordInputRef.current?.focus({ preventScroll: true }));
+              }}
               className="w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent"
               placeholder="Current password"
               autoComplete="current-password"
+              ref={passwordInputRef}
+              onMouseDown={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
             />
             <button
               type="button"

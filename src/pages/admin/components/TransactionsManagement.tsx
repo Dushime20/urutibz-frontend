@@ -33,16 +33,9 @@ const TransactionsManagement: React.FC = () => {
   const [dateRangeFilter, setDateRangeFilter] = useState('all');
   const [amountRangeFilter, setAmountRangeFilter] = useState('all');
 
-  // Force dark mode for transactions page
+  // Respect global theme; no forced dark mode here
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    
-    return () => {
-      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-      if (!savedDarkMode) {
-        document.documentElement.classList.remove('dark');
-      }
-    };
+    // no-op
   }, []);
 
   useEffect(() => {

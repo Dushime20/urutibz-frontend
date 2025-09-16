@@ -115,14 +115,7 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
 
   // Force dark mode for locations page
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    
-    return () => {
-      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-      if (!savedDarkMode) {
-        document.documentElement.classList.remove('dark');
-      }
-    };
+    // Respect global theme
   }, []);
 
   const filteredLocations = locations.filter(location => {

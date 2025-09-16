@@ -21,6 +21,7 @@ export const DarkModeProvider: React.FC<DarkModeProviderProps> = ({ children }) 
     
     // Apply dark mode to document
     if (savedDarkMode) {
+      // Respect context toggle only; components should not force dark
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
@@ -33,6 +34,7 @@ export const DarkModeProvider: React.FC<DarkModeProviderProps> = ({ children }) 
     
     // Apply to document
     if (newMode) {
+      // Respect context toggle only; components should not force dark
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');

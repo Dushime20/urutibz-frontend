@@ -61,7 +61,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     
     // Apply dark mode to document
     if (savedDarkMode) {
-      document.documentElement.classList.add('dark');
+      // Respect global theme; do not force dark mode
     } else {
       document.documentElement.classList.remove('dark');
     }
@@ -73,7 +73,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     
     // Apply to document
     if (newMode) {
-      document.documentElement.classList.add('dark');
+      // Respect global theme; do not force dark mode
     } else {
       document.documentElement.classList.remove('dark');
     }

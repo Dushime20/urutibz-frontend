@@ -17,7 +17,7 @@ interface Props {
 
 const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor, gradientFrom, gradientTo, onClickSubtitle }: any) => (
   <div className="group relative overflow-hidden">
-    <div className="relative bg-white rounded-2xl p-4 sm:p-6 border border-gray-100/50 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm dark:bg-slate-900/80 dark:border-slate-700/50">
+    <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-gray-100/50 dark:border-slate-700/50 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       {/* Gradient overlay */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gradientFrom} ${gradientTo} opacity-0 group-hover:opacity-5 transition-opacity duration-300 rounded-2xl`}></div>
       
@@ -44,7 +44,7 @@ const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor, g
             {title}
           </div>
           {subtitle && (
-            <button type="button" onClick={onClickSubtitle} className="flex items-center text-xs text-teal-600 font-semibold bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400 px-2 py-1 rounded-full w-fit cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/30">
+            <button type="button" onClick={onClickSubtitle} className="flex items-center text-xs text-teal-600 dark:text-teal-400 font-semibold bg-teal-50 dark:bg-teal-900/20 px-2 py-1 rounded-full w-fit cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/30">
               <ArrowUpRight className="w-3 h-3 mr-1" />
               {subtitle}
             </button>
@@ -261,13 +261,13 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Recent Bookings */}
         <div className="xl:col-span-2">
-          <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100/50 dark:border-slate-700/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100/50 dark:border-slate-700/50">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Bookings</h3>
                 <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Latest booking activities</p>
               </div>
-              <button onClick={goBookings} className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors">
+              <button onClick={goBookings} className="text-sm text-teal-600 dark:text-teal-400 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors hover:bg-teal-100 dark:hover:bg-teal-900/30">
                 View all
                 <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </button>
@@ -287,13 +287,13 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
 
         {/* Recent Transactions */}
         <div className="xl:col-span-1">
-          <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100/50 dark:border-slate-700/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100/50 dark:border-slate-700/50">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">Transactions</h3>
                 <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Recent payments</p>
               </div>
-              <button onClick={goWallet} className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors">
+              <button onClick={goWallet} className="text-sm text-teal-600 dark:text-teal-400 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors hover:bg-teal-100 dark:hover:bg-teal-900/30">
                 View all
                 <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </button>

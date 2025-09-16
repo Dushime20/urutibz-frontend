@@ -79,6 +79,14 @@ const LoginPage: React.FC = () => {
         // Check 2FA flag from whichever user object we have
         const twoFAEnabled = userObj?.twoFactorEnabled === true || userObj?.two_factor_enabled === true;
         const role = userObj?.role;
+
+        // If org requires 2FA for admins and this admin hasn't enabled it yet → force setup
+        const requireTwoFactorOrg = Boolean((settings as any)?.security?.twoFactorRequired) || (localStorage.getItem('security.requireTwoFactor') === 'true');
+        if (role === 'admin' && requireTwoFactorOrg && !twoFAEnabled) {
+          try { localStorage.setItem('force2fa', '1'); } catch {}
+          navigate('/admin?force2fa=1', { replace: true });
+          return;
+        }
         // Require 2FA on every login when 2FA is enabled (even if previously verified)
         if (twoFAEnabled) {
           setRequireTwoFactor(true);

@@ -90,16 +90,9 @@ export default function AdministrativeDivisionsManagement() {
 
   const token = useMemo(() => localStorage.getItem('token') ?? undefined, []);
 
-  // Force dark mode for administrative divisions page
+  // Respect global theme; no forced dark mode here
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    
-    return () => {
-      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-      if (!savedDarkMode) {
-        document.documentElement.classList.remove('dark');
-      }
-    };
+    // no-op
   }, []);
 
   const load = async () => {

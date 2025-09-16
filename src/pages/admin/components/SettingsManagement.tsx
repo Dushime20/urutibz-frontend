@@ -108,11 +108,37 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
     maxConcurrentUsers: 10000,
   });
 
-  // Load settings on component mount
+  // Mirror requireTwoFactor to localStorage so route guards react immediately
   useEffect(() => {
-    // Force dark mode for admin settings page
-    document.documentElement.classList.add('dark');
-    
+    try { localStorage.setItem('security.requireTwoFactor', String(securitySettings.requireTwoFactor)); } catch {}
+  }, [securitySettings.requireTwoFactor]);
+
+  // Open 2FA when redirected with force2fa
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const forced = params.get('force2fa') === '1' || localStorage.getItem('force2fa') === '1';
+      if (forced) {
+        setActiveTab('security');
+        setShow2FAModal(true);
+        // Clean the param to avoid reopening after close
+        params.delete('force2fa');
+        const url = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+        window.history.replaceState({}, '', url);
+        try { localStorage.removeItem('force2fa'); } catch {}
+      }
+
+      const onForce = () => {
+        setActiveTab('security');
+        setShow2FAModal(true);
+      };
+      window.addEventListener('admin:force2fa', onForce as EventListener);
+      return () => window.removeEventListener('admin:force2fa', onForce as EventListener);
+    } catch {}
+  }, []);
+
+  // Load settings on component mount (respect global theme)
+  useEffect(() => {
     const loadSettings = async () => {
       try {
         setIsLoadingSettings(true);
@@ -132,14 +158,6 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
     };
 
     loadSettings();
-
-    // Cleanup: restore original dark mode state when component unmounts
-    return () => {
-      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-      if (!savedDarkMode) {
-        document.documentElement.classList.remove('dark');
-      }
-    };
   }, []);
 
   const handleSaveSettings = async () => {
@@ -618,7 +636,6 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
                     variant="outline"
                     className="px-3 py-2"
                     onClick={() => {
-                      showToast('Opening Change Password…', 'info');
                       setShowChangePassword(true);
                     }}
                   >
@@ -641,7 +658,6 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
                     <Button
                       className={`px-3 py-2 ${twoFactorStatus?.enabled ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-my-primary hover:bg-primary-700 text-white'}`}
                       onClick={() => {
-                        showToast('Opening Two-Factor Authentication…', 'info');
                         setShow2FAModal(true);
                       }}
                       disabled={twoFactorStatus?.isLoading}

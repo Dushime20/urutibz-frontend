@@ -66,11 +66,8 @@ const AdminProfilePage: React.FC = () => {
     resolver: zodResolver(schema),
   });
 
-  // Load profile data
+  // Load profile data (respect global theme)
   useEffect(() => {
-    // Force dark mode for admin profile page
-    document.documentElement.classList.add('dark');
-    
     const loadProfile = async () => {
       try {
         setLoading(true);
@@ -126,14 +123,6 @@ const AdminProfilePage: React.FC = () => {
     };
 
     loadProfile();
-
-    // Cleanup: restore original dark mode state when component unmounts
-    return () => {
-      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-      if (!savedDarkMode) {
-        document.documentElement.classList.remove('dark');
-      }
-    };
   }, [reset, showToast]);
 
   // Handle form submission
