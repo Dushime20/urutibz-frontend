@@ -15,12 +15,14 @@ import {
   LogOut,
   UserCheck,
   Shield,
+  Key,
   HelpCircle,
   FileText,
   BarChart3,
   List,
-  Play,
-  Eye
+  Eye,
+  Sun,
+  Moon
 } from 'lucide-react';
 import type { Inspection, Inspector } from '../../types/inspection';
 import { DisputeType } from '../../types/inspection';
@@ -29,6 +31,11 @@ import StatusBadge from '../../components/inspections/StatusBadge';
 import QuickStatsCard from '../../components/inspections/QuickStatsCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { TwoFactorManagement } from '../../components/2fa/TwoFactorManagement';
+import ProfileSettingsForm from '../my-account/components/ProfileSettingsForm';
+import { fetchUserProfile, updateUser, API_BASE_URL } from '../my-account/service/api';
+import axios from 'axios';
+import VerificationBanner from '../../components/verification/VerificationBanner';
 
 const InspectorDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -129,11 +136,25 @@ const InspectorDashboardPage: React.FC = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
+  const [notifications] = useState([
     { id: 1, message: 'New inspection assigned', time: '2 min ago', unread: true },
     { id: 2, message: 'Dispute resolved successfully', time: '1 hour ago', unread: false },
     { id: 3, message: 'Performance review completed', time: '2 hours ago', unread: false }
   ]);
+
+  // Account/settings modals
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
+  // Theme and currency
+  const [isDark, setIsDark] = useState<boolean>(false);
+  const [preferredCurrency, setPreferredCurrency] = useState<string>('');
+  const token = (typeof window !== 'undefined' && localStorage.getItem('token')) || '';
+  const userId = user?.id || (() => {
+    try { const raw = localStorage.getItem('user'); return raw ? JSON.parse(raw)?.id : undefined; } catch { return undefined; }
+  })();
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -153,6 +174,35 @@ const InspectorDashboardPage: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Initialize theme
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const useDark = saved ? saved === 'dark' : prefersDark;
+      setIsDark(useDark);
+      document.documentElement.classList.toggle('dark', useDark);
+    } catch {}
+  }, []);
+
+  // Load profile to hydrate preferred currency
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!token) return;
+        const res = await fetchUserProfile(token);
+        const data = res?.data;
+        let found = '';
+        if (data?.preferred_currency) found = String(data.preferred_currency);
+        else if (data?.preferredCurrency) found = String(data.preferredCurrency);
+        if (!found) {
+          try { const cached = localStorage.getItem('user'); if (cached) { const u = JSON.parse(cached); found = u?.preferred_currency || u?.preferredCurrency || ''; } } catch {}
+        }
+        if (found) setPreferredCurrency(found.toUpperCase());
+      } catch {}
+    })();
+  }, [token]);
 
   useEffect(() => {
     loadInspectorData();
@@ -217,6 +267,53 @@ const InspectorDashboardPage: React.FC = () => {
 
   const handleInspectionClick = (inspectionId: string) => {
     navigate(`/inspections/${inspectionId}`, { state: { from: 'inspector' } });
+  };
+
+  const toggleTheme = (theme: 'light' | 'dark') => {
+    const isD = theme === 'dark';
+    setIsDark(isD);
+    try {
+      localStorage.setItem('theme', theme);
+      document.documentElement.classList.toggle('dark', isD);
+      showToast(`Switched to ${theme} mode`, 'success');
+    } catch {}
+  };
+
+  const savePreferredCurrency = async (value: string) => {
+    const prev = preferredCurrency;
+    setPreferredCurrency(value);
+    try {
+      if (!userId || !token) {
+        setPreferredCurrency(prev);
+        showToast('Unable to update currency', 'error');
+        return;
+      }
+      const res = await updateUser(userId, { preferred_currency: value }, token);
+      if (!res?.success) {
+        setPreferredCurrency(prev);
+        showToast('Failed to update preferred currency', 'error');
+        return;
+      }
+      try {
+        const cached = localStorage.getItem('user');
+        if (cached) { const u = JSON.parse(cached); u.preferred_currency = value; localStorage.setItem('user', JSON.stringify(u)); }
+      } catch {}
+      showToast('Preferred currency updated', 'success');
+    } catch (e) {
+      setPreferredCurrency(prev);
+      showToast('Error updating preferred currency', 'error');
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!token) { showToast('Not authenticated', 'error'); return { ok: false, error: 'No token' }; }
+    try {
+      const res = await axios.post(`${API_BASE_URL}/auth/change-password`, { currentPassword, newPassword }, { headers: { Authorization: `Bearer ${token}` } });
+      return { ok: !!res?.data, error: null };
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to change password';
+      return { ok: false, error: msg };
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -343,27 +440,27 @@ const InspectorDashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-emerald-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-950">
       {/* Professional Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-6 py-4">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-8">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-emerald-600" />
+                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900">Inspector Dashboard</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Inspector Dashboard</h1>
               </div>
-              <div className="hidden md:flex items-center space-x-6 text-sm text-gray-600">
+              <div className="hidden md:flex items-center space-x-6 text-sm text-gray-600 dark:text-slate-400">
                 <span className="flex items-center space-x-2">
                   <UserCheck className="w-4 h-4" />
                   <span>Professional Inspector</span>
@@ -377,11 +474,20 @@ const InspectorDashboardPage: React.FC = () => {
             
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
+              {/* Theme Toggle */}
+              <button
+                onClick={() => toggleTheme(isDark ? 'light' : 'dark')}
+                className="p-2 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                aria-label="Toggle theme"
+                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
               {/* Notifications */}
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors notifications-button"
+                  className="relative p-2 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors notifications-button"
                 >
                   <Bell className="w-5 h-5" />
                   {notifications.filter(n => n.unread).length > 0 && (
@@ -393,19 +499,19 @@ const InspectorDashboardPage: React.FC = () => {
                 
                 {/* Notifications Dropdown */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 notifications-dropdown">
-                    <div className="p-4 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-gray-200 dark:border-slate-800 z-50 notifications-dropdown">
+                    <div className="p-4 border-b border-gray-200 dark:border-slate-800">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Notifications</h3>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notifications.map((notification) => (
-                        <div key={notification.id} className={`p-4 border-b border-gray-100 hover:bg-gray-50 ${notification.unread ? 'bg-blue-50' : ''}`}>
+                        <div key={notification.id} className={`p-4 border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 ${notification.unread ? 'bg-blue-50 dark:bg-slate-800/60' : ''}`}>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <p className={`text-sm ${notification.unread ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
+                              <p className={`text-sm ${notification.unread ? 'font-medium text-gray-900 dark:text-slate-100' : 'text-gray-700 dark:text-slate-300'}`}>
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{notification.time}</p>
                             </div>
                             {notification.unread && (
                               <div className="w-2 h-2 bg-blue-500 rounded-full ml-2"></div>
@@ -414,8 +520,8 @@ const InspectorDashboardPage: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                    <div className="p-3 border-t border-gray-200">
-                      <button className="w-full text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                    <div className="p-3 border-t border-gray-200 dark:border-slate-800">
+                      <button className="w-full text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium">
                         View All Notifications
                       </button>
                     </div>
@@ -436,13 +542,21 @@ const InspectorDashboardPage: React.FC = () => {
                 {showSettingsDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 settings-dropdown">
                     <div className="py-2">
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
+                      <button onClick={() => { setShowSettingsDropdown(false); setShowProfileModal(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
                         <UserCheck className="w-4 h-4" />
                         <span>Profile Settings</span>
                       </button>
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
+                      <button onClick={() => { setShowSettingsDropdown(false); setShow2FAModal(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
                         <Shield className="w-4 h-4" />
-                        <span>Account Security</span>
+                        <span>Two-Factor Auth</span>
+                      </button>
+                      <button onClick={() => { setShowSettingsDropdown(false); setShowChangePassword(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
+                        <Key className="w-4 h-4" />
+                        <span>Change Password</span>
+                      </button>
+                      <button onClick={() => { setShowSettingsDropdown(false); setShowQuickSettings(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
+                        <Settings className="w-4 h-4" />
+                        <span>Quick Settings</span>
                       </button>
                       <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
                         <FileText className="w-4 h-4" />
@@ -544,15 +658,17 @@ const InspectorDashboardPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Verification banner for unverified users */}
+        <VerificationBanner />
         {/* Tab Navigation */}
         <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
                           <button 
               onClick={() => setActiveTab('overview')}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                 activeTab === 'overview'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <BarChart3 className="w-4 h-4" />
@@ -562,8 +678,8 @@ const InspectorDashboardPage: React.FC = () => {
               onClick={() => setActiveTab('inspections')}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                 activeTab === 'inspections'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <List className="w-4 h-4" />
@@ -573,8 +689,8 @@ const InspectorDashboardPage: React.FC = () => {
               onClick={() => setActiveTab('disputes')}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                 activeTab === 'disputes'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <AlertTriangle className="w-4 h-4" />
@@ -623,6 +739,72 @@ const InspectorDashboardPage: React.FC = () => {
       </div>
 
       {/* Modals */}
+      {/* Profile Modal */}
+      {showProfileModal && userId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowProfileModal(false)} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-lg w-full max-w-2xl p-6 border border-gray-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Edit Profile</h3>
+              <button onClick={() => setShowProfileModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+            </div>
+            <ProfileSettingsForm userId={userId} token={token} onUpdated={() => { try { loadInspectorData(); } catch {} }} />
+          </div>
+        </div>
+      )}
+
+      {/* 2FA Modal */}
+      {show2FAModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShow2FAModal(false)} />
+          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Two-Factor Authentication</h3>
+              <button onClick={() => setShow2FAModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+            </div>
+            <TwoFactorManagement onStatusChange={() => { /* could refetch status if needed */ }} />
+          </div>
+        </div>
+      )}
+
+      {/* Quick Settings Modal */}
+      {showQuickSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowQuickSettings(false)} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Quick Settings</h3>
+              <button onClick={() => setShowQuickSettings(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+            </div>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Theme</label>
+                <div className="flex gap-2">
+                  <button onClick={() => toggleTheme('light')} className={`px-3 py-2 rounded-lg border ${!isDark ? 'bg-gray-100 border-gray-300' : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200'}`}>Light</button>
+                  <button onClick={() => toggleTheme('dark')} className={`px-3 py-2 rounded-lg border ${isDark ? 'bg-slate-800 text-white border-slate-600' : 'border-gray-300 text-gray-700'}`}>Dark</button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Preferred Currency</label>
+                <select value={preferredCurrency} onChange={(e) => setPreferredCurrency(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100">
+                  <option value="USD">USD</option>
+                  <option value="RWF">RWF</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                </select>
+                <div className="mt-3 flex justify-end">
+                  <button onClick={() => savePreferredCurrency(preferredCurrency)} className="px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} onSubmit={changePassword} />
+      )}
       {/* Reschedule Modal */}
       {showReschedule.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -868,8 +1050,8 @@ const InspectorDashboardPage: React.FC = () => {
                    <div className="mt-2">
                      <p className="text-sm text-gray-600">Selected files:</p>
                      <ul className="mt-1 text-sm text-gray-500">
-                       {showAddItem.item.photos.map((file, index) => (
-                         <li key={index}>{file.name}</li>
+                       {showAddItem.item.photos.map((file) => (
+                         <li key={file.name}>{file.name}</li>
                        ))}
                      </ul>
                    </div>
@@ -955,7 +1137,7 @@ const InspectorDashboardPage: React.FC = () => {
                      formData.append('requiresReplacement', showAddItem.item.requiresReplacement.toString());
                      
                      // Append photos if any
-                     showAddItem.item.photos.forEach((photo, index) => {
+                     showAddItem.item.photos.forEach((photo) => {
                        formData.append('photos', photo);
                      });
                      
@@ -1056,8 +1238,8 @@ const InspectorDashboardPage: React.FC = () => {
                    <div className="mt-2">
                      <p className="text-sm text-gray-600">Selected files:</p>
                      <ul className="mt-1 text-sm text-gray-500">
-                       {showDispute.photos.map((file, index) => (
-                         <li key={index}>{file.name}</li>
+                       {showDispute.photos.map((file) => (
+                         <li key={file.name}>{file.name}</li>
                        ))}
                      </ul>
                    </div>
@@ -1088,7 +1270,7 @@ const InspectorDashboardPage: React.FC = () => {
                      formData.append('evidence', showDispute.evidence);
                      
                      // Append photos if any
-                     showDispute.photos.forEach((photo, index) => {
+                     showDispute.photos.forEach((photo) => {
                        formData.append('photos', photo);
                      });
                      
@@ -1188,7 +1370,7 @@ const OverviewTab: React.FC<{
   onInspectionClick: (id: string) => void;
   formatDate: (date: string) => string;
   getTypeLabel: (type: string) => string;
-}> = ({ stats, inspections, inspector, inspectorDisputes, disputesLoading, onInspectionClick, formatDate, getTypeLabel }) => {
+}> = ({ stats, inspections, inspectorDisputes, disputesLoading, onInspectionClick, formatDate, getTypeLabel }) => {
   return (
     <div className="space-y-8">
       {/* Enhanced Quick Stats */}
@@ -1691,3 +1873,57 @@ const DisputesTab: React.FC<{
  };
 
 export default InspectorDashboardPage;
+
+// Local inline modal for changing password (self-service)
+const ChangePasswordModal: React.FC<{ onClose: () => void; onSubmit: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; error: string | null }> }> = ({ onClose, onSubmit }) => {
+  const { showToast } = useToast();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Change Password</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Current Password</label>
+            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">New Password</label>
+            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Confirm New Password</label>
+            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100" />
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button
+            disabled={saving}
+            onClick={async () => {
+              if (!currentPassword || !newPassword || !confirmPassword) { showToast('Fill all fields', 'error'); return; }
+              if (newPassword.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+              if (newPassword !== confirmPassword) { showToast('Passwords do not match', 'error'); return; }
+              setSaving(true);
+              const res = await onSubmit(currentPassword, newPassword);
+              setSaving(false);
+              if (res.ok) { showToast('Password changed successfully', 'success'); onClose(); }
+              else { showToast(res.error || 'Failed to change password', 'error'); }
+            }}
+            className="px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

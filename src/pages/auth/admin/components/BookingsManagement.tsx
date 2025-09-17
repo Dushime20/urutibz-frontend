@@ -149,6 +149,16 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
     }
   };
 
+  const formatCurrency = (amount: number | null | undefined, currency?: string) => {
+    if (amount === null || amount === undefined) return '-';
+    const safeCurrency = currency && currency.length === 3 ? currency.toUpperCase() : 'USD';
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: safeCurrency, maximumFractionDigits: 0 }).format(amount);
+    } catch {
+      return `${amount.toLocaleString()} ${safeCurrency}`;
+    }
+  };
+  
   return (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6 border-b border-gray-200">
@@ -184,6 +194,9 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Dates
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Price
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -231,6 +244,11 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                     </div>
                     <div className="text-sm text-gray-500">
                       {booking.total_days} days
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {formatCurrency(booking.pricing?.totalAmount ?? booking.pricing?.subtotal ?? null, booking.pricing?.currency)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right relative">

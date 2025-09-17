@@ -54,8 +54,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Initialize settings service
-  const settingsService = getAdminSettingsService(token);
+  // Resolve token from prop or localStorage (fallback)
+  const resolvedToken = token ?? (typeof window !== 'undefined' ? (localStorage.getItem('token') || '') : '');
+
+  // Initialize settings service with a token so Authorization header is sent
+  const settingsService = getAdminSettingsService(resolvedToken);
 
   // Get system preference for 'auto' mode
   const getSystemPreference = useCallback((): 'light' | 'dark' => {
@@ -67,6 +70,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
 
   // Generate CSS custom properties from theme
   const generateCSSVariables = useCallback((theme: ThemeSettings): Record<string, string> => {
+    // Support multiple fonts by using the first as the primary displayed family
+    const rawFont = String(theme.fontFamily || '').trim();
+    const families = rawFont.split(/[,|]/).map(f => f.trim()).filter(Boolean);
+    const primaryFont = families[0] || 'Inter';
     const isDark = theme.mode === 'dark' || (theme.mode === 'auto' && getSystemPreference() === 'dark');
     
     return {
@@ -77,7 +84,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
       '--color-surface': isDark ? '#1e293b' : theme.surfaceColor,
       '--color-text': isDark ? '#f1f5f9' : theme.textColor,
       '--color-border': isDark ? '#334155' : theme.borderColor,
-      '--font-family': theme.fontFamily,
+      '--font-family': rawFont || 'Inter, sans-serif',
+      // Bind primary/secondary to the selected theme (first) font so headings/body follow it
+      '--font-primary': primaryFont,
+      '--font-secondary': primaryFont,
       '--font-size': theme.fontSize === 'small' ? '14px' : theme.fontSize === 'large' ? '18px' : '16px',
       '--border-radius': theme.borderRadius === 'none' ? '0px' : 
                        theme.borderRadius === 'small' ? '4px' : 
@@ -88,6 +98,35 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
       '--transition-duration': theme.transitions ? '0.2s' : '0s',
     };
   }, [getSystemPreference]);
+
+  // Helper: inject Google Fonts link for the chosen font family
+  const ensureFontLink = useCallback((fontFamily: string) => {
+    try {
+      if (!fontFamily) return;
+      // Skip generic stacks like 'sans-serif' / 'system-ui'
+      const generic = ['sans-serif','serif','monospace','system-ui','ui-sans-serif','ui-serif'];
+      const parts = String(fontFamily)
+        .split(/[,|]/)
+        .map(s => s.trim().replace(/['"]/g, ''))
+        .filter(s => s && !generic.includes(s.toLowerCase()));
+      if (parts.length === 0) return;
+
+      // Build Google Fonts multi-family URL
+      const families = parts.map(name => `family=${encodeURIComponent(name.replace(/\s+/g, '+'))}:wght@400;500;600;700`).join('&');
+      const href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+      const id = 'theme-font-link';
+      const existing = document.getElementById(id) as HTMLLinkElement | null;
+      if (existing) {
+        if (existing.getAttribute('href') !== href) existing.setAttribute('href', href);
+        return;
+      }
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href = href;
+      document.head.appendChild(link);
+    } catch {}
+  }, []);
 
   // Apply theme to document
   const applyTheme = useCallback((theme: ThemeSettings) => {
@@ -107,6 +146,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
     } else {
       root.classList.remove('dark');
     }
+
+    // Ensure selected font is actually loaded
+    ensureFontLink(theme.fontFamily);
     
     // Apply custom CSS if provided
     if (theme.customCSS) {
@@ -118,7 +160,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
       }
       styleElement.textContent = theme.customCSS;
     }
-  }, [generateCSSVariables, getSystemPreference]);
+  }, [generateCSSVariables, getSystemPreference, ensureFontLink]);
 
   // Load theme from API
   const loadTheme = useCallback(async () => {
@@ -172,14 +214,21 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
 
   // Update theme
   const updateTheme = useCallback(async (updates: Partial<ThemeSettings>) => {
+    // If fontFamily is being changed, only apply after successful save
+    const isFontChange = Object.prototype.hasOwnProperty.call(updates, 'fontFamily');
+    if (isFontChange) {
+      await saveTheme(updates);
+      return;
+    }
+
     const newTheme = { ...theme, ...updates };
     setTheme(newTheme);
     applyTheme(newTheme);
-    
-    // Save to localStorage immediately for responsive updates
+
+    // Save to localStorage immediately for responsive updates (non-font fields only)
     localStorage.setItem('theme-settings', JSON.stringify(newTheme));
-    
-    // Save to API
+
+    // Persist to API
     await saveTheme(updates);
   }, [theme, applyTheme, saveTheme]);
 
@@ -231,10 +280,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
     loadTheme();
   }, [loadTheme]);
 
-  // Update token when it changes
+  // Update token when it changes (prop or localStorage refresh)
   useEffect(() => {
-    if (token) {
-      settingsService.setToken(token);
+    const latest = token ?? (typeof window !== 'undefined' ? (localStorage.getItem('token') || '') : '');
+    if (latest) {
+      settingsService.setToken(latest);
     }
   }, [token, settingsService]);
 

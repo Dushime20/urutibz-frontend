@@ -105,9 +105,29 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
                   <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Two-Factor Authentication Required</h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Enable and verify 2FA to continue</p>
                 </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  title={mustEnforce ? 'Complete 2FA to close' : 'Close'}
+                  onClick={() => { if (!mustEnforce) setShowSetup2FA(false); }}
+                  disabled={mustEnforce}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ✕
+                </button>
               </div>
               <div className="p-3 max-h-[75vh] overflow-y-auto">
-                <TwoFactorManagement onStatusChange={() => { /* keep open until verified */ }} />
+                <TwoFactorManagement onStatusChange={(s) => {
+                  // Reflect latest 2FA status so enforcement recomputes immediately
+                  setMeFlags((prev) => ({
+                    twoFactorEnabled: Boolean(s.enabled),
+                    twoFactorVerified: Boolean(s.verified),
+                    role: prev?.role,
+                  }));
+                  if (s.enabled && s.verified) {
+                    setShowSetup2FA(false);
+                  }
+                }} />
               </div>
             </div>
           </div>

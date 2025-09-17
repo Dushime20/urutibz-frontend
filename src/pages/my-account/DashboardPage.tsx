@@ -557,7 +557,15 @@ const DashboardPage: React.FC = () => {
       try {
         productResponse = await createProduct(productPayload);
       } catch (err: any) {
-        const errMsg = err?.response?.data?.message || err?.message || '';
+        const status = err?.response?.status;
+        const code = err?.response?.data?.code;
+        const backendMsg = err?.response?.data?.message;
+        const errMsg = backendMsg || err?.message || '';
+        // Friendly message for KYC-required responses
+        if (status === 403 || code === 'KYC_REQUIRED') {
+          showToast(backendMsg || 'You must complete KYC verification to create a product.', 'error');
+          return;
+        }
         const duplicateSlug = /slug|duplicate key/i.test(errMsg);
         if (duplicateSlug) {
           const uniqueSuffix = Math.random().toString(36).slice(2, 7);

@@ -149,14 +149,14 @@ const RegisterPage: React.FC = () => {
     e.preventDefault();
 
     // Block registration if disabled in platform settings
-    const allow = Boolean(settings?.platform?.allowUserRegistration);
-    const sysAllow = Boolean((settings?.system as any)?.registrationEnabled);
-    if (!allow || !sysAllow) {
-      const msg = 'User registration is currently disabled by the administrator.';
-      setToast(msg);
-      setToastType('error');
-      return;
-    }
+    // const allow = Boolean(settings?.platform?.allowUserRegistration);
+    // const sysAllow = Boolean((settings?.system as any)?.registrationEnabled);
+    // if (!allow || !sysAllow) {
+    //   const msg = 'User registration is currently disabled by the administrator.';
+    //   setToast(msg);
+    //   setToastType('error');
+    //   return;
+    // }
 
     const allFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'agreeToTerms'];
     setTouched(Object.fromEntries(allFields.map(field => [field, true])));

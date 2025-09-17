@@ -115,7 +115,16 @@ const ThemeSettingsForm: React.FC<ThemeSettingsFormProps> = () => {
 
 
   const fontFamilies = [
-    'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Source Sans Pro', 'Nunito'
+    // Modern sans-serifs
+    'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Source Sans Pro', 'Nunito', 'Nunito Sans',
+    'Manrope', 'DM Sans', 'Work Sans', 'Rubik', 'Cabin', 'Karla', 'Mulish', 'Raleway', 'Quicksand', 'Urbanist',
+    'Space Grotesk', 'Plus Jakarta Sans', 'Outfit', 'Public Sans', 'Noto Sans', 'Heebo', 'Hind', 'IBM Plex Sans',
+    // Humanist/geometric
+    'Fira Sans', 'Asap', 'Barlow', 'Exo 2', 'Maven Pro', 'Questrial', 'Titillium Web', 'Catamaran', 'Sora',
+    // Serif options
+    'Merriweather', 'Playfair Display', 'Noto Serif', 'Lora', 'Cormorant Garamond',
+    // Display/branding friendly
+    'Bebas Neue', 'Oswald', 'Archivo', 'Jost', 'Anton'
   ];
 
   return (

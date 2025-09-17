@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Upload, MapPin, Plus, Trash2, Camera, DollarSign, Package, Info } from 'lucide-react';
-import { getProductById, updateProduct, createProductImage, getProductImagesByProductId, updateProductImage, fetchCategories, fetchCountries } from '../service/api';
+import { getProductById, updateProduct, createProductImage, getProductImagesByProductId, updateProductImage, fetchCategories, fetchCountries, fetchProductPricesByProductId } from '../service/api';
 import { useToast } from '../../../contexts/ToastContext';
 
 interface EditProductModalProps {
@@ -52,6 +52,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
   const [editingImage, setEditingImage] = useState<any>(null);
   const [imageEditForm, setImageEditForm] = useState<any>({});
   const [imageEditLoading, setImageEditLoading] = useState(false);
+  const [priceRowId, setPriceRowId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -76,8 +77,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     if (!open || !productId) return;
     setLoading(true);
     setError(null);
-    getProductById(productId)
-      .then(product => {
+    
+    // Fetch product data and pricing data in parallel
+    Promise.all([
+      getProductById(productId),
+      fetchProductPricesByProductId(productId),
+      getProductImagesByProductId(productId)
+    ])
+      .then(([product, pricingResponse, images]) => {
         let location = product.location || { latitude: '', longitude: '' };
         if ((!location.latitude || !location.longitude) && navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -92,18 +99,42 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
             }
           );
         }
+
+        // Extract pricing data from the response
+        let pricingData = {};
+        if (pricingResponse.success && pricingResponse.data && pricingResponse.data.length > 0) {
+          const firstPricing = pricingResponse.data[0];
+          setPriceRowId(firstPricing.id || null);
+          const deliveryFeeFromProduct = product?.delivery_fee != null ? String(product.delivery_fee) : '';
+          const deliveryFeeFromPricing = firstPricing?.delivery_fee != null ? String(firstPricing.delivery_fee) : '';
+          pricingData = {
+            base_price_per_day: firstPricing.price_per_day?.toString() || '',
+            base_price_per_week: firstPricing.price_per_week?.toString() || '',
+            base_price_per_month: firstPricing.price_per_month?.toString() || '',
+            base_currency: firstPricing.currency || product?.base_currency || '',
+            // Prefer product delivery_fee if present; else fall back to pricing
+            delivery_fee: deliveryFeeFromProduct || deliveryFeeFromPricing,
+          } as any;
+        } else {
+          // No pricing rows; still carry over delivery_fee from product if present
+          if (product?.delivery_fee != null) {
+            pricingData = { delivery_fee: String(product.delivery_fee) } as any;
+          }
+          setPriceRowId((product as any)?.pricing?.[0]?.id || null);
+        }
+
         setForm({
           ...product,
+          ...pricingData,
           features: Array.isArray(product.features) ? product.features : [],
           specifications: product.specifications || {},
           pickup_methods: Array.isArray(product.pickup_methods) ? product.pickup_methods : [],
           location,
         });
+        
+        setExistingImages(images || []);
       })
-      .catch(() => setError('Failed to load product details.'));
-    getProductImagesByProductId(productId)
-      .then(imgs => setExistingImages(imgs || []))
-      .catch(() => setExistingImages([]))
+      .catch(() => setError('Failed to load product details.'))
       .finally(() => setLoading(false));
   }, [open, productId]);
 
@@ -184,6 +215,21 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
         const updateRes = await updateProduct(productId, productPayload);
 
+        // After product core update, update pricing if we have a price row id
+        try {
+          const { updateProductPrice } = await import('../service/api');
+          if (priceRowId) {
+            const pricingUpdatePayload: any = {
+              currency: form.base_currency,
+              price_per_day: form.base_price_per_day ? Number(form.base_price_per_day) : 0,
+              price_per_week: form.base_price_per_week ? Number(form.base_price_per_week) : 0,
+              price_per_month: form.base_price_per_month ? Number(form.base_price_per_month) : 0,
+              // keep other fields if needed
+            };
+            await updateProductPrice(priceRowId, pricingUpdatePayload);
+          }
+        } catch {}
+
         // Debug: log server response
         try {
           const { logger } = await import('../../../lib/logger');
@@ -237,7 +283,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
         return (
           <div className="space-y-6">
             <div className="group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Product Title *
               </label>
               <input
@@ -246,12 +292,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 onChange={handleInputChange}
                 required
                 placeholder="Enter a descriptive title for your product"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
               />
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Description *
               </label>
               <textarea
@@ -261,13 +307,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 required
                 placeholder="Describe your product in detail. Include key features, condition, and any important information."
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 resize-none"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Category *
                 </label>
                 <select
@@ -275,7 +321,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                   value={form.category_id || ''}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 >
                   <option value="">Select a category</option>
                   {categories.map((cat: any) => (
@@ -285,14 +331,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
               </div>
 
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Condition *
                 </label>
                 <select
                   name="condition"
                   value={form.condition || 'new'}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 >
                   <option value="new">New</option>
                   <option value="used">Used</option>
@@ -303,40 +349,40 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
             {/* New fields: brand, model, year manufactured */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Brand</label>
                 <input
                   name="brand"
                   value={form.brand || ''}
                   onChange={handleInputChange}
                   placeholder="Canon"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 />
               </div>
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Model</label>
                 <input
                   name="model"
                   value={form.model || ''}
                   onChange={handleInputChange}
                   placeholder="EOS R6"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 />
               </div>
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Year Manufactured</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Year Manufactured</label>
                 <input
                   name="year_manufactured"
                   value={form.year_manufactured || ''}
                   onChange={handleInputChange}
                   placeholder="2022"
                   type="number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 />
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Country *
               </label>
               <select
@@ -344,7 +390,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 value={form.country_id || ''}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
               >
                 <option value="">Select country</option>
                 {countries.map((c: any) => (
@@ -358,12 +404,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
       case 2:
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Pricing Information</h3>
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Pricing Information</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Currency *
                   </label>
                   <select
@@ -371,7 +417,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     value={form.base_currency || ''}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                   >
                     <option value="">Select currency</option>
                     <option value="USD">USD ($)</option>
@@ -382,7 +428,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 </div>
 
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Price per Day *
                   </label>
                   <input
@@ -393,14 +439,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Price per Week
                     <span className="text-gray-500 text-xs ml-1">(optional)</span>
                   </label>
@@ -411,12 +457,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                   />
                 </div>
 
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Price per Month
                     <span className="text-gray-500 text-xs ml-1">(optional)</span>
                   </label>
@@ -427,12 +473,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                   />
                 </div>
 
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Delivery Fee
                     <span className="text-gray-500 text-xs ml-1">(optional)</span>
                   </label>
@@ -443,14 +489,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     placeholder="0.00"
                     type="number"
                     step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                   />
                 </div>
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Pickup Methods *
               </label>
               <div className="grid grid-cols-2 gap-4">
@@ -473,7 +519,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                           }));
                         }
                       }}
-                      className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                      className="w-4 h-4 text-my-primary border-gray-300 rounded focus:ring-my-primary"
                     />
                     <span className="text-sm font-medium text-gray-700 capitalize">{method}</span>
                   </label>
@@ -486,8 +532,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
       case 3:
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Product Features</h3>
+            <div className="bg-gradient-to-r from-my-primary/10 to-cyan-50 p-6 rounded-lg border border-my-primary/20">
+              <h3 className="text-lg font-semibold text-my-primary mb-4">Product Features</h3>
               
               <div className="space-y-4">
                 {(Array.isArray(form.features) ? form.features : []).map((feature: string, idx: number) => (
@@ -500,7 +546,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                         setForm((f) => ({ ...f!, features }));
                       }}
                       placeholder="Enter a feature (e.g., Waterproof, Bluetooth)"
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                     />
                     <button
                       type="button"
@@ -523,7 +569,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     ...f!, 
                     features: [...(Array.isArray(f!.features) ? f!.features : []), ''] 
                   }))}
-                  className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                  className="flex items-center gap-2 text-my-primary hover:text-my-primary/90 font-medium transition-colors"
                 >
                   <Plus size={18} />
                   Add Feature
@@ -531,8 +577,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Included Accessories</h3>
+            <div className="bg-gradient-to-r from-my-primary/10 to-cyan-50 p-6 rounded-lg border border-my-primary/20">
+              <h3 className="text-lg font-semibold text-my-primary mb-4">Included Accessories</h3>
 
               <div className="space-y-4">
                 {(Array.isArray(form.included_accessories) ? form.included_accessories : []).map((acc: string, idx: number) => (
@@ -545,7 +591,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                         setForm((f) => ({ ...f!, included_accessories: accessories }));
                       }}
                       placeholder="e.g., 2x batteries"
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                     />
                     <button
                       type="button"
@@ -568,7 +614,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     ...f!, 
                     included_accessories: [...(Array.isArray(f!.included_accessories) ? f!.included_accessories : []), ''] 
                   }))}
-                  className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                  className="flex items-center gap-2 text-my-primary hover:text-my-primary/90 font-medium transition-colors"
                 >
                   <Plus size={18} />
                   Add Accessory
@@ -576,8 +622,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Specifications</h3>
+            <div className="bg-gradient-to-r from-my-primary/10 to-cyan-50 p-6 rounded-lg border border-my-primary/20">
+              <h3 className="text-lg font-semibold text-my-primary mb-4">Specifications</h3>
               
               <div className="space-y-4">
                 {Object.entries(form.specifications || {}).map(([key, value], idx) => (
@@ -596,7 +642,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                         });
                       }}
                       placeholder="Specification name (e.g., Color, Size)"
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      className="px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                     />
                     <div className="flex gap-3">
                       <input
@@ -611,7 +657,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                           });
                         }}
                         placeholder="Value (e.g., Red, Large)"
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                        className="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                         disabled={!key}
                       />
                       <button
@@ -637,7 +683,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     ...f!,
                     specifications: { ...f!.specifications, [`spec${Object.keys(f!.specifications || {}).length + 1}`]: '' }
                   }))}
-                  className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                  className="flex items-center gap-2 text-my-primary hover:text-my-primary/90 font-medium transition-colors"
                 >
                   <Plus size={18} />
                   Add Specification
@@ -650,13 +696,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
       case 4:
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
-              <h3 className="text-lg font-semibold text-teal-800 mb-4">Product Images</h3>
+            <div className="bg-gradient-to-r from-my-primary/10 to-cyan-50 p-6 rounded-lg border border-my-primary/20">
+              <h3 className="text-lg font-semibold text-my-primary mb-4">Product Images</h3>
               
               {/* Existing Images */}
               {existingImages && existingImages.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Current Images</h4>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">Current Images</h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {existingImages.map((img, idx) => (
                       <div key={idx} className="relative group rounded-lg overflow-hidden bg-gray-100">
@@ -691,11 +737,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
               {/* New Images Upload */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Images</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">Add New Images</h4>
                 <div
                   className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
                     dragActive 
-                      ? 'border-teal-500 bg-teal-50' 
+                      ? 'border-my-primary bg-my-primary/10' 
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
                   onDragEnter={handleDrag}
@@ -706,7 +752,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                   <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                   <p className="text-gray-600 mb-2">
                     Drag and drop images here, or{' '}
-                    <label className="text-teal-600 hover:text-teal-700 cursor-pointer font-medium">
+                    <label className="text-my-primary hover:text-my-primary/90 cursor-pointer font-medium">
                       browse
                       <input
                         type="file"
@@ -758,7 +804,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Alt Text for New Images
                 </label>
                 <input
@@ -766,30 +812,30 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                   value={form.alt_text || ''}
                   onChange={handleInputChange}
                   placeholder="Describe the new images for accessibility"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 />
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-lg border border-yellow-200">
-              <h3 className="text-lg font-semibold text-yellow-800 mb-4">
-                <MapPin className="inline mr-2" size={20} />
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">
+                <MapPin className="inline mr-2 text-my-primary" size={20} />
                 Location
               </h3>
               <div className="group mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Address Line</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Address Line</label>
                 <input
                   name="address_line"
                   value={form.address_line || ''}
                   onChange={handleInputChange}
                   placeholder="KG 11 Ave, Kigali"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Latitude
                   </label>
                   <input
@@ -801,11 +847,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                       location: { ...(f!.location || { latitude: '', longitude: '' }), latitude: e.target.value }
                     }))}
                     placeholder="e.g., 40.7128"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                   />
                 </div>
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Longitude
                   </label>
                   <input
@@ -817,7 +863,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                       location: { ...(f!.location || { latitude: '', longitude: '' }), longitude: e.target.value }
                     }))}
                     placeholder="e.g., -74.0060"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                   />
                 </div>
               </div>
@@ -825,7 +871,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Sort Order
                 </label>
                 <input
@@ -834,18 +880,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                   onChange={handleInputChange}
                   placeholder="0"
                   type="number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 />
               </div>
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Is Primary
                 </label>
                 <select
                   name="isPrimary"
                   value={form.isPrimary || 'true'}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary transition-all duration-200"
                 >
                   <option value="true">Yes</option>
                   <option value="false">No</option>
@@ -858,18 +904,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-md shadow-2xl max-w-5xl w-full mx-4 h-[95vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-md shadow-2xl max-w-5xl w-full mx-4 h-[95vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-cyan-600 px-8 py-6 text-white flex items-center justify-between">
-          <h2 className="text-xl font-bold">Edit Product</h2>
-          <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl font-bold">&times;</button>
+        <div className="px-8 py-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-900">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Edit Product</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-slate-300 dark:hover:text-slate-100 text-2xl font-bold">&times;</button>
         </div>
         {/* Step indicator */}
         <div className="flex items-center justify-between mt-2 px-8">
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${currentStep === step.id ? 'bg-teal-600' : 'bg-gray-300'}`}>{index + 1}</div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${currentStep === step.id ? 'bg-my-primary' : 'bg-gray-300 dark:bg-slate-600'}`}>{index + 1}</div>
               {index < steps.length - 1 && <div className="w-8 h-1 bg-gray-300 mx-2 rounded" />}
             </div>
           ))}
@@ -878,16 +924,16 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-8 py-6 flex flex-col">
           {renderStepContent()}
           {/* Sticky footer */}
-          <div className="border-t border-gray-200 px-4 sm:px-8 py-4 bg-gray-50 flex-shrink-0 flex flex-col sm:flex-row justify-between items-center gap-4 mt-auto">
+          <div className="border-t border-gray-200 dark:border-slate-700 px-4 sm:px-8 py-4 bg-white dark:bg-slate-900 flex-shrink-0 flex flex-col sm:flex-row justify-between items-center gap-4 mt-auto">
             <button
               type="button"
               onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
               disabled={currentStep === 1}
-              className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all duration-200 ${currentStep === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+              className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all duration-200 ${currentStep === 1 ? 'bg-gray-200 text-gray-500 dark:bg-slate-700 dark:text-slate-400 cursor-not-allowed' : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             >
               ← Previous
             </button>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
               Step {currentStep} of {steps.length}
             </div>
             <div className="w-full sm:w-auto">
@@ -895,12 +941,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 <button
                   type="button"
                   onClick={() => setCurrentStep(Math.min(steps.length, currentStep + 1))}
-                  className="w-full sm:w-auto px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-all duration-200"
+                  className="w-full sm:w-auto px-6 py-3 bg-my-primary text-white rounded-lg font-medium hover:bg-my-primary/90 transition-all duration-200"
                 >
                   Next →
                 </button>
               ) : (
-                <button type="submit" disabled={isSubmitting} className="w-full bg-[#01aaa7] text-white py-3 rounded-lg font-semibold hover:bg-[#019c98] transition-colors flex items-center justify-center gap-2" onClick={()=>console.log("you clicked me")}> 
+                <button type="submit" disabled={isSubmitting} className="w-full bg-my-primary text-white py-3 rounded-lg font-semibold hover:bg-my-primary/90 transition-colors flex items-center justify-center gap-2">
                 {isSubmitting && (
                   <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -918,10 +964,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
       
       {showEditImageModal && editingImage && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md relative">
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700" onClick={() => setShowEditImageModal(false)}>&times;</button>
-            <h3 className="text-xl font-bold mb-4 text-[#01aaa7]">Edit Image</h3>
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 dark:bg-black/60">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-8 w-full max-w-md relative">
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200" onClick={() => setShowEditImageModal(false)}>&times;</button>
+            <h3 className="text-xl font-bold mb-4 text-my-primary">Edit Image</h3>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -956,7 +1002,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 placeholder="Alt text"
                 className="mb-2 px-2 py-1 border rounded w-full"
               />
-              <button type="submit" className="bg-[#01aaa7] text-white px-4 py-2 rounded text-sm font-semibold mt-2 w-full" disabled={imageEditLoading}>
+              <button type="submit" className="bg-my-primary text-white px-4 py-2 rounded text-sm font-semibold mt-2 w-full" disabled={imageEditLoading}>
                 {imageEditLoading ? 'Saving...' : 'Save'}
               </button>
             </form>

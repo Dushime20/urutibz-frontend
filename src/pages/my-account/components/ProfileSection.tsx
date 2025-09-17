@@ -43,9 +43,19 @@ const ProfileSection: React.FC<Props> = ({ realUser, setRealUser }) => {
                 </div>
                 <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Verification:</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${realUser.kyc_status === 'verified' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>ID {realUser.kyc_status === 'verified' ? 'Verified' : 'Unverified'}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${realUser.phoneVerified ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>Phone {realUser.phoneVerified ? 'Verified' : 'Unverified'}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${realUser.emailVerified ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>Email {realUser.emailVerified ? 'Verified' : 'Unverified'}</span>
+                  {(() => {
+                    console.log( realUser.emailVerified,'email is veriefied or not')
+                    const idVerified = realUser.kyc_status === 'verified' || realUser.kyc_status === 'approved';
+                    const phoneOk = realUser.phoneVerified === true || realUser.phone_verified === true || !!realUser.phone_verified_at;
+                    const emailOk = realUser.emailVerified === true || realUser.email_verified === true || !!realUser.email_verified_at;
+                    return (
+                      <>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${idVerified ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>ID {idVerified ? 'Verified' : 'Unverified'}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${phoneOk ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>Phone {phoneOk ? 'Verified' : 'Unverified'}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${emailOk ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>Email {emailOk ? 'Verified' : 'Unverified'}</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}

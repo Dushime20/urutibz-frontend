@@ -146,6 +146,82 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
     }
   };
 
+  const formatCurrency = (amount: number | null | undefined, currency?: string) => {
+    if (amount === null || amount === undefined) return '-';
+    const safeCurrency = currency && currency.length === 3 ? currency.toUpperCase() : 'USD';
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: safeCurrency, maximumFractionDigits: 0 }).format(amount);
+    } catch {
+      return `${amount.toLocaleString()} ${safeCurrency}`;
+    }
+  };
+
+  const getPositiveNumber = (value: unknown): number | null => {
+    if (value === null || value === undefined) return null;
+    const n = typeof value === 'string' ? Number(value) : (value as number);
+    if (Number.isFinite(n) && n > 0) return n;
+    return null;
+  };
+
+  const resolveCurrency = (booking: AdminBooking): string | undefined => {
+    return booking.pricing?.currency || (booking as any).base_currency || 'USD';
+  };
+
+  const getBookingPrice = (booking: AdminBooking) => {
+    // Primary: Use pricing.totalAmount if available (same as booking details)
+    if (booking.pricing?.totalAmount !== null && booking.pricing?.totalAmount !== undefined) {
+      return `${booking.pricing.totalAmount} ${booking.pricing.currency}`;
+    }
+    
+    // Secondary: Calculate from subtotal + platform fee (use available pricing data)
+    if (booking.pricing?.subtotal !== null && booking.pricing?.subtotal !== undefined) {
+      const subtotal = booking.pricing.subtotal;
+      const platformFee = booking.pricing.platformFee || 0;
+      const total = subtotal + platformFee;
+      return `${total.toFixed(2)} ${booking.pricing.currency}`;
+    }
+    
+    // Tertiary: Use just subtotal if available
+    if (booking.pricing?.subtotal !== null && booking.pricing?.subtotal !== undefined) {
+      return `${booking.pricing.subtotal} ${booking.pricing.currency}`;
+    }
+    
+    // Fallback: Legacy base_price_per_day (same as booking details)
+    if ((booking as any).base_price_per_day) {
+      const days = booking.total_days || booking.pricing?.totalDays || 1;
+      const dailyRate = (booking as any).base_price_per_day;
+      const subtotal = dailyRate * days;
+      const platformFee = subtotal * 0.1; // 10% platform fee
+      const total = subtotal + platformFee;
+      return `${total.toFixed(2)} ${(booking as any).base_currency || 'USD'}`;
+    }
+    
+    // Additional fallback: Check for any other price fields in the booking
+    const priceFields = [
+      (booking as any).total_amount,
+      (booking as any).amount,
+      (booking as any).price,
+      (booking as any).total_price,
+      (booking as any).final_price
+    ];
+    
+    for (const price of priceFields) {
+      if (price && typeof price === 'number' && price > 0) {
+        const currency = booking.pricing?.currency || (booking as any).currency || 'USD';
+        return `${price} ${currency}`;
+      }
+    }
+    
+    return 'N/A';
+  };
+
+  const calculateRentalDays = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   const handleEdit = (booking: AdminBooking) => {
     setSelectedBooking(booking);
     setViewMode('edit');
@@ -390,6 +466,9 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                   Dates
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                  Price
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -397,7 +476,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
             <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
               {filteredBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="text-gray-500 dark:text-slate-400">
                       {hasActiveFilters ? (
                         <div>
@@ -446,6 +525,11 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                     </div>
                     <div className="text-sm text-gray-500 dark:text-slate-400">
                       {booking.total_days} days
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
+                      {getBookingPrice(booking)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right relative">

@@ -574,6 +574,19 @@ export async function updateProductImage(imageId: string, imageData: any) {
   return response.data;
 }
 
+export async function updateProductPrice(priceId: string, data: any) {
+  const token = localStorage.getItem('token');
+  const url = `${API_BASE_URL}/product-prices/${priceId}`;
+  try {
+    const response = await axios.put(url, data, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return { success: true, data: response.data?.data ?? response.data };
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data || error?.message };
+  }
+}
+
 export async function fetchCategories() {
   const res = await fetch(`${API_BASE_URL}/categories`);
   if (!res.ok) throw new Error('Failed to fetch categories');
