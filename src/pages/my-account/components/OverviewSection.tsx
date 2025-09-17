@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, DollarSign, Shield, ArrowUpRight, Calendar, TrendingUp, Euro, PoundSterling, Banknote } from 'lucide-react';
+import { Package, DollarSign, Shield, ArrowUpRight, Calendar, TrendingUp, Euro, PoundSterling, Banknote, Clock, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Props {
@@ -55,99 +55,103 @@ const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor, g
   </div>
 );
 
-const BookingCard = ({ booking }: { booking: any }) => (
-  <div className="group relative overflow-hidden">
-    <div className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-gray-50/80 to-teal-50/30 hover:from-teal-50/50 hover:to-teal-100/40 transition-all duration-300 border border-gray-100/50 dark:from-slate-800/50 dark:to-slate-700/30 dark:hover:from-slate-700/50 dark:hover:to-slate-600/30 dark:border-slate-700/50">
-      {/* Product Image */}
-      <div className="relative overflow-hidden rounded-lg">
-        <img 
-          src={booking.images?.[0]?.image_url || '/assets/img/placeholder-image.png'} 
-          alt={booking.product?.title || 'Product'} 
-          className="w-16 h-12 object-cover transition-transform duration-300 group-hover:scale-105" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+// Unified Activity Item Component
+const ActivityItem = ({ item, type }: { item: any, type: 'booking' | 'transaction' }) => {
+  const isBooking = type === 'booking';
+  const date = isBooking ? item.start_date : item.created_at;
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'confirmed':
+        return 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700';
+      case 'pending':
+        return 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
+      case 'cancelled':
+      case 'failed':
+        return 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700';
+      default:
+        return 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-700';
+    }
+  };
+
+  return (
+    <div className="flex items-start space-x-4 p-4 rounded-xl bg-gradient-to-r from-white to-gray-50/50 hover:from-gray-50 hover:to-teal-50/30 transition-all duration-300 border border-gray-100/50 dark:from-slate-800/50 dark:to-slate-700/30 dark:hover:from-slate-700/50 dark:hover:to-slate-600/30 dark:border-slate-700/50">
+      {/* Icon */}
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+        isBooking 
+          ? 'bg-blue-100 dark:bg-blue-900/30' 
+          : 'bg-teal-100 dark:bg-teal-900/30'
+      }`}>
+        {isBooking ? (
+          <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        ) : (
+          <CreditCard className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+        )}
       </div>
       
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <h4 className="font-semibold text-gray-900 dark:text-white truncate mb-1">
-          {booking.product?.title || 'Product'}
-        </h4>
-        <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-slate-400">
-          <Calendar className="w-4 h-4" />
-          <span>{new Date(booking.start_date).toLocaleDateString()}</span>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-900 dark:text-white truncate">
+              {isBooking 
+                ? (item.product?.title || 'Product Booking')
+                : (item.transaction_type?.replace(/_/g, ' ') || 'Payment')
+              }
+            </h4>
+            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-slate-400 mt-1">
+              <Clock className="w-3 h-3" />
+              <span>
+                {new Date(date).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+            {isBooking && item.product?.base_price_per_day && (
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                ${item.product.base_price_per_day} per day
+              </p>
+            )}
+            {!isBooking && item.metadata?.description && (
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                {item.metadata.description}
+              </p>
+            )}
+          </div>
+          
+          {/* Status & Amount */}
+          <div className="text-right ml-4">
+            {isBooking ? (
+              <div>
+                <p className="font-bold text-gray-900 dark:text-white">
+                  ${item.product?.base_price_per_day || '--'}
+                </p>
+                <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold mt-1 ${getStatusColor(item.status)}`}>
+                  {item.status}
+                </span>
+              </div>
+            ) : (
+              <div>
+                <p className="font-bold text-gray-900 dark:text-white">
+                  {parseFloat(item.amount).toLocaleString()} {item.currency}
+                </p>
+                <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold mt-1 ${getStatusColor(item.status)}`}>
+                  {item.status}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      
-      {/* Price & Status */}
-      <div className="text-right">
-        <p className="font-bold text-gray-900 dark:text-white mb-1">
-          {booking.product?.base_price_per_day != null && booking.product?.base_currency ? 
-            `$${booking.product.base_price_per_day}` : '--'
-          }
-        </p>
-        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
-          booking.status === 'pending' 
-            ? 'bg-amber-100 text-amber-700 border border-amber-200' 
-            : 'bg-teal-100 text-teal-700 border border-teal-200'
-        }`}>
-          {booking.status}
-        </span>
-      </div>
     </div>
-  </div>
-);
-
-const TransactionCard = ({ transaction }: { transaction: any }) => (
-  <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-white to-gray-50/50 hover:from-gray-50 hover:to-teal-50/30 transition-all duration-300 border border-gray-100/50 dark:from-slate-800/50 dark:to-slate-700/30 dark:hover:from-slate-700/50 dark:hover:to-slate-600/30 dark:border-slate-700/50">
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
-          <DollarSign className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
-            {transaction.transaction_type?.replace(/_/g, ' ') || 'Payment'}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400 flex items-center">
-            <span className="w-1 h-1 bg-gray-400 rounded-full mr-2"></span>
-            {new Date(transaction.created_at).toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric',
-              year: 'numeric'
-            })}
-          </p>
-        </div>
-      </div>
-      
-      <div className="text-right">
-        <p className="font-bold text-sm text-gray-900 dark:text-white">
-          {parseFloat(transaction.amount).toLocaleString()} {transaction.currency}
-        </p>
-        <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold mt-1 ${
-          transaction.status === 'completed' 
-            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
-            : transaction.status === 'pending' 
-            ? 'bg-amber-100 text-amber-700 border border-amber-200' 
-            : 'bg-red-100 text-red-700 border border-red-200'
-        }`}>
-          {transaction.status}
-        </span>
-      </div>
-    </div>
-    
-    <div className="flex items-center justify-between text-xs text-gray-400 dark:text-slate-500 pt-2 border-t border-gray-100 dark:border-slate-700">
-      <span className="flex items-center">
-        <span className="w-1 h-1 bg-teal-400 rounded-full mr-2"></span>
-        via {transaction.provider}
-      </span>
-      <span>{new Date(transaction.created_at).toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })}</span>
-    </div>
-  </div>
-);
+  );
+};
 
 const EmptyState = ({ icon: Icon, message }: { icon: any, message: string }) => (
   <div className="text-center py-12">
@@ -257,10 +261,10 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
         />
       </div>
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      {/* Recent Activity - Combined Bookings & Transactions */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Recent Bookings */}
-        <div className="xl:col-span-2">
+        <div>
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100/50 dark:border-slate-700/50">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -277,21 +281,19 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
               {recentDashboardBookings.length === 0 ? (
                 <EmptyState icon={Calendar} message="No recent bookings found" />
               ) : (
-                recentDashboardBookings.map((booking: any) => (
-                  <BookingCard key={booking.id} booking={booking} />
-                ))
+                <ActivityItem key={`booking-${recentDashboardBookings[0].id}`} item={recentDashboardBookings[0]} type="booking" />
               )}
             </div>
           </div>
         </div>
 
         {/* Recent Transactions */}
-        <div className="xl:col-span-1">
+        <div>
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100/50 dark:border-slate-700/50">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Transactions</h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Recent payments</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Transactions</h3>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Latest payment activities</p>
               </div>
               <button onClick={goWallet} className="text-sm text-teal-600 dark:text-teal-400 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors hover:bg-teal-100 dark:hover:bg-teal-900/30">
                 View all
@@ -303,9 +305,7 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
               {recentDashboardTransactions.length === 0 ? (
                 <EmptyState icon={DollarSign} message="No transactions yet" />
               ) : (
-                recentDashboardTransactions.slice(0, 4).map((transaction: any) => (
-                  <TransactionCard key={transaction.id} transaction={transaction} />
-                ))
+                <ActivityItem key={`transaction-${recentDashboardTransactions[0].id}`} item={recentDashboardTransactions[0]} type="transaction" />
               )}
             </div>
           </div>

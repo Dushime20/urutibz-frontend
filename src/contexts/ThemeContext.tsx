@@ -88,7 +88,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
       // Bind primary/secondary to the selected theme (first) font so headings/body follow it
       '--font-primary': primaryFont,
       '--font-secondary': primaryFont,
-      '--font-size': theme.fontSize === 'small' ? '14px' : theme.fontSize === 'large' ? '18px' : '16px',
+      // Keep a CSS variable for consumers; actual base size is also set on :root below
+      '--font-size': /^[0-9]+(px|rem|em|%)$/i.test(String(theme.fontSize || '')) ? String(theme.fontSize) : '16px',
       '--border-radius': theme.borderRadius === 'none' ? '0px' : 
                        theme.borderRadius === 'small' ? '4px' : 
                        theme.borderRadius === 'large' ? '16px' : '8px',
@@ -146,6 +147,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
     } else {
       root.classList.remove('dark');
     }
+
+    // Set document base font size so it cascades across the app
+    try {
+      const baseSize = /^[0-9]+(px|rem|em|%)$/i.test(String(theme.fontSize || '')) ? String(theme.fontSize) : '16px';
+      root.style.fontSize = baseSize;
+    } catch {}
 
     // Ensure selected font is actually loaded
     ensureFontLink(theme.fontFamily);

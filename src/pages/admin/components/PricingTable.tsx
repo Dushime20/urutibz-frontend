@@ -6,19 +6,14 @@ import {
   Edit,
   Trash2,
   Eye,
-  MoreHorizontal,
-  ChevronDown,
-  ChevronUp,
   DollarSign,
-  Calendar,
-  Shield,
-  TrendingUp,
   CheckCircle,
   XCircle,
   SortAsc,
   SortDesc,
 } from 'lucide-react';
 import { Button } from '../../../components/ui/DesignSystem';
+import { fetchCountries } from '../service/categories';
 import PricingService from '../service/pricingService';
 import type { ProductPrice, PriceFilters } from '../types/pricing';
 
@@ -57,7 +52,6 @@ const PricingTable: React.FC<PricingTableProps> = ({
   });
 
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedPrice, setSelectedPrice] = useState<ProductPrice | null>(null);
 
   const handleFilterChange = (field: keyof PriceFilters, value: any) => {
     const newFilters = { ...filters, [field]: value, page: 1 };
@@ -66,8 +60,9 @@ const PricingTable: React.FC<PricingTableProps> = ({
   };
 
   const handleSort = (field: string) => {
-    const newSortOrder = filters.sort_by === field && filters.sort_order === 'asc' ? 'desc' : 'asc';
-    const newFilters = { ...filters, sort_by: field, sort_order: newSortOrder, page: 1 };
+    const newSortOrder: 'asc' | 'desc' =
+      filters.sort_by === field && filters.sort_order === 'asc' ? 'desc' : 'asc';
+    const newFilters: PriceFilters = { ...filters, sort_by: field, sort_order: newSortOrder, page: 1 } as PriceFilters;
     setFilters(newFilters);
     onFiltersChange(newFilters);
   };
@@ -122,6 +117,41 @@ const PricingTable: React.FC<PricingTableProps> = ({
     { code: 'UGX', name: 'Ugandan Shilling' },
   ];
 
+  // Map of country_id => readable name (populated from prices payload fallbacks)
+  const countryNameById = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of prices) {
+      const id = (p as any).country_id;
+      const name = (p as any).country_name || (p as any).country || (p as any).countryCode || (p as any).name || '';
+      if (id && name && !map[id]) map[id] = String(name);
+    }
+    return map;
+  }, [prices]);
+
+  // Enrich with authoritative countries list
+  const [countriesMap, setCountriesMap] = React.useState<Record<string, string>>({});
+  React.useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const countries = await fetchCountries();
+        if (!isMounted) return;
+        const map = Object.create(null) as Record<string, string>;
+        for (const c of countries as any[]) {
+          const id = (c as any).id || (c as any).country_id;
+          const name = (c as any).name || (c as any).country_name || (c as any).country;
+          if (id && name) map[id] = String(name);
+        }
+        setCountriesMap(map);
+      } catch {
+        // ignore; fallbacks still work
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100">
       {/* Header */}
@@ -135,7 +165,7 @@ const PricingTable: React.FC<PricingTableProps> = ({
           </div>
           <Button
             onClick={onCreateNew}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 py-1 px-2"
           >
             <Plus className="w-4 h-4" />
             Add Price
@@ -245,19 +275,10 @@ const PricingTable: React.FC<PricingTableProps> = ({
             <tr>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <button
-                  onClick={() => handleSort('product_id')}
-                  className="flex items-center gap-1 hover:text-gray-700 transition-colors"
-                >
-                  Product ID
-                  <SortIcon field="product_id" />
-                </button>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <button
                   onClick={() => handleSort('country_id')}
                   className="flex items-center gap-1 hover:text-gray-700 transition-colors"
                 >
-                  Country ID
+                  Country
                   <SortIcon field="country_id" />
                 </button>
               </th>
@@ -293,7 +314,7 @@ const PricingTable: React.FC<PricingTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {isLoading ? (
               <tr>
-                <td colSpan={9} className="px-6 py-12 text-center">
+                <td colSpan={8} className="px-6 py-12 text-center">
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                     <span className="ml-3 text-gray-600">Loading prices...</span>
@@ -302,7 +323,7 @@ const PricingTable: React.FC<PricingTableProps> = ({
               </tr>
             ) : prices.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-12 text-center">
+                <td colSpan={8} className="px-6 py-12 text-center">
                   <div className="text-gray-500">
                     <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                     <p className="text-lg font-medium">No prices found</p>
@@ -313,11 +334,8 @@ const PricingTable: React.FC<PricingTableProps> = ({
             ) : (
               prices.map((price) => (
                 <tr key={price.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {price.product_id}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {price.country_id}
+                    {countriesMap[price.country_id] || countryNameById[price.country_id] || (price as any).country_name || (price as any).country || (price as any).name || price.country_id}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-my-primary/10 text-my-primary">

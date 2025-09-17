@@ -142,9 +142,37 @@ export async function fetchDefaultPaymentMethods(token?: string): Promise<Paymen
 }
 
 export async function addPaymentMethod(paymentData: any, token: string) {
+  // Normalize inputs
+  const normalizedType = String(paymentData?.type || '').trim().toLowerCase();
+  const normalizedProvider = String(paymentData?.provider || '').trim().toUpperCase();
+
+  const payload = { ...paymentData, type: normalizedType, provider: normalizedProvider };
+
+  // Validate provider by type before sending to backend
+  const allowedMobileMoneyProviders = ['MTN', 'AIRTEL'];
+  const allowedCardProviders = ['VISA', 'MASTERCARD', 'AMEX', 'DISCOVER', 'UNIONPAY', 'MAESTRO', 'OTHER', 'UNKNOWN'];
+
+  if (normalizedType === 'mobile_money') {
+    if (!allowedMobileMoneyProviders.includes(normalizedProvider)) {
+      const msg = `Invalid provider '${normalizedProvider}' for type 'mobile_money'. Allowed: ${allowedMobileMoneyProviders.join(', ')}`;
+      const err: any = new Error(msg);
+      err.status = 400;
+      err.response = { status: 400, data: { success: false, message: msg } };
+      throw err;
+    }
+  } else if (normalizedType === 'card') {
+    if (!allowedCardProviders.includes(normalizedProvider)) {
+      const msg = `Invalid provider '${normalizedProvider}' for type 'card'. Allowed: ${allowedCardProviders.join(', ')}`;
+      const err: any = new Error(msg);
+      err.status = 400;
+      err.response = { status: 400, data: { success: false, message: msg } };
+      throw err;
+    }
+  }
+
   const response = await axios.post(
     `${API_BASE_URL}/payment-methods`,
-    paymentData,
+    payload,
     {
       headers: {
         Authorization: `Bearer ${token}`,

@@ -446,7 +446,7 @@ const PricingManagement: React.FC = () => {
             onClick={handleCreateNew}
             className="flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 py-1 px-2"  />
             Add Price
           </Button>
         </div>

@@ -48,7 +48,7 @@ const PricingManagement: React.FC = () => {
   const [calculationResult, setCalculationResult] = useState<RentalPriceCalculationResponse | null>(null);
   const [calculating, setCalculating] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
-  const [availablePrices, setAvailablePrices] = useState<ProductPrice[]>([]);
+  // const [availablePrices, setAvailablePrices] = useState<ProductPrice[]>([]);
   // Compare across countries state
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
@@ -162,7 +162,7 @@ const PricingManagement: React.FC = () => {
           { page: 1, limit: 100 },
           token || undefined
         );
-        setAvailablePrices(data);
+        // Preload available prices if needed later
         if (!data.some(p => p.country_id === calculationForm.country_id)) {
           const first = data.find(p => p.is_active);
           if (first) {
@@ -407,12 +407,12 @@ const PricingManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white dark:bg-slate-900 rounded-xl p-4 md:p-6 border border-gray-200 dark:border-slate-700">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Pricing Management</h2>
-          <p className="text-gray-600">Manage product pricing across all countries and currencies</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Pricing Management</h2>
+          <p className="text-gray-600 dark:text-slate-400">Manage product pricing across all countries and currencies</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -454,16 +454,16 @@ const PricingManagement: React.FC = () => {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-red-700">{error}</p>
+            <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={clearError}
-            className="text-red-600 border-red-200 hover:bg-red-50"
+            className="text-red-600 dark:text-red-300 border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             Dismiss
           </Button>
@@ -471,13 +471,13 @@ const PricingManagement: React.FC = () => {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-gray-200">
+      <div className="flex items-center gap-2 border-b border-gray-200 dark:border-slate-700">
         <button
           onClick={() => setActiveView('table')}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             activeView === 'table'
-              ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50 dark:text-blue-300 dark:bg-blue-900/20'
+              : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800'
           }`}
         >
           Price Table
@@ -486,8 +486,8 @@ const PricingManagement: React.FC = () => {
           onClick={() => setActiveView('stats')}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             activeView === 'stats'
-              ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50 dark:text-blue-300 dark:bg-blue-900/20'
+              : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800'
           }`}
         >
           Statistics
@@ -496,8 +496,8 @@ const PricingManagement: React.FC = () => {
           onClick={() => setActiveView('rental-calc')}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             activeView === 'rental-calc'
-              ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50 dark:text-blue-300 dark:bg-blue-900/20'
+              : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800'
           }`}
         >
           Rental Calculator
@@ -532,13 +532,13 @@ const PricingManagement: React.FC = () => {
 
         {activeView === 'rental-calc' && (
           <div className="max-w-4xl">
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">Rental Price Calculator</h3>
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 mb-6">Rental Price Calculator</h3>
               
               {/* Calculation Form */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Product ID
                   </label>
                   <input
@@ -546,12 +546,12 @@ const PricingManagement: React.FC = () => {
                     value={calculationForm.product_id}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, product_id: e.target.value }))}
                     placeholder="Enter product UUID"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Country ID
                   </label>
                   <input
@@ -559,18 +559,18 @@ const PricingManagement: React.FC = () => {
                     value={calculationForm.country_id}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, country_id: e.target.value }))}
                     placeholder="Enter country UUID"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Currency
                   </label>
                   <select
                     value={calculationForm.currency}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, currency: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
@@ -580,7 +580,7 @@ const PricingManagement: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Rental Duration (Hours)
                   </label>
                   <input
@@ -588,12 +588,12 @@ const PricingManagement: React.FC = () => {
                     value={calculationForm.rental_duration_hours}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, rental_duration_hours: parseInt(e.target.value) || 0 }))}
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Quantity
                   </label>
                   <input
@@ -601,7 +601,7 @@ const PricingManagement: React.FC = () => {
                     value={calculationForm.quantity}
                     onChange={(e) => setCalculationForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
               </div>

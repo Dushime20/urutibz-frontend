@@ -147,8 +147,6 @@ const UrutiBzVerification = () => {
   const [aiProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasAddress, setHasAddress] = useState(false);
-  const [hasDocument, setHasDocument] = useState(false);
-  const [hasSelfie, setHasSelfie] = useState(false);
   const [selfieRejected, setSelfieRejected] = useState(false);
 
   // Add these state hooks near the top of the component
@@ -216,13 +214,9 @@ const UrutiBzVerification = () => {
         });
 
         const latest = sortedAsc.length > 0 ? sortedAsc[sortedAsc.length - 1] : null;
-        setHasDocument(Boolean(latest?.document_image_url));
-        const selfieUrl = latest?.selfie_image_url;
         const status = (latest?.verification_status || '').toLowerCase();
         const rejected = status === 'rejected';
         setSelfieRejected(rejected);
-        // If rejected, force user to retake selfie (do not skip the step)
-        setHasSelfie(Boolean(selfieUrl) && !rejected);
       } catch (e) {
         // ignore fetch errors; user may not have any verification record yet
       } finally {
@@ -498,7 +492,6 @@ const UrutiBzVerification = () => {
       const verificationId = localStorage.getItem('verificationId');
       const token = localStorage.getItem('token');
       await submitSelfieStep(verificationData.selfieImage, verificationId, token);
-      showToast('Selfie uploaded successfully!', 'success');
       // Refetch latest verifications to respect rejection gating
       try {
         const payload = token ? JSON.parse(atob(token.split('.')[1])) : {};
@@ -529,6 +522,8 @@ const UrutiBzVerification = () => {
           setSelfieRejected(false);
         }
       } catch {}
+      // Only show success and advance if not rejected
+      showToast('Selfie uploaded successfully!', 'success');
       setCurrentStep(currentStep + 1);
     } catch (error: any) {
       setErrors({ api: error.message });
@@ -783,10 +778,6 @@ const UrutiBzVerification = () => {
       let next = currentStep + 1;
       // Skip address step if user already has address
       if (next === 1 && hasAddress) next = 2;
-      // Skip upload document if already present
-      if (next === 3 && hasDocument) next = 4;
-      // Skip selfie if already present and not rejected
-      if (next === 4 && hasSelfie) next = 5;
       setCurrentStep(next);
       setErrors({});
     }
@@ -795,16 +786,8 @@ const UrutiBzVerification = () => {
   const prevStep = () => {
     if (currentStep > 0) {
       let prev = currentStep - 1;
-      // Skip completed steps when navigating backwards
-      // Loop to handle multiple consecutive completed steps
-      // 4: Selfie, 3: Upload Document, 1: Address Details
-      let adjusted = true;
-      while (adjusted) {
-        adjusted = false;
-        if (prev === 4 && hasSelfie) { prev = 3; adjusted = true; }
-        if (prev === 3 && hasDocument) { prev = 2; adjusted = true; }
-        if (prev === 1 && hasAddress) { prev = 0; adjusted = true; }
-      }
+      // Skip address step when navigating backwards if user already has address
+      if (prev === 1 && hasAddress) { prev = 0; }
       setCurrentStep(prev);
       setErrors({});
     }

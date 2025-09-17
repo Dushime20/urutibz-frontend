@@ -285,7 +285,7 @@ const DashboardPage: React.FC = () => {
         const stats = await fetchDashboardStats(token);
         setDashboardStats({
           activeBookings: stats.activeBookings || 0,
-          totalEarnings: stats.totalEarnings || 0,
+          totalEarnings: (stats as any).potentialEarnings || stats.totalEarnings || 0,
           totalTransactions: stats.totalTransactions || 0,
           activeInspections: 0,
           preferredCurrency: (stats as any).preferredCurrency || 'USD',

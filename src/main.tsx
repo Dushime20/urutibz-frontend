@@ -22,3 +22,12 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 )
+
+// Remove splash once React is mounted to avoid white flashes on refresh
+const splash = document.getElementById('app-splash');
+if (splash) {
+  // Fade out for a smoother transition
+  splash.style.transition = 'opacity .25s ease';
+  splash.style.opacity = '0';
+  window.setTimeout(() => splash.parentElement?.removeChild(splash), 300);
+}

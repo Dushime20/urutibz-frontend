@@ -244,21 +244,56 @@ export async function fetchDashboardStats(token: string) {
       booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'active'
     ).length;
 
-    // Calculate total earnings from completed transactions (normalized to preferred currency)
+    // Fetch wallet balance using the dedicated API endpoint
+    let totalEarnings = 0;
+    let potentialEarnings = 0;
+    
+    try {
+      const walletResponse = await axios.get(`${API_BASE_URL}/wallet/balance/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (walletResponse.data?.success && walletResponse.data?.data) {
+        const walletData = walletResponse.data.data;
+        const walletBalance = parseFloat(walletData.balance) || 0;
+        const walletCurrency = walletData.currency || 'USD';
+        
+        // Convert wallet balance to user's preferred currency (actual earnings)
+        totalEarnings = convertCurrency(walletBalance, walletCurrency, preferredCurrency);
+        
+        // Calculate potential earnings from debug info (including pending bookings)
+        if (walletData.debug?.all_booking_statuses) {
+          const allBookings = walletData.debug.all_booking_statuses;
+          const totalPotentialAmount = allBookings.reduce((sum: number, booking: any) => {
+            const amount = parseFloat(booking.amount) || 0;
+            return sum + amount;
+          }, 0);
+          
+          // Convert potential earnings to preferred currency
+          potentialEarnings = convertCurrency(totalPotentialAmount, walletCurrency, preferredCurrency);
+        }
+      }
+    } catch (walletError) {
+      // Fallback to transaction-based calculation
+      const completedTransactions = transactions.filter((transaction: any) => 
+        transaction.status === 'completed'
+      );
+      
+      totalEarnings = completedTransactions
+        .reduce((sum: number, transaction: any) => {
+          const amount = parseFloat(transaction.amount) || 0;
+          const fromCurrency = (transaction.currency || 'USD').toString().toUpperCase();
+          const converted = convertCurrency(amount, fromCurrency, preferredCurrency);
+          return sum + converted;
+        }, 0);
+    }
+
+    // Calculate transaction volume from completed transactions only
     const completedTransactions = transactions.filter((transaction: any) => 
       transaction.status === 'completed'
     );
     
-    const totalEarnings = completedTransactions
-      .reduce((sum: number, transaction: any) => {
-        const amount = parseFloat(transaction.amount) || 0;
-        const fromCurrency = (transaction.currency || 'USD').toString().toUpperCase();
-        const converted = convertCurrency(amount, fromCurrency, preferredCurrency);
-        return sum + converted;
-      }, 0);
-
-    // Total transaction amount (all transactions, normalized to preferred currency)
-    const totalTransactions = transactions
+    const totalTransactions = completedTransactions
       .reduce((sum: number, transaction: any) => {
         const amount = parseFloat(transaction.amount) || 0;
         const fromCurrency = (transaction.currency || 'USD').toString().toUpperCase();
@@ -274,6 +309,7 @@ export async function fetchDashboardStats(token: string) {
     const userStats = {
       activeBookings,
       totalEarnings,
+      potentialEarnings,
       totalTransactions,
       wishlistItems,
       preferredCurrency
