@@ -287,10 +287,15 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                     <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Subtotal:</span>
                     <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {(() => {
+                        // Primary: Use subtotal from API response
+                        if ((bookingDetails as any).pricing?.subtotal !== null && (bookingDetails as any).pricing?.subtotal !== undefined) {
+                          return `${(bookingDetails as any).pricing.subtotal} USD`;
+                        }
+                        // Secondary: Use legacy pricing.subtotal
                         if (bookingDetails.pricing?.subtotal !== null && bookingDetails.pricing?.subtotal !== undefined) {
                           return `${bookingDetails.pricing.subtotal} ${bookingDetails.pricing.currency}`;
                         }
-                        // Calculate subtotal from daily rate and days
+                        // Fallback: Calculate from daily rate and days
                         if (productPricing?.price_per_day) {
                           const days = bookingDetails.pricing?.totalDays || 
                                        bookingDetails.total_days || 
@@ -307,10 +312,15 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                     <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Platform Fee:</span>
                     <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {(() => {
+                        // Primary: Use platform_fee from API response
+                        if ((bookingDetails as any).pricing?.platform_fee !== null && (bookingDetails as any).pricing?.platform_fee !== undefined) {
+                          return `${(bookingDetails as any).pricing.platform_fee} USD`;
+                        }
+                        // Secondary: Use legacy pricing.platformFee
                         if (bookingDetails.pricing?.platformFee !== null && bookingDetails.pricing?.platformFee !== undefined) {
                           return `${bookingDetails.pricing.platformFee} ${bookingDetails.pricing.currency}`;
                         }
-                        // Calculate platform fee (typically 10-15% of subtotal)
+                        // Fallback: Calculate platform fee (typically 10-15% of subtotal)
                         if (productPricing?.price_per_day) {
                           const days = bookingDetails.pricing?.totalDays || 
                                        bookingDetails.total_days || 
@@ -324,15 +334,46 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                     </span>
                   </div>
                   
+                  {/* Tax Amount */}
+                  <div className="flex justify-between items-center bg-white dark:bg-gray-800 rounded-lg p-2">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Tax Amount:</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {(() => {
+                        // Primary: Use tax_amount from API response
+                        if ((bookingDetails as any).pricing?.tax_amount !== null && (bookingDetails as any).pricing?.tax_amount !== undefined) {
+                          return `${(bookingDetails as any).pricing.tax_amount} USD`;
+                        }
+                        return 'N/A';
+                      })()}
+                    </span>
+                  </div>
+                  
                   {/* Total Amount */}
                   <div className="flex justify-between items-center bg-my-primary/10 dark:bg-my-primary/20 rounded-lg p-2 border border-my-primary/20">
                     <span className="text-sm text-gray-900 dark:text-gray-100 font-bold">Total Amount:</span>
                     <span className="text-lg font-bold text-my-primary">
                       {(() => {
+                        // Primary: Use total_amount from API response
+                        if ((bookingDetails as any).total_amount) {
+                          return `${(bookingDetails as any).total_amount} USD`;
+                        }
+                        // Secondary: Use pricing.total_amount from API response
+                        if ((bookingDetails as any).pricing?.total_amount !== null && (bookingDetails as any).pricing?.total_amount !== undefined) {
+                          return `${(bookingDetails as any).pricing.total_amount} USD`;
+                        }
+                        // Tertiary: Use legacy pricing.totalAmount
                         if (bookingDetails.pricing?.totalAmount !== null && bookingDetails.pricing?.totalAmount !== undefined) {
                           return `${bookingDetails.pricing.totalAmount} ${bookingDetails.pricing.currency}`;
                         }
-                        // Calculate total amount (subtotal + platform fee)
+                        // Fallback: Calculate total amount (subtotal + platform fee + tax)
+                        if ((bookingDetails as any).pricing?.subtotal) {
+                          const subtotal = parseFloat((bookingDetails as any).pricing.subtotal);
+                          const platformFee = parseFloat((bookingDetails as any).pricing.platform_fee || 0);
+                          const taxAmount = parseFloat((bookingDetails as any).pricing.tax_amount || 0);
+                          const total = subtotal + platformFee + taxAmount;
+                          return `${total.toFixed(2)} USD`;
+                        }
+                        // Legacy fallback: Calculate from product pricing
                         if (productPricing?.price_per_day) {
                           const days = bookingDetails.pricing?.totalDays || 
                                        bookingDetails.total_days || 

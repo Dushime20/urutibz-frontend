@@ -122,7 +122,17 @@ export interface AdminBooking {
     totalDays: number;
     platformFee: number | null;
     totalAmount: number | null;
+    // New API response fields
+    total_amount?: number;
+    platform_fee?: number;
+    tax_amount?: number;
+    insurance_fee?: number;
+    discount_amount?: number;
+    security_deposit?: number;
   };
+  // New API response fields
+  total_amount?: string;
+  base_amount?: string;
   renter_email: string;
   renter_first_name: string;
   renter_last_name: string;

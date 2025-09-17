@@ -168,12 +168,37 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
   };
 
   const getBookingPrice = (booking: AdminBooking) => {
-    // Primary: Use pricing.totalAmount if available (same as booking details)
+    // Primary: Use total_amount from API response (real calculated price)
+    if ((booking as any).total_amount) {
+      const totalAmount = parseFloat((booking as any).total_amount);
+      if (!isNaN(totalAmount) && totalAmount > 0) {
+        return `${totalAmount.toFixed(2)} USD`;
+      }
+    }
+    
+    // Secondary: Use pricing.total_amount from API response
+    if ((booking as any).pricing?.total_amount) {
+      const totalAmount = parseFloat((booking as any).pricing.total_amount);
+      if (!isNaN(totalAmount) && totalAmount > 0) {
+        return `${totalAmount.toFixed(2)} USD`;
+      }
+    }
+    
+    // Tertiary: Use pricing.totalAmount if available (legacy format)
     if (booking.pricing?.totalAmount !== null && booking.pricing?.totalAmount !== undefined) {
       return `${booking.pricing.totalAmount} ${booking.pricing.currency}`;
     }
     
-    // Secondary: Calculate from subtotal + platform fee (use available pricing data)
+    // Fallback: Calculate from pricing breakdown
+    if ((booking as any).pricing?.subtotal) {
+      const subtotal = parseFloat((booking as any).pricing.subtotal);
+      const platformFee = parseFloat((booking as any).pricing.platform_fee || 0);
+      const taxAmount = parseFloat((booking as any).pricing.tax_amount || 0);
+      const total = subtotal + platformFee + taxAmount;
+      return `${total.toFixed(2)} USD`;
+    }
+    
+    // Legacy fallback: Use pricing.subtotal + platformFee
     if (booking.pricing?.subtotal !== null && booking.pricing?.subtotal !== undefined) {
       const subtotal = booking.pricing.subtotal;
       const platformFee = booking.pricing.platformFee || 0;
@@ -181,24 +206,8 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
       return `${total.toFixed(2)} ${booking.pricing.currency}`;
     }
     
-    // Tertiary: Use just subtotal if available
-    if (booking.pricing?.subtotal !== null && booking.pricing?.subtotal !== undefined) {
-      return `${booking.pricing.subtotal} ${booking.pricing.currency}`;
-    }
-    
-    // Fallback: Legacy base_price_per_day (same as booking details)
-    if ((booking as any).base_price_per_day) {
-      const days = booking.total_days || booking.pricing?.totalDays || 1;
-      const dailyRate = (booking as any).base_price_per_day;
-      const subtotal = dailyRate * days;
-      const platformFee = subtotal * 0.1; // 10% platform fee
-      const total = subtotal + platformFee;
-      return `${total.toFixed(2)} ${(booking as any).base_currency || 'USD'}`;
-    }
-    
-    // Additional fallback: Check for any other price fields in the booking
+    // Additional fallback: Check for any other price fields
     const priceFields = [
-      (booking as any).total_amount,
       (booking as any).amount,
       (booking as any).price,
       (booking as any).total_price,
