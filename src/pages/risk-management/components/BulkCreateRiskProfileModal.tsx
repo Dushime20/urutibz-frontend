@@ -30,6 +30,7 @@ interface RiskProfileFormData {
 }
 
 const BulkCreateRiskProfileModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
   const [profiles, setProfiles] = useState<RiskProfileFormData[]>([
     {
       productId: '',
@@ -105,7 +106,7 @@ const BulkCreateRiskProfileModal: React.FC<Props> = ({ isOpen, onClose, onSucces
       const token = localStorage.getItem('token');
       
       // Try different search approaches
-      let searchUrl = `http://localhost:3000/api/v1/products`;
+      let searchUrl = `${API_BASE_URL}/products`;
       const params = new URLSearchParams();
       
       if (allProductSearches.length > 0) {
@@ -159,7 +160,7 @@ const BulkCreateRiskProfileModal: React.FC<Props> = ({ isOpen, onClose, onSucces
     queryFn: async () => {
       const token = localStorage.getItem('token');
       
-      let searchUrl = `http://localhost:3000/api/v1/categories`;
+      let searchUrl = `${API_BASE_URL}/categories`;
       const params = new URLSearchParams();
       
       if (allCategorySearches.length > 0) {

@@ -18,6 +18,14 @@ interface PaymentStepperProps {
   onSuccess: () => void;
 }
 
+// Country code mapping with validation rules
+const countryCodes: Record<string, { code: string; name: string; flag: string; pattern: RegExp; minLength: number; maxLength: number; example: string; mustStartWith?: string }> = {
+  'RW': { code: '+250', name: 'Rwanda', flag: '🇷🇼', pattern: /^7[0-9]{8}$/, minLength: 9, maxLength: 9, example: '788123456', mustStartWith: '7' },
+  'KE': { code: '+254', name: 'Kenya', flag: '🇰🇪', pattern: /^7[0-9]{8}$/, minLength: 9, maxLength: 9, example: '712345678' },
+  'UG': { code: '+256', name: 'Uganda', flag: '🇺🇬', pattern: /^[0-9]{9}$/, minLength: 9, maxLength: 9, example: '701234567' },
+  'TZ': { code: '+255', name: 'Tanzania', flag: '🇹🇿', pattern: /^[0-9]{9}$/, minLength: 9, maxLength: 9, example: '712345678' },
+};
+
 const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, currency, onSuccess }) => {
   const [step, setStep] = useState(1);
   const [type, setType] = useState<'card' | 'mobile_money' | ''>('');
@@ -37,6 +45,10 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
   const [countryProviders, setCountryProviders] = useState<CountryPaymentProvidersResponse | null>(null);
   const [availableCardProviders, setAvailableCardProviders] = useState<string[]>([]);
   const [availableMobileMoneyProviders, setAvailableMobileMoneyProviders] = useState<string[]>([]);
+  
+  // Phone input state
+  const [selectedCountryCode, setSelectedCountryCode] = useState('+250');
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   const steps = [
     { id: 1, title: 'Choose Type', description: 'Select payment method' },
@@ -118,10 +130,50 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     setError(null);
   };
 
-  const validatePhoneNumber = (phone: string): boolean => {
-    // Basic phone validation for common formats
-    const phoneRegex = /^(\+?[0-9]{1,4}[-.\s]?)?[0-9]{7,15}$/;
-    return phoneRegex.test(phone.replace(/\s/g, ''));
+  const getCurrentCountryRules = () => {
+    const countryKey = Object.keys(countryCodes).find(key => 
+      countryCodes[key].code === selectedCountryCode
+    );
+    return countryKey ? countryCodes[countryKey] : countryCodes.RW;
+  };
+
+  const validatePhoneNumber = (phone: string): { isValid: boolean; message?: string } => {
+    const countryRules = getCurrentCountryRules();
+    
+    if (!phone) {
+      return { isValid: false, message: 'Phone number is required' };
+    }
+
+    if (phone.length < countryRules.minLength) {
+      return { 
+        isValid: false, 
+        message: `${countryRules.name} phone numbers must be at least ${countryRules.minLength} digits` 
+      };
+    }
+
+    if (phone.length > countryRules.maxLength) {
+      return { 
+        isValid: false, 
+        message: `${countryRules.name} phone numbers must be at most ${countryRules.maxLength} digits` 
+      };
+    }
+
+    // Check if number must start with specific digit - only validate when at full length
+    if (countryRules.mustStartWith && phone.length === countryRules.minLength && !phone.startsWith(countryRules.mustStartWith)) {
+      return { 
+        isValid: false, 
+        message: `${countryRules.name} phone numbers must start with ${countryRules.mustStartWith}. Example: ${countryRules.example}` 
+      };
+    }
+
+    if (!countryRules.pattern.test(phone)) {
+      return { 
+        isValid: false, 
+        message: `Invalid ${countryRules.name} phone number format. Example: ${countryRules.example}` 
+      };
+    }
+
+    return { isValid: true };
   };
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -131,8 +183,9 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     // Validate phone number for mobile money
     if (e.target.name === 'phone_number' && type === 'mobile_money') {
       const phone = e.target.value;
-      if (phone && !validatePhoneNumber(phone)) {
-        setPhoneError('Please enter a valid phone number');
+      if (phone) {
+        const validation = validatePhoneNumber(phone);
+        setPhoneError(validation.isValid ? '' : validation.message || 'Please enter a valid phone number');
       } else {
         setPhoneError('');
       }
@@ -180,15 +233,52 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     }
   };
 
+  // Phone number input handlers
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    const countryRules = getCurrentCountryRules();
+    
+    // Limit input length based on country rules
+    if (value.length <= countryRules.maxLength) {
+      setPhoneNumber(value);
+      
+      // Validate phone number
+      if (value.length > 0) {
+        const validation = validatePhoneNumber(value);
+        setPhoneError(validation.isValid ? '' : validation.message || 'Please enter a valid phone number');
+      } else {
+        setPhoneError('');
+      }
+      
+      // Update form with full phone number
+      const fullPhoneNumber = selectedCountryCode + value;
+      setForm((prev: any) => ({ ...prev, phone_number: fullPhoneNumber }));
+    }
+  };
+
+  const handleCountryCodeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCountryCode(e.target.value);
+    setPhoneNumber(''); // Clear phone number when country changes
+    setPhoneError('');
+    setForm((prev: any) => ({ ...prev, phone_number: '' }));
+  };
+
   const handleCreatePaymentMethod = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     
     // Validate phone number for mobile money
-    if (type === 'mobile_money' && form.phone_number) {
-      if (!validatePhoneNumber(form.phone_number)) {
-        setError('Please enter a valid phone number');
+    if (type === 'mobile_money') {
+      if (!phoneNumber || phoneNumber.length === 0) {
+        setError('Please enter a phone number');
+        setLoading(false);
+        return;
+      }
+      // Validate the local phone number (without country code)
+      const validation = validatePhoneNumber(phoneNumber);
+      if (!validation.isValid) {
+        setError(validation.message || 'Please enter a valid phone number');
         setLoading(false);
         return;
       }
@@ -606,17 +696,40 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
                 )}
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
-                  <input 
-                    name="phone_number" 
-                    value={form.phone_number || ''} 
-                    onChange={handleChange} 
-                    required 
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm ${
-                      phoneError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 focus:ring-primary-500'
-                    }`}
-                    placeholder="e.g. +250781234567" 
-                  />
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Phone Number</label>
+                  <div className="flex items-center space-x-2">
+                    <select
+                      value={selectedCountryCode}
+                      onChange={handleCountryCodeChange}
+                      className="border border-gray-300 dark:border-slate-700 rounded-xl px-3 py-3 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[120px]"
+                      disabled={loading}
+                    >
+                      {Object.entries(countryCodes).map(([code, data]) => (
+                        <option key={code} value={data.code}>
+                          {data.flag} {data.code}
+                        </option>
+                      ))}
+                    </select>
+                    <input 
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={handlePhoneNumberChange}
+                      required 
+                      placeholder={`Phone Number (${getCurrentCountryRules().minLength}-${getCurrentCountryRules().maxLength} digits${getCurrentCountryRules().mustStartWith ? `, starts with ${getCurrentCountryRules().mustStartWith}` : ''})`}
+                      maxLength={getCurrentCountryRules().maxLength}
+                      className={`flex-1 px-4 py-3 border rounded-xl focus:ring-2 focus:border-primary-500 outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-slate-500 shadow-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white ${
+                        phoneError 
+                          ? 'border-red-500 focus:ring-red-500' 
+                          : 'border-gray-300 dark:border-slate-700 focus:ring-primary-500'
+                      }`}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                    Full number: {selectedCountryCode}{phoneNumber || 'XXXXXXXX'}
+                    {getCurrentCountryRules().mustStartWith && (
+                      <span className="block">Format: {getCurrentCountryRules().minLength}-{getCurrentCountryRules().maxLength} digits, starts with {getCurrentCountryRules().mustStartWith} | Example: {getCurrentCountryRules().example}</span>
+                    )}
+                  </div>
                   {phoneError && (
                     <p className="mt-1 text-sm text-red-600">{phoneError}</p>
                   )}

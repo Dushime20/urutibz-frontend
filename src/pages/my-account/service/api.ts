@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { convertCurrency } from '../../../lib/utils';
 import { logger } from '../../../lib/logger';
-export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Types
 export type UpdateUserPayload = {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use same base URL as my-account service
-export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 export async function requestEmailOtp(email: string, token?: string | null) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };

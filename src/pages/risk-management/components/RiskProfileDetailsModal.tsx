@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { X, Shield, CheckCircle } from 'lucide-react';
 import { RiskProfile, RiskLevel } from '../../../types/riskManagement';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -19,7 +19,8 @@ const RiskProfileDetailsModal: React.FC<Props> = ({ isOpen, onClose, profile }) 
     queryKey: ['product', profile.productId],
     queryFn: async () => {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:3000/api/v1/products/${profile.productId}`, {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.get(`${API_BASE_URL}/products/${profile.productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -32,7 +33,8 @@ const RiskProfileDetailsModal: React.FC<Props> = ({ isOpen, onClose, profile }) 
     queryKey: ['category', profile.categoryId],
     queryFn: async () => {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:3000/api/v1/categories/${profile.categoryId}`, {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.get(`${API_BASE_URL}/categories/${profile.categoryId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;

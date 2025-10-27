@@ -61,7 +61,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
   useEffect(() => {
     const fetchCategoryName = async (id: string) => {
       try {
-        const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+        const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
         const res = await fetch(`${API_BASE_URL}/categories/${id}`);
         if (!res.ok) return;
         const data = await res.json();

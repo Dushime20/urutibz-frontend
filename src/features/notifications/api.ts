@@ -13,7 +13,7 @@ import {
 } from './schemas';
 
 // Match admin service base URL
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/notifications`,

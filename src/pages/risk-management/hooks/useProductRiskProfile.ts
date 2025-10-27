@@ -29,7 +29,7 @@ export const useProductRiskProfile = (): UseProductRiskProfileReturn => {
       let enriched = response.data as any;
 
       // Enrich with product name and category name if missing
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
       try {
         if (!enriched.productName && enriched.productId) {
           const prodRes = await axios.get(`${API_BASE_URL}/products/${enriched.productId}`);

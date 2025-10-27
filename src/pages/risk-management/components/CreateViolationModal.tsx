@@ -23,6 +23,7 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
   // Autocomplete state
   const [bookingSearch, setBookingSearch] = useState('');
@@ -73,10 +74,10 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
       
       // Fetch all bookings (both as renter and owner)
       const [renterResponse, ownerResponse] = await Promise.all([
-        axios.get(`http://localhost:3000/api/v1/bookings?role=renter&page=1&limit=100`, {
+        axios.get(`${API_BASE_URL}/bookings?role=renter&page=1&limit=100`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`http://localhost:3000/api/v1/bookings?role=owner&page=1&limit=100`, {
+        axios.get(`${API_BASE_URL}/bookings?role=owner&page=1&limit=100`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -122,7 +123,8 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
     queryKey: ['products', productSearch],
     queryFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3000/api/v1/products?search=${productSearch}&limit=10`, {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.get(`${API_BASE_URL}/products?search=${productSearch}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -156,7 +158,7 @@ const CreateViolationModal: React.FC<CreateViolationModalProps> = ({ isOpen, onC
       console.log('Fetching users with token:', token ? 'Present' : 'Missing');
       
       try {
-        const response = await axios.get(`http://localhost:3000/api/v1/admin/users?page=1&limit=100`, {
+        const response = await axios.get(`${API_BASE_URL}/admin/users?page=1&limit=100`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

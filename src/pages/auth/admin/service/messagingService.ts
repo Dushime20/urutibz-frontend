@@ -13,7 +13,7 @@ import type {
 } from '../../../types/messaging';
 
 // Messaging API Service
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 export class MessagingService {
   private static getAuthHeaders(token?: string) {
     const headers: Record<string, string> = {

@@ -16,6 +16,12 @@
   --font-family: 'Inter', sans-serif;
   --font-size: 16px;
   --border-radius: 8px;
+  
+  /* Scaling variables */
+  --scaling-factor: 1;
+  --scaling-level: normal;
+  --scaled-font-size: calc(var(--font-size) * var(--scaling-factor));
+  --scaled-border-radius: calc(var(--border-radius) * var(--scaling-factor));
 }
 
 /* Dark mode theme variables */
@@ -30,6 +36,10 @@
   --font-family: 'Inter', sans-serif;
   --font-size: 16px;
   --border-radius: 8px;
+  
+  /* Scaling variables inherit from root */
+  --scaled-font-size: calc(var(--font-size) * var(--scaling-factor));
+  --scaled-border-radius: calc(var(--border-radius) * var(--scaling-factor));
 }
 
 /* Apply theme globally */
@@ -37,7 +47,179 @@ html, body {
   background-color: var(--background-color) !important;
   color: var(--text-color) !important;
   font-family: var(--font-family) !important;
-  font-size: var(--font-size) !important;
+  font-size: var(--scaled-font-size) !important;
+}
+
+/* Scaling-aware styles */
+.scaled-ui {
+  /* Adjust container max-widths for better scaling */
+  .container {
+    max-width: calc(1200px * var(--scaling-factor));
+  }
+  
+  /* Scale form elements */
+  input, textarea, select {
+    font-size: calc(14px * var(--scaling-factor));
+    padding: calc(8px * var(--scaling-factor)) calc(12px * var(--scaling-factor));
+    border-radius: var(--scaled-border-radius);
+  }
+  
+  /* Scale buttons */
+  button {
+    font-size: calc(14px * var(--scaling-factor));
+    padding: calc(8px * var(--scaling-factor)) calc(16px * var(--scaling-factor));
+    border-radius: var(--scaled-border-radius);
+  }
+  
+  /* Scale headings */
+  h1 { font-size: calc(2.25rem * var(--scaling-factor)); }
+  h2 { font-size: calc(1.875rem * var(--scaling-factor)); }
+  h3 { font-size: calc(1.5rem * var(--scaling-factor)); }
+  h4 { font-size: calc(1.25rem * var(--scaling-factor)); }
+  h5 { font-size: calc(1.125rem * var(--scaling-factor)); }
+  h6 { font-size: calc(1rem * var(--scaling-factor)); }
+  
+  /* Scale navigation */
+  nav {
+    padding: calc(16px * var(--scaling-factor));
+  }
+  
+  nav a {
+    font-size: calc(16px * var(--scaling-factor));
+    padding: calc(8px * var(--scaling-factor)) calc(16px * var(--scaling-factor));
+  }
+  
+  /* Scale modals and overlays */
+  .modal, .overlay {
+    padding: calc(24px * var(--scaling-factor));
+  }
+  
+  /* Scale cards and panels */
+  .card, .panel {
+    padding: calc(20px * var(--scaling-factor));
+    border-radius: var(--scaled-border-radius);
+  }
+  
+  /* Scale tables */
+  table {
+    font-size: calc(14px * var(--scaling-factor));
+  }
+  
+  th, td {
+    padding: calc(12px * var(--scaling-factor)) calc(16px * var(--scaling-factor));
+  }
+  
+  /* Scale icons */
+  .icon {
+    width: calc(20px * var(--scaling-factor));
+    height: calc(20px * var(--scaling-factor));
+  }
+  
+  .icon-sm {
+    width: calc(16px * var(--scaling-factor));
+    height: calc(16px * var(--scaling-factor));
+  }
+  
+  .icon-lg {
+    width: calc(24px * var(--scaling-factor));
+    height: calc(24px * var(--scaling-factor));
+  }
+  
+  /* Scale spacing utilities */
+  .p-1 { padding: calc(4px * var(--scaling-factor)); }
+  .p-2 { padding: calc(8px * var(--scaling-factor)); }
+  .p-3 { padding: calc(12px * var(--scaling-factor)); }
+  .p-4 { padding: calc(16px * var(--scaling-factor)); }
+  .p-6 { padding: calc(24px * var(--scaling-factor)); }
+  .p-8 { padding: calc(32px * var(--scaling-factor)); }
+  
+  .m-1 { margin: calc(4px * var(--scaling-factor)); }
+  .m-2 { margin: calc(8px * var(--scaling-factor)); }
+  .m-3 { margin: calc(12px * var(--scaling-factor)); }
+  .m-4 { margin: calc(16px * var(--scaling-factor)); }
+  .m-6 { margin: calc(24px * var(--scaling-factor)); }
+  .m-8 { margin: calc(32px * var(--scaling-factor)); }
+  
+  /* Scale gap utilities */
+  .gap-1 { gap: calc(4px * var(--scaling-factor)); }
+  .gap-2 { gap: calc(8px * var(--scaling-factor)); }
+  .gap-3 { gap: calc(12px * var(--scaling-factor)); }
+  .gap-4 { gap: calc(16px * var(--scaling-factor)); }
+  .gap-6 { gap: calc(24px * var(--scaling-factor)); }
+  .gap-8 { gap: calc(32px * var(--scaling-factor)); }
+}
+
+/* Responsive scaling adjustments */
+@media (min-resolution: 120dpi) {
+  /* High DPI displays - adjust for better readability */
+  .scaled-ui {
+    --scaling-factor: 0.9;
+  }
+}
+
+@media (min-resolution: 144dpi) {
+  /* Very high DPI displays */
+  .scaled-ui {
+    --scaling-factor: 0.8;
+  }
+}
+
+/* Specific scaling level adjustments */
+.scaled-ui[style*="--scaling-level: 125%"] {
+  /* Fine-tune for 125% scaling */
+  .container {
+    max-width: calc(1000px * var(--scaling-factor));
+  }
+  
+  /* Adjust modal sizes */
+  .modal {
+    max-width: calc(500px * var(--scaling-factor));
+    max-height: calc(600px * var(--scaling-factor));
+  }
+}
+
+.scaled-ui[style*="--scaling-level: 150%"] {
+  /* Fine-tune for 150% scaling */
+  .container {
+    max-width: calc(800px * var(--scaling-factor));
+  }
+  
+  /* Adjust modal sizes */
+  .modal {
+    max-width: calc(400px * var(--scaling-factor));
+    max-height: calc(500px * var(--scaling-factor));
+  }
+}
+
+.scaled-ui[style*="--scaling-level: 200%"] {
+  /* Fine-tune for 200% scaling */
+  .container {
+    max-width: calc(600px * var(--scaling-factor));
+  }
+  
+  /* Adjust modal sizes */
+  .modal {
+    max-width: calc(300px * var(--scaling-factor));
+    max-height: calc(400px * var(--scaling-factor));
+  }
+}
+
+/* Scaling-aware Tailwind overrides */
+.scaled-ui {
+  /* Override Tailwind's default spacing for scaled UI */
+  .space-y-1 > * + * { margin-top: calc(4px * var(--scaling-factor)); }
+  .space-y-2 > * + * { margin-top: calc(8px * var(--scaling-factor)); }
+  .space-y-3 > * + * { margin-top: calc(12px * var(--scaling-factor)); }
+  .space-y-4 > * + * { margin-top: calc(16px * var(--scaling-factor)); }
+  .space-y-6 > * + * { margin-top: calc(24px * var(--scaling-factor)); }
+  .space-y-8 > * + * { margin-top: calc(32px * var(--scaling-factor)); }
+  
+  .space-x-1 > * + * { margin-left: calc(4px * var(--scaling-factor)); }
+  .space-x-2 > * + * { margin-left: calc(8px * var(--scaling-factor)); }
+  .space-x-3 > * + * { margin-left: calc(12px * var(--scaling-factor)); }
+  .space-x-4 > * + * { margin-left: calc(16px * var(--scaling-factor)); }
+  .space-x-6 > * + * { margin-left: calc(24px * var(--scaling-factor)); }
+  .space-x-8 > * + * { margin-left: calc(32px * var(--scaling-factor)); }
 }
 
 /* Custom scrollbar styles */

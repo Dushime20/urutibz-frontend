@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { CurrencySelector, LanguageSelector } from '../ui/DesignSystem';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
+import { useI18n } from '../../contexts/I18nContext';
 
 const currencies = [
   { code: 'USD', symbol: '$', flag: '🇺🇸' },
@@ -20,6 +21,7 @@ const languages = [
 
 const Footer: React.FC = () => {
   const { settings } = useAdminSettingsContext();
+  const { t } = useI18n();
   const platform = settings?.platform;
   const business = settings?.business;
   return (
@@ -70,11 +72,11 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4 font-outfit">Company</h3>
             <ul className="space-y-3">
-              <li><Link to="/about" className="text-white/80 hover:text-white transition-colors duration-200">About</Link></li>
+              <li><Link to="/about" className="text-white/80 hover:text-white transition-colors duration-200">{t('footer.about')}</Link></li>
               <li><Link to="/careers" className="text-white/80 hover:text-white transition-colors duration-200">Careers</Link></li>
-              <li><Link to="/contact" className="text-white/80 hover:text-white transition-colors duration-200">Contact</Link></li>
-              <li><Link to="/terms" className="text-white/80 hover:text-white transition-colors duration-200">Terms</Link></li>
-              <li><Link to="/privacy" className="text-white/80 hover:text-white transition-colors duration-200">Privacy</Link></li>
+              <li><Link to="/contact" className="text-white/80 hover:text-white transition-colors duration-200">{t('footer.contact')}</Link></li>
+              <li><Link to="/terms" className="text-white/80 hover:text-white transition-colors duration-200">{t('footer.terms')}</Link></li>
+              <li><Link to="/privacy" className="text-white/80 hover:text-white transition-colors duration-200">{t('footer.privacy')}</Link></li>
             </ul>
           </div>
           <div>
@@ -111,7 +113,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between text-white/70 text-sm">
-          <p>© {new Date().getFullYear()} {(platform?.siteName || business?.companyName || 'UrutiBz')}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {(platform?.siteName || business?.companyName || 'UrutiBz')}. {t('footer.allRightsReserved')}</p>
           <div className="mt-4 md:mt-0 flex items-center gap-3">
             <img src="/assets/img/yacht/urutilogo2.png" alt={platform?.siteName || 'UrutiBz'} className="h-6 w-auto opacity-90" />
             <span className="hidden sm:inline">{platform?.siteTagline || 'Rent anything near you'}</span>

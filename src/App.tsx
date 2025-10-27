@@ -31,6 +31,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ui/ToastContainer';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { AdminSettingsProvider } from './contexts/AdminSettingsContext';
+import { I18nProvider } from './contexts/I18nContext';
 import NotificationsPage from './features/notifications/pages/NotificationsPage';
 import SessionMessagesPage from './pages/my-account/SessionMessagesPage';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -39,10 +40,11 @@ import HandoverReturnDemoPage from './pages/handover-return/HandoverReturnDemoPa
 
 function App() {
   return (
-    <DarkModeProvider>
-      <ThemeProvider token={localStorage.getItem('token') || undefined}>
-        <AdminSettingsProvider token={localStorage.getItem('token') || undefined}>
-          <ToastProvider>
+    <I18nProvider>
+      <DarkModeProvider>
+        <ThemeProvider token={localStorage.getItem('token') || undefined}>
+          <AdminSettingsProvider token={localStorage.getItem('token') || undefined}>
+            <ToastProvider>
           <ToastContainer />
           <AuthProvider>
             <Router>
@@ -161,6 +163,7 @@ function App() {
         </AdminSettingsProvider>
       </ThemeProvider>
     </DarkModeProvider>
+    </I18nProvider>
   );
 }
 

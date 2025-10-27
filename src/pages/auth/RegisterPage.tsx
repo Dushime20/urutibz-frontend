@@ -4,8 +4,6 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { registerUser } from './service/api';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 
-function Toast(_: { message: string; onClose: () => void; type?: 'error' | 'success' }) { return null; }
-
 // Compact Password strength indicator
 function PasswordStrength({ password }: { password: string }) {
   const getStrength = (pwd: string) => {
@@ -148,9 +146,12 @@ const RegisterPage: React.FC = () => {
     e.preventDefault();
 
     // Block registration if disabled in platform settings
-    const allow = Boolean(settings?.platform?.allowUserRegistration);
-    const sysAllow = Boolean((settings?.system as any)?.registrationEnabled);
-    if (!allow || !sysAllow) {
+    // If settings are not available (no token), allow registration by default
+    const allow = settings?.platform?.allowUserRegistration !== false; // Default to true if undefined
+    const sysAllow = (settings?.system as any)?.registrationEnabled !== false; // Default to true if undefined
+    
+    // Only block if explicitly disabled
+    if (settings && (!allow || !sysAllow)) {
       const msg = 'User registration is currently disabled by the administrator.';
       setToast(msg);
       setToastType('error');

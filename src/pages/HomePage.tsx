@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Heart, TrendingUp, AlertCircle, RefreshCw, Package, Wifi, WifiOff } from 'lucide-react';
+import { Star, Heart, TrendingUp, AlertCircle, RefreshCw, Package, Wifi, WifiOff, Search, X } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import { useI18n } from '../contexts/I18nContext';
 
 import { fetchAvailableProducts, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, getProductInteractions } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
@@ -29,6 +30,7 @@ function formatCurrency(amount: string, currency: string): string {
 
 const HomePage: React.FC = () => {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [products, setProducts] = useState<any[]>([]);
   const [productImages, setProductImages] = useState<Record<string, string[]>>({});
   const [itemLocations, setItemLocations] = useState<Record<string, { city: string | null; country: string | null }>>({});
@@ -43,8 +45,17 @@ const HomePage: React.FC = () => {
   const [networkError, setNetworkError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Simple in-page search state (visual UX only for now)
-  const [where] = useState('');
+  // Enhanced search state for homepage
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchCategory, setSearchCategory] = useState('');
+  const [searchPriceMin, setSearchPriceMin] = useState('');
+  const [searchPriceMax, setSearchPriceMax] = useState('');
+  const [searchCheckIn, setSearchCheckIn] = useState('');
+  const [searchCheckOut, setSearchCheckOut] = useState('');
+  const [searchNearMe, setSearchNearMe] = useState(false);
+  const [searchLat, setSearchLat] = useState('');
+  const [searchLng, setSearchLng] = useState('');
+  const [searchRadiusKm, setSearchRadiusKm] = useState(25);
   
   // Pagination state for showing more products
   const [visibleCount, setVisibleCount] = useState(100);
@@ -100,6 +111,38 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Listen for search events from Header
+  useEffect(() => {
+    const handleHomepageSearch = (event: CustomEvent) => {
+      const { query, category, priceMin, priceMax, checkIn, checkOut, nearMe, lat, lng, radiusKm } = event.detail;
+      
+      setSearchQuery(query || '');
+      setSearchCategory(category || '');
+      setSearchPriceMin(priceMin || '');
+      setSearchPriceMax(priceMax || '');
+      setSearchCheckIn(checkIn || '');
+      setSearchCheckOut(checkOut || '');
+      setSearchNearMe(nearMe || false);
+      setSearchLat(lat || '');
+      setSearchLng(lng || '');
+      setSearchRadiusKm(radiusKm || 25);
+      
+      // Reset visible count when searching
+      setVisibleCount(100);
+      
+      // Show toast for search feedback
+      if (query) {
+        showToast(`Searching for "${query}"...`, 'info');
+      }
+    };
+
+    window.addEventListener('homepageSearch', handleHomepageSearch as EventListener);
+    
+    return () => {
+      window.removeEventListener('homepageSearch', handleHomepageSearch as EventListener);
+    };
+  }, [showToast]);
 
   // Network status listener
   useEffect(() => {
@@ -327,13 +370,52 @@ const HomePage: React.FC = () => {
     return () => { isMounted = false; };
   }, [products]);
 
-  // Apply simple in-memory filter for the visible grid
+  // Apply comprehensive search filter for the visible grid
   const filtered = products.filter(p => {
     const title = (p.title || p.name || '').toString().toLowerCase();
+    const description = (p.description || '').toString().toLowerCase();
     const city = (itemLocations[p.id]?.city || '').toLowerCase();
-    const q = where.trim().toLowerCase();
-    if (!q) return true;
-    return title.includes(q) || city.includes(q);
+    const country = (itemLocations[p.id]?.country || '').toLowerCase();
+    
+    // Text search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesText = title.includes(query) || 
+                         description.includes(query) || 
+                         city.includes(query) || 
+                         country.includes(query);
+      if (!matchesText) return false;
+    }
+    
+    // Category filter
+    if (searchCategory) {
+      const productCategory = (p.category || '').toLowerCase();
+      if (productCategory !== searchCategory.toLowerCase()) return false;
+    }
+    
+    // Price filter
+    if (searchPriceMin || searchPriceMax) {
+      const productPrice = productPrices[p.id]?.price_per_day || p.base_price_per_day;
+      if (productPrice != null) {
+        const price = parseFloat(productPrice);
+        if (searchPriceMin && price < parseFloat(searchPriceMin)) return false;
+        if (searchPriceMax && price > parseFloat(searchPriceMax)) return false;
+      }
+    }
+    
+    // Date availability filter (simplified - would need more complex logic for real availability)
+    if (searchCheckIn || searchCheckOut) {
+      // For now, just pass through - in a real app, you'd check actual availability
+      // This would require integration with booking/availability system
+    }
+    
+    // Location filter (simplified - would need distance calculation)
+    if (searchNearMe && searchLat && searchLng) {
+      // For now, just pass through - in a real app, you'd calculate distance
+      // This would require geolocation distance calculation
+    }
+    
+    return true;
   });
 
   // Loading state
@@ -438,9 +520,9 @@ const HomePage: React.FC = () => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 dark:bg-slate-700 mb-4">
                   <Package className="h-8 w-8 text-gray-600 dark:text-slate-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">No products available</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">{t('home.noProducts')}</h3>
                 <p className="text-gray-600 dark:text-slate-400 mb-6">
-                  There are currently no products available for rent. Check back later or explore other categories.
+                  {t('home.tryDifferentSearch')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
@@ -477,11 +559,20 @@ const HomePage: React.FC = () => {
           {/* Section header */}
           <div className="mb-4 sm:mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100">Popular listings</h2>
-              <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-my-primary/10 text-my-primary dark:bg-my-primary/20 dark:text-teal-400">
-                <TrendingUp className="w-3 h-3" />
-                AI trending
-              </span>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100">
+                {searchQuery ? `${t('home.searchResults')} "${searchQuery}"` : 'Popular listings'}
+              </h2>
+              {searchQuery ? (
+                <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                  <Search className="w-3 h-3" />
+                  {filtered.length} {t('home.results')}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-my-primary/10 text-my-primary dark:bg-my-primary/20 dark:text-teal-400">
+                  <TrendingUp className="w-3 h-3" />
+                  AI trending
+                </span>
+              )}
               {loading && (
                 <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                   <RefreshCw className="w-3 h-3 animate-spin" />
@@ -503,6 +594,28 @@ const HomePage: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center gap-3">
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSearchCategory('');
+                    setSearchPriceMin('');
+                    setSearchPriceMax('');
+                    setSearchCheckIn('');
+                    setSearchCheckOut('');
+                    setSearchNearMe(false);
+                    setSearchLat('');
+                    setSearchLng('');
+                    setSearchRadiusKm(25);
+                    setVisibleCount(100);
+                    showToast('Search cleared', 'info');
+                  }}
+                  className="text-sm text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  title={t('home.clearSearch')}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={handleRefresh}
                 className="text-sm text-gray-600 dark:text-slate-400 hover:text-my-primary dark:hover:text-teal-400 transition-colors"
@@ -686,7 +799,7 @@ const HomePage: React.FC = () => {
               className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary transition-colors"
             >
               <Package className="w-4 h-4 mr-2" />
-              Load More Products ({filtered.length - visibleCount} remaining)
+              {t('home.loadMore')} ({filtered.length - visibleCount} remaining)
             </button>
           </div>
         )}

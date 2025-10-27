@@ -14,6 +14,7 @@ interface Props {
 
 const CreateRiskProfileModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const { showToast } = useToast();
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
   const [formData, setFormData] = useState<CreateRiskProfileRequest>({
     productId: '',
@@ -84,7 +85,7 @@ const CreateRiskProfileModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
       const token = localStorage.getItem('token');
       
       // Try different search approaches
-      let searchUrl = `http://localhost:3000/api/v1/products`;
+      let searchUrl = `${API_BASE_URL}/products`;
       const params = new URLSearchParams();
       
       if (productSearch) {
@@ -150,7 +151,8 @@ const CreateRiskProfileModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
     queryKey: ['categories', categorySearch],
     queryFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3000/api/v1/categories?search=${categorySearch}&limit=10`, {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.get(`${API_BASE_URL}/categories?search=${categorySearch}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Categories API Response:', response.data); // Debug log

@@ -1,5 +1,5 @@
 // API Configuration and Constants
-export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Common HTTP Headers
 export const createAuthHeaders = (token?: string): Record<string, string> => {

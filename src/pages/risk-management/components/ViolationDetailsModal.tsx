@@ -45,7 +45,8 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
     queryFn: async () => {
       if (!violation?.affectedUserId) return null;
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:3000/api/v1/users/${violation.affectedUserId}`, {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.get(`${API_BASE_URL}/users/${violation.affectedUserId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -59,7 +60,8 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
     queryFn: async () => {
       if (!violation?.productId) return null;
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:3000/api/v1/products/${violation.productId}`, {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.get(`${API_BASE_URL}/products/${violation.productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -73,7 +75,8 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
     queryFn: async () => {
       if (!violation?.bookingId) return null;
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:3000/api/v1/bookings/${violation.bookingId}`, {
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.get(`${API_BASE_URL}/bookings/${violation.bookingId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;

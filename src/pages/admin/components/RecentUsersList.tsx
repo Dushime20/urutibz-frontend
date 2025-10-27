@@ -23,13 +23,17 @@ const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }
   <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mt-4">
     <div className="flex items-center justify-between mb-6">
       <h3 className="text-lg font-bold text-gray-900">Recent Users</h3>
-      <Link 
-        to="#" 
+      <button 
+        onClick={() => {
+          // This will be handled by the parent component
+          const event = new CustomEvent('navigateToUsersTab');
+          window.dispatchEvent(event);
+        }}
         className="text-sm text-my-primary hover:text-my-primary/80 font-medium flex items-center group"
       >
         View all
         <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-      </Link>
+      </button>
     </div>
     <div className="space-y-4">
       {recentUsers.length === 0 ? (

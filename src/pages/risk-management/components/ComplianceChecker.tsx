@@ -34,7 +34,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
   });
 
   // Product autocomplete and renter auto-fill (no React Query)
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
   const [productQuery, setProductQuery] = useState('');
   const [productOptions, setProductOptions] = useState<any[]>([]);
   const [allProducts, setAllProducts] = useState<any[]>([]);

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { getAdminSettingsService } from '../services/adminSettings.service';
 import type { ThemeSettings, ThemeMode } from '../types/adminSettings.types';
+import { DEFAULT_THEME_SETTINGS } from '../types/adminSettings.types';
 
 interface ThemeContextType {
   // Theme state
@@ -175,12 +176,21 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
       setIsLoading(true);
       setError(null);
       
+      // Check if user is authenticated before fetching theme settings
+      if (!resolvedToken) {
+        console.log('No authentication token, using default theme');
+        // Use default theme for non-authenticated users
+        setTheme(DEFAULT_THEME_SETTINGS);
+        applyTheme(DEFAULT_THEME_SETTINGS);
+        return;
+      }
+      
       const themeSettings = await settingsService.fetchThemeSettings();
       setTheme(themeSettings);
       applyTheme(themeSettings);
     } catch (err: any) {
-      console.error('Failed to load theme:', err);
-      setError(err.message || 'Failed to load theme settings');
+      console.warn('Failed to load theme from server, using fallback:', err.message);
+      // Don't set error state for theme issues - just use fallback silently
       
       // Fallback to localStorage or default
       const savedTheme = localStorage.getItem('theme-settings');
@@ -190,19 +200,35 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
           setTheme(parsedTheme);
           applyTheme(parsedTheme);
         } catch (parseError) {
-          console.error('Failed to parse saved theme:', parseError);
+          console.warn('Failed to parse saved theme, using default:', parseError);
+          setTheme(DEFAULT_THEME_SETTINGS);
+          applyTheme(DEFAULT_THEME_SETTINGS);
         }
+      } else {
+        // No saved theme, use default
+        setTheme(DEFAULT_THEME_SETTINGS);
+        applyTheme(DEFAULT_THEME_SETTINGS);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [settingsService, applyTheme]);
+  }, [settingsService, applyTheme, resolvedToken]);
 
   // Save theme to API
   const saveTheme = useCallback(async (themeUpdates: Partial<ThemeSettings>) => {
     try {
       setIsSaving(true);
       setError(null);
+      
+      // If user is not authenticated, just save to localStorage
+      if (!resolvedToken) {
+        console.log('No authentication token, saving theme to localStorage only');
+        const updatedTheme = { ...theme, ...themeUpdates };
+        setTheme(updatedTheme);
+        applyTheme(updatedTheme);
+        localStorage.setItem('theme-settings', JSON.stringify(updatedTheme));
+        return;
+      }
       
       const updatedTheme = await settingsService.updateThemeSettings(themeUpdates);
       setTheme(updatedTheme);
@@ -211,13 +237,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
       // Save to localStorage as backup
       localStorage.setItem('theme-settings', JSON.stringify(updatedTheme));
     } catch (err: any) {
-      console.error('Failed to save theme:', err);
-      setError(err.message || 'Failed to save theme settings');
-      throw err;
+      console.warn('Failed to save theme to server, saving to localStorage:', err.message);
+      // Fallback to localStorage save
+      const updatedTheme = { ...theme, ...themeUpdates };
+      setTheme(updatedTheme);
+      applyTheme(updatedTheme);
+      localStorage.setItem('theme-settings', JSON.stringify(updatedTheme));
     } finally {
       setIsSaving(false);
     }
-  }, [settingsService, applyTheme]);
+  }, [settingsService, applyTheme, resolvedToken, theme]);
 
   // Update theme
   const updateTheme = useCallback(async (updates: Partial<ThemeSettings>) => {

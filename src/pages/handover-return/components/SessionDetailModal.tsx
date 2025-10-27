@@ -49,7 +49,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
   } catch {}
 
   // Friendly names derived from IDs
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
   const [friendly, setFriendly] = useState<{ productName?: string; bookingName?: string; ownerName?: string; ownerPhone?: string; renterName?: string }>({});
 
   useEffect(() => {

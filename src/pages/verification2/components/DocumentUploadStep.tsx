@@ -9,6 +9,8 @@ interface DocumentUploadStepProps {
   startCamera: () => void;
   isProcessing: boolean;
   aiProgress: number;
+  processingProgress?: number;
+  processingStage?: string;
   nextStep: () => void;
   confirmDocument?: () => Promise<void> | void; // unused when hideInlineNext is true; global button handles submission
   setVerificationData: (fn: (prev: any) => any) => void;
@@ -33,6 +35,8 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
   startCamera,
   isProcessing,
   aiProgress,
+  processingProgress,
+  processingStage,
   nextStep,
   confirmDocument,
   setVerificationData,
@@ -103,17 +107,19 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
               <div className="animate-spin">
                 <RefreshCw className="w-6 h-6 text-[#01aaa7]" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Analyzing Document...</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {processingStage || 'AI Analyzing Document...'}
+              </h3>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="dark:text-slate-300">Processing Progress</span>
-                <span>{Math.round(aiProgress)}%</span>
+                <span>{Math.round(processingProgress || aiProgress)}%</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                 <div
                   className="bg-gradient-to-r from-[#01aaa7] to-purple-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${aiProgress}%` }}
+                  style={{ width: `${processingProgress || aiProgress}%` }}
                 ></div>
               </div>
               <div className="text-sm text-gray-600 dark:text-slate-400 space-y-1">

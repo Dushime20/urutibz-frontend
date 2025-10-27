@@ -18,6 +18,7 @@ import SelfieStep from './components/SelfieStep';
 import PhoneStep from './components/PhoneStep';
 import EmailStep from './components/EmailStep';
 import CompletionStep from './components/CompletionStep';
+import AddressStep from './components/AddressStep';
 import { useToast } from '../../contexts/ToastContext';
 import { Link } from 'react-router-dom';
 
@@ -71,13 +72,27 @@ function extractRwandaIDFields(text: string) {
   let documentNumber = '';
 
   for (let i = 0; i < lines.length; i++) {
-    if (/Amazina.*Names/i.test(lines[i])) {
-      name = lines[i + 1] || '';
+    // Look for Amazina (Names) - can be on same line or next line
+    if (/Amazina/i.test(lines[i])) {
+      // Check if name is on same line after "Amazina"
+      const nameMatch = lines[i].match(/Amazina[:\s]*([A-Za-z\s]+)/i);
+      if (nameMatch && nameMatch[1]) {
+        name = nameMatch[1].trim();
+      } else {
+        name = lines[i + 1] || '';
+      }
     }
-    if (/Date of Birth/i.test(lines[i])) {
-      dateOfBirth = lines[i + 1] || '';
+    // Look for Itariki yavutseho (Date of Birth)
+    if (/Itariki.*yavutseho/i.test(lines[i])) {
+      const dobMatch = lines[i].match(/Itariki.*yavutseho[:\s]*([0-9\/\-\.\s]+)/i);
+      if (dobMatch && dobMatch[1]) {
+        dateOfBirth = dobMatch[1].trim();
+      } else {
+        dateOfBirth = lines[i + 1] || '';
+      }
     }
-    if (/Igitsina.*Sex/i.test(lines[i])) {
+    // Look for Igitsina (Sex) - can contain district info
+    if (/Igitsina/i.test(lines[i])) {
       const nextLine = lines[i + 1] || '';
       // Example: Gabo/M  Nyamagabe / Kitabi
       const sexMatch = nextLine.match(/([A-Za-z]+)\s*\/\s*([A-Za-z])/);
@@ -89,13 +104,22 @@ function extractRwandaIDFields(text: string) {
         district = districtMatch[1];
       }
     }
-    if (/ID No/i.test(lines[i])) {
-      // The value may be on the same line after the label
-      const idMatch = lines[i].match(/ID No\.\s*([0-9\. ]+)/i);
+    // Look for Indangamuntu / National ID No.
+    if (/Indangamuntu.*National.*ID/i.test(lines[i])) {
+      // Extract ID number from same line or next line
+      const idMatch = lines[i].match(/Indangamuntu.*National.*ID.*No[:\s]*([0-9\s\.]+)/i);
       if (idMatch && idMatch[1]) {
-        documentNumber = idMatch[1].replace(/\s+/g, '').replace(/\./g, '');
+        // Keep spaces in ID number as they are part of the format
+        documentNumber = idMatch[1].trim();
       } else {
         documentNumber = lines[i + 1] || '';
+      }
+    }
+    // Fallback: look for any long number pattern that could be an ID
+    if (!documentNumber) {
+      const numberMatch = lines[i].match(/([0-9\s]{12,})/);
+      if (numberMatch && numberMatch[1]) {
+        documentNumber = numberMatch[1].trim();
       }
     }
   }
@@ -114,19 +138,41 @@ function extractGenericFields(rawText: string, countryCode: string) {
   const text = (rawText || '').replace(/\r/g, '');
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   let name: string | undefined;
-  const nameIdx = lines.findIndex(l => /(AMAZINA|NAMES)/i.test(l));
-  if (nameIdx >= 0 && lines[nameIdx + 1]) name = lines[nameIdx + 1].replace(/^[^A-Z]*:/i, '').trim();
+  
+  // Look for name patterns - try multiple approaches
+  const nameIdx = lines.findIndex(l => /(AMAZINA|NAMES|NAME)/i.test(l));
+  if (nameIdx >= 0 && lines[nameIdx + 1]) {
+    name = lines[nameIdx + 1].replace(/^[^A-Z]*:/i, '').trim();
+  }
+  
+  // Fallback: look for any line with 2+ words that could be a name
   if (!name) {
-    const cand = lines.find(l => /[A-Za-z]{2,}\s+[A-Za-z]{2,}/.test(l) && l.length <= 40);
+    const cand = lines.find(l => /[A-Za-z]{2,}\s+[A-Za-z]{2,}/.test(l) && l.length <= 40 && !/[0-9]/.test(l));
     if (cand) name = cand.trim();
   }
+  
+  // Extract date of birth
   let dob = (text.match(/(\d{2})[\/-](\d{2})[\/-](\d{4})/) || [])[0];
+  
+  // Extract document number - handle spaced format for Rwanda
   const allDigits = text.replace(/[^0-9]/g, ' ')
     .split(' ')
     .filter(Boolean)
     .sort((a, b) => b.length - a.length);
+  
   let documentNumber = allDigits[0] || '';
-  if (countryCode === 'RW' && documentNumber && documentNumber.length < 12 && allDigits[1]) documentNumber = (documentNumber + allDigits[1]).replace(/\s+/g, '');
+  
+  // For Rwanda, try to reconstruct the spaced ID format
+  if (countryCode === 'RW' && documentNumber && documentNumber.length < 12) {
+    // Look for the spaced pattern in original text
+    const spacedMatch = text.match(/([0-9\s]{12,})/);
+    if (spacedMatch) {
+      documentNumber = spacedMatch[1].trim();
+    } else if (allDigits[1]) {
+      documentNumber = (documentNumber + allDigits[1]).replace(/\s+/g, '');
+    }
+  }
+  
   return { name, dateOfBirth: dob, documentNumber };
 }
 
@@ -143,11 +189,24 @@ const UrutiBzVerification = () => {
     ocrResults: null
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [processingStage, setProcessingStage] = useState('');
+  
+  // Simple cache to avoid reprocessing the same image
+  const [processedImagesCache, setProcessedImagesCache] = useState<Map<string, any>>(new Map());
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [aiProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasAddress, setHasAddress] = useState(false);
   const [selfieRejected, setSelfieRejected] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  
+  // Phone and Email verification states
+  const [otp, setOtp] = useState('');
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
 
   // Add these state hooks near the top of the component
   const [documentFile, setDocumentFile] = useState<File | null>(null);
@@ -169,7 +228,7 @@ const UrutiBzVerification = () => {
     };
   }, [verificationData]);
 
-  // Detect if user already has address details to skip the step
+  // Detect if user already has address details and verification status
   useEffect(() => {
     try {
       const userStr = localStorage.getItem('user');
@@ -180,6 +239,10 @@ const UrutiBzVerification = () => {
           (u?.location && (u.location.lat != null && u.location.lng != null))
         );
         setHasAddress(has);
+        
+        // Check verification status
+        setPhoneVerified(Boolean(u?.phone_verified));
+        setEmailVerified(Boolean(u?.email_verified));
       }
     } catch {}
   }, []);
@@ -259,6 +322,81 @@ const UrutiBzVerification = () => {
   ];
 
   const { showToast } = useToast();
+  
+  // Phone verification handlers
+  const handleRequestOtp = async () => {
+    if (!verificationData.phoneNumber) {
+      showToast('Please enter a phone number', 'error');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const token = localStorage.getItem('token');
+      await requestPhoneOtp(verificationData.phoneNumber, token);
+      setShowOtpInput(true);
+      showToast('OTP sent to your phone', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to send OTP', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp) {
+      showToast('Please enter the OTP', 'error');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const token = localStorage.getItem('token');
+      await verifyPhoneOtp(verificationData.phoneNumber, otp, token);
+      setPhoneVerified(true);
+      showToast('Phone number verified successfully!', 'success');
+      nextStep();
+    } catch (error: any) {
+      showToast(error.message || 'Failed to verify OTP', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Email verification handlers
+  const handleRequestEmailOtp = async () => {
+    if (!email) {
+      showToast('Please enter an email address', 'error');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const token = localStorage.getItem('token');
+      await requestEmailOtp(email, token);
+      showToast('OTP sent to your email', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to send email OTP', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    if (!emailOtp) {
+      showToast('Please enter the email OTP', 'error');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const token = localStorage.getItem('token');
+      await verifyEmailOtp(email, emailOtp, token);
+      setEmailVerified(true);
+      showToast('Email verified successfully!', 'success');
+      nextStep();
+    } catch (error: any) {
+      showToast(error.message || 'Failed to verify email OTP', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   // Very lightweight country/type heuristics to validate the image contents
   function validateDocumentByCountry(documentType: string, countryCode: string, ocrText: string): { ok: boolean; reason?: string } {
@@ -280,11 +418,17 @@ const UrutiBzVerification = () => {
     if (type.includes('national')) {
       switch (countryCode) {
         case 'RW': {
-          // Rwanda National ID: often shown as grouped digits. Normalize and check length.
+          // Rwanda National ID: Check for spaced format like "1 2002 8 0081987 0 69"
+          const spacedIdMatch = text.match(/([0-9\s]{12,})/);
+          if (spacedIdMatch) {
+            const digits = spacedIdMatch[1].replace(/[^0-9]/g, '');
+            if (digits.length >= 12) return { ok: true };
+          }
+          // Also check for continuous digits
           const digits = text.replace(/[^0-9]/g, '');
           if (digits.length >= 12) return { ok: true };
-          // Also accept presence of local labels
-          if (/INDANGAMUNTU|REPUBLIC OF RWANDA|REPUBLIK|RWANDA/.test(text)) return { ok: true };
+          // Accept presence of local labels
+          if (/INDANGAMUNTU|REPUBLIC OF RWANDA|REPUBLIK|RWANDA|REPUBULIKA Y'U RWANDA/.test(text)) return { ok: true };
           return { ok: false, reason: 'Rwanda ID markers not detected' };
         }
         case 'KE': {
@@ -320,11 +464,28 @@ const UrutiBzVerification = () => {
       return;
     }
     setIsProcessing(true);
+    setProcessingProgress(0);
+    setProcessingStage('Preparing image...');
     setErrors({});
     setDocumentFile(file);
     const reader = new FileReader();
     reader.onload = async (e) => {
       const imageDataUrl = e.target?.result as string;
+      
+      // Check cache first to avoid reprocessing
+      const imageHash = imageDataUrl.substring(0, 100); // Simple hash based on first 100 chars
+      if (processedImagesCache.has(imageHash)) {
+        const cachedResult = processedImagesCache.get(imageHash);
+        setVerificationData(prev => ({
+          ...prev,
+          documentImage: imageDataUrl,
+          ocrResults: cachedResult
+        }));
+        setIsProcessing(false);
+        showToast('Document processed successfully!', 'success');
+        return;
+      }
+      
       // Heuristic checks to reduce non-document images
       try {
         const img = new Image();
@@ -337,46 +498,82 @@ const UrutiBzVerification = () => {
           showToast('Photo does not look like a document. Please upload a clear document image.', 'error');
           return;
         }
-        // Simple preprocessing: upscale, grayscale + threshold to boost OCR
-        const maxW = 1600;
+        // Optimized preprocessing: reduce image size for faster OCR
+        const maxW = 800; // Reduced from 1600 for faster processing
         const scale = Math.min(1, maxW / img.width) || 1;
         const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * (scale < 1 ? scale : 1));
-        canvas.height = Math.round(img.height * (scale < 1 ? scale : 1));
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const px = data.data;
-          for (let i = 0; i < px.length; i += 4) {
-            const r = px[i], g = px[i + 1], b = px[i + 2];
-            const gray = (r * 0.299 + g * 0.587 + b * 0.114) | 0;
-            const v = gray > 160 ? 255 : 0; // hard threshold
-            px[i] = px[i + 1] = px[i + 2] = v;
-          }
-          ctx.putImageData(data, 0, 0);
+          // Simplified preprocessing - just resize, skip heavy threshold processing
+          // The OCR engine handles grayscale conversion internally
         }
         // Use preprocessed image if available
-        (window as any).__ocrSource = canvas.toDataURL('image/png');
+        (window as any).__ocrSource = canvas.toDataURL('image/jpeg', 0.8); // JPEG with compression for speed
+        setProcessingProgress(20);
+        setProcessingStage('Image prepared, starting OCR...');
       } catch {}
       // Run OCR
       try {
         const pre = (window as any).__ocrSource as string | undefined;
-        const { data: { text } } = await Tesseract.recognize(pre || imageDataUrl, 'eng+fra');
+        let ocrResult;
+        
+        // Optimized OCR configuration for speed
+        try {
+          // Use English only for faster processing, add other languages only if needed
+          ocrResult = await Tesseract.recognize(pre || imageDataUrl, 'eng');
+        } catch (engError) {
+          console.warn('English-only OCR failed, trying with multiple languages:', engError);
+          // Fallback to multiple languages if English-only fails
+          try {
+            ocrResult = await Tesseract.recognize(pre || imageDataUrl, 'eng+fra+kin');
+          } catch (kinError) {
+            console.warn('Multi-language OCR failed, falling back to English+French:', kinError);
+            ocrResult = await Tesseract.recognize(pre || imageDataUrl, 'eng+fra');
+          }
+        }
+        
+        const { data: { text } } = ocrResult;
+        
+        setProcessingProgress(80);
+        setProcessingStage('Validating document...');
+        
+        // Debug: Log OCR results for troubleshooting
+        console.log('OCR Extracted Text:', text);
+        console.log('Text Length:', text?.length || 0);
+        
         // Quick content validation: expect some digits and uppercase letters typical for IDs
         const hasDigits = /\d{3,}/.test(text || '');
         const hasWords = /[A-Z]{2,}/.test((text || '').toUpperCase());
+        
+        console.log('OCR Validation - Has Digits:', hasDigits, 'Has Words:', hasWords);
+        
         if (!hasDigits || !hasWords) {
           throw new Error('Not enough document-like text detected');
         }
         // Country/type specific validation
         const countryCheck = validateDocumentByCountry(verificationData.documentType, selectedCountry, text);
+        console.log('Country Validation:', countryCheck);
+        
         if (!countryCheck.ok) {
           throw new Error(countryCheck.reason || 'Document does not match the selected country/type');
         }
         let extracted: any = extractRwandaIDFields(text);
-        if ((!extracted?.name || extracted.name.length < 3) && (!extracted?.documentNumber || extracted.documentNumber.length < 8)) {
+        console.log('Rwanda ID Extraction Result:', extracted);
+        
+        // For Rwanda, be more lenient with validation - check if we got any meaningful data
+        const hasValidData = extracted?.name?.length >= 2 || 
+                           extracted?.documentNumber?.length >= 8 || 
+                           extracted?.dateOfBirth || 
+                           extracted?.sex;
+        
+        console.log('Has Valid Data:', hasValidData);
+        
+        if (!hasValidData) {
           extracted = extractGenericFields(text, selectedCountry);
+          console.log('Generic Extraction Result:', extracted);
         }
         // If Rwanda, also try to parse date (dd/mm/yyyy or dd-mm-yyyy)
         if (selectedCountry === 'RW' && (!extracted.dateOfBirth || extracted.dateOfBirth === '')) {
@@ -396,12 +593,40 @@ const UrutiBzVerification = () => {
             }
           }
         }));
+        
+        console.log('Document processed successfully, documentImage set:', !!imageDataUrl);
+        
+        // Cache the result for future use
+        setProcessedImagesCache(prev => {
+          const newCache = new Map(prev);
+          newCache.set(imageHash, {
+            extractedData: extracted
+          });
+          return newCache;
+        });
+        
+        setProcessingProgress(100);
+        setProcessingStage('Complete!');
         showToast('Document uploaded and processed successfully!', 'success');
       } catch (err) {
-        setErrors({ api: 'OCR failed. Please try again or enter details manually.' });
-        showToast('Failed to detect a valid document. Please upload a clearer document photo.', 'error');
+        console.error('OCR Processing Error:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setErrors({ api: `OCR failed: ${errorMessage}. Please try again or enter details manually.` });
+        
+        // More specific error messages based on the error type
+        if (errorMessage.includes('Not enough document-like text detected')) {
+          showToast('Document text is not clear enough for processing. Please ensure the document is well-lit and all text is readable.', 'error');
+        } else if (errorMessage.includes('Rwanda ID markers not detected')) {
+          showToast('Rwanda ID markers not found. Please ensure you selected "Rwanda" as the country and uploaded a valid Rwanda National ID.', 'error');
+        } else if (errorMessage.includes('Document does not match')) {
+          showToast('Document does not match the selected type. Please verify your document type and country selection.', 'error');
+        } else {
+          showToast('Failed to detect a valid document. Please upload a clearer document photo.', 'error');
+        }
       } finally {
         setIsProcessing(false);
+        setProcessingProgress(0);
+        setProcessingStage('');
       }
     };
     reader.readAsDataURL(file);
@@ -448,6 +673,7 @@ const UrutiBzVerification = () => {
       ...prev,
       selfieImage: null,
     }));
+    setSelfieRejected(false); // Reset rejection state when retaking
     setShowCamera(true);
     setCameraMode('selfie');
     setShowSubmitSelfie(false);
@@ -456,20 +682,40 @@ const UrutiBzVerification = () => {
   // Replace handleDocumentStepNext
   const handleDocumentStepNext = async () => {
     if (currentStep !== 3) return;
-    if (!documentFile) {
+    
+    // Check if we have either a document file or a processed document image
+    if (!documentFile && !verificationData.documentImage) {
       setErrors({ document: 'Please upload a document image.' });
       return;
     }
+    
     setIsProcessing(true);
     setErrors({});
     try {
       const token = localStorage.getItem('token');
       const extracted = verificationData.ocrResults?.extractedData || {};
-      const result = await submitDocumentStep(documentFile, verificationData.documentType, extracted, token);
+      
+      // If we have a documentFile, use it; otherwise, we need to create a file from the image
+      let fileToSubmit = documentFile;
+      
+      if (!fileToSubmit && verificationData.documentImage) {
+        // Convert base64 image to File
+        const response = await fetch(verificationData.documentImage);
+        const blob = await response.blob();
+        fileToSubmit = new File([blob], 'document.jpg', { type: 'image/jpeg' });
+      }
+      
+      if (!fileToSubmit) {
+        throw new Error('No document file available for submission');
+      }
+      
+      const result = await submitDocumentStep(fileToSubmit, verificationData.documentType, extracted, token);
       if (result?.data?.verification?.id) {
         localStorage.setItem('verificationId', result.data.verification.id);
       }
       showToast('Document uploaded successfully!', 'success');
+      console.log('Document step completed, advancing to step:', currentStep + 1);
+      console.log('Current verificationData:', verificationData);
       setCurrentStep(currentStep + 1);
     } catch (error: any) {
       setErrors({ api: error.message });
@@ -533,40 +779,79 @@ const UrutiBzVerification = () => {
     }
   };
 
-  // Update handleNextStep to use selfie handler for step 3
+  // Update handleNextStep to handle all steps properly
   const handleNextStep = async () => {
-    if (currentStep === 1) {
-      await submitAddress();
+    console.log('handleNextStep called, currentStep:', currentStep);
+    console.log('verificationData.documentImage:', !!verificationData.documentImage);
+    console.log('documentFile:', !!documentFile);
+    
+    // Step 0: Welcome - just proceed
+    if (currentStep === 0) {
+      nextStep();
       return;
     }
+    
+    // Step 1: Address Details - skip if user has address, otherwise proceed
+    if (currentStep === 1) {
+      if (hasAddress) {
+        nextStep(); // Skip to step 2
+      } else {
+        await submitAddress();
+      }
+      return;
+    }
+    
+    // Step 2: Document Type - validate selection
     if (currentStep === 2) {
-      // Country selected but no document type shouldn't proceed
       if (!verificationData.documentType || String(verificationData.documentType).trim() === '') {
         setErrors({ documentType: 'Please select a document type.' });
         showToast('Please select a document type to continue.', 'error');
         return;
       }
-    }
-    if (currentStep === 3) {
-      await handleDocumentStepNext();
+      nextStep();
       return;
     }
+    
+    // Step 3: Document Upload - handle document submission
+    if (currentStep === 3) {
+      // Check if document has been processed successfully
+      if (verificationData.documentImage || documentFile) {
+        await handleDocumentStepNext();
+      } else {
+        showToast('Please upload and process a document first.', 'error');
+      }
+      return;
+    }
+    
+    // Step 4: Selfie Verification - handle selfie submission
     if (currentStep === 4) {
+      // Block progression if selfie was rejected
+      if (selfieRejected) {
+        showToast('Your last selfie was rejected. Please retake a selfie to continue.', 'error');
+        return;
+      }
       await handleSelfieStepNext();
       return;
     }
+    
+    // Step 5: Phone Verification - proceed if phone is verified
+    if (currentStep === 5) {
+      nextStep();
+      return;
+    }
+    
+    // Step 6: Email Verification - validate email verification
     if (currentStep === 6) {
       if (!emailVerified) {
         showToast('Please verify your email to continue.', 'error');
         return;
       }
-    }
-    // Block progression from Selfie to Phone if the latest status is rejected
-    if (currentStep === 4 && selfieRejected) {
-      showToast('Your last selfie was rejected. Please retake a selfie to continue.', 'error');
+      nextStep();
       return;
     }
-    setCurrentStep(currentStep + 1);
+    
+    // Default: just proceed to next step
+    nextStep();
   };
 
   // Start camera
@@ -591,87 +876,6 @@ const UrutiBzVerification = () => {
   };
 
   // Add OTP state
-  const [otp, setOtp] = useState('');
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [email, setEmail] = useState('');
-  const [emailOtp, setEmailOtp] = useState('');
-  const [emailVerified, setEmailVerified] = useState(false);
-
-  const handleRequestOtp = async () => {
-    setIsProcessing(true);
-    setErrors({});
-    try {
-      const token = localStorage.getItem('token');
-      await requestPhoneOtp(verificationData.phoneNumber, token);
-      setShowOtpInput(true);
-      showToast('OTP sent to your phone!', 'success');
-    } catch (error: any) {
-      setErrors({ phone: error.message || 'Failed to request OTP' });
-      showToast('Failed to request OTP. Please try again.', 'error');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    setIsProcessing(true);
-    setErrors({});
-    try {
-      const token = localStorage.getItem('token');
-      await verifyPhoneOtp(verificationData.phoneNumber, otp, token);
-      showToast('Phone verified!', 'success');
-      setCurrentStep(currentStep + 1);
-    } catch (error: any) {
-      setErrors({ otp: error.message || 'Failed to verify OTP' });
-      showToast('Failed to verify OTP. Please try again.', 'error');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleRequestEmailOtp = async () => {
-    setIsProcessing(true);
-    setErrors({});
-    try {
-      const token = localStorage.getItem('token');
-      const targetEmail = email || JSON.parse(localStorage.getItem('user') || '{}')?.email || '';
-      if (!targetEmail) {
-        setErrors({ email: 'Email required' });
-        setIsProcessing(false);
-        return;
-      }
-      await requestEmailOtp(targetEmail, token);
-      showToast('Email OTP sent!', 'success');
-    } catch (error: any) {
-      setErrors({ email: error.message || 'Failed to request email OTP' });
-      showToast('Failed to request email OTP. Please try again.', 'error');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleVerifyEmailOtp = async () => {
-    setIsProcessing(true);
-    setErrors({});
-    try {
-      const token = localStorage.getItem('token');
-      const targetEmail = email || JSON.parse(localStorage.getItem('user') || '{}')?.email || '';
-      if (!targetEmail) {
-        setErrors({ email: 'Email required' });
-        setIsProcessing(false);
-        return;
-      }
-      await verifyEmailOtp(targetEmail, emailOtp, token);
-      showToast('Email verified!', 'success');
-      setEmailVerified(true);
-      setCurrentStep(currentStep + 1);
-    } catch (error: any) {
-      setErrors({ emailOtp: error.message || 'Failed to verify email OTP' });
-      showToast('Failed to verify email OTP. Please try again.', 'error');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   // Address form state
   const [addressForm, setAddressForm] = useState({
@@ -777,7 +981,9 @@ const UrutiBzVerification = () => {
     if (currentStep < steps.length - 1) {
       let next = currentStep + 1;
       // Skip address step if user already has address
-      if (next === 1 && hasAddress) next = 2;
+      if (next === 1 && hasAddress) {
+        next = 2;
+      }
       setCurrentStep(next);
       setErrors({});
     }
@@ -787,7 +993,9 @@ const UrutiBzVerification = () => {
     if (currentStep > 0) {
       let prev = currentStep - 1;
       // Skip address step when navigating backwards if user already has address
-      if (prev === 1 && hasAddress) { prev = 0; }
+      if (prev === 1 && hasAddress) {
+        prev = 0;
+      }
       setCurrentStep(prev);
       setErrors({});
     }
@@ -957,7 +1165,16 @@ const UrutiBzVerification = () => {
 
         {!isInitialLoading && (
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 border border-gray-100 dark:border-slate-700">
+          {(() => { console.log('Rendering step:', currentStep); return null; })()}
           {currentStep === 0 && <WelcomeStep nextStep={nextStep} />}
+          {currentStep === 1 && (
+            <AddressStep
+              addressForm={addressForm}
+              setAddressForm={setAddressForm}
+              errors={errors}
+              onUseCurrentLocation={useCurrentLocation}
+            />
+          )}
           {currentStep === 2 && (
             <DocumentTypeStep
               countries={countries}
@@ -977,14 +1194,25 @@ const UrutiBzVerification = () => {
               startCamera={startCamera}
               isProcessing={isProcessing}
               aiProgress={aiProgress}
+              processingProgress={processingProgress}
+              processingStage={processingStage}
               nextStep={nextStep}
               confirmDocument={async () => {
                 try {
-                  if (!documentFile) return nextStep();
+                  if (!documentFile && !verificationData.documentImage) return nextStep();
                   setIsProcessing(true);
                   const token = localStorage.getItem('token');
                   const extracted = verificationData.ocrResults?.extractedData || {};
-                  const result = await submitDocumentStep(documentFile, verificationData.documentType, extracted, token);
+                  
+                  // If we have a documentFile, use it; otherwise, create a file from the image
+                  let fileToSubmit = documentFile;
+                  if (!fileToSubmit && verificationData.documentImage) {
+                    const response = await fetch(verificationData.documentImage);
+                    const blob = await response.blob();
+                    fileToSubmit = new File([blob], 'document.jpg', { type: 'image/jpeg' });
+                  }
+                  
+                  const result = await submitDocumentStep(fileToSubmit!, verificationData.documentType, extracted, token);
                   if (result?.data?.verification?.id) {
                     localStorage.setItem('verificationId', result.data.verification.id);
                   }
@@ -1042,6 +1270,7 @@ const UrutiBzVerification = () => {
               showOtpInput={showOtpInput}
               isProcessing={isProcessing}
               errors={errors}
+              selectedCountry={selectedCountry}
             />
           )}
           {currentStep === 6 && (
@@ -1055,36 +1284,6 @@ const UrutiBzVerification = () => {
               isProcessing={isProcessing}
               errors={errors}
             />
-          )}
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Address Details</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <input className={`px-3 py-2 rounded-md border ${errors.firstName ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="First Name" value={addressForm.firstName} onChange={e=>setAddressForm({...addressForm, firstName:e.target.value})} />
-                <input className={`px-3 py-2 rounded-md border ${errors.lastName ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="Last Name" value={addressForm.lastName} onChange={e=>setAddressForm({...addressForm, lastName:e.target.value})} />
-                <input type="date" className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Date of Birth" value={addressForm.date_of_birth} onChange={e=>setAddressForm({...addressForm, date_of_birth:e.target.value})} />
-                <select className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" value={addressForm.gender} onChange={e=>setAddressForm({...addressForm, gender:e.target.value})}>
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-                <input className={`px-3 py-2 rounded-md border ${errors.province ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="Province" value={addressForm.province} onChange={e=>setAddressForm({...addressForm, province:e.target.value})} />
-                <input className={`px-3 py-2 rounded-md border ${errors.address_line ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="Address Line" value={addressForm.address_line} onChange={e=>setAddressForm({...addressForm, address_line:e.target.value})} />
-                <input className={`px-3 py-2 rounded-md border ${errors.district ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="District" value={addressForm.district} onChange={e=>setAddressForm({...addressForm, district:e.target.value})} />
-                <input className={`px-3 py-2 rounded-md border ${errors.sector ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="Sector" value={addressForm.sector} onChange={e=>setAddressForm({...addressForm, sector:e.target.value})} />
-                <input className={`px-3 py-2 rounded-md border ${errors.cell ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="Cell" value={addressForm.cell} onChange={e=>setAddressForm({...addressForm, cell:e.target.value})} />
-                <input className={`px-3 py-2 rounded-md border ${errors.village ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="Village" value={addressForm.village} onChange={e=>setAddressForm({...addressForm, village:e.target.value})} />
-                <input className={`px-3 py-2 rounded-md border ${errors.location_lat ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="Latitude" value={addressForm.location_lat} onChange={e=>setAddressForm({...addressForm, location_lat:e.target.value})} />
-                <input className={`px-3 py-2 rounded-md border ${errors.location_lng ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'} dark:bg-slate-800 dark:text-slate-100`} placeholder="Longitude" value={addressForm.location_lng} onChange={e=>setAddressForm({...addressForm, location_lng:e.target.value})} />
-              </div>
-              <div>
-                <button type="button" onClick={useCurrentLocation} className="px-4 py-2 rounded-md border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800">
-                  Use current location
-                </button>
-              </div>
-              {/* Submit handled by global Next button to keep controls in one row */}
-            </div>
           )}
           {currentStep === 7 && <CompletionStep verificationData={verificationData} />}
         </div>
@@ -1107,8 +1306,10 @@ const UrutiBzVerification = () => {
                 disabled={
                   isProcessing ||
                   (currentStep === 2 && (!verificationData.documentType || String(verificationData.documentType).trim() === '')) ||
-                  (currentStep === 3 && !verificationData.documentImage) ||
-                  (currentStep === 4 && !verificationData.selfieImage)
+                  (currentStep === 3 && (!verificationData.documentImage && !documentFile)) ||
+                  (currentStep === 4 && !verificationData.selfieImage) ||
+                  (currentStep === 5 && !phoneVerified) ||
+                  (currentStep === 6 && !emailVerified)
                 }
                 className={`flex items-center justify-center space-x-2 bg-[#01aaa7] text-white px-6 py-2 rounded-lg hover:bg-[#019c98] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed min-w-[160px] ${isProcessing ? 'opacity-80' : ''}`}
               >

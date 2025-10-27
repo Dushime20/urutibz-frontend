@@ -7,6 +7,7 @@ import {
   Package, Info, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { formatPrice, getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
 import Button from '../components/ui/Button';
 import { getProductById, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
@@ -38,6 +39,7 @@ const ItemDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { t } = useI18n();
 
   // Debug: log user and kyc_status
 
@@ -593,7 +595,7 @@ const ItemDetailsPage: React.FC = () => {
               {/* Features */}
               {item.features && item.features.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Features</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('item.features')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {item.features.map((feature: string, index: number) => (
                       <div key={index} className="flex items-center gap-2">
@@ -677,7 +679,7 @@ const ItemDetailsPage: React.FC = () => {
               {/* Reviews */}
               {productReviews.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Reviews</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('item.reviews')}</h3>
                   <div className="space-y-4">
                     {productReviews.map((rev: any, idx: number) => (
                       <div key={rev.id || idx} className="border rounded-xl p-4 dark:border-slate-700">
@@ -762,7 +764,7 @@ const ItemDetailsPage: React.FC = () => {
                   onClick={handleBookNow}
                   className="w-full py-3 btn-primary text-white rounded-xl font-semibold hover:bg-[#01aaa7]  transition-colors flex items-center justify-center gap-2"
                 >
-                  Book Now
+                  {t('item.bookNow')}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
 

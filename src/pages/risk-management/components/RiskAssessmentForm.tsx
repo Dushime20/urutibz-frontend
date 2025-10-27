@@ -30,7 +30,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
   });
 
   // Friendly search inputs (no React Query)
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
   const [productQuery, setProductQuery] = useState('');
   const [renterQuery, setRenterQuery] = useState('');
   const [productOptions, setProductOptions] = useState<any[]>([]);

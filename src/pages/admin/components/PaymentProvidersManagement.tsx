@@ -63,6 +63,11 @@ export default function PaymentProvidersManagement() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [supportedCurrenciesInput, setSupportedCurrenciesInput] = useState('');
   const [countryProviders, setCountryProviders] = useState<CountryPaymentProvidersResponse | null>(null);
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [providerToDelete, setProviderToDelete] = useState<PaymentProvider | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const token = useMemo(() => localStorage.getItem('token') ?? undefined, []);
 
@@ -151,10 +156,30 @@ export default function PaymentProvidersManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const res = await deletePaymentProvider(id, token);
-    if (res.success) setProviders(prev => prev.filter(p => p.id !== id));
-    else setError(res.error);
+  const handleDelete = (provider: PaymentProvider) => {
+    setProviderToDelete(provider);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!providerToDelete) return;
+    
+    setDeleting(true);
+    const res = await deletePaymentProvider(providerToDelete.id, token);
+    setDeleting(false);
+    
+    if (res.success) {
+      setProviders(prev => prev.filter(p => p.id !== providerToDelete.id));
+      setShowDeleteModal(false);
+      setProviderToDelete(null);
+    } else {
+      setError(res.error);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setProviderToDelete(null);
   };
 
   const handleSearch = async () => {
@@ -640,7 +665,7 @@ export default function PaymentProvidersManagement() {
                     ) : (
                       <button onClick={() => startEdit(p)} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"><Edit2 className="w-4 h-4"/></button>
                     )}
-                    <button onClick={() => handleDelete(p.id)} className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800/40">
+                    <button onClick={() => handleDelete(p)} className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800/40">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -674,6 +699,61 @@ export default function PaymentProvidersManagement() {
           <button onClick={handleBulkUpdate} className="px-4 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90">Apply</button>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onClose={cancelDelete} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-sm rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Delete Payment Provider
+                </Dialog.Title>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 dark:text-gray-300">
+                Are you sure you want to delete <strong>{providerToDelete?.display_name}</strong>?
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Provider: {providerToDelete?.provider_name} • {providerToDelete?.provider_type}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={cancelDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 }

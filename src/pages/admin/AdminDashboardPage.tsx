@@ -146,6 +146,18 @@ const AdminDashboardPage: React.FC = () => {
     } catch {}
   }, []);
 
+  // Handle navigation to users tab from RecentUsersList component
+  useEffect(() => {
+    const handleNavigateToUsersTab = () => {
+      setActiveTab('users');
+    };
+
+    window.addEventListener('navigateToUsersTab', handleNavigateToUsersTab);
+    return () => {
+      window.removeEventListener('navigateToUsersTab', handleNavigateToUsersTab);
+    };
+  }, []);
+
   // Admin-side New Listing Modal state
   const [showNewListingModalAdmin, setShowNewListingModalAdmin] = useState(false);
   type AdminNewListingForm = {
@@ -1010,7 +1022,12 @@ const AdminDashboardPage: React.FC = () => {
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Users</h3>
-                                <a href="/admin/users" className="text-my-primary text-sm font-medium hover:underline">View All</a>
+                                <button 
+                                  onClick={() => setActiveTab('users')} 
+                                  className="text-my-primary text-sm font-medium hover:underline"
+                                >
+                                  View All
+                                </button>
                               </div>
                               <div className="space-y-3">
                                 {recentUsers.slice(0, 3).map(user => (

@@ -1,0 +1,120 @@
+{
+  "common": {
+    "welcome": "Murakaza neza",
+    "search": "Shakisha",
+    "filter": "Suzuma",
+    "save": "Bika",
+    "cancel": "Hagarika",
+    "delete": "Siba",
+    "edit": "Hindura",
+    "create": "Kurema",
+    "update": "Guhindura",
+    "loading": "Gutangira...",
+    "error": "Ikosa",
+    "success": "Gutsinda",
+    "retry": "Kongera",
+    "close": "Funga",
+    "next": "Gikurikira",
+    "previous": "Ibanze",
+    "submit": "Ohereza"
+  },
+  "auth": {
+    "login": "Injira",
+    "logout": "Sohoka",
+    "register": "Kwiyandikisha",
+    "email": "Imeyili",
+    "password": "Ijambo banga",
+    "forgotPassword": "Wibagiwe ijambo banga?",
+    "rememberMe": "Nyibuka",
+    "signIn": "Injira",
+    "signUp": "Kwiyandikisha"
+  },
+  "verification": {
+    "title": "Umutwe",
+    "step": "Inzira",
+    "of": "mu",
+    "getStarted": "Tangira",
+    "addressDetails": "Amakuru y'aderesi",
+    "documentType": "Ubwoko bw'inzandiko",
+    "uploadDocument": "Gushyiramo inzandiko",
+    "selfieVerification": "Gusuzuma isura",
+    "phoneVerification": "Gusuzuma umuyoboro wa telephone",
+    "emailVerification": "Gusuzuma imeyili",
+    "complete": "Byaranze"
+  },
+  "booking": {
+    "title": "Kwiyandikisha",
+    "checkIn": "Tangira",
+    "checkOut": "Gusoza",
+    "guests": "Abashyitsi",
+    "total": "Igiteranyo",
+    "bookNow": "Bokinga none",
+    "confirmBooking": "Emeza kwiyandikisha"
+  },
+"notifications": {
+  "title": "Amakuru",
+  "noNotifications": "Nta makuru mashya",
+  "markAllAsRead": "Shyiraho ko byose byasomwe",
+  "clearAll": "Siba byose",
+  "newMessage": "Ubutumwa bushya",
+  "bookingUpdate": "Amakuru mashya yo ku bokinga"
+},
+"header": {
+  "searchPlaceholder": "Shakisha ibintu, ibyiciro, marike...",
+  "searching": "Birimo gushakishwa...",
+  "category": "Icyiciro",
+  "allItems": "Ibintu byose",
+  "price": "Igiciro",
+  "dates": "Itariki",
+  "location": "Ahantu",
+  "nearMe": "Hafi yanjye",
+  "recentSearches": "Ibyo washatse vuba",
+  "trendingSearches": "Ibirimo kuvugwa cyane",
+  "noResultsFound": "Nta byabonetse",
+  "postListing": "Ongeraho igicuruzwa",
+  "myAccount": "Konti yanjye",
+  "dashboard": "Ikibaho",
+  "adminDashboard": "Ikibaho cy’umuyobozi",
+  "profileSettings": "Amagenamiterere y’umwirondoro"
+},
+"home": {
+  "featuredProducts": "Ibicuruzwa byatoranyijwe",
+  "categories": "Ibyiciro",
+  "searchResults": "Ibyabonetse mu bushakashatsi",
+  "clearSearch": "Siba ibisubizo byo gushakisha",
+  "results": "Ibyabonetse",
+  "loadMore": "Erekana ibindi",
+  "noProducts": "Nta bicuruzwa bibonetse",
+  "tryDifferentSearch": "Gerageza gukoresha irindi jambo mu bushakashatsi"
+},
+"item": {
+  "description": "Ibyerekeye",
+  "features": "Ibintu bikomeye",
+  "availability": "Ububitso",
+  "pricing": "Igiciro",
+  "reviews": "Ibyemezo",
+  "similarItems": "Ibintu bimeze kimwe",
+  "viewDetails": "Reba ibintu biyubiyemo",
+  "addToFavorites": "Ongeremo ibyukundo",
+  "removeFromFavorites": "Kuramo ibyukundo",
+  "contactOwner": "Vugana n'umunyabikoresho",
+  "bookNow": "Bokinga none",
+  "available": "Birabitse",
+  "notAvailable": "Ntibirabitse",
+  "writeReview": "Andika igitekerezo",
+  "noReviews": "Nta kali yanditsweho",
+  "owner": "Unyabikoresho",
+  "location": "Ahantu",
+  "listedOn": "Kwishyuwe"
+},
+"footer": {
+  "about": "Ibirebana",
+  "contact": "Vugana",
+  "support": "Ubuyobozi",
+  "terms": "Amabwiriza",
+  "privacy": "Politike y'ibidukikije",
+  "allRightsReserved": "Uburenganzira bwose burabungwa"
+}
+
+}
+

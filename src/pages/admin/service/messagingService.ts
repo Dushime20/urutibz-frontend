@@ -10,10 +10,10 @@ import type {
   PushNotification,
   EmailTemplate,
   ScheduledNotification
-} from '../../../types/messaging';
+} from '../../../types/messaging.js';
 
 // Messaging API Service
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 export class MessagingService {
   private static getAuthHeaders(token?: string) {
     const headers: Record<string, string> = {
@@ -31,64 +31,64 @@ export class MessagingService {
 //       const response = await axios.get(`${API_BASE_URL}/admin/chats`, {
 //         headers: this.getAuthHeaders(token),
 //       });
-//       return { data: response.data.data, error: null };
+//       return { success: true, data: response.data.data, error: null };
 //     } catch (error: any) {
 //       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch chats';
 //       console.error('Error fetching chats:', errorMsg);
-//       return { data: [], error: errorMsg };
+//       return { success: false, data: [], error: errorMsg };
 //     }
 //   }
 
-  static async getChatById(chatId: string, token?: string): Promise<{ data: Chat | null; error: string | null }> {
+  static async getChatById(chatId: string, token?: string): Promise<{ success: boolean; data: Chat | null; error: string | null }> {
     try {
       const response = await axios.get(`${API_BASE_URL}/admin/chats/${chatId}`, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch chat';
       console.error('Error fetching chat:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
-  static async getChatMessages(chatId: string, page = 1, limit = 50, token?: string): Promise<{ data: Message[]; error: string | null }> {
+  static async getChatMessages(chatId: string, page = 1, limit = 50, token?: string): Promise<{ success: boolean; data: Message[]; error: string | null }> {
     try {
       const response = await axios.get(`${API_BASE_URL}/admin/chats/${chatId}/messages`, {
         headers: this.getAuthHeaders(token),
         params: { page, limit },
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch messages';
       console.error('Error fetching messages:', errorMsg);
-      return { data: [], error: errorMsg };
+      return { success: false, data: [], error: errorMsg };
     }
   }
 
-  static async sendMessage(chatId: string, messageData: Partial<Message>, token?: string): Promise<{ data: Message | null; error: string | null }> {
+  static async sendMessage(chatId: string, messageData: Partial<Message>, token?: string): Promise<{ success: boolean; data: Message | null; error: string | null }> {
     try {
       const response = await axios.post(`${API_BASE_URL}/admin/chats/${chatId}/messages`, messageData, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to send message';
       console.error('Error sending message:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
-  static async updateMessage(messageId: string, updates: Partial<Message>, token?: string): Promise<{ data: Message | null; error: string | null }> {
+  static async updateMessage(messageId: string, updates: Partial<Message>, token?: string): Promise<{ success: boolean; data: Message | null; error: string | null }> {
     try {
       const response = await axios.put(`${API_BASE_URL}/admin/messages/${messageId}`, updates, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to update message';
       console.error('Error updating message:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
@@ -106,42 +106,42 @@ export class MessagingService {
   }
 
   // Message Templates
-  static async getMessageTemplates(token?: string): Promise<{ data: MessageTemplate[]; error: string | null }> {
+  static async getMessageTemplates(token?: string): Promise<{ success: boolean; data: MessageTemplate[]; error: string | null }> {
     try {
       const response = await axios.get(`${API_BASE_URL}/admin/message-templates`, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch message templates';
       console.error('Error fetching message templates:', errorMsg);
-      return { data: [], error: errorMsg };
+      return { success: false, data: [], error: errorMsg };
     }
   }
 
-  static async createMessageTemplate(templateData: Partial<MessageTemplate>, token?: string): Promise<{ data: MessageTemplate | null; error: string | null }> {
+  static async createMessageTemplate(templateData: Partial<MessageTemplate>, token?: string): Promise<{ success: boolean; data: MessageTemplate | null; error: string | null }> {
     try {
       const response = await axios.post(`${API_BASE_URL}/admin/message-templates`, templateData, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to create message template';
       console.error('Error creating message template:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
-  static async updateMessageTemplate(templateId: string, updates: Partial<MessageTemplate>, token?: string): Promise<{ data: MessageTemplate | null; error: string | null }> {
+  static async updateMessageTemplate(templateId: string, updates: Partial<MessageTemplate>, token?: string): Promise<{ success: boolean; data: MessageTemplate | null; error: string | null }> {
     try {
       const response = await axios.put(`${API_BASE_URL}/admin/message-templates/${templateId}`, updates, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to update message template';
       console.error('Error updating message template:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
@@ -159,56 +159,56 @@ export class MessagingService {
   }
 
   // Messaging Statistics
-  static async getMessageStats(token?: string): Promise<{ data: AdminMessageStats | null; error: string | null }> {
+  static async getMessageStats(token?: string): Promise<{ success: boolean; data: AdminMessageStats | null; error: string | null }> {
     try {
       const response = await axios.get(`${API_BASE_URL}/admin/messaging/stats`, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch message stats';
       console.error('Error fetching message stats:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
   // AI Features
-  static async analyzeSentiment(messageId: string, token?: string): Promise<{ data: any; error: string | null }> {
+  static async analyzeSentiment(messageId: string, token?: string): Promise<{ success: boolean; data: any; error: string | null }> {
     try {
       const response = await axios.post(`${API_BASE_URL}/admin/messages/${messageId}/analyze-sentiment`, {}, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to analyze sentiment';
       console.error('Error analyzing sentiment:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
-  static async detectConflict(chatId: string, token?: string): Promise<{ data: any; error: string | null }> {
+  static async detectConflict(chatId: string, token?: string): Promise<{ success: boolean; data: any; error: string | null }> {
     try {
       const response = await axios.post(`${API_BASE_URL}/admin/chats/${chatId}/detect-conflict`, {}, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to detect conflict';
       console.error('Error detecting conflict:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
-  static async generateResponseSuggestions(chatId: string, context: string, token?: string): Promise<{ data: string[]; error: string | null }> {
+  static async generateResponseSuggestions(chatId: string, context: string, token?: string): Promise<{ success: boolean; data: string[]; error: string | null }> {
     try {
       const response = await axios.post(`${API_BASE_URL}/admin/chats/${chatId}/generate-suggestions`, { context }, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to generate response suggestions';
       console.error('Error generating response suggestions:', errorMsg);
-      return { data: [], error: errorMsg };
+      return { success: false, data: [], error: errorMsg };
     }
   }
 }
@@ -226,16 +226,16 @@ export class NotificationService {
   }
 
   // System Notifications
-  static async getSystemNotifications(token?: string): Promise<{ data: SystemNotification[]; error: string | null }> {
+  static async getSystemNotifications(token?: string): Promise<{ success: boolean; data: SystemNotification[]; error: string | null }> {
     try {
       const response = await axios.get(`${API_BASE_URL}/admin/notifications/system`, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch system notifications';
       console.error('Error fetching system notifications:', errorMsg);
-      return { data: [], error: errorMsg };
+      return { success: false, data: [], error: errorMsg };
     }
   }
 
@@ -283,42 +283,42 @@ export class NotificationService {
   }
 
   // Email Templates
-  static async getEmailTemplates(token?: string): Promise<{ data: EmailTemplate[]; error: string | null }> {
+  static async getEmailTemplates(token?: string): Promise<{ success: boolean; data: EmailTemplate[]; error: string | null }> {
     try {
       const response = await axios.get(`${API_BASE_URL}/admin/email-templates`, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch email templates';
       console.error('Error fetching email templates:', errorMsg);
-      return { data: [], error: errorMsg };
+      return { success: false, data: [], error: errorMsg };
     }
   }
 
-  static async createEmailTemplate(templateData: Partial<EmailTemplate>, token?: string): Promise<{ data: EmailTemplate | null; error: string | null }> {
+  static async createEmailTemplate(templateData: Partial<EmailTemplate>, token?: string): Promise<{ success: boolean; data: EmailTemplate | null; error: string | null }> {
     try {
       const response = await axios.post(`${API_BASE_URL}/admin/email-templates`, templateData, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to create email template';
       console.error('Error creating email template:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
-  static async updateEmailTemplate(templateId: string, updates: Partial<EmailTemplate>, token?: string): Promise<{ data: EmailTemplate | null; error: string | null }> {
+  static async updateEmailTemplate(templateId: string, updates: Partial<EmailTemplate>, token?: string): Promise<{ success: boolean; data: EmailTemplate | null; error: string | null }> {
     try {
       const response = await axios.put(`${API_BASE_URL}/admin/email-templates/${templateId}`, updates, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to update email template';
       console.error('Error updating email template:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
@@ -331,47 +331,47 @@ export class NotificationService {
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to delete email template';
       console.error('Error deleting email template:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, error: errorMsg };
     }
   }
 
   // Scheduled Notifications
-  static async getScheduledNotifications(token?: string): Promise<{ data: ScheduledNotification[]; error: string | null }> {
+  static async getScheduledNotifications(token?: string): Promise<{ success: boolean; data: ScheduledNotification[]; error: string | null }> {
     try {
       const response = await axios.get(`${API_BASE_URL}/admin/notifications/scheduled`, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch scheduled notifications';
       console.error('Error fetching scheduled notifications:', errorMsg);
-      return { data: [], error: errorMsg };
+      return { success: false, data: [], error: errorMsg };
     }
   }
 
-  static async createScheduledNotification(notificationData: Partial<ScheduledNotification>, token?: string): Promise<{ data: ScheduledNotification | null; error: string | null }> {
+  static async createScheduledNotification(notificationData: Partial<ScheduledNotification>, token?: string): Promise<{ success: boolean; data: ScheduledNotification | null; error: string | null }> {
     try {
       const response = await axios.post(`${API_BASE_URL}/admin/notifications/scheduled`, notificationData, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to create scheduled notification';
       console.error('Error creating scheduled notification:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
-  static async updateScheduledNotification(notificationId: string, updates: Partial<ScheduledNotification>, token?: string): Promise<{ data: ScheduledNotification | null; error: string | null }> {
+  static async updateScheduledNotification(notificationId: string, updates: Partial<ScheduledNotification>, token?: string): Promise<{ success: boolean; data: ScheduledNotification | null; error: string | null }> {
     try {
       const response = await axios.put(`${API_BASE_URL}/admin/notifications/scheduled/${notificationId}`, updates, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to update scheduled notification';
       console.error('Error updating scheduled notification:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 
@@ -389,16 +389,16 @@ export class NotificationService {
   }
 
   // Notification Statistics
-  static async getNotificationStats(token?: string): Promise<{ data: AdminNotificationStats | null; error: string | null }> {
+  static async getNotificationStats(token?: string): Promise<{ success: boolean; data: AdminNotificationStats | null; error: string | null }> {
     try {
       const response = await axios.get(`${API_BASE_URL}/admin/notifications/stats`, {
         headers: this.getAuthHeaders(token),
       });
-      return { data: response.data.data, error: null };
+      return { success: true, data: response.data.data, error: null };
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to fetch notification stats';
       console.error('Error fetching notification stats:', errorMsg);
-      return { data: null, error: errorMsg };
+      return { success: false, data: null, error: errorMsg };
     }
   }
 }

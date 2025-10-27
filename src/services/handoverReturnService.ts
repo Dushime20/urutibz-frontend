@@ -28,7 +28,7 @@ import {
   ScheduleNotificationResponse
 } from '../types/handoverReturn';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Create axios instance for handover & return API
 const handoverReturnApi = axios.create({

@@ -1,9 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { ChevronDown, Globe, Menu, X, Bot, Moon, Sun, Search, User, PlusCircle } from 'lucide-react';
+import { ChevronDown, Globe, Menu, X, Bot, Moon, Sun, Search, User, PlusCircle, Clock, TrendingUp } from 'lucide-react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
+import { useI18n } from '../../contexts/I18nContext';
+import RealtimeNotifications from '../RealtimeNotifications';
 
 const languages = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -26,7 +28,7 @@ const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { settings } = useAdminSettingsContext();
-  const [, setLanguage] = useState(languages[0]);
+  const { language, setLanguage, t } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
@@ -34,6 +36,15 @@ const Header: React.FC = () => {
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Professional search state
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
+  const searchTimeoutRef = useRef<number | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Integrated search state
   const params = new URLSearchParams(location.search);
@@ -63,7 +74,66 @@ const Header: React.FC = () => {
     setPriceMax(p.get('priceMax') || '');
   }, [location.search]);
 
-  const submitSearch = () => {
+  // Professional search functions
+  const generateSearchSuggestions = useCallback((query: string): string[] => {
+    if (!query || query.length < 2) return [];
+    
+    const suggestions = [
+      // Category-based suggestions
+      'camera rental', 'car rental', 'laptop rental', 'drone rental',
+      'event equipment', 'photography gear', 'outdoor gear', 'tools rental',
+      'party supplies', 'fitness equipment', 'travel gear', 'home appliances',
+      
+      // Brand-based suggestions
+      'Canon camera', 'Nikon lens', 'DJI drone', 'MacBook Pro',
+      'iPhone rental', 'iPad rental', 'Sony camera', 'GoPro',
+      
+      // Event-based suggestions
+      'wedding photography', 'corporate events', 'birthday party',
+      'conference equipment', 'trade show booth', 'exhibition setup',
+      
+      // Location-based suggestions
+      'near me', 'downtown', 'city center', 'airport pickup',
+      
+      // Duration-based suggestions
+      'daily rental', 'weekly rental', 'monthly rental', 'long term'
+    ];
+    
+    return suggestions
+      .filter(suggestion => 
+        suggestion.toLowerCase().includes(query.toLowerCase()) ||
+        query.toLowerCase().split(' ').some(word => 
+          suggestion.toLowerCase().includes(word)
+        )
+      )
+      .slice(0, 8);
+  }, []);
+
+  const debouncedSearch = useCallback((query: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      if (query.length >= 2) {
+        setIsSearching(true);
+        setSearchSuggestions(generateSearchSuggestions(query));
+        setShowSuggestions(true);
+        
+        // Auto-search after 1 second of no typing
+        setTimeout(() => {
+          performAutoSearch();
+        }, 1000);
+      } else {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      }
+      setIsSearching(false);
+    }, 300);
+  }, [generateSearchSuggestions]);
+
+  const performAutoSearch = useCallback(() => {
+    if (q.length >= 2) {
     const sp = new URLSearchParams();
     if (q) sp.set('q', q);
     if (category && category !== 'all') sp.set('category', category);
@@ -77,10 +147,80 @@ const Header: React.FC = () => {
       sp.set('lng', lng);
       if (radiusKm) sp.set('radiusKm', String(radiusKm));
     }
-    // Navigate to search page with parameters
+      
+      // Add to recent searches
+      const newRecentSearches = [q, ...recentSearches.filter(s => s !== q)].slice(0, 5);
+      setRecentSearches(newRecentSearches);
+      localStorage.setItem('recentSearches', JSON.stringify(newRecentSearches));
+      
+      // Check if we're on homepage - if so, trigger local search instead of navigation
+      if (location.pathname === '/') {
+        // Dispatch custom event for homepage search
+        const searchEvent = new CustomEvent('homepageSearch', {
+          detail: {
+            query: q,
+            category: category !== 'all' ? category : '',
+            priceMin,
+            priceMax,
+            checkIn,
+            checkOut,
+            nearMe,
+            lat,
+            lng,
+            radiusKm
+          }
+        });
+        window.dispatchEvent(searchEvent);
+        setShowSuggestions(false);
+      } else {
+        // Navigate to search page for other pages
     navigate(`/items/search${sp.toString() ? `?${sp.toString()}` : ''}`);
+        setShowSuggestions(false);
+      }
+    }
+  }, [q, category, priceMin, priceMax, checkIn, checkOut, nearMe, lat, lng, radiusKm, recentSearches, navigate, location.pathname]);
+
+  const handleSearchInputChange = (value: string) => {
+    setQ(value);
+    debouncedSearch(value);
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setQ(suggestion);
+    setShowSuggestions(false);
+    performAutoSearch();
+  };
+
+  const submitSearch = () => {
+    performAutoSearch();
     setIsMenuOpen(false);
   };
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('recentSearches');
+    if (saved) {
+      setRecentSearches(JSON.parse(saved));
+    }
+    
+    // Mock trending searches (in real app, fetch from API)
+    setTrendingSearches([
+      'camera rental', 'car rental', 'event equipment', 'drone rental',
+      'photography gear', 'party supplies', 'tools rental', 'laptop rental'
+    ]);
+  }, []);
+
+  // Handle clicks outside search suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Geolocation trigger
   const detectLocation = () => {
@@ -120,8 +260,8 @@ const Header: React.FC = () => {
   }, [isProfileOpen]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md dark:bg-gray-900/80 border-b border-platform-light-grey/80 dark:border-gray-700/60 shadow-sm">
-      <div className=" mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md dark:bg-gray-900/80 border-b border-platform-light-grey/80 dark:border-gray-700/60 shadow-sm w-full ml-0">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3 lg:py-4">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-4 lg:space-x-8">
@@ -221,10 +361,14 @@ const Header: React.FC = () => {
                     <button
                       key={lang.code}
                       onClick={() => {
-                        setLanguage(lang);
+                        setLanguage(lang.code as 'en' | 'fr' | 'rw');
                         setIsLanguageOpen(false);
                       }}
-                      className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
+                      className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 transition-colors duration-200 ${
+                        language === lang.code 
+                          ? 'text-platform-primary dark:text-[#01aaa7] font-medium' 
+                          : 'text-platform-grey dark:text-gray-300 hover:text-platform-dark-grey dark:hover:text-white'
+                      }`}
                     >
                       <span>{lang.flag}</span>
                       <span>{lang.label}</span>
@@ -258,7 +402,8 @@ const Header: React.FC = () => {
                 </Link>
                 
                 {/* User Profile Dropdown */}
-                <div className="relative">
+                <div className="relative flex items-center gap-3">
+                  <RealtimeNotifications />
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className="flex items-center space-x-2 p-1 rounded-full hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -355,31 +500,51 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Full-width Search Row (desktop) */}
-        <div className="hidden md:block pb-3">
-          <div className="flex items-center justify-center">
-            <div className="flex items-stretch divide-x divide-gray-200 dark:divide-slate-600 border border-gray-200 dark:border-slate-600 rounded-full overflow-hidden bg-white dark:bg-slate-800 w-full max-w-4xl">
-              {/* What */}
-              <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">What</div>
+        {/* Professional Search Section */}
+        <div className="hidden md:block pb-4">
+          <div className="max-w-6xl mx-auto">
+            {/* Main Search Bar */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex-1 relative">
+                <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 shadow-sm">
+                  <Search className={`h-5 w-5 mr-3 ${isSearching ? 'text-[#01aaa7] animate-pulse' : 'text-gray-400'}`} />
                 <input
+                    ref={searchInputRef}
                   value={q}
-                  onChange={(e) => setQ(e.target.value)}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && submitSearch()}
-                  placeholder="Search items, categories..."
-                  className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-56"
-                />
+                    onFocus={() => setShowSuggestions(q.length >= 2 || recentSearches.length > 0)}
+                    placeholder={t('header.searchPlaceholder')}
+                    className="flex-1 text-sm outline-none placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-transparent"
+                  />
+                  {isSearching && (
+                    <div className="ml-3 px-4 py-2 text-sm text-[#01aaa7] font-medium">
+                      {t('header.searching')}
+                    </div>
+                  )}
+                  {!isSearching && q.length >= 2 && (
+                    <button
+                      onClick={submitSearch}
+                      className="ml-3 px-6 py-2 bg-[#01aaa7] text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                    >
+                      {t('common.search')}
+                    </button>
+                  )}
+                </div>
+              </div>
               </div>
 
-              {/* Category */}
-              <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Category</div>
+            {/* Filter Row */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Category Filter */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('header.category')}:</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="mt-0.5 text-sm outline-none text-gray-900 dark:text-slate-100 bg-transparent w-32 border-none"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
                 >
-                  <option value="all">All Items</option>
+                  <option value="all">{t('header.allItems')}</option>
                   <option value="vehicles">🚗 Vehicles</option>
                   <option value="electronics">📱 Electronics</option>
                   <option value="tools">🔧 Tools</option>
@@ -396,70 +561,68 @@ const Header: React.FC = () => {
                 </select>
               </div>
 
-              {/* Price Range */}
-              <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Price Range</div>
-                <div className="mt-0.5 flex items-center gap-1">
+              {/* Price Range Filter */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('header.price')}:</label>
+                <div className="flex items-center gap-2">
                   <input
                     type="number"
                     value={priceMin}
                     onChange={(e) => setPriceMin(e.target.value)}
                     placeholder="Min"
-                    className="text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-16 border-none"
+                    className="w-20 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
                   />
-                  <span className="text-gray-500 dark:text-slate-400">-</span>
+                  <span className="text-gray-500 dark:text-gray-400">-</span>
                   <input
                     type="number"
                     value={priceMax}
                     onChange={(e) => setPriceMax(e.target.value)}
                     placeholder="Max"
-                    className="text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-16 border-none"
+                    className="w-20 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
                   />
                 </div>
               </div>
 
-              {/* Start Date */}
-              <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Start Date</div>
+              {/* Date Range Filters */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('header.dates')}:</label>
+                <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
-                  placeholder="When do you need it?"
-                  className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-36"
+                    placeholder="Start date"
+                    className="w-32 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
                   onFocus={(e) => { e.currentTarget.type = 'date'; }}
                   onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
                 />
-              </div>
-
-              {/* End Date */}
-              <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">End Date</div>
+                  <span className="text-gray-500 dark:text-gray-400">to</span>
                 <input
                   type="text"
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
-                  placeholder="Return date"
-                  className="mt-0.5 text-sm outline-none placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 bg-transparent w-36"
+                    placeholder="End date"
+                    className="w-32 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
                   onFocus={(e) => { e.currentTarget.type = 'date'; }}
                   onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
                 />
+                </div>
               </div>
 
-              {/* Near me */}
-              <div className="px-5 py-3 text-left">
-                <div className="text-xs font-semibold text-gray-700 dark:text-slate-300">Near me</div>
+              {/* Location Filter */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('header.location')}:</label>
                 {nearMe && lat && lng ? (
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700">
-                      ✓ Using location
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 text-xs px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700">
+                      ✓ Location enabled
                     </span>
                     <input
                       type="number"
                       min={1}
                       value={radiusKm}
                       onChange={(e) => setRadiusKm(Number(e.target.value) || 25)}
-                      className="text-sm outline-none w-24 border border-gray-200 dark:border-slate-600 rounded-full px-3 py-1 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                      className="w-16 px-2 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
                       placeholder="km"
                       title="Radius in kilometers"
                     />
@@ -468,27 +631,86 @@ const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={detectLocation}
-                    className="mt-0.5 inline-flex items-center gap-1 text-sm text-my-primary dark:text-teal-400 hover:underline"
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm text-[#01aaa7] hover:text-[#008a87] border border-[#01aaa7] hover:border-[#008a87] rounded-lg hover:bg-[#01aaa7]/5 transition-colors"
                   >
                     <span aria-hidden>📍</span>
-                    Use current location
+                    Use my location
                   </button>
                 )}
-              </div>
-
-              {/* Search icon */}
-              <div className="flex items-center px-3">
-                <button
-                  onClick={submitSearch}
-                  aria-label="Search"
-                  className="h-10 w-10 rounded-full bg-my-primary dark:bg-teal-500 text-white hover:opacity-90 flex items-center justify-center"
-                >
-                  <Search className="h-5 w-5" />
-                </button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Search Suggestions Dropdown */}
+        {showSuggestions && (
+          <div className="hidden md:block absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-4xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
+            {/* Recent Searches */}
+            {recentSearches.length > 0 && !q && (
+              <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                  <Clock className="h-3 w-3" />
+                  {t('header.recentSearches')}
+                </div>
+                {recentSearches.map((search, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(search)}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    {search}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Trending Searches */}
+            {!q && (
+              <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                  <TrendingUp className="h-3 w-3" />
+                  {t('header.trendingSearches')}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {trendingSearches.slice(0, 6).map((search, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(search)}
+                      className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      {search}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Search Suggestions */}
+            {q.length >= 2 && searchSuggestions.length > 0 && (
+              <div className="p-3">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                  Suggestions
+                </div>
+                {searchSuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* No Results */}
+            {q.length >= 2 && searchSuggestions.length === 0 && (
+              <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                No suggestions found for "{q}"
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Mobile Menu */}
         {isMenuOpen && (

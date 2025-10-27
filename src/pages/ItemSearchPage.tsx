@@ -7,6 +7,7 @@ import { getProductImagesByProductId } from './my-account/service/api';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 import { formatCurrency } from '../lib/utils';
 import Button from '../components/ui/Button';
+import { useI18n } from '../contexts/I18nContext';
 
 // Product type definition with better typing
 type Product = {
@@ -57,6 +58,7 @@ interface ProductImage {
 const ItemSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');

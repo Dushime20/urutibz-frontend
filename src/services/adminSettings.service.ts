@@ -62,30 +62,6 @@ export class AdminSettingsService {
 
   // ==================== GENERAL SETTINGS ====================
 
-  /**
-   * Fetch all admin settings
-   */
-  async fetchAllSettings(): Promise<AdminSettings> {
-    // Since we don't have a single endpoint for all settings, we'll fetch them individually
-    const [systemSettings, themeSettings, securitySettings, businessSettings, notificationSettings] = await Promise.allSettled([
-      this.fetchSystemSettings(),
-      this.fetchThemeSettings(),
-      this.fetchSecuritySettings(),
-      this.fetchBusinessSettings(),
-      this.fetchNotificationSettings()
-    ]);
-
-    return {
-      system: systemSettings.status === 'fulfilled' ? systemSettings.value : {} as SystemSettings,
-      theme: themeSettings.status === 'fulfilled' ? themeSettings.value : {} as ThemeSettings,
-      security: securitySettings.status === 'fulfilled' ? securitySettings.value : {} as SecuritySettings,
-      business: businessSettings.status === 'fulfilled' ? businessSettings.value : {} as BusinessSettings,
-      notifications: notificationSettings.status === 'fulfilled' ? notificationSettings.value : {} as NotificationSettings,
-      analytics: {} as AnalyticsSettings,
-      backup: {} as BackupSettings,
-      platform: {} as PlatformSettings
-    };
-  }
 
   /**
    * Update all admin settings

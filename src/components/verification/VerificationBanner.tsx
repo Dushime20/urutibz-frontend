@@ -23,7 +23,7 @@ const fetchUserProfile = async (token: string) => {
     
     if (!userId) return null;
 
-    const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1';
+    const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
     const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
