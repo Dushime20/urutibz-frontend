@@ -829,21 +829,24 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                       <button
                         onClick={async () => {
                           setActionMenuOpen(null);
+                          // Open modal immediately with loading state
+                          setViewUser({});
                           setViewUserLoading(true);
                           setViewUserError(null);
                           try {
-                            const token = localStorage.getItem('token') || undefined;
+                            const token = localStorage.getItem('token') || localStorage.getItem('authToken') || undefined;
                             const res = await fetchAdminUserById(user.id, token);
-                            setViewUser(res.data);
+                            // res is normalized to the user object
+                            setViewUser(res || {});
                           } catch (err: any) {
-                            setViewUserError(err.message || 'Failed to fetch user details');
+                            setViewUserError(err.message || 'Failed to retrieve user details');
                           } finally {
                             setViewUserLoading(false);
                           }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
-                        View
+                        View Details
                       </button>
                       <button
                         onClick={() => {
@@ -1413,7 +1416,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             ) : viewUserError ? (
               <div className="text-red-500">{viewUserError}</div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="relative">
                     {(viewUser.profile_image_url || viewUser.profile_image || viewUser.profileImageUrl) ? (
@@ -1434,17 +1437,32 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                     <UserCircle className="w-16 h-16 text-gray-400 hidden" />
                   </div>
                   <div>
-                    <div className="font-bold text-lg text-gray-900 dark:text-gray-100">{viewUser.first_name} {viewUser.last_name}</div>
+                    <div className="font-bold text-lg text-gray-900 dark:text-gray-100">{viewUser.first_name || viewUser.firstName} {viewUser.last_name || viewUser.lastName}</div>
                     <div className="text-gray-500 dark:text-gray-400">{viewUser.email}</div>
-                    <div className="text-xs mt-1"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${viewUser.kyc_status === 'verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{viewUser.kyc_status}</span></div>
+                    <div className="text-xs mt-1"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${(viewUser.kyc_status || '').toLowerCase() === 'verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{viewUser.kyc_status || 'pending'}</span></div>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Role: {viewUser.role}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Status: {viewUser.status}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Created: {viewUser.created_at ? new Date(viewUser.created_at).toLocaleString() : ''}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Total Bookings: {viewUser.total_bookings}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Total Products: {viewUser.total_products}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Total Reviews: {viewUser.total_reviews}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="text-gray-500 dark:text-gray-400">Phone: <span className="text-gray-900 dark:text-gray-200">{viewUser.phone || 'N/A'}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Role: <span className="text-gray-900 dark:text-gray-200">{viewUser.role || 'N/A'}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Status: <span className="text-gray-900 dark:text-gray-200">{viewUser.status || 'N/A'}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">KYC: <span className="text-gray-900 dark:text-gray-200">{viewUser.kyc_status || 'pending'}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Last Login: <span className="text-gray-900 dark:text-gray-200">{viewUser.last_login ? new Date(viewUser.last_login).toLocaleString() : 'N/A'}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Created: <span className="text-gray-900 dark:text-gray-200">{viewUser.created_at ? new Date(viewUser.created_at).toLocaleString() : (viewUser.createdAt ? new Date(viewUser.createdAt).toLocaleString() : 'N/A')}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Updated: <span className="text-gray-900 dark:text-gray-200">{viewUser.updated_at ? new Date(viewUser.updated_at).toLocaleString() : (viewUser.updatedAt ? new Date(viewUser.updatedAt).toLocaleString() : 'N/A')}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Total Bookings: <span className="text-gray-900 dark:text-gray-200">{typeof viewUser.total_bookings !== 'undefined' ? viewUser.total_bookings : 'N/A'}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Total Products: <span className="text-gray-900 dark:text-gray-200">{typeof viewUser.total_products !== 'undefined' ? viewUser.total_products : 'N/A'}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Total Reviews: <span className="text-gray-900 dark:text-gray-200">{typeof viewUser.total_reviews !== 'undefined' ? viewUser.total_reviews : 'N/A'}</span></div>
+                </div>
+
+                {(viewUser.city || viewUser.country || viewUser.address_line) && (
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Location: <span className="text-gray-900 dark:text-gray-200">{[viewUser.city, viewUser.country].filter(Boolean).join(', ') || 'N/A'}</span>
+                    {viewUser.address_line && (
+                      <div className="mt-1">Address: <span className="text-gray-900 dark:text-gray-200">{viewUser.address_line}</span></div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -173,7 +173,7 @@ const BookingsSection: React.FC<Props> = ({
                                   // Navigate to payment step (step=1) with bookingId to skip to payment
                                   window.location.href = `/booking/item/${booking.product_id}?bookingId=${booking.id}&step=1`;
                                 }}
-                                className="text-sm font-semibold text-white bg-green-600 hover:bg-blue-700 rounded-lg px-3 py-1.5 transition-colors"
+                                className="text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5 transition-colors"
                               >
                                  Pay Now
                               </button>

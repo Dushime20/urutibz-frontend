@@ -248,10 +248,14 @@ export async function fetchAdminUserById(userId: string, token?: string) {
     const response = await axios.get(`${API_BASE_URL}/admin/users/${userId}`, {
       headers: createAuthHeaders(token),
     });
-    return response.data;
+    const payload = response.data;
+    // Normalize to always return the user object
+    if (payload?.success && payload?.data) return payload.data;
+    if (payload?.data) return payload.data;
+    return payload;
   } catch (err: any) {
     console.error('Error fetching admin user by ID:', err);
-    throw new Error(handleApiError(err, 'Failed to fetch admin user'));
+    throw new Error(handleApiError(err, 'Failed to retrieve user details'));
   }
 }
 
