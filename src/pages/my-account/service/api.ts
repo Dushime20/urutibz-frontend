@@ -674,6 +674,160 @@ export async function fetchUserBookings(token?: string | null) {
   }
 }
 
+// Booking action functions
+export async function confirmBooking(bookingId: string, token?: string | null) {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/${bookingId}/confirm`,
+      {},
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return { success: true, data: response.data?.data || response.data };
+  } catch (error: any) {
+    console.error('Error confirming booking:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Failed to confirm booking' 
+    };
+  }
+}
+
+export async function cancelBooking(bookingId: string, reason?: string, token?: string | null) {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/${bookingId}/cancel`,
+      { reason },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return { success: true, data: response.data?.data || response.data };
+  } catch (error: any) {
+    console.error('Error cancelling booking:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Failed to cancel booking' 
+    };
+  }
+}
+
+export async function checkInBooking(bookingId: string, token?: string | null) {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/${bookingId}/checkin`,
+      {},
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return { success: true, data: response.data?.data || response.data };
+  } catch (error: any) {
+    console.error('Error checking in booking:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Failed to check in' 
+    };
+  }
+}
+
+export async function checkOutBooking(bookingId: string, token?: string | null) {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/${bookingId}/checkout`,
+      {},
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return { success: true, data: response.data?.data || response.data };
+  } catch (error: any) {
+    console.error('Error checking out booking:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Failed to check out' 
+    };
+  }
+}
+
+// New cancellation workflow functions
+export async function requestCancellation(bookingId: string, reason: string, token?: string | null) {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/${bookingId}/request-cancellation`,
+      { reason },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return { success: true, data: response.data?.data || response.data };
+  } catch (error: any) {
+    console.error('Error requesting cancellation:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Failed to request cancellation' 
+    };
+  }
+}
+
+export async function reviewCancellation(bookingId: string, action: 'approve' | 'reject', notes?: string, token?: string | null) {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/${bookingId}/review-cancellation`,
+      { action, notes },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return { success: true, data: response.data?.data || response.data };
+  } catch (error: any) {
+    console.error('Error reviewing cancellation:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Failed to review cancellation' 
+    };
+  }
+}
+
+export async function adminCancelBooking(bookingId: string, reason: string, adminNotes?: string, forceRefund?: boolean, token?: string | null) {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/${bookingId}/admin-cancel`,
+      { reason, admin_notes: adminNotes, force_refund: forceRefund },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return { success: true, data: response.data?.data || response.data };
+  } catch (error: any) {
+    console.error('Error with admin cancel:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Failed to admin cancel booking' 
+    };
+  }
+}
+
+export async function processRefund(bookingId: string, refundAmount?: number, cancellationFee?: number, reason?: string, token?: string | null) {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/${bookingId}/process-refund`,
+      { refund_amount: refundAmount, cancellation_fee: cancellationFee, reason },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return { success: true, data: response.data?.data || response.data };
+  } catch (error: any) {
+    console.error('Error processing refund:', error);
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Failed to process refund' 
+    };
+  }
+}
+
 // Existing product and image fetchers (if not present, add them)
 // export async function getProductById(productId: string, token: string | null | undefined) {
 //   const response = await axios.get(`${API_BASE_URL}/products/${productId}`, {

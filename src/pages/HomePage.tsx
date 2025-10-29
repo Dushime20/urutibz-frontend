@@ -387,10 +387,15 @@ const HomePage: React.FC = () => {
       if (!matchesText) return false;
     }
     
-    // Category filter
-    if (searchCategory) {
-      const productCategory = (p.category || '').toLowerCase();
-      if (productCategory !== searchCategory.toLowerCase()) return false;
+    // Category filter (match by id, slug, or name)
+    if (searchCategory && searchCategory !== 'all') {
+      const selected = String(searchCategory).toLowerCase();
+      const productCategoryId = (p as any).category_id?.toString().toLowerCase() || '';
+      const productCategoryName = (p.category || '').toString().toLowerCase();
+      const productCategorySlug = productCategoryName.replace(/\s+/g, '-');
+      const matches = [productCategoryId, productCategoryName, productCategorySlug]
+        .some(v => v && v === selected);
+      if (!matches) return false;
     }
     
     // Price filter
@@ -426,8 +431,8 @@ const HomePage: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#01aaa7] mx-auto mb-4"></div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Loading products...</h3>
-              <p className="text-gray-600">Please wait while we fetch the latest listings</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('home.loadingProductsTitle')}</h3>
+              <p className="text-gray-600">{t('home.loadingProductsSubtitle')}</p>
             </div>
           </div>
         </div>
@@ -446,9 +451,9 @@ const HomePage: React.FC = () => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
                   <WifiOff className="h-8 w-8 text-red-600 dark:text-red-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Connection Lost</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">{t('home.connectionLostTitle')}</h3>
                 <p className="text-gray-600 dark:text-slate-400 mb-6">
-                  Unable to connect to the server. Please check your internet connection and try again.
+                  {t('home.connectionLostBody')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
@@ -456,13 +461,13 @@ const HomePage: React.FC = () => {
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    Try Again
+                    {t('home.tryAgain')}
                   </button>
                   <button
                     onClick={() => window.location.reload()}
                     className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
-                    Refresh Page
+                    {t('home.refreshPage')}
                   </button>
                 </div>
               </div>
@@ -484,7 +489,7 @@ const HomePage: React.FC = () => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
                   <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Something went wrong</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">{t('home.somethingWentWrongTitle')}</h3>
                 <p className="text-gray-600 dark:text-slate-400 mb-6">{error}</p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
@@ -560,7 +565,7 @@ const HomePage: React.FC = () => {
           <div className="mb-4 sm:mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100">
-                {searchQuery ? `${t('home.searchResults')} "${searchQuery}"` : 'Popular listings'}
+                {searchQuery ? `${t('home.searchResults')} "${searchQuery}"` : t('home.popularListings')}
               </h2>
               {searchQuery ? (
                 <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
@@ -570,13 +575,13 @@ const HomePage: React.FC = () => {
               ) : (
                 <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-my-primary/10 text-my-primary dark:bg-my-primary/20 dark:text-teal-400">
                   <TrendingUp className="w-3 h-3" />
-                  AI trending
+                  {t('home.aiTrending')}
                 </span>
               )}
               {loading && (
                 <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                   <RefreshCw className="w-3 h-3 animate-spin" />
-                  Updating...
+                  {t('home.updating')}
                 </span>
               )}
               {/* Network status indicator */}
@@ -590,7 +595,7 @@ const HomePage: React.FC = () => {
                 ) : (
                   <WifiOff className="w-3 h-3" />
                 )}
-                {navigator.onLine ? 'Online' : 'Offline'}
+                {navigator.onLine ? t('home.online') : t('home.offline')}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -608,7 +613,7 @@ const HomePage: React.FC = () => {
                     setSearchLng('');
                     setSearchRadiusKm(25);
                     setVisibleCount(100);
-                    showToast('Search cleared', 'info');
+                    showToast(t('home.searchCleared'), 'info');
                   }}
                   className="text-sm text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                   title={t('home.clearSearch')}
@@ -619,7 +624,7 @@ const HomePage: React.FC = () => {
               <button
                 onClick={handleRefresh}
                 className="text-sm text-gray-600 dark:text-slate-400 hover:text-my-primary dark:hover:text-teal-400 transition-colors"
-                title="Refresh products"
+                title={t('home.refresh')}
                 disabled={loading}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -632,9 +637,9 @@ const HomePage: React.FC = () => {
                 disabled={loading || loadingMore}
                 className="text-sm text-my-primary dark:text-teal-400 hover:underline disabled:opacity-50"
               >
-                {loadingMore ? 'Fetching...' : 'Fetch All Products'}
+                {loadingMore ? t('home.fetching') : t('home.fetchAllProducts')}
               </button>
-              <Link to="/search" className="text-sm text-my-primary dark:text-teal-400 hover:underline">View all</Link>
+              <Link to="/search" className="text-sm text-my-primary dark:text-teal-400 hover:underline">{t('home.viewAll')}</Link>
             </div>
           </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -666,7 +671,7 @@ const HomePage: React.FC = () => {
                   {productImages[item.id]?.[0] ? (
                     <img
                       src={productImages[item.id][0]}
-                      alt={item.title || 'Listing'}
+                      alt={item.title || t('home.listingAlt')}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         // Hide the image and show icon instead
@@ -680,12 +685,12 @@ const HomePage: React.FC = () => {
                     <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-sm font-medium">No Image</span>
+                    <span className="text-sm font-medium">{t('home.noImage')}</span>
                   </div>
                   {/* Heart Icon */}
                   <button
                     type="button"
-                    aria-label="Add to favorites"
+                    aria-label={t('home.addToFavorites')}
                     className="absolute top-3 right-3 w-8 h-8 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40 rounded-full flex items-center justify-center transition-colors"
                     onClick={async (e) => {
                       e.preventDefault();
@@ -747,11 +752,11 @@ const HomePage: React.FC = () => {
                     {locationsLoading[item.id] ? (
                       <span className="flex items-center gap-1">
                         <div className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin"></div>
-                        Loading location...
+                        {t('home.loadingLocation')}
                       </span>
                     ) : (
                       <>
-                        {itemLocations[item.id]?.city || 'Unknown Location'}
+                        {itemLocations[item.id]?.city || t('home.unknownLocation')}
                         {itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
                       </>
                     )}
@@ -764,15 +769,15 @@ const HomePage: React.FC = () => {
                         <span className="font-semibold">
                           {formatCurrency(productPrices[item.id].price_per_day, productPrices[item.id].currency)}
                         </span>
-                        <span className="text-sm"> / day</span>
+                        <span className="text-sm"> / {t('home.perDay')}</span>
                       </>
                     ) : item.base_price_per_day != null ? (
                       <>
                         <span className="font-semibold">${item.base_price_per_day}</span>
-                        <span className="text-sm"> / day</span>
+                        <span className="text-sm"> / {t('home.perDay')}</span>
                       </>
                     ) : (
-                      <span className="font-semibold">Price on request</span>
+                      <span className="font-semibold">{t('home.priceOnRequest')}</span>
                     )}
                   </div>
 
@@ -806,7 +811,7 @@ const HomePage: React.FC = () => {
 
         {/* Show total count */}
         <div className="text-center mt-4 text-sm text-gray-600 dark:text-slate-400">
-          Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} products
+          {t('home.showing')} {Math.min(visibleCount, filtered.length)} {t('home.of')} {filtered.length} {t('home.products')}
         </div>
        
         </div>

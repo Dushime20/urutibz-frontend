@@ -263,17 +263,17 @@ const ItemDetailsPage: React.FC = () => {
   }, [id, isAuthenticated]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div>{t('details.loading')}</div>;
   }
 
   if (error) {
     return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
       <div className="text-center">
         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Error Loading Item</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('details.errorTitle')}</h2>
         <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
         <Button onClick={() => navigate('/items')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">
-          Browse Items
+          {t('details.browseItems')}
         </Button>
       </div>
     </div>;
@@ -284,10 +284,10 @@ const ItemDetailsPage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
         <div className="text-center">
           <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Item not found</h2>
-          <p className="text-gray-600 dark:text-slate-300 mb-4">The item you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('details.itemNotFoundTitle')}</h2>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{t('details.itemNotFoundBody')}</p>
           <Button onClick={() => navigate('/items')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">
-            Browse Items
+            {t('details.browseItems')}
           </Button>
         </div>
       </div>
@@ -366,7 +366,7 @@ const ItemDetailsPage: React.FC = () => {
       <div className="bg-white border-b dark:bg-slate-900 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex items-center space-x-2 text-sm">
-            <Link to="/items" className="text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white">Items</Link>
+            <Link to="/items" className="text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white">{t('details.items')}</Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <Link to={`/items?category=${item.category}`} className="text-gray-600 hover:text-gray-900 capitalize dark:text-slate-300 dark:hover:text-white">
               {item.category}
@@ -401,7 +401,7 @@ const ItemDetailsPage: React.FC = () => {
                   <svg className="w-20 h-20 sm:w-24 sm:h-24 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span className="text-lg font-medium">No Images Available</span>
+                  <span className="text-lg font-medium">{t('details.noImages')}</span>
                 </div>
 
                 {/* Image Navigation */}
@@ -475,13 +475,13 @@ const ItemDetailsPage: React.FC = () => {
                 <div className="absolute top-4 left-4 flex flex-col space-y-2">
                   {item.featured && (
                     <div className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                      Featured
+                      {t('details.featured')}
                     </div>
                   )}
                   {item.verified && (
                     <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
                       <CheckCircle className="w-3 h-3" />
-                      Verified
+                      {t('details.verified')}
                     </div>
                   )}
                 </div>
@@ -513,13 +513,13 @@ const ItemDetailsPage: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
                         {locationLoading ? (
-                          <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1">
                             <div className="w-3 h-3 border border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                            Loading location...
+                          {t('details.loadingLocation')}
                           </span>
                         ) : (
                           <>
-                            {itemLocation.city || 'Unknown'}{itemLocation.country ? `, ${itemLocation.country}` : ''}
+                          {itemLocation.city || t('details.unknownLocation')}{itemLocation.country ? `, ${itemLocation.country}` : ''}
                           </>
                         )}
                       </div>
@@ -534,7 +534,7 @@ const ItemDetailsPage: React.FC = () => {
                       {productPrices?.price_per_day && productPrices?.currency ? (
                         <>
                           {formatCurrency(productPrices.price_per_day, productPrices.currency)}
-                          <span className="text-lg font-normal text-gray-600 dark:text-slate-300">/day</span>
+                          <span className="text-lg font-normal text-gray-600 dark:text-slate-300">/{t('details.perDay')}</span>
                         </>
                       ) : item.base_price_per_day != null && item.base_currency ? (
                         <>
@@ -552,7 +552,7 @@ const ItemDetailsPage: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <Star className="w-5 h-5 text-yellow-400 fill-current" />
                     <span className="font-semibold dark:text-white">{item.average_rating || '0.00'}</span>
-                    <span className="text-gray-600 dark:text-slate-300">({item.review_count || 0} reviews)</span>
+                    <span className="text-gray-600 dark:text-slate-300">({item.review_count || 0} {t('details.reviewsSuffix')})</span>
                   </div>
                   <span className="text-gray-300 dark:text-slate-600">•</span>
                   <span className="text-gray-600 dark:text-slate-300">{item.view_count || 0} views</span>
@@ -571,20 +571,20 @@ const ItemDetailsPage: React.FC = () => {
                   {item.availability.instantBook && (
                     <div className="flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm dark:bg-green-900/30 dark:text-green-300">
                       <Zap className="w-4 h-4" />
-                      Instant Book
+                      {t('details.instantBook')}
                     </div>
                   )}
                   {item.deliveryAvailable && (
                     <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm dark:bg-blue-900/30 dark:text-blue-300">
                       <Truck className="w-4 h-4" />
-                      Delivery Available
+                      {t('details.deliveryAvailable')}
                     </div>
                   )}
                   <div className="flex items-center gap-1 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm dark:bg-slate-800 dark:text-slate-200">
                     <Shield className="w-4 h-4" />
                     {productPrices?.security_deposit && productPrices?.currency ? 
-                      `${formatCurrency(productPrices.security_deposit, productPrices.currency)} Security Deposit` :
-                      `$${item.security || 0} Security Deposit`
+                      `${formatCurrency(productPrices.security_deposit, productPrices.currency)} ${t('details.securityDeposit')}` :
+                      `$${item.security || 0} ${t('details.securityDeposit')}`
                     }
                   </div>
                 </div>
@@ -610,7 +610,7 @@ const ItemDetailsPage: React.FC = () => {
               {/* Specifications */}
               {item.specifications && Object.keys(item.specifications).length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Specifications</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('item.specifications')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {Object.entries(item.specifications).map(([key, value]) => (
                       <div key={key} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0 dark:border-slate-700">
@@ -625,29 +625,29 @@ const ItemDetailsPage: React.FC = () => {
               {/* Product Meta */}
               {(item.brand || item.model || item.year_manufactured || item.address_line || item.delivery_fee) && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Product Details</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('details.productDetails')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {item.brand && (
                       <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
-                        <span className="text-gray-600 dark:text-slate-300">Brand</span>
+                        <span className="text-gray-600 dark:text-slate-300">{t('details.brand')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">{item.brand}</span>
                       </div>
                     )}
                     {item.model && (
                       <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
-                        <span className="text-gray-600 dark:text-slate-300">Model</span>
+                        <span className="text-gray-600 dark:text-slate-300">{t('details.model')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">{item.model}</span>
                       </div>
                     )}
                     {item.year_manufactured != null && (
                       <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
-                        <span className="text-gray-600 dark:text-slate-300">Year</span>
+                        <span className="text-gray-600 dark:text-slate-300">{t('details.year')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">{item.year_manufactured}</span>
                       </div>
                     )}
                     {item.address_line && (
                       <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
-                        <span className="text-gray-600 dark:text-slate-300">Address</span>
+                        <span className="text-gray-600 dark:text-slate-300">{t('details.address')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">{item.address_line}</span>
                       </div>
                     )}
@@ -664,7 +664,7 @@ const ItemDetailsPage: React.FC = () => {
               {/* Included Accessories */}
               {Array.isArray(item.included_accessories) && item.included_accessories.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">What's Included</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('details.whatsIncluded')}</h3>
                   <div className="space-y-2">
                     {item.included_accessories.map((acc: string, index: number) => (
                       <div key={index} className="flex items-center gap-2">
@@ -706,7 +706,7 @@ const ItemDetailsPage: React.FC = () => {
               {/* Recent Interactions */}
               {productInteractions.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Recent Activity</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('details.recentActivity')}</h3>
                   <div className="space-y-2">
                     {productInteractions.slice(0, 3).map((interaction, index) => (
                       <div key={interaction.id || index} className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
@@ -719,7 +719,7 @@ const ItemDetailsPage: React.FC = () => {
                         {interaction.metadata?.source && (
                           <>
                             <span>•</span>
-                            <span className="text-gray-500 dark:text-slate-400">from {interaction.metadata.source}</span>
+                            <span className="text-gray-500 dark:text-slate-400">{t('details.fromSource').replace('{{source}}', String(interaction.metadata.source))}</span>
                           </>
                         )}
                       </div>
@@ -748,7 +748,7 @@ const ItemDetailsPage: React.FC = () => {
                         <span className="text-lg font-normal text-gray-600 dark:text-slate-300">/{item.base_currency}</span>
                       </>
                     ) : (
-                      <span className="text-gray-500 text-base dark:text-slate-400">No price</span>
+                      <span className="text-gray-500 text-base dark:text-slate-400">{t('details.noPrice')}</span>
                     )}
                   </div>
                   <p className="text-sm text-gray-600 dark:text-slate-300">
@@ -773,7 +773,7 @@ const ItemDetailsPage: React.FC = () => {
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-900/20 dark:border-amber-800">
                     <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
                       <Info className="w-4 h-4" />
-                      <span className="text-sm">Login required to book items</span>
+                      <span className="text-sm">{t('details.loginRequired')}</span>
                     </div>
                   </div>
                 )}
@@ -782,14 +782,14 @@ const ItemDetailsPage: React.FC = () => {
                   <div className="mt-4 p-3 b border border-blue-200 rounded-lg dark:border-blue-900/40">
                     <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                       <AlertCircle className="w-4 h-4 text-[#01aaa7]" />
-                      <span className="text-sm text-[#01aaa7]">Account verification required</span>
+                      <span className="text-sm text-[#01aaa7]">{t('details.accountVerificationRequired')}</span>
                     </div>
                   </div>
                 )}
 
                 <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700">
                   <p className="text-sm text-gray-600 text-center mb-4 dark:text-slate-300">
-                    You won't be charged yet
+                    {t('details.noChargeYet')}
                   </p>
 
                   <div className="space-y-3 text-sm">
@@ -804,12 +804,12 @@ const ItemDetailsPage: React.FC = () => {
                     </div>
                     {item.deliveryAvailable && item.deliveryFee && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-slate-300">Delivery Fee</span>
+                        <span className="text-gray-600 dark:text-slate-300">{t('details.deliveryFee')}</span>
                         <span className="font-medium dark:text-white">{formatPrice(item.deliveryFee)}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-slate-300">Cancellation Policy</span>
+                      <span className="text-gray-600 dark:text-slate-300">{t('details.cancellationPolicy')}</span>
                       <span className="font-medium capitalize dark:text-white">{item.cancellationPolicy}</span>
                     </div>
                   </div>
@@ -818,7 +818,7 @@ const ItemDetailsPage: React.FC = () => {
 
               {/* Host Information */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mt-6 dark:bg-slate-900 dark:border-slate-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Host</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('details.yourHost')}</h3>
                 <div className="flex items-center gap-4 mb-4">
                   <img
                     src={item.ownerAvatar}
@@ -837,11 +837,11 @@ const ItemDetailsPage: React.FC = () => {
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 flex items-center justify-center gap-2">
                     <MessageCircle className="w-4 h-4" />
-                    Message
+                    {t('details.message')}
                   </Button>
                   <Button variant="outline" className="flex-1 flex items-center justify-center gap-2">
                     <Phone className="w-4 h-4" />
-                    Call
+                    {t('details.call')}
                   </Button>
                 </div>
               </div>
@@ -856,9 +856,9 @@ const ItemDetailsPage: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-gray-100 dark:border-slate-700">
             <div className="text-center">
               <User className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Account Required</h3>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('details.accountRequiredTitle')}</h3>
               <p className="text-gray-600 dark:text-slate-300 mb-6">
-                Please log in or create an account to book items on our platform.
+                {t('details.accountRequiredBody')}
               </p>
 
               <div className="space-y-3 mb-6">
@@ -866,26 +866,26 @@ const ItemDetailsPage: React.FC = () => {
                   onClick={() => navigate(`/login?redirect=/items/${item.id}&action=book`)}
                   className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700"
                 >
-                  Log In
+                  {t('details.logIn')}
                 </Button>
                 <Button
                   onClick={() => navigate(`/register?redirect=/items/${item.id}&action=book`)}
                   variant="outline"
                   className="w-full py-3 border-blue-600 text-blue-600 hover:bg-blue-50"
                 >
-                  Create Account
+                  {t('details.createAccount')}
                 </Button>
                 <Button
                   onClick={() => setShowAuthModal(false)}
                   variant="outline"
                   className="w-full py-3"
                 >
-                  Cancel
+                  {t('details.cancel')}
                 </Button>
               </div>
 
               <p className="text-xs text-gray-500 dark:text-slate-400">
-                Join thousands of users renting safely on our platform.
+                {t('details.joinThousands')}
               </p>
             </div>
           </div>
@@ -896,9 +896,9 @@ const ItemDetailsPage: React.FC = () => {
       {showVerificationModal && ((latestKycStatus ?? user?.kyc_status) !== 'verified') && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
           <div className="bg-white rounded-xl p-8 shadow-lg max-w-md w-full text-center dark:bg-slate-900 dark:border dark:border-slate-700">
-            <h2 className="text-xl font-bold mb-4 text-[#01aaa7]">Verification Required</h2>
+            <h2 className="text-xl font-bold mb-4 text-[#01aaa7]">{t('details.verificationRequiredTitle')}</h2>
             <p className="mb-6 text-gray-700 dark:text-slate-300">
-              You must complete your account verification (including document upload) before booking this item.
+              {t('details.verificationRequiredBody')}
             </p>
             <Button
               className="w-full btn-primary text-white"
@@ -907,13 +907,13 @@ const ItemDetailsPage: React.FC = () => {
                 navigate('/verify/id');
               }}
             >
-              Go to Verification
+              {t('details.goToVerification')}
             </Button>
             <button
               className="mt-4 text-sm text-gray-500 underline dark:text-slate-400"
               onClick={() => setShowVerificationModal(false)}
             >
-              Cancel
+              {t('details.cancel')}
             </button>
           </div>
         </div>

@@ -7,9 +7,13 @@ interface Props {
   navigateToBrowse: () => void;
   bookingProducts: { [k: string]: any };
   bookingImages: { [k: string]: any[] };
-  loadingBookingReviews: { [k: string]: boolean };
   bookingReviewCounts: { [k: string]: number };
   onViewBookingReview: (bookingId: string) => void;
+  onConfirmBooking?: (bookingId: string) => void;
+  onCancelBooking?: (bookingId: string) => void;
+  onReviewCancellation?: (bookingId: string) => void;
+  onCheckIn?: (bookingId: string) => void;
+  onCheckOut?: (bookingId: string) => void;
 }
 
 const BookingsSection: React.FC<Props> = ({
@@ -18,9 +22,13 @@ const BookingsSection: React.FC<Props> = ({
   navigateToBrowse,
   bookingProducts,
   bookingImages,
-  loadingBookingReviews,
   bookingReviewCounts,
   onViewBookingReview,
+  onConfirmBooking,
+  onCancelBooking,
+  onReviewCancellation,
+  onCheckIn,
+  onCheckOut,
 }) => {
   const [roleTab, setRoleTab] = useState<'all' | 'renter' | 'owner'>('all');
 
@@ -110,7 +118,6 @@ const BookingsSection: React.FC<Props> = ({
           roleFilteredBookings.map((booking) => {
             const product = bookingProducts[booking.id];
             const images = bookingImages[booking.id] || [];
-            const isLoadingReview = loadingBookingReviews[booking.id];
             const reviewCount = bookingReviewCounts[booking.id] || 0;
             return (
               <div key={booking.id} className="border border-gray-100 rounded-2xl p-4 sm:p-6 hover:border-gray-200 transition-colors dark:border-slate-700 dark:hover:border-slate-600">
@@ -121,31 +128,224 @@ const BookingsSection: React.FC<Props> = ({
                     <p className="text-sm text-gray-500 mb-2 dark:text-slate-400 break-words">
                       {new Date(booking.start_date).toLocaleString()} - {new Date(booking.end_date).toLocaleString()}
                     </p>
-                    <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${booking.status === 'pending' ? 'bg-my-primary/10 text-my-primary' : 'bg-success-100 text-success-700'}`}>{booking.status}</span>
+                    <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${
+                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                      booking.status === 'confirmed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
+                      booking.status === 'cancellation_requested' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' :
+                      booking.status === 'in_progress' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' :
+                      booking.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                      booking.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
+                      booking.status === 'disputed' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                    }`}>
+                      {booking.status === 'cancellation_requested' ? '🔄 Cancellation Requested' : booking.status?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    </span>
                   </div>
                   <div className="sm:text-right text-left">
                     <p className="font-bold text-lg sm:text-xl text-gray-900 dark:text-slate-100">{product?.base_price_per_day ? `$${product.base_price_per_day}` : ''}</p>
                   </div>
-                </div>
-                <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                    <div className="flex items-center space-x-2">
-                      <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
-                      {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                </div> 
+                
+                {/* Quick Actions and Review for Pending Bookings */}
+                {booking.status === 'pending' && (
+                  <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      {/* Left side - Review */}
+                      <div className="flex items-center space-x-2">
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <button
+                          onClick={() => onViewBookingReview(booking.id)}
+                          className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
+                        >
+                          View Review
+                        </button>
+                      </div>
+                      
+                      {/* Right side - Actions */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {String(booking.renter_id || booking.renterId) === String(currentUserId) && (
+                          <>
+                            {/* Show Pay Now button if payment is pending */}
+                            {booking.payment_status === 'pending' && (
+                              <button
+                                onClick={() => {
+                                  // Navigate to payment step (step=1) with bookingId to skip to payment
+                                  window.location.href = `/booking/item/${booking.product_id}?bookingId=${booking.id}&step=1`;
+                                }}
+                                className="text-sm font-semibold text-white bg-green-600 hover:bg-blue-700 rounded-lg px-3 py-1.5 transition-colors"
+                              >
+                                 Pay Now
+                              </button>
+                            )}
+                            {/* Hide cancel button for pending bookings - only show for confirmed bookings before start_date */}
+                          </>
+                        )}
+                        {String(booking.owner_id || booking.ownerId) === String(currentUserId) && (
+                          <>
+                            {onConfirmBooking && (
+                              <button
+                                onClick={() => onConfirmBooking(booking.id)}
+                                className="text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5 transition-colors"
+                              >
+                                Confirm Booking
+                              </button>
+                            )}
+                            {onCancelBooking && (
+                              <button
+                                onClick={() => onCancelBooking(booking.id)}
+                                className="text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg px-3 py-1.5 transition-colors"
+                              >
+                                Reject
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <button
-                      onClick={() => onViewBookingReview(booking.id)}
-                      className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 sm:px-3 sm:py-1.5"
-                    >
-                      View Review
-                    </button>
-                    {isLoadingReview && (
-                      <span className="text-sm text-gray-500 dark:text-slate-400">Loading...</span>
-                    )}
                   </div>
+                )}
 
-                  {/* Do not render inline review; shown in modal on click */}
-                </div>
+                {/* Actions for Cancellation Requested (Owner can review) */}
+                {booking.status === 'cancellation_requested' && (
+                  <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
+                    <div className="mb-3 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-orange-600 dark:text-orange-400">🔄</span>
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-orange-900 dark:text-orange-100 mb-1">Cancellation Requested</h5>
+                          <p className="text-sm text-orange-700 dark:text-orange-300">The renter has requested to cancel this booking. Please review and decide.</p>
+                          {booking.cancellation_reason && (
+                            <div className="mt-2 p-2 bg-white dark:bg-slate-800 rounded text-xs text-gray-700 dark:text-slate-300">
+                              <strong>Reason:</strong> {booking.cancellation_reason}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      {/* Left side - Review */}
+                      <div className="flex items-center space-x-2">
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <button
+                          onClick={() => onViewBookingReview(booking.id)}
+                          className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
+                        >
+                          View Review
+                        </button>
+                      </div>
+                      
+                      {/* Right side - Actions (Owner only) */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {String(booking.owner_id || booking.ownerId) === String(currentUserId) && onReviewCancellation && (
+                          <button
+                            onClick={() => onReviewCancellation(booking.id)}
+                            className="text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg px-3 py-1.5 transition-colors"
+                          >
+                            🔍 Review Cancellation
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions and Review for Confirmed Bookings */}
+                {booking.status === 'confirmed' && (
+                  <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      {/* Left side - Review */}
+                      <div className="flex items-center space-x-2">
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <button
+                          onClick={() => onViewBookingReview(booking.id)}
+                          className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
+                        >
+                          View Review
+                        </button>
+                      </div>
+                      
+                      {/* Right side - Actions */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {onCheckIn && (
+                          <button
+                            onClick={() => onCheckIn(booking.id)}
+                            className="text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg px-3 py-1.5 transition-colors"
+                          >
+                            Check In
+                          </button>
+                        )}
+                        {/* Show cancel button only for renters and before start_date */}
+                        {onCancelBooking && String(booking.renter_id || booking.renterId) === String(currentUserId) && (() => {
+                          const startDate = new Date(booking.start_date);
+                          const now = new Date();
+                          const isBeforeStartDate = now < startDate;
+                          return isBeforeStartDate ? (
+                            <button
+                              onClick={() => onCancelBooking(booking.id)}
+                              className="text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg px-3 py-1.5 transition-colors"
+                            >
+                              Cancel Booking
+                            </button>
+                          ) : null;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions and Review for In Progress Bookings */}
+                {booking.status === 'in_progress' && (
+                  <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      {/* Left side - Review */}
+                      <div className="flex items-center space-x-2">
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <button
+                          onClick={() => onViewBookingReview(booking.id)}
+                          className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
+                        >
+                          View Review
+                        </button>
+                      </div>
+                      
+                      {/* Right side - Actions */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {onCheckOut && (
+                          <button
+                            onClick={() => onCheckOut(booking.id)}
+                            className="text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg px-3 py-1.5 transition-colors"
+                          >
+                            Check Out
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Review section for other statuses (completed, cancelled, etc.) */}
+                {!['pending', 'confirmed', 'in_progress'].includes(booking.status) && (
+                  <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      <div className="flex items-center space-x-2">
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                      </div>
+                      <button
+                        onClick={() => onViewBookingReview(booking.id)}
+                        className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
+                      >
+                        View Review
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })

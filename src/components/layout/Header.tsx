@@ -6,6 +6,8 @@ import { useDarkMode } from '../../contexts/DarkModeContext';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 import { useI18n } from '../../contexts/I18nContext';
 import RealtimeNotifications from '../RealtimeNotifications';
+import axios from '../../lib/http';
+import { API_BASE_URL } from '../../pages/admin/service/config';
 
 const languages = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -14,15 +16,7 @@ const languages = [
   { code: 'sw', label: 'Swahili', flag: '🇰🇪' },
 ];
 
-const topCategories = [
-  { id: 'vehicles', label: 'Vehicles' },
-  { id: 'electronics', label: 'Electronics' },
-  { id: 'events', label: 'Events' },
-  { id: 'tools', label: 'Tools' },
-  { id: 'sports', label: 'Sports' },
-  { id: 'photography', label: 'Photography' },
-  { id: 'outdoor', label: 'Outdoor' },
-];
+type HeaderCategory = { id: string; label: string };
 
 const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -33,6 +27,7 @@ const Header: React.FC = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [topCategories, setTopCategories] = useState<HeaderCategory[]>([]);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,6 +56,18 @@ const Header: React.FC = () => {
   const [priceMax, setPriceMax] = useState<string>(params.get('priceMax') || '');
 
   useEffect(() => {
+    // Fetch categories for header dropdown
+    (async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/categories`);
+        const rows = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
+        const cats: HeaderCategory[] = rows.map((c: any) => ({ id: c.id || c.slug || c.name, label: c.name }));
+        setTopCategories(cats.slice(0, 12));
+      } catch {
+        // Fallback to empty; keep menu hidden if none
+        setTopCategories([]);
+      }
+    })();
     const p = new URLSearchParams(location.search);
     setQ(p.get('q') || '');
     setCategory(p.get('category') || 'all');
@@ -133,7 +140,6 @@ const Header: React.FC = () => {
   }, [generateSearchSuggestions]);
 
   const performAutoSearch = useCallback(() => {
-    if (q.length >= 2) {
     const sp = new URLSearchParams();
     if (q) sp.set('q', q);
     if (category && category !== 'all') sp.set('category', category);
@@ -147,37 +153,38 @@ const Header: React.FC = () => {
       sp.set('lng', lng);
       if (radiusKm) sp.set('radiusKm', String(radiusKm));
     }
-      
-      // Add to recent searches
+
+    // Add to recent searches only when there's a meaningful query
+    if (q && q.length >= 2) {
       const newRecentSearches = [q, ...recentSearches.filter(s => s !== q)].slice(0, 5);
       setRecentSearches(newRecentSearches);
       localStorage.setItem('recentSearches', JSON.stringify(newRecentSearches));
-      
-      // Check if we're on homepage - if so, trigger local search instead of navigation
-      if (location.pathname === '/') {
-        // Dispatch custom event for homepage search
-        const searchEvent = new CustomEvent('homepageSearch', {
-          detail: {
-            query: q,
-            category: category !== 'all' ? category : '',
-            priceMin,
-            priceMax,
-            checkIn,
-            checkOut,
-            nearMe,
-            lat,
-            lng,
-            radiusKm
-          }
-        });
-        window.dispatchEvent(searchEvent);
-        setShowSuggestions(false);
-      } else {
-        // Navigate to search page for other pages
-    navigate(`/items/search${sp.toString() ? `?${sp.toString()}` : ''}`);
-        setShowSuggestions(false);
-      }
     }
+
+    // If on homepage, dispatch event regardless of query
+    if (location.pathname === '/') {
+      const searchEvent = new CustomEvent('homepageSearch', {
+        detail: {
+          query: q,
+          category: category !== 'all' ? category : '',
+          priceMin,
+          priceMax,
+          checkIn,
+          checkOut,
+          nearMe,
+          lat,
+          lng,
+          radiusKm
+        }
+      });
+      window.dispatchEvent(searchEvent);
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Otherwise, navigate to search page
+    navigate(`/items/search${sp.toString() ? `?${sp.toString()}` : ''}`);
+    setShowSuggestions(false);
   }, [q, category, priceMin, priceMax, checkIn, checkOut, nearMe, lat, lng, radiusKm, recentSearches, navigate, location.pathname]);
 
   const handleSearchInputChange = (value: string) => {
@@ -195,6 +202,27 @@ const Header: React.FC = () => {
     performAutoSearch();
     setIsMenuOpen(false);
   };
+
+  // On homepage, immediately dispatch search updates when any filter changes
+  useEffect(() => {
+    if (location.pathname !== '/') return;
+    const searchEvent = new CustomEvent('homepageSearch', {
+      detail: {
+        query: q,
+        category: category !== 'all' ? category : '',
+        priceMin,
+        priceMax,
+        checkIn,
+        checkOut,
+        nearMe,
+        lat,
+        lng,
+        radiusKm
+      }
+    });
+    window.dispatchEvent(searchEvent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, category, priceMin, priceMax, checkIn, checkOut, nearMe, lat, lng, radiusKm, location.pathname]);
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -296,12 +324,12 @@ const Header: React.FC = () => {
                   Categories
                   <ChevronDown className="h-4 w-4" />
                 </button>
-                {isCategoriesOpen && (
+                {isCategoriesOpen && topCategories.length > 0 && (
                   <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-platform shadow-platform-lg border border-platform-light-grey dark:border-gray-600 py-2 z-30">
                     {topCategories.map((c) => (
                       <Link
                         key={c.id}
-                        to={`/items?category=${c.id}`}
+                        to={`/items?category=${encodeURIComponent(c.id)}`}
                         onClick={() => setIsCategoriesOpen(false)}
                         className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors"
                       >
@@ -545,19 +573,9 @@ const Header: React.FC = () => {
                   className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
                 >
                   <option value="all">{t('header.allItems')}</option>
-                  <option value="vehicles">🚗 Vehicles</option>
-                  <option value="electronics">📱 Electronics</option>
-                  <option value="tools">🔧 Tools</option>
-                  <option value="photography">📷 Photography</option>
-                  <option value="outdoor">⛺ Outdoor</option>
-                  <option value="events">🎉 Events</option>
-                  <option value="sports">⚽ Sports</option>
-                  <option value="home">🏠 Home</option>
-                  <option value="fashion">👕 Fashion</option>
-                  <option value="fitness">💪 Fitness</option>
-                  <option value="travel">✈️ Travel</option>
-                  <option value="books">📚 Books</option>
-                  <option value="art">🎨 Art</option>
+                  {topCategories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.label}</option>
+                  ))}
                 </select>
               </div>
 

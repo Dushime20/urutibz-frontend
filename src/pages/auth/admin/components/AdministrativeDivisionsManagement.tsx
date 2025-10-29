@@ -71,7 +71,10 @@ export default function AdministrativeDivisionsManagement() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<DivisionForm>(emptyForm);
 
-
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteName, setDeleteName] = useState<string>('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const token = useMemo(() => localStorage.getItem('token') ?? undefined, []);
 
@@ -270,19 +273,40 @@ export default function AdministrativeDivisionsManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this division?')) return;
+  const openDeleteConfirm = (id: string, name: string) => {
+    setDeleteId(id);
+    setDeleteName(name);
+    setShowDeleteConfirm(true);
+  };
+
+  const closeDeleteConfirm = () => {
+    if (!isDeleting) {
+      setShowDeleteConfirm(false);
+      setDeleteId(null);
+      setDeleteName('');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
     
     try {
+      setIsDeleting(true);
       setError(null);
-      const res = await deleteAdministrativeDivision(id, token);
+      const res = await deleteAdministrativeDivision(deleteId, token);
       if (!res.success) {
         setError(res.error || 'Failed to delete division');
+        setIsDeleting(false);
         return;
       }
+      setShowDeleteConfirm(false);
+      setDeleteId(null);
+      setDeleteName('');
       await load();
     } catch (e: any) {
       setError(e?.message || 'Failed to delete division');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -376,7 +400,7 @@ export default function AdministrativeDivisionsManagement() {
                    <button onClick={() => handleToggleStatus(d.id)} className={`p-2 rounded-lg ${d.is_active ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}>
                      {d.is_active ? '✓' : '✗'}
                    </button>
-                   <button onClick={() => handleDelete(d.id)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-4 h-4"/></button>
+                   <button onClick={() => openDeleteConfirm(d.id, d.name)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-4 h-4"/></button>
                  </div>
                 </div>
                 <div className="text-xs text-gray-500 mb-2">{d.type} • Level {d.level} • {d.code}</div>
@@ -672,6 +696,69 @@ export default function AdministrativeDivisionsManagement() {
                         ) : (
              <div className="text-gray-500">Loading tree structure...</div>
            )}
+           </DialogPanel>
+         </div>
+       </Dialog>
+
+       {/* Delete Confirmation Modal */}
+       <Dialog open={showDeleteConfirm} onClose={closeDeleteConfirm} className="relative z-50">
+         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+         <div className="fixed inset-0 flex items-center justify-center p-4">
+           <DialogPanel className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+             <DialogTitle as="div" className="flex items-center justify-between mb-4">
+               <h4 className="text-lg font-semibold text-gray-900">Confirm Delete</h4>
+               <button 
+                 onClick={closeDeleteConfirm} 
+                 disabled={isDeleting}
+                 className="text-gray-400 hover:text-gray-600 text-xl disabled:opacity-50"
+               >
+                 &times;
+               </button>
+             </DialogTitle>
+             
+             <div className="mb-6">
+               <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                 <Trash2 className="w-6 h-6 text-red-600" />
+               </div>
+               <h3 className="text-center text-lg font-medium text-gray-900 mb-2">
+                 Are you sure you want to delete this division?
+               </h3>
+               <p className="text-center text-gray-600">
+                 The division <span className="font-semibold text-gray-900">"{deleteName}"</span> will be permanently deleted.
+               </p>
+               <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                 <p className="text-sm text-yellow-800">
+                   ⚠️ <strong>Warning:</strong> This action cannot be undone. If this division has child divisions, the deletion will fail.
+                 </p>
+               </div>
+             </div>
+
+             <div className="flex items-center justify-end gap-3">
+               <button 
+                 onClick={closeDeleteConfirm}
+                 disabled={isDeleting}
+                 className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 Cancel
+               </button>
+               <button 
+                 onClick={handleDelete}
+                 disabled={isDeleting}
+                 className="inline-flex items-center px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 {isDeleting ? (
+                   <>
+                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                     Deleting...
+                   </>
+                 ) : (
+                   <>
+                     <Trash2 className="w-4 h-4 mr-2" />
+                     Delete Division
+                   </>
+                 )}
+               </button>
+             </div>
            </DialogPanel>
          </div>
        </Dialog>

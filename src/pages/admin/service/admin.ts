@@ -474,8 +474,65 @@ export async function generateRevenueReport(filters?: any, token?: string): Prom
 }
 
 export async function generateUserReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateUserReport: Function not implemented yet');
-  return { data: { totalUsers: 0, newUsers: 0, activeUsers: 0, userGrowth: [] } };
+  try {
+    // Fetch users list with optional date range filters
+    const params: Record<string, string> = {};
+    if (filters?.startDate) params['startDate'] = filters.startDate;
+    if (filters?.endDate) params['endDate'] = filters.endDate;
+
+    const response = await axios.get(`${API_BASE_URL}/admin/users`, {
+      headers: createAuthHeaders(token),
+      params,
+    });
+
+    const users: any[] = processApiResponse(response) || [];
+
+    const toDate = filters?.endDate ? new Date(filters.endDate) : new Date();
+    const fromDate = filters?.startDate ? new Date(filters.startDate) : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const withinRange = (dateStr?: string) => {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return d >= fromDate && d <= toDate;
+    };
+
+    const totalUsers = users.length;
+    const newUsers = users.filter(u => withinRange(u.created_at || u.createdAt)).length;
+    const activeUsers = users.filter(u => u.isActive === true || u.active === true || u.status === 'active').length;
+    const verifiedUsers = users.filter(u => u.is_verified === true || u.verified === true).length;
+
+    // Top users by bookings/revenue if available
+    const topUsers = users
+      .map(u => ({
+        userId: u.id,
+        name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || u.email || 'Unknown',
+        email: u.email,
+        bookings: u.bookingsCount || u.totalBookings || 0,
+        revenue: u.revenue || u.totalRevenue || 0,
+      }))
+      .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
+      .slice(0, 10);
+
+    return {
+      totalUsers,
+      newUsers,
+      activeUsers,
+      verifiedUsers,
+      period: `${fromDate.toISOString().split('T')[0]} to ${toDate.toISOString().split('T')[0]}`,
+      topUsers,
+    };
+  } catch (err: any) {
+    console.error('Error generating user report:', err);
+    // Fallback minimal structure
+    return {
+      totalUsers: 0,
+      newUsers: 0,
+      activeUsers: 0,
+      verifiedUsers: 0,
+      period: 'N/A',
+      topUsers: [],
+    };
+  }
 }
 
 export async function generateBookingReport(filters?: any, token?: string): Promise<any> {

@@ -160,6 +160,24 @@ const BookingPage: React.FC = () => {
     console.log('Current Step:', currentStep, 'Booking ID:', bookingId);
   }, [currentStep, bookingId]);
 
+  // Handle URL parameters for skipping to payment step
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlBookingId = searchParams.get('bookingId');
+    const stepParam = searchParams.get('step');
+    
+    if (urlBookingId) {
+      setBookingId(urlBookingId);
+      // If step parameter is provided, set the current step
+      if (stepParam) {
+        const stepNumber = parseInt(stepParam, 10);
+        if (!isNaN(stepNumber) && stepNumber >= 0 && stepNumber < steps.length) {
+          setCurrentStep(stepNumber);
+        }
+      }
+    }
+  }, []);
+
   // Handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

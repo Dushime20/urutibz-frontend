@@ -139,6 +139,10 @@ const AdminDashboardPage: React.FC = () => {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) {
+        setActiveTab(tabParam as any);
+      }
       if (params.get('force2fa') === '1') {
         setActiveTab('admin-settings');
         try { localStorage.setItem('force2fa', '1'); } catch {}
@@ -151,10 +155,15 @@ const AdminDashboardPage: React.FC = () => {
     const handleNavigateToUsersTab = () => {
       setActiveTab('users');
     };
+    const handleNavigateToBookingsTab = () => {
+      setActiveTab('bookings');
+    };
 
     window.addEventListener('navigateToUsersTab', handleNavigateToUsersTab);
+    window.addEventListener('navigateToBookingsTab', handleNavigateToBookingsTab);
     return () => {
       window.removeEventListener('navigateToUsersTab', handleNavigateToUsersTab);
+      window.removeEventListener('navigateToBookingsTab', handleNavigateToBookingsTab);
     };
   }, []);
 
@@ -1113,7 +1122,12 @@ const AdminDashboardPage: React.FC = () => {
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Bookings</h3>
-                                <a href="/admin/bookings" className="text-my-primary text-sm font-medium hover:underline">View All</a>
+                                <button 
+                                  onClick={() => setActiveTab('bookings')} 
+                                  className="text-my-primary text-sm font-medium hover:underline"
+                                >
+                                  View All
+                                </button>
                               </div>
                               <div className="space-y-3">
                                 {recentBookings.slice(0, 3).map(booking => (
@@ -1203,7 +1217,12 @@ const AdminDashboardPage: React.FC = () => {
                           <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8 mt-8">
                             <div className="flex items-center justify-between mb-4">
                               <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Recent Transactions</h3>
-                              <a href="/admin/transactions" className="text-my-primary text-sm font-medium hover:underline">View All</a>
+                              <button 
+                                onClick={() => setActiveTab('transactions')} 
+                                className="text-my-primary text-sm font-medium hover:underline"
+                              >
+                                View All
+                              </button>
                             </div>
                             <div className="overflow-x-auto">
                               <RecentTransactionsList limit={5} />

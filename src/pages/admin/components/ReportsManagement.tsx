@@ -467,6 +467,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
     </div>
   );
 
+
   const renderCustomReports = () => (
     <div className="space-y-6">
       {/* Custom Reports List */}

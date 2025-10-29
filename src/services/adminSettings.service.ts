@@ -143,7 +143,12 @@ export class AdminSettingsService {
     const themeData: Partial<ThemeSettings> = {};
     
     Object.entries(response.data).forEach(([key, setting]) => {
-      (themeData as any)[key] = setting.value;
+      const normalizedKey = key === 'theme_mode' ? 'mode' : key;
+      // Support both { key: { value, type, description } } and { key: value }
+      const value = (setting && typeof setting === 'object' && 'value' in setting)
+        ? (setting as any).value
+        : setting;
+      (themeData as any)[normalizedKey] = value;
     });
     
     console.log('Fetched theme settings:', themeData);
@@ -169,11 +174,18 @@ export class AdminSettingsService {
     const themeData: Partial<ThemeSettings> = {};
     
     Object.entries(response.data).forEach(([key, setting]) => {
-      (themeData as any)[key] = setting.value;
+      const normalizedKey = key === 'theme_mode' ? 'mode' : key;
+      // Support both { key: { value, type, description } } and { key: value }
+      const value = (setting && typeof setting === 'object' && 'value' in setting)
+        ? (setting as any).value
+        : setting;
+      (themeData as any)[normalizedKey] = value;
     });
     
     console.log('Transformed theme settings:', themeData);
-    return themeData as ThemeSettings;
+    // Merge with sent settings to ensure mode is preserved if API didn't return it
+    const merged = { ...settings, ...themeData };
+    return merged as ThemeSettings;
   }
 
   /**

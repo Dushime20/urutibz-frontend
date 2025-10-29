@@ -41,8 +41,8 @@ import HandoverReturnDemoPage from './pages/handover-return/HandoverReturnDemoPa
 function App() {
   return (
     <I18nProvider>
-      <DarkModeProvider>
-        <ThemeProvider token={localStorage.getItem('token') || undefined}>
+      <ThemeProvider token={localStorage.getItem('token') || undefined}>
+        <DarkModeProvider>
           <AdminSettingsProvider token={localStorage.getItem('token') || undefined}>
             <ToastProvider>
           <ToastContainer />
@@ -161,8 +161,8 @@ function App() {
         </AuthProvider>
         </ToastProvider>
         </AdminSettingsProvider>
+        </DarkModeProvider>
       </ThemeProvider>
-    </DarkModeProvider>
     </I18nProvider>
   );
 }

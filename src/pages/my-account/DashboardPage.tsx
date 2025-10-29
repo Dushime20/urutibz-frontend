@@ -18,7 +18,12 @@ import {
   fetchReviewByBookingId,
   fetchUserProfile,
   fetchMyReceivedReviews,
-  fetchMyWrittenReviews
+  fetchMyWrittenReviews,
+  confirmBooking,
+  checkInBooking,
+  checkOutBooking,
+  requestCancellation,
+  reviewCancellation
 } from './service/api';
 // Notifications handled in MyAccountHeader
 import MyAccountHeader from './components/MyAccountHeader';
@@ -26,6 +31,8 @@ import MyAccountSidebar from './components/MyAccountSidebar';
 import OverviewSection from './components/OverviewSection';
 import SkeletonMyAccountOverview from '../../components/ui/SkeletonMyAccountOverview';
 import BookingsSection from './components/BookingsSection';
+import CancelBookingModal from './components/CancelBookingModal';
+import ReviewCancellationModal from './components/ReviewCancellationModal';
 import ListingsSection from './components/ListingsSection';
 import WalletSection from './components/WalletSection';
 import InspectionsSection from './components/InspectionsSection';
@@ -65,6 +72,17 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [realUser, setRealUser] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
+  const [cancelBookingTitle, setCancelBookingTitle] = useState<string | null>(null);
+  const [isCancellingBooking, setIsCancellingBooking] = useState(false);
+  
+  // Review cancellation modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
+  const [reviewBookingTitle, setReviewBookingTitle] = useState<string | null>(null);
+  const [reviewRenterReason, setReviewRenterReason] = useState<string | null>(null);
+  const [isReviewing, setIsReviewing] = useState(false);
   const [form, setForm] = useState<FormState>({
     title: '',
     slug: '',
@@ -774,6 +792,175 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Quick action handlers
+  const handleConfirmBooking = async (bookingId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const result = await confirmBooking(bookingId, token ?? undefined);
+      if (result.success) {
+        showToast('Booking confirmed successfully', 'success');
+        // Refresh bookings list
+        const bookingsRes = await fetchUserBookings(token);
+        const bookings = bookingsRes.data || [];
+        setUserBookings(bookings);
+      } else {
+        showToast(result.error || 'Failed to confirm booking', 'error');
+      }
+    } catch (error) {
+      console.error('Error confirming booking:', error);
+      showToast('Failed to confirm booking', 'error');
+    }
+  };
+
+  // Open cancel booking modal
+  const handleCancelBooking = (bookingId: string) => {
+    // Find the booking to get its title
+    const booking = userBookings.find(b => b.id === bookingId);
+    const product = bookingProducts[bookingId];
+    const title = product?.title || booking?.booking_number || 'Booking';
+    
+    setCancelBookingId(bookingId);
+    setCancelBookingTitle(title);
+    setShowCancelModal(true);
+  };
+
+  // Execute the cancellation request
+  const executeCancelBooking = async (reason: string) => {
+    if (!cancelBookingId) return;
+    
+    setIsCancellingBooking(true);
+    try {
+      const token = localStorage.getItem('token');
+      const result = await requestCancellation(cancelBookingId, reason, token ?? undefined);
+      if (result.success) {
+        showToast('Cancellation request submitted. Waiting for owner approval.', 'success');
+        setShowCancelModal(false);
+        setCancelBookingId(null);
+        setCancelBookingTitle(null);
+        // Refresh bookings list
+        const bookingsRes = await fetchUserBookings(token);
+        const bookings = bookingsRes.data || [];
+        setUserBookings(bookings);
+      } else {
+        showToast(result.error || 'Failed to request cancellation', 'error');
+      }
+    } catch (error) {
+      console.error('Error requesting cancellation:', error);
+      showToast('Failed to request cancellation', 'error');
+    } finally {
+      setIsCancellingBooking(false);
+    }
+  };
+
+  // Owner review cancellation handlers
+  const handleReviewCancellation = (bookingId: string) => {
+    const booking = userBookings.find(b => b.id === bookingId);
+    const product = bookingProducts[bookingId];
+    
+    setReviewBookingId(bookingId);
+    setReviewBookingTitle(product?.title || booking?.booking_number || 'Booking');
+    setReviewRenterReason(booking?.cancellation_reason || '');
+    setShowReviewModal(true);
+  };
+
+  const handleApproveCancellation = async (notes?: string) => {
+    if (!reviewBookingId) return;
+    
+    setIsReviewing(true);
+    try {
+      const token = localStorage.getItem('token');
+      const result = await reviewCancellation(reviewBookingId, 'approve', notes, token ?? undefined);
+      if (result.success) {
+        showToast('Cancellation approved successfully. Refund processing will be initiated.', 'success');
+        setShowReviewModal(false);
+        setReviewBookingId(null);
+        setReviewBookingTitle(null);
+        setReviewRenterReason(null);
+        // Refresh bookings list
+        const bookingsRes = await fetchUserBookings(token);
+        const bookings = bookingsRes.data || [];
+        setUserBookings(bookings);
+      } else {
+        showToast(result.error || 'Failed to approve cancellation', 'error');
+      }
+    } catch (error) {
+      console.error('Error approving cancellation:', error);
+      showToast('Failed to approve cancellation', 'error');
+    } finally {
+      setIsReviewing(false);
+    }
+  };
+
+  const handleRejectCancellation = async (notes: string) => {
+    if (!reviewBookingId) return;
+    
+    setIsReviewing(true);
+    try {
+      const token = localStorage.getItem('token');
+      const result = await reviewCancellation(reviewBookingId, 'reject', notes, token ?? undefined);
+      if (result.success) {
+        showToast('Cancellation rejected. Booking remains confirmed.', 'success');
+        setShowReviewModal(false);
+        setReviewBookingId(null);
+        setReviewBookingTitle(null);
+        setReviewRenterReason(null);
+        // Refresh bookings list
+        const bookingsRes = await fetchUserBookings(token);
+        const bookings = bookingsRes.data || [];
+        setUserBookings(bookings);
+      } else {
+        showToast(result.error || 'Failed to reject cancellation', 'error');
+      }
+    } catch (error) {
+      console.error('Error rejecting cancellation:', error);
+      showToast('Failed to reject cancellation', 'error');
+    } finally {
+      setIsReviewing(false);
+    }
+  };
+
+  const handleCheckIn = async (bookingId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const result = await checkInBooking(bookingId, token ?? undefined);
+      if (result.success) {
+        showToast('Check-in completed successfully', 'success');
+        // Refresh bookings list
+        const bookingsRes = await fetchUserBookings(token);
+        const bookings = bookingsRes.data || [];
+        setUserBookings(bookings);
+      } else {
+        showToast(result.error || 'Failed to check in', 'error');
+      }
+    } catch (error) {
+      console.error('Error checking in:', error);
+      showToast('Failed to check in', 'error');
+    }
+  };
+
+  const handleCheckOut = async (bookingId: string) => {
+    if (!window.confirm('Are you sure you want to complete the checkout?')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const result = await checkOutBooking(bookingId, token ?? undefined);
+      if (result.success) {
+        showToast('Check-out completed successfully', 'success');
+        // Refresh bookings list
+        const bookingsRes = await fetchUserBookings(token);
+        const bookings = bookingsRes.data || [];
+        setUserBookings(bookings);
+      } else {
+        showToast(result.error || 'Failed to check out', 'error');
+      }
+    } catch (error) {
+      console.error('Error checking out:', error);
+      showToast('Failed to check out', 'error');
+    }
+  };
+
   // const handleOpenDisputeModal = (inspectionId: string) => {
   //   setSelectedInspectionId(inspectionId);
   //   setShowDisputeModal(true);
@@ -948,9 +1135,13 @@ const DashboardPage: React.FC = () => {
               navigateToBrowse={() => navigate('/browse')}
               bookingProducts={bookingProducts}
               bookingImages={bookingImages}
-              loadingBookingReviews={loadingBookingReviews}
               bookingReviewCounts={bookingReviewCounts}
               onViewBookingReview={handleViewBookingReview}
+              onConfirmBooking={handleConfirmBooking}
+              onCancelBooking={handleCancelBooking}
+              onReviewCancellation={handleReviewCancellation}
+              onCheckIn={handleCheckIn}
+              onCheckOut={handleCheckOut}
             />
           )}
 
@@ -1403,6 +1594,35 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Cancel Booking Modal */}
+      <CancelBookingModal
+        isOpen={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+          setCancelBookingId(null);
+          setCancelBookingTitle(null);
+        }}
+        onConfirm={executeCancelBooking}
+        bookingTitle={cancelBookingTitle || undefined}
+        isLoading={isCancellingBooking}
+      />
+
+      {/* Review Cancellation Modal */}
+      <ReviewCancellationModal
+        isOpen={showReviewModal}
+        onClose={() => {
+          setShowReviewModal(false);
+          setReviewBookingId(null);
+          setReviewBookingTitle(null);
+          setReviewRenterReason(null);
+        }}
+        onApprove={handleApproveCancellation}
+        onReject={handleRejectCancellation}
+        bookingTitle={reviewBookingTitle || undefined}
+        renterReason={reviewRenterReason || undefined}
+        isLoading={isReviewing}
+      />
 
     </div>
   );

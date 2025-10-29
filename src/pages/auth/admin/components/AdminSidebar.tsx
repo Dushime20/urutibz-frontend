@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useContext } from 'react';
 import { 
   LayoutGrid, 
   Users, 
@@ -26,6 +26,7 @@ import { AuthContext } from '../../../context/AuthContext';
 import type { AuthContextType } from '../../../context/AuthContext';
 import { ToastContext } from '../../../contexts/ToastContext';
 import type { ToastContextType } from '../../../contexts/ToastContext';
+import { useDarkMode } from '../../../contexts/DarkModeContext';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -46,42 +47,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   setActiveTab, 
   AdminNavigationItem 
 }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
   const navigate = useNavigate();
   const { logout } = useContext<AuthContextType>(AuthContext);
   const { showToast } = useContext<ToastContextType>(ToastContext);
-
-  useEffect(() => {
-    // Check and apply dark mode from local storage
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setIsDarkMode(savedDarkMode);
-    
-    // Apply dark mode to document
-    if (savedDarkMode) {
-      // Respect global theme; do not force dark mode
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    
-    // Apply to document
-    if (newMode) {
-      // Respect global theme; do not force dark mode
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
-    // Save to local storage
-    localStorage.setItem('darkMode', newMode.toString());
-
-    // Show toast notification
-    showToast(`Switched to ${newMode ? 'dark' : 'light'} mode`, 'info');
-  };
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const handleLogout = () => {
     logout();
@@ -234,7 +203,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-6 px-4">
         {/* Dark Mode Toggle */}
         <button 
-          onClick={toggleDarkMode}
+          onClick={() => {
+            toggleDarkMode();
+            showToast(`Switched to ${!isDarkMode ? 'dark' : 'light'} mode`, 'info');
+          }}
           className="w-full flex items-center px-4 py-2 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           {isDarkMode ? (

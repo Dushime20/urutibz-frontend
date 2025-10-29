@@ -176,12 +176,24 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
       setIsLoading(true);
       setError(null);
       
+      // Prefer locally saved theme immediately to avoid visual flicker/revert
+      const savedThemeRaw = typeof window !== 'undefined' ? localStorage.getItem('theme-settings') : null;
+      if (savedThemeRaw) {
+        try {
+          const parsed = JSON.parse(savedThemeRaw);
+          setTheme(parsed);
+          applyTheme(parsed);
+        } catch {}
+      }
+
       // Check if user is authenticated before fetching theme settings
       if (!resolvedToken) {
         console.log('No authentication token, using default theme');
         // Use default theme for non-authenticated users
-        setTheme(DEFAULT_THEME_SETTINGS);
-        applyTheme(DEFAULT_THEME_SETTINGS);
+        if (!savedThemeRaw) {
+          setTheme(DEFAULT_THEME_SETTINGS);
+          applyTheme(DEFAULT_THEME_SETTINGS);
+        }
         return;
       }
       
@@ -192,20 +204,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
       console.warn('Failed to load theme from server, using fallback:', err.message);
       // Don't set error state for theme issues - just use fallback silently
       
-      // Fallback to localStorage or default
-      const savedTheme = localStorage.getItem('theme-settings');
-      if (savedTheme) {
-        try {
-          const parsedTheme = JSON.parse(savedTheme);
-          setTheme(parsedTheme);
-          applyTheme(parsedTheme);
-        } catch (parseError) {
-          console.warn('Failed to parse saved theme, using default:', parseError);
-          setTheme(DEFAULT_THEME_SETTINGS);
-          applyTheme(DEFAULT_THEME_SETTINGS);
-        }
-      } else {
-        // No saved theme, use default
+      // Fallback already applied above from localStorage; if none, ensure default
+      if (!savedThemeRaw) {
         setTheme(DEFAULT_THEME_SETTINGS);
         applyTheme(DEFAULT_THEME_SETTINGS);
       }

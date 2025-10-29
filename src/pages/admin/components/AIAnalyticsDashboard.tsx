@@ -40,6 +40,19 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'behavior' | 'recommendations' | 'performance' | 'types'>('behavior');
 
+  // Recommendation filters
+  const [recFilters, setRecFilters] = useState<{
+    startDate?: string;
+    endDate?: string;
+    recommendationType?: string;
+    userId?: string;
+  }>({
+    // default to last 30 days
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+  const [recLoading, setRecLoading] = useState(false);
+
   const loadAnalytics = async () => {
     try {
       setLoading(true);
@@ -71,6 +84,23 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
   useEffect(() => {
     loadAnalytics();
   }, [token]);
+
+  // Fetch recommendations when switching to the tab or filters change
+  useEffect(() => {
+    const fetchRecs = async () => {
+      if (activeTab !== 'recommendations') return;
+      try {
+        setRecLoading(true);
+        const data = await fetchRecommendationAnalytics(recFilters, token);
+        setRecommendations(data);
+      } catch (e) {
+        // keep prior recommendations if fetch fails
+      } finally {
+        setRecLoading(false);
+      }
+    };
+    fetchRecs();
+  }, [activeTab, recFilters, token]);
 
   if (loading) {
     return (
@@ -137,14 +167,14 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
         <StatCard
           icon={Activity}
           title="Total Interactions"
-          value={userBehavior?.totalInteractions.toLocaleString() || '0'}
+          value={userBehavior?.totalInteractions?.toLocaleString() || '0'}
           subtitle="All time"
           color="bg-blue-500"
         />
         <StatCard
           icon={Users}
           title="Unique Users"
-          value={userBehavior?.uniqueUsers.toLocaleString() || '0'}
+          value={userBehavior?.uniqueUsers?.toLocaleString() || '0'}
           subtitle="Active users"
           color="bg-green-500"
         />
@@ -206,19 +236,83 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
 
   const renderRecommendationAnalytics = () => (
     <div className="space-y-6">
+      {/* Filters */}
+      <div className="bg-white border border-gray-100 rounded-xl p-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Start Date</label>
+            <input
+              type="date"
+              value={recFilters.startDate || ''}
+              onChange={(e) => setRecFilters(prev => ({ ...prev, startDate: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">End Date</label>
+            <input
+              type="date"
+              value={recFilters.endDate || ''}
+              onChange={(e) => setRecFilters(prev => ({ ...prev, endDate: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Recommendation Type</label>
+            <select
+              value={recFilters.recommendationType || ''}
+              onChange={(e) => setRecFilters(prev => ({ ...prev, recommendationType: e.target.value || undefined }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+            >
+              <option value="">All</option>
+              <option value="similar_products">Similar Products</option>
+              <option value="category_suggestions">Category Suggestions</option>
+              <option value="trending_items">Trending Items</option>
+              <option value="personalized">Personalized</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">User ID (optional)</label>
+            <input
+              placeholder="Filter by userId"
+              value={recFilters.userId || ''}
+              onChange={(e) => setRecFilters(prev => ({ ...prev, userId: e.target.value || undefined }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end mt-3">
+          <button
+            onClick={() => setRecFilters({
+              startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              endDate: new Date().toISOString().split('T')[0]
+            })}
+            className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      {recLoading && (
+        <div className="flex items-center text-sm text-gray-600">
+          <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Updating recommendations...
+        </div>
+      )}
+
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard
           icon={Target}
           title="Total Recommendations"
-          value={recommendations?.totalRecommendations.toLocaleString() || '0'}
+          value={recommendations?.totalRecommendations?.toLocaleString() || '0'}
           subtitle="All time"
           color="bg-blue-500"
         />
         <StatCard
           icon={CheckCircle}
           title="Accepted"
-          value={recommendations?.acceptedRecommendations.toLocaleString() || '0'}
+          value={recommendations?.acceptedRecommendations?.toLocaleString() || '0'}
           subtitle="Successfully accepted"
           color="bg-green-500"
         />
@@ -259,6 +353,23 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
             <div className="text-gray-500 text-center py-4">No recommendation data available</div>
           )}
         </div>
+      </div>
+
+      {/* User Engagement List */}
+      <div className="bg-white border border-gray-100 rounded-xl p-6">
+        <h3 className="text-lg font-semibold mb-4">User Engagement</h3>
+        {recommendations?.userEngagement && recommendations.userEngagement.length > 0 ? (
+          <div className="space-y-2">
+            {recommendations.userEngagement.slice(0, 10).map((u) => (
+              <div key={u.userId} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                <div className="text-gray-900 font-medium">{u.userId}</div>
+                <div className="text-sm text-gray-600">{u.accepted}/{u.recommendations} accepted</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-gray-500 text-center py-4">No user engagement data</div>
+        )}
       </div>
     </div>
   );

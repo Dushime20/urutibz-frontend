@@ -64,7 +64,7 @@ const ItemSearchPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [selectedLocation, setSelectedLocation] = useState(searchParams.get('location') || 'all');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
   const [sortBy, setSortBy] = useState('relevance');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -313,6 +313,69 @@ const ItemSearchPage: React.FC = () => {
     setSearchParams(params);
   }, [searchQuery, selectedCategory, selectedLocation, setSearchParams]);
 
+  // Derived filtered and sorted items based on selected filters
+  const filteredItems = React.useMemo(() => {
+    const query = (searchQuery || '').toLowerCase();
+    const selectedCat = (selectedCategory || '').toLowerCase();
+    const selectedLoc = selectedLocation;
+
+    let list = items.filter((item) => {
+      const title = (item.title || item.name || '').toString().toLowerCase();
+      const description = (item.description || '').toString().toLowerCase();
+      const city = (itemLocations[item.id]?.city || '').toString();
+      const country = (itemLocations[item.id]?.country || '').toString();
+
+      // Text search
+      if (query) {
+        const matchesText = title.includes(query) || description.includes(query) || city.toLowerCase().includes(query) || country.toLowerCase().includes(query);
+        if (!matchesText) return false;
+      }
+
+      // Category filter (match by id, name or slug)
+      if (selectedCat && selectedCat !== 'all') {
+        const itemCategoryId = (item.category_id || (item as any).categoryId || '').toString().toLowerCase();
+        const itemCategoryName = (item.category || '').toString().toLowerCase();
+        const itemCategorySlug = itemCategoryName.replace(/\s+/g, '-');
+        const catMatches = [itemCategoryId, itemCategoryName, itemCategorySlug].some(v => v && v === selectedCat);
+        if (!catMatches) return false;
+      }
+
+      // Location filter (simple exact match on city or country label)
+      if (selectedLoc && selectedLoc !== 'all') {
+        const locMatches = city === selectedLoc || country === selectedLoc;
+        if (!locMatches) return false;
+      }
+
+      // Price filter
+      const pricePerDay = item.base_price_per_day != null ? Number(item.base_price_per_day) : (typeof item.price === 'number' ? item.price : undefined);
+      if (priceRange.min != null && priceRange.min > 0 && pricePerDay != null && pricePerDay < priceRange.min) return false;
+      if (priceRange.max != null && priceRange.max > 0 && pricePerDay != null && pricePerDay > priceRange.max) return false;
+
+      return true;
+    });
+
+    // Sorting
+    list = [...list].sort((a, b) => {
+      const aPrice = a.base_price_per_day != null ? Number(a.base_price_per_day) : (typeof a.price === 'number' ? a.price : 0);
+      const bPrice = b.base_price_per_day != null ? Number(b.base_price_per_day) : (typeof b.price === 'number' ? b.price : 0);
+      switch (sortBy) {
+        case 'price-low':
+          return aPrice - bPrice;
+        case 'price-high':
+          return bPrice - aPrice;
+        case 'rating':
+          return Number(b.average_rating || 0) - Number(a.average_rating || 0);
+        case 'newest':
+          return new Date(b.updated_at || b.createdAt || 0).getTime() - new Date(a.updated_at || a.createdAt || 0).getTime();
+        case 'relevance':
+        default:
+          return 0;
+      }
+    });
+
+    return list;
+  }, [items, itemLocations, searchQuery, selectedCategory, selectedLocation, priceRange.min, priceRange.max, sortBy]);
+
   const handleItemClick = (itemId: string) => {
     navigate(`/it/${itemId}`);
   };
@@ -343,7 +406,7 @@ const ItemSearchPage: React.FC = () => {
     setSearchQuery('');
     setSelectedCategory('all');
     setSelectedLocation('all');
-    setPriceRange({ min: 0, max: 1000 });
+    setPriceRange({ min: 0, max: 0 });
     setSortBy('relevance');
   };
 
@@ -385,7 +448,7 @@ const ItemSearchPage: React.FC = () => {
                   className="appearance-none pl-4 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-my-primary focus:border-my-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 min-w-48 cursor-pointer transition-all duration-200"
                   aria-label="Select category"
                 >
-                  <option value="all">All Categories</option>
+                  <option value="all">{t('searchPage.filters.allCategories')}</option>
                   {itemCategories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.icon} {category.name}
@@ -402,7 +465,7 @@ const ItemSearchPage: React.FC = () => {
                   className="appearance-none pl-4 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-my-primary focus:border-my-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 min-w-40 cursor-pointer transition-all duration-200"
                   aria-label="Select location"
                 >
-                  <option value="all">All Locations</option>
+                  <option value="all">{t('searchPage.filters.allLocations')}</option>
                   <option value="Kigali">🇷🇼 Kigali</option>
                   <option value="Butare">🇷🇼 Butare</option>
                   <option value="Kampala">🇺🇬 Kampala</option>
@@ -419,7 +482,7 @@ const ItemSearchPage: React.FC = () => {
                 aria-label={showFilters ? 'Hide filters' : 'Show more filters'}
               >
                 <Filter className="w-4 h-4" />
-                <span className="hidden sm:inline">More Filters</span>
+                <span className="hidden sm:inline">{t('searchPage.filters.more')}</span>
               </button>
 
               {/* View Toggle */}
@@ -434,7 +497,7 @@ const ItemSearchPage: React.FC = () => {
                   aria-label="Grid view"
                 >
                   <Grid className="w-4 h-4" />
-                  <span className="hidden sm:inline">Grid</span>
+                  <span className="hidden sm:inline">{t('searchPage.view.grid')}</span>
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
@@ -446,7 +509,7 @@ const ItemSearchPage: React.FC = () => {
                   aria-label="List view"
                 >
                   <List className="w-4 h-4" />
-                  <span className="hidden sm:inline">List</span>
+                  <span className="hidden sm:inline">{t('searchPage.view.list')}</span>
                 </button>
               </div>
             </div>
@@ -457,37 +520,37 @@ const ItemSearchPage: React.FC = () => {
             <div className="mt-6 p-6 border border-gray-200 dark:border-slate-600 rounded-2xl bg-gray-50 dark:bg-slate-800 animate-in slide-in-from-top duration-200">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Price Range (USD)</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">{t('searchPage.filters.priceRange')}</label>
                   <div className="flex gap-3">
                     <input
                       type="number"
                       value={priceRange.min}
                       onChange={(e) => setPriceRange({...priceRange, min: Number(e.target.value)})}
-                      placeholder="Min"
+                      placeholder={t('searchPage.filters.min')}
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                     />
                     <input
                       type="number"
                       value={priceRange.max}
                       onChange={(e) => setPriceRange({...priceRange, max: Number(e.target.value)})}
-                      placeholder="Max"
+                      placeholder={t('searchPage.filters.max')}
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Sort By</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">{t('searchPage.filters.sortBy')}</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                   >
-                    <option value="relevance">Relevance</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="rating">Highest Rated</option>
-                    <option value="newest">Newest First</option>
+                    <option value="relevance">{t('searchPage.sort.relevance')}</option>
+                    <option value="price-low">{t('searchPage.sort.priceLowToHigh')}</option>
+                    <option value="price-high">{t('searchPage.sort.priceHighToLow')}</option>
+                    <option value="rating">{t('searchPage.sort.highestRated')}</option>
+                    <option value="newest">{t('searchPage.sort.newest')}</option>
                   </select>
                 </div>
 
@@ -497,7 +560,7 @@ const ItemSearchPage: React.FC = () => {
                     className="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-all duration-200 flex items-center gap-2"
                   >
                     <X className="w-4 h-4" />
-                    Clear All Filters
+                    {t('searchPage.filters.clearAll')}
                   </Button>
                 </div>
               </div>
@@ -522,10 +585,10 @@ const ItemSearchPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">
-              {searchQuery ? `Results for "${searchQuery}"` : 'Browse Rentals'}
+              {searchQuery ? `${t('searchPage.resultsFor')} "${searchQuery}"` : t('searchPage.browseRentals')}
             </h1>
             <p className="text-gray-600 dark:text-slate-400">
-              {loading ? 'Searching...' : `${totalResults} items available`}
+              {loading ? t('searchPage.searching') : `${filteredItems.length} ${t('searchPage.itemsAvailable')}`}
             </p>
           </div>
         </div>
@@ -552,14 +615,14 @@ const ItemSearchPage: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-my-primary dark:border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-gray-600 dark:text-slate-400 font-medium">Finding the perfect items for you...</p>
+            <p className="text-gray-600 dark:text-slate-400 font-medium">{t('searchPage.loading')}</p>
           </div>
-        ) : items.length > 0 ? (
+        ) : filteredItems.length > 0 ? (
                      <div className={viewMode === 'grid' 
              ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'
              : 'space-y-6'
            }>
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               if (!item.id || typeof item.id !== 'string') return null;
               const id = item.id as string;
               const IconComponent = getCategoryIcon(item.category || '');
@@ -641,11 +704,11 @@ const ItemSearchPage: React.FC = () => {
                        {locationsLoading[item.id] ? (
                          <span className="flex items-center gap-1">
                            <div className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin"></div>
-                           Loading location...
+                           {t('searchPage.item.loadingLocation')}
                          </span>
                        ) : (
                          <>
-                           {itemLocations[item.id]?.city || 'Unknown Location'}
+                           {itemLocations[item.id]?.city || t('searchPage.item.unknownLocation')}
                            {itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
                          </>
                        )}
@@ -663,10 +726,10 @@ const ItemSearchPage: React.FC = () => {
                        ) : item.base_price_per_day != null ? (
                          <>
                            <span className="font-semibold">${item.base_price_per_day}</span>
-                           <span className="text-sm"> / day</span>
+                           <span className="text-sm"> / {t('searchPage.item.perDay')}</span>
                          </>
                        ) : (
-                         <span className="font-semibold">Price on request</span>
+                         <span className="font-semibold">{t('searchPage.item.priceOnRequest')}</span>
                        )}
                      </div>
                    </div>
@@ -746,8 +809,8 @@ const ItemSearchPage: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-slate-400">
                           <MapPin className="w-4 h-4" />
-                          <span className="truncate">
-                            {itemLocations[item.id]?.city || 'Unknown'}{itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
+                            <span className="truncate">
+                            {itemLocations[item.id]?.city || t('searchPage.item.unknownLocation')}{itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
                           </span>
                         </div>
                       </div>
@@ -756,7 +819,7 @@ const ItemSearchPage: React.FC = () => {
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
                             <span className="text-xl font-bold text-my-primary dark:text-teal-400">
-                              {item.base_price_per_day != null && item.base_currency ? `$${item.base_price_per_day}` : 'No price'}
+                              {item.base_price_per_day != null && item.base_currency ? `$${item.base_price_per_day}` : t('searchPage.item.noPrice')}
                             </span>
                             <span className="text-sm text-gray-600 dark:text-slate-400">{item.base_price_per_day != null && item.base_currency ? `/${item.base_currency}` : ''}</span>
                           </div>
@@ -768,18 +831,18 @@ const ItemSearchPage: React.FC = () => {
                           {item.pickup_methods?.includes('delivery') && (
                             <div className="flex items-center gap-1">
                               <Truck className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Delivery</span>
+                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{t('searchPage.item.delivery')}</span>
                             </div>
                           )}
                           {item.pickup_methods?.includes('pickup') && (
                             <div className="flex items-center gap-1">
                               <Package className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-                              <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">Pickup</span>
+                              <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">{t('searchPage.item.pickup')}</span>
                             </div>
                           )}
                         </div>
                         <Button className="px-6 py-2.5 bg-my-primary dark:bg-teal-500 hover:bg-my-primary/90 dark:hover:bg-teal-600 text-white rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md">
-                          View Details
+                          {t('searchPage.item.viewDetails')}
                         </Button>
                       </div>
                       
@@ -794,7 +857,7 @@ const ItemSearchPage: React.FC = () => {
                             ))}
                             {item.features.length > 4 && (
                               <span className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                                +{item.features.length - 4} more
+                                +{item.features.length - 4} {t('searchPage.item.moreFeatures')}
                               </span>
                             )}
                           </div>
@@ -810,15 +873,15 @@ const ItemSearchPage: React.FC = () => {
           <div className="text-center py-20">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 max-w-md mx-auto">
               <Package className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-              <h3 className="text-xl font-bold text-gray-900 mb-3">No items found</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('searchPage.noItems.title')}</h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                We couldn't find any items matching your search criteria. Try adjusting your filters or search terms.
+                {t('searchPage.noItems.message')}
               </p>
               <Button 
                 onClick={clearAllFilters}
                 className="px-6 py-3 bg-[#00aaa9] hover:bg-[#008b8a] text-white rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                Clear All Filters
+                {t('searchPage.filters.clearAll')}
               </Button>
             </div>
           </div>

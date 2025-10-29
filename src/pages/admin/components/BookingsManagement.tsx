@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { type AdminBooking, fetchAdminBookings, overrideBooking } from '../service';
-import { Eye, MoreVertical, Edit, RefreshCw, Filter, X, Search } from 'lucide-react';
+import { adminCancelBooking, processRefund } from '../../my-account/service/api';
+import { Eye, MoreVertical, Edit, RefreshCw, Filter, X, Search, AlertTriangle, DollarSign } from 'lucide-react';
 import BookingDetailsModal from './BookingDetailsModal';
 import Pagination from '../../../components/ui/Pagination';
 
@@ -32,6 +33,22 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
   const [overrideReason, setOverrideReason] = useState('');
   const [overrideStatus, setOverrideStatus] = useState<'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'>('confirmed');
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  
+  // Admin cancellation modal states
+  const [adminCancelModalOpen, setAdminCancelModalOpen] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<AdminBooking | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
+  const [forceRefund, setForceRefund] = useState(true);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // Process refund modal states
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [bookingToRefund, setBookingToRefund] = useState<AdminBooking | null>(null);
+  const [refundAmount, setRefundAmount] = useState<number | ''>('');
+  const [cancellationFee, setCancellationFee] = useState<number | ''>('');
+  const [refundReason, setRefundReason] = useState('');
+  const [isProcessingRefund, setIsProcessingRefund] = useState(false);
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -296,6 +313,106 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
       // Optional: Show error toast
       // toast.error('Failed to override booking');
     }
+  };
+
+  // Admin force cancel handler
+  const handleAdminForceCancel = async () => {
+    if (!bookingToCancel || !cancelReason.trim()) return;
+
+    if (cancelReason.trim().length < 10) {
+      alert('Cancellation reason must be at least 10 characters');
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      const token = localStorage.getItem('token');
+      const result = await adminCancelBooking(
+        bookingToCancel.id,
+        cancelReason,
+        adminNotes || undefined,
+        forceRefund,
+        token || undefined
+      );
+
+      if (result.success) {
+        // Refresh bookings to get updated status
+        const response = await fetchAdminBookings(currentPage, itemsPerPage, token || undefined);
+        setBookings(response.items);
+
+        // Close modal and reset state
+        setAdminCancelModalOpen(false);
+        setBookingToCancel(null);
+        setCancelReason('');
+        setAdminNotes('');
+        setForceRefund(true);
+
+        alert('Booking cancelled by admin successfully!');
+      } else {
+        alert(result.error || 'Failed to cancel booking');
+      }
+    } catch (error: any) {
+      console.error('Error cancelling booking:', error);
+      alert(error.response?.data?.message || 'Failed to cancel booking');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleOpenAdminCancelModal = (booking: AdminBooking) => {
+    setBookingToCancel(booking);
+    setAdminCancelModalOpen(true);
+    setActionMenuOpen(null);
+  };
+
+  // Process refund handler
+  const handleProcessRefund = async () => {
+    if (!bookingToRefund) return;
+
+    setIsProcessingRefund(true);
+    try {
+      const token = localStorage.getItem('token');
+      const result = await processRefund(
+        bookingToRefund.id,
+        refundAmount || undefined,
+        cancellationFee || undefined,
+        refundReason || undefined,
+        token || undefined
+      );
+
+      if (result.success) {
+        // Refresh bookings to get updated status
+        const response = await fetchAdminBookings(currentPage, itemsPerPage, token || undefined);
+        setBookings(response.items);
+
+        // Close modal and reset state
+        setRefundModalOpen(false);
+        setBookingToRefund(null);
+        setRefundAmount('');
+        setCancellationFee('');
+        setRefundReason('');
+
+        alert('Refund processed successfully!');
+      } else {
+        alert(result.error || 'Failed to process refund');
+      }
+    } catch (error: any) {
+      console.error('Error processing refund:', error);
+      alert(error.response?.data?.message || 'Failed to process refund');
+    } finally {
+      setIsProcessingRefund(false);
+    }
+  };
+
+  const handleOpenRefundModal = (booking: AdminBooking) => {
+    setBookingToRefund(booking);
+    // Set default refund amount to full amount if available
+    const totalAmount = (booking as any).total_amount || booking.pricing?.totalAmount || 0;
+    setRefundAmount(typeof totalAmount === 'number' ? totalAmount : '');
+    setCancellationFee('');
+    setRefundReason('');
+    setRefundModalOpen(true);
+    setActionMenuOpen(null);
   };
 
   return (
@@ -582,6 +699,18 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                             >
                               <RefreshCw className="w-4 h-4 mr-2" /> Override Status
                             </button>
+                            <button
+                              onClick={() => handleOpenAdminCancelModal(booking)}
+                              className="block w-full text-left px-4 py-2 text-sm text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/20 flex items-center"
+                            >
+                              <AlertTriangle className="w-4 h-4 mr-2" /> Force Cancel
+                            </button>
+                            <button
+                              onClick={() => handleOpenRefundModal(booking)}
+                              className="block w-full text-left px-4 py-2 text-sm text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/20 flex items-center"
+                            >
+                              <DollarSign className="w-4 h-4 mr-2" /> Process Refund
+                            </button>
                           </div>
                         </div>
                       )}
@@ -684,6 +813,213 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                 className="px-4 py-2 bg-my-primary dark:bg-teal-500 text-white rounded-md hover:bg-my-primary/80 dark:hover:bg-teal-600"
               >
                 Override Status
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Force Cancel Modal */}
+      {adminCancelModalOpen && bookingToCancel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-[600px] p-6 border border-gray-200 dark:border-slate-700">
+            <div className="flex items-start mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="ml-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Force Cancel Booking</h2>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Cancel this booking for fraud prevention or compliance reasons</p>
+              </div>
+            </div>
+
+            <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+              <p className="text-sm font-medium text-orange-900 dark:text-orange-100 mb-2">Booking Information:</p>
+              <p className="text-xs text-orange-700 dark:text-orange-300">Booking #: {bookingToCancel.booking_number}</p>
+              <p className="text-xs text-orange-700 dark:text-orange-300">Customer: {bookingToCancel.renter_first_name} {bookingToCancel.renter_last_name}</p>
+              <p className="text-xs text-orange-700 dark:text-orange-300">Product: {bookingToCancel.product_title}</p>
+              <p className="text-xs text-orange-700 dark:text-orange-300">Current Status: {bookingToCancel.status}</p>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="cancel-reason" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Cancellation Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="cancel-reason"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                placeholder="Explain why this booking is being cancelled (minimum 10 characters)"
+                rows={3}
+                required
+              />
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Minimum 10 characters required</p>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="admin-notes" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Admin Notes (Optional)
+              </label>
+              <textarea
+                id="admin-notes"
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                placeholder="Additional notes for internal records"
+                rows={2}
+              />
+            </div>
+
+            <div className="mb-4 flex items-center">
+              <input
+                type="checkbox"
+                id="force-refund"
+                checked={forceRefund}
+                onChange={(e) => setForceRefund(e.target.checked)}
+                className="w-4 h-4 text-my-primary border-gray-300 rounded focus:ring-my-primary"
+              />
+              <label htmlFor="force-refund" className="ml-2 text-sm text-gray-700 dark:text-slate-300">
+                Automatically process refund to renter
+              </label>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setAdminCancelModalOpen(false);
+                  setBookingToCancel(null);
+                  setCancelReason('');
+                  setAdminNotes('');
+                  setForceRefund(true);
+                }}
+                disabled={isCancelling}
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-slate-200 rounded-md hover:bg-gray-300 dark:hover:bg-slate-500 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdminForceCancel}
+                disabled={isCancelling || !cancelReason.trim()}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {isCancelling ? (
+                  <>
+                    <RefreshCw className="animate-spin w-4 h-4 mr-2" />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Force Cancel Booking
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Process Refund Modal */}
+      {refundModalOpen && bookingToRefund && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-[600px] p-6 border border-gray-200 dark:border-slate-700">
+            <div className="flex items-start mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="ml-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Process Refund</h2>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Process refund for cancelled booking</p>
+              </div>
+            </div>
+
+            <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">Booking Information:</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">Booking #: {bookingToRefund.booking_number}</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">Customer: {bookingToRefund.renter_first_name} {bookingToRefund.renter_last_name}</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">Product: {bookingToRefund.product_title}</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">Status: {bookingToRefund.status}</p>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="refund-amount" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Refund Amount (Optional)
+              </label>
+              <input
+                type="number"
+                id="refund-amount"
+                value={refundAmount}
+                onChange={(e) => setRefundAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                placeholder="Leave blank for full refund"
+                step="0.01"
+                min="0"
+              />
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Leave blank to refund full amount</p>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="cancellation-fee" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Cancellation Fee (Optional)
+              </label>
+              <input
+                type="number"
+                id="cancellation-fee"
+                value={cancellationFee}
+                onChange={(e) => setCancellationFee(e.target.value === '' ? '' : Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                placeholder="Enter cancellation fee"
+                step="0.01"
+                min="0"
+              />
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Fee to deduct from refund</p>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="refund-reason" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Reason (Optional)
+              </label>
+              <textarea
+                id="refund-reason"
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                placeholder="Reason for this refund amount"
+                rows={2}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setRefundModalOpen(false);
+                  setBookingToRefund(null);
+                  setRefundAmount('');
+                  setCancellationFee('');
+                  setRefundReason('');
+                }}
+                disabled={isProcessingRefund}
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-slate-200 rounded-md hover:bg-gray-300 dark:hover:bg-slate-500 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleProcessRefund}
+                disabled={isProcessingRefund}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {isProcessingRefund ? (
+                  <>
+                    <RefreshCw className="animate-spin w-4 h-4 mr-2" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Process Refund
+                  </>
+                )}
               </button>
             </div>
           </div>

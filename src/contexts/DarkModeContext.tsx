@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useTheme } from './ThemeContext';
 
 interface DarkModeContextType {
   isDarkMode: boolean;
@@ -12,38 +13,8 @@ interface DarkModeProviderProps {
 }
 
 export const DarkModeProvider: React.FC<DarkModeProviderProps> = ({ children }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    // Check and apply dark mode from local storage
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setIsDarkMode(savedDarkMode);
-    
-    // Apply dark mode to document
-    if (savedDarkMode) {
-      // Respect context toggle only; components should not force dark
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    
-    // Apply to document
-    if (newMode) {
-      // Respect context toggle only; components should not force dark
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
-    // Save to local storage
-    localStorage.setItem('darkMode', newMode.toString());
-  };
-
+  // Proxy to ThemeContext to avoid conflicting dark mode sources
+  const { isDarkMode, toggleDarkMode } = useTheme();
   return (
     <DarkModeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
       {children}
