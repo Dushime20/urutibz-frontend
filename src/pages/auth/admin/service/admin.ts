@@ -434,33 +434,291 @@ export async function fetchModeratorDetails(moderatorId: string, token?: string)
 
 // Report Generation Functions (Stub implementations)
 export async function generateRevenueReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateRevenueReport: Function not implemented yet');
-  return { data: { totalRevenue: 0, revenueByPeriod: [], topProducts: [] } };
+  try {
+    const start = filters?.startDate ? new Date(filters.startDate) : null;
+    const end = filters?.endDate ? new Date(filters.endDate) : null;
+    let period = '30d';
+    if (start && end) {
+      const diffDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      if (diffDays <= 7) period = '7d';
+      else if (diffDays <= 30) period = '30d';
+      else period = '90d';
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/admin/analytics`, {
+      headers: createAuthHeaders(token),
+      params: { period, granularity: 'day' },
+    });
+
+    const data = response.data?.data || response.data;
+    const revenueData = data?.revenueData || {};
+    const topProducts = data?.topProducts || [];
+
+    const totalRevenue = revenueData?.total || revenueData?.totalRevenue || 0;
+    const totalBookings = revenueData?.totalBookings || 0;
+    const averageBookingValue = totalBookings ? totalRevenue / totalBookings : 0;
+
+    const categoryBreakdown = revenueData?.byCategory || revenueData?.categoryBreakdown || [];
+    let revenueByCategory: Array<{ category: string; revenue: number; bookings: number }>; 
+
+    if (Array.isArray(categoryBreakdown) && categoryBreakdown.length) {
+      revenueByCategory = categoryBreakdown.map((c: any) => ({
+        category: c.category || c.name || 'Uncategorized',
+        revenue: c.revenue || c.total || 0,
+        bookings: c.bookings || 0,
+      }));
+    } else {
+      const map: Record<string, { revenue: number; bookings: number }> = {};
+      (topProducts as any[]).forEach((p) => {
+        const key = p.category || 'Uncategorized';
+        if (!map[key]) map[key] = { revenue: 0, bookings: 0 };
+        map[key].revenue += p.revenue || 0;
+        map[key].bookings += p.bookings || 0;
+      });
+      revenueByCategory = Object.keys(map).map((k) => ({ category: k, revenue: map[k].revenue, bookings: map[k].bookings }));
+    }
+
+    return {
+      totalRevenue,
+      totalBookings,
+      averageBookingValue,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      revenueByCategory,
+    };
+  } catch (err) {
+    return { totalRevenue: 0, totalBookings: 0, averageBookingValue: 0, period: 'N/A', revenueByCategory: [] };
+  }
 }
 
 export async function generateUserReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateUserReport: Function not implemented yet');
-  return { data: { totalUsers: 0, newUsers: 0, activeUsers: 0, userGrowth: [] } };
+  try {
+    const params: Record<string, string> = {};
+    if (filters?.startDate) params['startDate'] = filters.startDate;
+    if (filters?.endDate) params['endDate'] = filters.endDate;
+
+    const response = await axios.get(`${API_BASE_URL}/admin/users`, {
+      headers: createAuthHeaders(token),
+      params,
+    });
+
+    const usersPayload = response?.data;
+    const usersList = usersPayload?.data?.items || usersPayload?.data || usersPayload?.items || [];
+    let users: any[] = Array.isArray(usersList) ? usersList : [];
+    if (!users.length) {
+      const processed: any = processApiResponse(response);
+      if (processed && Array.isArray(processed.items)) users = processed.items as any[];
+      else if (Array.isArray(processed)) users = processed as any[];
+    }
+
+    const toDate = filters?.endDate ? new Date(filters.endDate) : new Date();
+    const fromDate = filters?.startDate ? new Date(filters.startDate) : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const withinRange = (dateStr?: string) => {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return d >= fromDate && d <= toDate;
+    };
+
+    const totalUsers = users.length;
+    const newUsers = users.filter(u => withinRange(u.created_at || u.createdAt)).length;
+    const activeUsers = users.filter(u => u.isActive === true || u.active === true || u.status === 'active').length;
+    const verifiedUsers = users.filter(u => u.is_verified === true || u.verified === true || u.kyc_status === 'verified').length;
+
+    const topUsers = users
+      .map(u => ({
+        userId: u.id,
+        name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || u.email || 'Unknown',
+        email: u.email,
+        bookings: u.bookingsCount || u.totalBookings || 0,
+        revenue: u.revenue || u.totalRevenue || 0,
+      }))
+      .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
+      .slice(0, 10);
+
+    return {
+      totalUsers,
+      newUsers,
+      activeUsers,
+      verifiedUsers,
+      period: `${fromDate.toISOString().split('T')[0]} to ${toDate.toISOString().split('T')[0]}`,
+      topUsers,
+    };
+  } catch (err: any) {
+    return { totalUsers: 0, newUsers: 0, activeUsers: 0, verifiedUsers: 0, period: 'N/A', topUsers: [] };
+  }
 }
 
 export async function generateBookingReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateBookingReport: Function not implemented yet');
-  return { data: { totalBookings: 0, completedBookings: 0, cancelledBookings: 0, bookingTrends: [] } };
+  try {
+    const params: Record<string, string> = {};
+    const start = filters?.startDate ? new Date(filters.startDate) : null;
+    const end = filters?.endDate ? new Date(filters.endDate) : null;
+    let timeframe = '30d';
+    if (start && end) {
+      const diffDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      if (diffDays <= 7) timeframe = '7d';
+      else if (diffDays <= 30) timeframe = '30d';
+      else timeframe = '90d';
+    }
+    params['timeframe'] = timeframe;
+
+    const response = await axios.get(`${API_BASE_URL}/bookings/analytics`, {
+      headers: createAuthHeaders(token),
+      params,
+    });
+
+    const data = response.data?.data || response.data || {};
+
+    let totalBookings = data?.total_bookings ?? data?.totalBookings ?? 0;
+    let totalRevenue = data?.total_revenue ?? data?.totalRevenue ?? 0;
+    const averageBookingValue = data?.average_booking_value ?? data?.averageBookingValue ?? (totalBookings ? totalRevenue / totalBookings : 0);
+    const bookingsByStatusObj = data?.bookings_by_status || data?.bookingsByStatus || {};
+
+    const bookingsByStatus = Object.keys(bookingsByStatusObj).map((status) => ({
+      status,
+      count: bookingsByStatusObj[status] || 0,
+      percentage: totalBookings ? Math.round(((bookingsByStatusObj[status] || 0) / totalBookings) * 100) : 0,
+    }));
+
+    if (!totalBookings) {
+      const listResp = await axios.get(`${API_BASE_URL}/admin/bookings`, {
+        headers: createAuthHeaders(token),
+        params: { page: 1, limit: 1 },
+      });
+      const listData = listResp.data?.data || listResp.data || {};
+      const paginationTotal = listData?.pagination?.total ?? listData?.total ?? 0;
+      if (paginationTotal) totalBookings = paginationTotal;
+    }
+
+    const completedBookings = bookingsByStatus.find(s => s.status === 'completed')?.count || 0;
+    const cancelledBookings = bookingsByStatus.find(s => s.status === 'cancelled')?.count || 0;
+
+    return {
+      totalBookings,
+      totalRevenue,
+      averageBookingValue,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      bookingsByStatus,
+      revenueOverTime: data?.revenue_over_time || data?.revenueOverTime || [],
+      completedBookings,
+      cancelledBookings,
+    };
+  } catch (err) {
+    return { totalBookings: 0, totalRevenue: 0, averageBookingValue: 0, period: 'N/A', bookingsByStatus: [], revenueOverTime: [], completedBookings: 0, cancelledBookings: 0 };
+  }
 }
 
 export async function generateProductReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateProductReport: Function not implemented yet');
-  return { data: { totalProducts: 0, activeProducts: 0, popularProducts: [], productPerformance: [] } };
+  try {
+    const params: Record<string, string> = { page: '1', limit: '100' };
+    if (filters?.startDate) params['startDate'] = filters.startDate;
+    if (filters?.endDate) params['endDate'] = filters.endDate;
+    if (filters?.category) params['category'] = filters.category;
+
+    const response = await axios.get(`${API_BASE_URL}/admin/products`, {
+      headers: createAuthHeaders(token),
+      params,
+    });
+
+    const payload = response.data?.data || response.data || {};
+    const items: any[] = payload?.items || payload?.data || [];
+
+    let totalProducts = payload?.pagination?.total ?? payload?.total ?? (Array.isArray(items) ? items.length : 0);
+    const activeProducts = Array.isArray(items) ? items.filter((p: any) => p.status === 'active').length : 0;
+
+    const topProducts = (Array.isArray(items) ? items : [])
+      .map((p: any) => ({
+        name: p.title || p.name || 'Unnamed',
+        category: p.category_name || p.category || 'General',
+        bookings: p.bookingsCount || p.totalBookings || 0,
+        revenue: p.revenue || p.totalRevenue || 0,
+      }))
+      .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
+      .slice(0, 10);
+
+    const rentedProducts = (Array.isArray(items) ? items : []).filter((p: any) => (p.bookingsCount || p.totalBookings || 0) > 0).length;
+
+    if (!totalProducts) {
+      const listResp = await axios.get(`${API_BASE_URL}/admin/products`, {
+        headers: createAuthHeaders(token),
+        params: { page: 1, limit: 1 },
+      });
+      const listData = listResp.data?.data || listResp.data || {};
+      const paginationTotal = listData?.pagination?.total ?? listData?.total ?? 0;
+      if (paginationTotal) totalProducts = paginationTotal;
+    }
+
+    return {
+      totalProducts,
+      activeProducts,
+      rentedProducts,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      topProducts,
+    };
+  } catch (err) {
+    return { totalProducts: 0, activeProducts: 0, rentedProducts: 0, period: 'N/A', topProducts: [] };
+  }
 }
 
 export async function generateTransactionReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateTransactionReport: Function not implemented yet');
-  return { data: { totalTransactions: 0, successfulTransactions: 0, failedTransactions: 0, transactionVolume: [] } };
+  try {
+    const params: Record<string, string> = {};
+    if (filters?.startDate) params['created_after'] = filters.startDate;
+    if (filters?.endDate) params['created_before'] = filters.endDate;
+
+    const response = await axios.get(`${API_BASE_URL}/payment-transactions/stats`, {
+      headers: createAuthHeaders(token),
+      params,
+    });
+
+    const data = response.data?.data || response.data;
+
+    const totalTransactions = data?.totalCount || data?.totalTransactions || 0;
+    const totalAmount = data?.totalAmount || data?.sumAmount || 0;
+    const successfulTransactions = data?.statusBreakdown?.completed || 0;
+
+    const transactionsByType: Array<{ type: string; count: number; amount: number }> = [];
+    const typeCounts = data?.transactionTypeBreakdown || data?.typeCounts || {};
+    Object.keys(typeCounts).forEach((type) => {
+      transactionsByType.push({ type, count: typeCounts[type] || 0, amount: 0 });
+    });
+
+    return {
+      totalTransactions,
+      totalAmount,
+      successfulTransactions,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      transactionsByType,
+    };
+  } catch (err) {
+    return { totalTransactions: 0, totalAmount: 0, successfulTransactions: 0, period: 'N/A', transactionsByType: [] };
+  }
 }
 
 export async function generatePerformanceReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generatePerformanceReport: Function not implemented yet');
-  return { data: { systemUptime: 100, responseTime: 0, errorRate: 0, performanceMetrics: [] } };
+  try {
+    const response = await axios.get(`${API_BASE_URL}/performance/metrics`, {
+      headers: createAuthHeaders(token),
+    });
+
+    const metrics = response.data?.data || response.data;
+
+    const performanceMetrics = [
+      { metric: 'Response Time (ms)', value: metrics?.response?.avg || metrics?.avgResponseTime || 0, target: 300, status: 'good' },
+      { metric: 'Error Rate (%)', value: metrics?.errors?.rate || metrics?.errorRate || 0, target: 1, status: 'good' },
+      { metric: 'Cache Hit Rate (%)', value: (metrics?.cache?.hitRate || 0) * 100, target: 80, status: 'good' },
+    ] as any;
+
+    return {
+      totalRevenue: 0,
+      totalBookings: 0,
+      averageRating: 0,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      performanceMetrics,
+    };
+  } catch (err) {
+    return { totalRevenue: 0, totalBookings: 0, averageRating: 0, period: 'N/A', performanceMetrics: [] };
+  }
 }
 
 export async function fetchCustomReports(token?: string): Promise<any[]> {
@@ -475,14 +733,53 @@ export async function createCustomReport(data: any, token?: string): Promise<any
 
 export async function deleteCustomReport(id: string, token?: string): Promise<void> {
   console.warn('deleteCustomReport: Function not implemented yet');
-  // Return void as expected
 }
 
 export async function exportReport(reportType: string, format: string, filters?: any, token?: string): Promise<Blob> {
-  console.warn('exportReport: Function not implemented yet');
-  // Return a mock blob for now
-  const mockData = `Mock ${reportType} report in ${format} format`;
-  return new Blob([mockData], { type: 'text/plain' });
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/export`,
+      {
+        type: reportType,
+        filters: filters || {},
+        format,
+      },
+      { headers: createAuthHeaders(token) }
+    );
+
+    const data = response.data?.data || response.data;
+    if (data?.url) {
+      const fileResp = await axios.get(data.url, { responseType: 'blob' });
+      return fileResp.data as Blob;
+    }
+
+    const payload = data || response.data || { success: true };
+    if (format === 'json') {
+      return new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    }
+
+    const flat = typeof payload === 'object' ? payload : { result: String(payload) };
+    const lines: string[] = [];
+    const walk = (obj: any, prefix: string = '') => {
+      Object.keys(obj || {}).forEach((k) => {
+        const v = (obj as any)[k];
+        const key = prefix ? `${prefix}.${k}` : k;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          walk(v, key);
+        } else {
+          lines.push(`${key},${JSON.stringify(v)}`);
+        }
+      });
+    };
+    walk(flat);
+    const csvText = ['key,value', ...lines].join('\n');
+
+    const mime = format === 'csv' ? 'text/csv' : 'application/vnd.ms-excel';
+    return new Blob([csvText], { type: mime });
+  } catch (error) {
+    const fallback = `Export failed for ${reportType} in ${format}`;
+    return new Blob([fallback], { type: 'text/plain' });
+  }
 }
 
 // Verification Management Functions

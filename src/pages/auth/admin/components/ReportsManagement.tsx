@@ -15,8 +15,10 @@ import {
   Trash2,
   Filter as FilterIcon,
   X,
-  CheckCircle} from 'lucide-react';
-import { Button } from '../../../components/ui/DesignSystem';
+  CheckCircle,
+  ShoppingCart} from 'lucide-react';
+import { Button } from '../../../../components/ui/DesignSystem';
+import TrendChart from '../../../../pages/risk-management/components/TrendChart';
 import {
   generateRevenueReport,
   generateUserReport,
@@ -74,6 +76,7 @@ interface BookingReport {
     count: number;
     percentage: number;
   }>;
+  revenueOverTime?: Array<any>;
 }
 
 interface ProductReport {
@@ -467,6 +470,277 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
     </div>
   );
 
+  const renderBookingReport = () => (
+    <div className="space-y-6">
+      {bookingReport ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <StatCard
+              title="Total Bookings"
+              value={(bookingReport.totalBookings || 0).toLocaleString()}
+              subtitle={bookingReport.period}
+              icon={Calendar}
+              color="bg-my-primary"
+            />
+            <StatCard
+              title="Completed"
+              value={(bookingReport.completedBookings || 0).toLocaleString()}
+              subtitle={bookingReport.period}
+              icon={CheckCircle}
+              color="bg-green-500"
+            />
+            <StatCard
+              title="Cancelled"
+              value={(bookingReport.cancelledBookings || 0).toLocaleString()}
+              subtitle={bookingReport.period}
+              icon={X}
+              color="bg-red-500"
+            />
+            <StatCard
+              title="Avg Value"
+              value={(bookingReport as any).averageBookingValue ? `$${(bookingReport as any).averageBookingValue.toLocaleString()}` : '$0'}
+              subtitle="Per booking"
+              icon={BarChart3}
+              color="bg-purple-500"
+            />
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">By Status</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {bookingReport.bookingsByStatus?.map((s) => (
+                <div key={s.status} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="font-medium text-gray-900 capitalize">{s.status.replace('_',' ')}</div>
+                  <div className="text-sm text-gray-600">{s.count} ({s.percentage}%)</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Revenue Over Time */}
+          {Array.isArray(bookingReport.revenueOverTime) && bookingReport.revenueOverTime.length > 0 && (
+            <TrendChart
+              title="Revenue Over Time"
+              color="green"
+              data={bookingReport.revenueOverTime.map((pt: any) => ({
+                date: pt.date || pt.period || '',
+                value: typeof pt.amount === 'number' ? pt.amount : (pt.value || 0),
+                label: pt.label || undefined,
+              }))}
+              formatValue={(v: number) => `$${Number(v).toLocaleString()}`}
+              className=""
+            />
+          )}
+        </>
+      ) : null}
+    </div>
+  );
+
+  const renderProductReport = () => (
+    <div className="space-y-6">
+      {productReport ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <StatCard
+              title="Total Products"
+              value={(productReport.totalProducts || 0).toLocaleString()}
+              subtitle={productReport.period}
+              icon={Package}
+              color="bg-my-primary"
+            />
+            <StatCard
+              title="Active"
+              value={(productReport.activeProducts || 0).toLocaleString()}
+              subtitle={productReport.period}
+              icon={Activity}
+              color="bg-green-500"
+            />
+            <StatCard
+              title="Rented"
+              value={(productReport.rentedProducts || 0).toLocaleString()}
+              subtitle={productReport.period}
+              icon={ShoppingCart}
+              color="bg-orange-500"
+            />
+            <StatCard
+              title="Top Product Revenue"
+              value={`$${(productReport.topProducts?.[0]?.revenue || 0).toLocaleString()}`}
+              subtitle={productReport.topProducts?.[0]?.name || '—'}
+              icon={TrendingUp}
+              color="bg-purple-500"
+            />
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Top Products</h4>
+            <div className="space-y-3">
+              {productReport.topProducts.slice(0, 5).map((p, idx) => (
+                <div key={p.name+idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-semibold">{idx+1}</div>
+                    <div>
+                      <div className="font-medium text-gray-900">{p.name}</div>
+                      <div className="text-sm text-gray-500">{p.category} • {p.bookings} bookings</div>
+                    </div>
+                  </div>
+                  <div className="text-right font-semibold text-gray-900">${(p.revenue || 0).toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Distribution & Revenue Bars */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Distribution */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Product Distribution</h4>
+              {(() => {
+                const total = Math.max(1, productReport.totalProducts || 0);
+                const activePct = Math.round(((productReport.activeProducts || 0) / total) * 100);
+                const rentedPct = Math.round(((productReport.rentedProducts || 0) / total) * 100);
+                return (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Active</span>
+                        <span>{activePct}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500" style={{ width: `${activePct}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Rented</span>
+                        <span>{rentedPct}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-orange-500" style={{ width: `${rentedPct}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Top Products by Revenue (Bars) */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Top Products by Revenue</h4>
+              {(() => {
+                const items = (productReport.topProducts || []).slice(0, 5);
+                const maxRevenue = Math.max(1, ...items.map((x: any) => x.revenue || 0));
+                return (
+                  <div className="space-y-3">
+                    {items.map((item: any, i: number) => (
+                      <div key={`${item.name}-${i}`}>
+                        <div className="flex justify-between text-sm text-gray-700 mb-1">
+                          <span className="truncate mr-2">{item.name}</span>
+                          <span className="font-medium">${(item.revenue || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-my-primary" style={{ width: `${Math.round(((item.revenue || 0) / maxRevenue) * 100)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+
+  const renderTransactionReport = () => (
+    <div className="space-y-6">
+      {transactionReport ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <StatCard
+              title="Total Transactions"
+              value={(transactionReport.totalTransactions || 0).toLocaleString()}
+              subtitle={transactionReport.period}
+              icon={CreditCard}
+              color="bg-my-primary"
+            />
+            <StatCard
+              title="Successful"
+              value={(transactionReport.successfulTransactions || 0).toLocaleString()}
+              subtitle={transactionReport.period}
+              icon={CheckCircle}
+              color="bg-green-500"
+            />
+            <StatCard
+              title="Total Amount"
+              value={`$${(transactionReport.totalAmount || 0).toLocaleString()}`}
+              subtitle={transactionReport.period}
+              icon={TrendingUp}
+              color="bg-purple-500"
+            />
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">By Type</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {transactionReport.transactionsByType?.map((t) => (
+                <div key={t.type} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="font-medium text-gray-900 capitalize">{t.type.replace('_',' ')}</div>
+                  <div className="text-sm text-gray-600">{t.count}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {Array.isArray((transactionReport as any).monthlyTrends) && (transactionReport as any).monthlyTrends.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Transactions Over Time</h4>
+              <TrendChart
+                title="Transactions"
+                color="blue"
+                data={(transactionReport as any).monthlyTrends.map((m: any) => ({ date: m.month, value: m.count }))}
+                formatValue={(v: number) => `${v}`}
+              />
+            </div>
+          )}
+        </>
+      ) : null}
+    </div>
+  );
+
+  const renderPerformanceReport = () => (
+    <div className="space-y-6">
+      {performanceReport ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {performanceReport.performanceMetrics?.map((m) => (
+              <StatCard
+                key={m.metric}
+                title={m.metric}
+                value={m.value}
+                subtitle={`Target: ${m.target}`}
+                icon={Activity}
+                color={m.status === 'good' ? 'bg-green-500' : m.status === 'warning' ? 'bg-orange-500' : 'bg-red-500'}
+              />
+            ))}
+          </div>
+
+          {Array.isArray((performanceReport as any).performanceTrend) && (performanceReport as any).performanceTrend.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">API Response Time Trend</h4>
+              <TrendChart
+                title="Avg Response Time (ms)"
+                color="purple"
+                data={(performanceReport as any).performanceTrend.map((p: any) => ({ date: p.date, value: p.value }))}
+                formatValue={(v: number) => `${Math.round(v)} ms`}
+              />
+            </div>
+          )}
+        </>
+      ) : null}
+    </div>
+  );
+
   const renderCustomReports = () => (
     <div className="space-y-6">
       {/* Custom Reports List */}
@@ -660,30 +934,10 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
         <div>
           {activeTab === 'revenue' && renderRevenueReport()}
           {activeTab === 'users' && renderUserReport()}
-          {activeTab === 'bookings' && (
-            <div className="text-center py-12">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Booking reports coming soon!</p>
-            </div>
-          )}
-          {activeTab === 'products' && (
-            <div className="text-center py-12">
-              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Product reports coming soon!</p>
-            </div>
-          )}
-          {activeTab === 'transactions' && (
-            <div className="text-center py-12">
-              <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Transaction reports coming soon!</p>
-            </div>
-          )}
-          {activeTab === 'performance' && (
-            <div className="text-center py-12">
-              <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Performance reports coming soon!</p>
-            </div>
-          )}
+          {activeTab === 'bookings' && renderBookingReport()}
+          {activeTab === 'products' && renderProductReport()}
+          {activeTab === 'transactions' && renderTransactionReport()}
+          {activeTab === 'performance' && renderPerformanceReport()}
           {activeTab === 'custom' && renderCustomReports()}
         </div>
       )}

@@ -473,8 +473,71 @@ export async function fetchModeratorDetails(moderatorId: string, token?: string)
 
 // Report Generation Functions (Stub implementations)
 export async function generateRevenueReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateRevenueReport: Function not implemented yet');
-  return { data: { totalRevenue: 0, revenueByPeriod: [], topProducts: [] } };
+  try {
+    // Derive a period string from date range (fallback to 30d)
+    const start = filters?.startDate ? new Date(filters.startDate) : null;
+    const end = filters?.endDate ? new Date(filters.endDate) : null;
+    let period = '30d';
+    if (start && end) {
+      const diffDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      if (diffDays <= 7) period = '7d';
+      else if (diffDays <= 30) period = '30d';
+      else period = '90d';
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/admin/analytics`, {
+      headers: createAuthHeaders(token),
+      params: { period, granularity: 'day' },
+    });
+
+    // Debug: raw analytics payload
+    console.log('[Reports] generateRevenueReport raw payload:', response?.data);
+
+    const data = response.data?.data || response.data;
+    const revenueData = data?.revenueData || {};
+    const topProducts = data?.topProducts || [];
+
+    const totalRevenue = revenueData?.total || revenueData?.totalRevenue || 0;
+    const totalBookings = revenueData?.totalBookings || 0;
+    const averageBookingValue = totalBookings ? totalRevenue / totalBookings : 0;
+
+    const categoryBreakdown = revenueData?.byCategory || revenueData?.categoryBreakdown || [];
+    let revenueByCategory: Array<{ category: string; revenue: number; bookings: number }>; 
+
+    if (Array.isArray(categoryBreakdown) && categoryBreakdown.length) {
+      revenueByCategory = categoryBreakdown.map((c: any) => ({
+        category: c.category || c.name || 'Uncategorized',
+        revenue: c.revenue || c.total || 0,
+        bookings: c.bookings || 0,
+      }));
+    } else {
+      // Fallback: synthesize from topProducts if needed
+      const map: Record<string, { revenue: number; bookings: number }> = {};
+      (topProducts as any[]).forEach((p) => {
+        const key = p.category || 'Uncategorized';
+        if (!map[key]) map[key] = { revenue: 0, bookings: 0 };
+        map[key].revenue += p.revenue || 0;
+        map[key].bookings += p.bookings || 0;
+      });
+      revenueByCategory = Object.keys(map).map((k) => ({ category: k, revenue: map[k].revenue, bookings: map[k].bookings }));
+    }
+
+    const result = {
+      totalRevenue,
+      totalBookings,
+      averageBookingValue,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      revenueByCategory,
+    };
+
+    // Debug: computed revenue report
+    console.log('[Reports] generateRevenueReport computed:', result);
+
+    return result;
+  } catch (err) {
+    console.error('Error generating revenue report:', err);
+    return { totalRevenue: 0, totalBookings: 0, averageBookingValue: 0, period: 'N/A', revenueByCategory: [] };
+  }
 }
 
 export async function generateUserReport(filters?: any, token?: string): Promise<any> {
@@ -489,7 +552,19 @@ export async function generateUserReport(filters?: any, token?: string): Promise
       params,
     });
 
-    const users: any[] = processApiResponse(response) || [];
+    // Debug: raw payload structure
+    console.log('[Reports] generateUserReport raw payload:', response?.data);
+
+    const usersPayload = response?.data;
+    const usersList = usersPayload?.data?.items || usersPayload?.data || usersPayload?.items || [];
+
+    // Fallback to helper if needed
+    let users: any[] = Array.isArray(usersList) ? usersList : [];
+    if (!users.length) {
+      const processed: any = processApiResponse(response);
+      if (processed && Array.isArray(processed.items)) users = processed.items as any[];
+      else if (Array.isArray(processed)) users = processed as any[];
+    }
 
     const toDate = filters?.endDate ? new Date(filters.endDate) : new Date();
     const fromDate = filters?.startDate ? new Date(filters.startDate) : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -503,9 +578,8 @@ export async function generateUserReport(filters?: any, token?: string): Promise
     const totalUsers = users.length;
     const newUsers = users.filter(u => withinRange(u.created_at || u.createdAt)).length;
     const activeUsers = users.filter(u => u.isActive === true || u.active === true || u.status === 'active').length;
-    const verifiedUsers = users.filter(u => u.is_verified === true || u.verified === true).length;
+    const verifiedUsers = users.filter(u => u.is_verified === true || u.verified === true || u.kyc_status === 'verified').length;
 
-    // Top users by bookings/revenue if available
     const topUsers = users
       .map(u => ({
         userId: u.id,
@@ -516,6 +590,15 @@ export async function generateUserReport(filters?: any, token?: string): Promise
       }))
       .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
       .slice(0, 10);
+
+    // Debug: computed aggregates
+    console.log('[Reports] generateUserReport computed:', {
+      totalUsers,
+      newUsers,
+      activeUsers,
+      verifiedUsers,
+      sampleUser: users[0]
+    });
 
     return {
       totalUsers,
@@ -540,23 +623,255 @@ export async function generateUserReport(filters?: any, token?: string): Promise
 }
 
 export async function generateBookingReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateBookingReport: Function not implemented yet');
-  return { data: { totalBookings: 0, completedBookings: 0, cancelledBookings: 0, bookingTrends: [] } };
+  try {
+    const params: Record<string, string> = {};
+    // Derive timeframe the backend expects (7d/30d/90d)
+    const start = filters?.startDate ? new Date(filters.startDate) : null;
+    const end = filters?.endDate ? new Date(filters.endDate) : null;
+    let timeframe = '30d';
+    if (start && end) {
+      const diffDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      if (diffDays <= 7) timeframe = '7d';
+      else if (diffDays <= 30) timeframe = '30d';
+      else timeframe = '90d';
+    }
+    params['timeframe'] = timeframe;
+
+    const response = await axios.get(`${API_BASE_URL}/bookings/analytics`, {
+      headers: createAuthHeaders(token),
+      params,
+    });
+
+    console.log('[Reports] generateBookingReport raw payload:', response?.data);
+
+    const data = response.data?.data || response.data || {};
+
+    // New structured payload from AnalyticsService
+    const metrics = data?.metrics?.current;
+    const statusDistribution = Array.isArray(data?.statusDistribution) ? data.statusDistribution : [];
+
+    let totalBookings = metrics?.totalBookings ?? data?.total_bookings ?? data?.totalBookings ?? 0;
+    let totalRevenue = metrics?.totalRevenue ?? data?.total_revenue ?? data?.totalRevenue ?? 0;
+    const averageBookingValue = metrics?.averageBookingValue ?? data?.average_booking_value ?? data?.averageBookingValue ?? (totalBookings ? totalRevenue / totalBookings : 0);
+
+    // Map bookings by status from either flat object or statusDistribution array
+    let bookingsByStatus: Array<{ status: string; count: number; percentage: number }>; 
+    if (statusDistribution.length > 0) {
+      const totalForPct = statusDistribution.reduce((sum: number, s: any) => sum + (parseInt(s.count) || s.count || 0), 0) || totalBookings || 1;
+      bookingsByStatus = statusDistribution.map((s: any) => ({
+        status: s.status,
+        count: parseInt(s.count) || s.count || 0,
+        percentage: Math.round(((parseInt(s.count) || s.count || 0) / totalForPct) * 100)
+      }));
+    } else {
+      const bookingsByStatusObj = data?.bookings_by_status || data?.bookingsByStatus || {};
+      bookingsByStatus = Object.keys(bookingsByStatusObj).map((status) => ({
+        status,
+        count: bookingsByStatusObj[status] || 0,
+        percentage: totalBookings ? Math.round(((bookingsByStatusObj[status] || 0) / totalBookings) * 100) : 0,
+      }));
+    }
+
+    // Fallback: if analytics returned 0, try admin bookings list to get pagination total
+    if (!totalBookings) {
+      const listResp = await axios.get(`${API_BASE_URL}/admin/bookings`, {
+        headers: createAuthHeaders(token),
+        params: { page: 1, limit: 1 },
+      });
+      const listData = listResp.data?.data || listResp.data || {};
+      const paginationTotal = listData?.pagination?.total ?? listData?.total ?? 0;
+      if (paginationTotal) totalBookings = paginationTotal;
+    }
+
+    const result = {
+      totalBookings,
+      totalRevenue,
+      averageBookingValue,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      bookingsByStatus,
+      // Support multiple shapes: trends.revenue, revenue_over_time, revenueOverTime
+      revenueOverTime: (data?.trends?.revenue) || data?.revenue_over_time || data?.revenueOverTime || [],
+      completedBookings: bookingsByStatus.find(s => s.status === 'completed')?.count || 0,
+      cancelledBookings: bookingsByStatus.find(s => s.status === 'cancelled')?.count || 0,
+    };
+
+    console.log('[Reports] generateBookingReport computed:', result);
+
+    return result;
+  } catch (err) {
+    console.error('Error generating booking report:', err);
+    return {
+      totalBookings: 0,
+      totalRevenue: 0,
+      averageBookingValue: 0,
+      period: 'N/A',
+      bookingsByStatus: [],
+      revenueOverTime: [],
+    };
+  }
 }
 
 export async function generateProductReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateProductReport: Function not implemented yet');
-  return { data: { totalProducts: 0, activeProducts: 0, popularProducts: [], productPerformance: [] } };
+  try {
+    const period = (() => {
+      if (filters?.startDate && filters?.endDate) {
+        const diffDays = Math.max(1, Math.round((new Date(filters.endDate).getTime() - new Date(filters.startDate).getTime()) / (1000*60*60*24)));
+        if (diffDays <= 7) return '7d';
+        if (diffDays <= 30) return '30d';
+        if (diffDays <= 90) return '90d';
+        return '1y';
+      }
+      return '30d';
+    })();
+
+    const analyticsResp = await axios.get(`${API_BASE_URL}/admin/products/analytics`, {
+      headers: createAuthHeaders(token),
+      params: { period }
+    });
+    const data = analyticsResp.data?.data || analyticsResp.data || {};
+    const totals = data?.totals || {};
+    const resultFromAnalytics = {
+      totalProducts: totals.totalProducts || 0,
+      activeProducts: totals.activeProducts || 0,
+      rentedProducts: totals.rentedProducts || 0,
+      period: period,
+      topProducts: (data.topProducts || []).map((p: any) => ({
+        name: p.title || 'Unnamed',
+        category: p.category || 'General',
+        bookings: p.bookings || 0,
+        revenue: p.revenue || 0,
+      })),
+    };
+    console.log('[Reports] generateProductReport (analytics) computed:', resultFromAnalytics);
+    return resultFromAnalytics;
+  } catch (err) {
+    console.error('Error generating product report:', err);
+    return {
+      totalProducts: 0,
+      activeProducts: 0,
+      rentedProducts: 0,
+      period: 'N/A',
+      topProducts: [],
+    };
+  }
 }
 
 export async function generateTransactionReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generateTransactionReport: Function not implemented yet');
-  return { data: { totalTransactions: 0, successfulTransactions: 0, failedTransactions: 0, transactionVolume: [] } };
+  try {
+    const params: Record<string, string> = {};
+    if (filters?.startDate) params['created_after'] = filters.startDate;
+    if (filters?.endDate) params['created_before'] = filters.endDate;
+
+    const response = await axios.get(`${API_BASE_URL}/payment-transactions/stats`, {
+      headers: createAuthHeaders(token),
+      params,
+    });
+
+    // Debug: raw stats payload
+    console.log('[Reports] generateTransactionReport raw payload:', response?.data);
+
+    const data = response.data?.data || response.data;
+
+    const totalTransactions = data?.totalCount || data?.totalTransactions || 0;
+    const totalAmount = data?.totalAmount || data?.sumAmount || 0;
+    const successfulTransactions = data?.statusBreakdown?.completed || 0;
+
+    const transactionsByType: Array<{ type: string; count: number; amount: number }> = [];
+    const typeCounts = data?.transactionTypeBreakdown || data?.typeCounts || {};
+    Object.keys(typeCounts).forEach((type) => {
+      transactionsByType.push({ type, count: typeCounts[type] || 0, amount: 0 });
+    });
+
+    const monthlyTrends = Array.isArray(data?.monthlyTrends || data?.monthly_trends)
+      ? (data.monthlyTrends || data.monthly_trends).map((t: any) => ({
+          month: t.month,
+          count: t.count,
+          amount: t.amount
+        }))
+      : [];
+
+    const result = {
+      totalTransactions,
+      totalAmount,
+      successfulTransactions,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      transactionsByType,
+      monthlyTrends,
+    };
+
+    // Debug: computed transaction report
+    console.log('[Reports] generateTransactionReport computed:', result);
+
+    return result;
+  } catch (err) {
+    console.error('Error generating transaction report:', err);
+    return {
+      totalTransactions: 0,
+      totalAmount: 0,
+      successfulTransactions: 0,
+      period: 'N/A',
+      transactionsByType: [],
+    };
+  }
 }
 
 export async function generatePerformanceReport(filters?: any, token?: string): Promise<any> {
-  console.warn('generatePerformanceReport: Function not implemented yet');
-  return { data: { systemUptime: 100, responseTime: 0, errorRate: 0, performanceMetrics: [] } };
+  try {
+    const response = await axios.get(`${API_BASE_URL}/performance/metrics`, {
+      headers: createAuthHeaders(token),
+    });
+
+    // Debug: raw performance payload
+    console.log('[Reports] generatePerformanceReport raw payload:', response?.data);
+
+    const metrics = response.data?.data || response.data;
+
+    const apiAvg = metrics?.api?.avgResponseTime || 0;
+    const apiErrorRatePct = (metrics?.api?.errorRate || 0) * 100;
+    const cacheHitPct = (metrics?.cache?.hitRate || 0) * 100;
+
+    const performanceMetrics = [
+      { metric: 'Response Time (ms)', value: apiAvg, target: 300, status: apiAvg <= 300 ? 'good' : apiAvg <= 500 ? 'warning' : 'poor' },
+      { metric: 'Error Rate (%)', value: apiErrorRatePct, target: 1, status: apiErrorRatePct <= 1 ? 'good' : apiErrorRatePct <= 5 ? 'warning' : 'poor' },
+      { metric: 'Cache Hit Rate (%)', value: cacheHitPct, target: 80, status: cacheHitPct >= 80 ? 'good' : cacheHitPct >= 60 ? 'warning' : 'poor' },
+    ] as any;
+
+    // Fetch history for trends
+    let apiTrend: Array<{ date: string; value: number }> = [];
+    try {
+      const histResp = await axios.get(`${API_BASE_URL}/performance/metrics/history`, {
+        headers: createAuthHeaders(token),
+        params: { hours: 6 },
+      });
+      const history = histResp.data?.data || [];
+      apiTrend = history.map((h: any) => ({ date: h.timestamp, value: h.api?.avgResponseTime || 0 }));
+    } catch (e) {
+      // ignore
+    }
+
+    const result = {
+      totalRevenue: 0,
+      totalBookings: 0,
+      averageRating: 0,
+      period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
+      performanceMetrics,
+      performanceTrend: apiTrend,
+    };
+
+    // Debug: computed performance report
+    console.log('[Reports] generatePerformanceReport computed:', result);
+
+    return result;
+  } catch (err) {
+    console.error('Error generating performance report:', err);
+    return {
+      totalRevenue: 0,
+      totalBookings: 0,
+      averageRating: 0,
+      period: 'N/A',
+      performanceMetrics: [],
+    };
+  }
 }
 
 export async function fetchCustomReports(token?: string): Promise<any[]> {
@@ -575,10 +890,55 @@ export async function deleteCustomReport(id: string, token?: string): Promise<vo
 }
 
 export async function exportReport(reportType: string, format: string, filters?: any, token?: string): Promise<Blob> {
-  console.warn('exportReport: Function not implemented yet');
-  // Return a mock blob for now
-  const mockData = `Mock ${reportType} report in ${format} format`;
-  return new Blob([mockData], { type: 'text/plain' });
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/export`,
+      {
+        type: reportType,
+        filters: filters || {},
+        format,
+      },
+      { headers: createAuthHeaders(token) }
+    );
+
+    // If backend returns a downloadable URL, prefer it
+    const data = response.data?.data || response.data;
+    if (data?.url) {
+      const fileResp = await axios.get(data.url, { responseType: 'blob' });
+      return fileResp.data as Blob;
+    }
+
+    // Otherwise, serialize the response to a file-like blob according to requested format
+    const payload = data || response.data || { success: true };
+
+    if (format === 'json') {
+      return new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    }
+
+    // Minimal CSV/Excel-compatible text (tabular not guaranteed). Provide a simple key/value export.
+    const flat = typeof payload === 'object' ? payload : { result: String(payload) };
+    const lines: string[] = [];
+    const walk = (obj: any, prefix: string = '') => {
+      Object.keys(obj || {}).forEach((k) => {
+        const v = (obj as any)[k];
+        const key = prefix ? `${prefix}.${k}` : k;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          walk(v, key);
+        } else {
+          lines.push(`${key},${JSON.stringify(v)}`);
+        }
+      });
+    };
+    walk(flat);
+    const csvText = ['key,value', ...lines].join('\n');
+
+    const mime = format === 'csv' ? 'text/csv' : 'application/vnd.ms-excel';
+    return new Blob([csvText], { type: mime });
+  } catch (error) {
+    console.error('Error exporting report:', error);
+    const fallback = `Export failed for ${reportType} in ${format}`;
+    return new Blob([fallback], { type: 'text/plain' });
+  }
 }
 
 // Verification Management Functions
