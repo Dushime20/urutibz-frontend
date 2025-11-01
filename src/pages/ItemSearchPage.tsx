@@ -64,7 +64,10 @@ const ItemSearchPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [selectedLocation, setSelectedLocation] = useState(searchParams.get('location') || 'all');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
+  const [priceRange, setPriceRange] = useState({
+    min: Number(searchParams.get('priceMin') || 0),
+    max: Number(searchParams.get('priceMax') || 0),
+  });
   const [sortBy, setSortBy] = useState('relevance');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -310,8 +313,10 @@ const ItemSearchPage: React.FC = () => {
     if (searchQuery) params.set('q', searchQuery);
     if (selectedCategory !== 'all') params.set('category', selectedCategory);
     if (selectedLocation !== 'all') params.set('location', selectedLocation);
+    if (priceRange.min > 0) params.set('priceMin', String(priceRange.min));
+    if (priceRange.max > 0) params.set('priceMax', String(priceRange.max));
     setSearchParams(params);
-  }, [searchQuery, selectedCategory, selectedLocation, setSearchParams]);
+  }, [searchQuery, selectedCategory, selectedLocation, priceRange.min, priceRange.max, setSearchParams]);
 
   // Derived filtered and sorted items based on selected filters
   const filteredItems = React.useMemo(() => {

@@ -639,7 +639,7 @@ const HomePage: React.FC = () => {
               >
                 {loadingMore ? t('home.fetching') : t('home.fetchAllProducts')}
               </button>
-              <Link to="/search" className="text-sm text-my-primary dark:text-teal-400 hover:underline">{t('home.viewAll')}</Link>
+              <Link to="/items" className="text-sm text-my-primary dark:text-teal-400 hover:underline">{t('home.viewAll')}</Link>
             </div>
           </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">

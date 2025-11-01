@@ -40,6 +40,8 @@ const Header: React.FC = () => {
   const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
   const searchTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const autoSearchTimeoutRef = useRef<number | null>(null);
 
   // Integrated search state
   const params = new URLSearchParams(location.search);
@@ -116,29 +118,6 @@ const Header: React.FC = () => {
       .slice(0, 8);
   }, []);
 
-  const debouncedSearch = useCallback((query: string) => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      if (query.length >= 2) {
-        setIsSearching(true);
-        setSearchSuggestions(generateSearchSuggestions(query));
-        setShowSuggestions(true);
-        
-        // Auto-search after 1 second of no typing
-        setTimeout(() => {
-          performAutoSearch();
-        }, 1000);
-      } else {
-        setSearchSuggestions([]);
-        setShowSuggestions(false);
-      }
-      setIsSearching(false);
-    }, 300);
-  }, [generateSearchSuggestions]);
-
   const performAutoSearch = useCallback(() => {
     const sp = new URLSearchParams();
     if (q) sp.set('q', q);
@@ -186,6 +165,40 @@ const Header: React.FC = () => {
     navigate(`/items/search${sp.toString() ? `?${sp.toString()}` : ''}`);
     setShowSuggestions(false);
   }, [q, category, priceMin, priceMax, checkIn, checkOut, nearMe, lat, lng, radiusKm, recentSearches, navigate, location.pathname]);
+
+  const debouncedSearch = useCallback((query: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    if (autoSearchTimeoutRef.current) {
+      clearTimeout(autoSearchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = window.setTimeout(() => {
+      if (query.length >= 2) {
+        setIsSearching(true);
+        setSearchSuggestions(generateSearchSuggestions(query));
+        setShowSuggestions(true);
+
+        autoSearchTimeoutRef.current = window.setTimeout(() => {
+          performAutoSearch();
+        }, 1000);
+      } else {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      }
+      setIsSearching(false);
+    }, 300);
+  }, [generateSearchSuggestions, performAutoSearch]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      if (autoSearchTimeoutRef.current) clearTimeout(autoSearchTimeoutRef.current);
+    };
+  }, []);
+
+  
 
   const handleSearchInputChange = (value: string) => {
     setQ(value);
@@ -241,11 +254,12 @@ const Header: React.FC = () => {
   // Handle clicks outside search suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
+      const target = event.target as Node;
+      const insideInput = !!(searchInputRef.current && searchInputRef.current.contains(target));
+      const insideSuggestions = !!(suggestionsRef.current && suggestionsRef.current.contains(target));
+      if (insideInput || insideSuggestions) return;
+      setShowSuggestions(false);
     };
-    
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -313,7 +327,7 @@ const Header: React.FC = () => {
                 to="/items" 
                 className="nav-link text-sm xl:text-base"
               >
-                Browse Items
+                {t('header.browseItems')}
               </Link>
               {/* Categories dropdown */}
               <div className="relative">
@@ -321,7 +335,7 @@ const Header: React.FC = () => {
                   onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
                   className="inline-flex items-center gap-1 nav-link text-sm xl:text-base"
                 >
-                  Categories
+                  {t('header.categories')}
                   <ChevronDown className="h-4 w-4" />
                 </button>
                 {isCategoriesOpen && topCategories.length > 0 && (
@@ -344,14 +358,14 @@ const Header: React.FC = () => {
                 className="inline-flex items-center gap-2 text-sm xl:text-base px-3 py-2 rounded-full border hover:border-[#01aaa7] text-[#01aaa7]"
               >
                 <PlusCircle className="w-4 h-4" />
-                List Item
+                {t('header.listItem')}
               </Link>
               {isAuthenticated && (
                 <Link 
                   to="/favorites" 
                   className="nav-link text-sm xl:text-base"
                 >
-                  Favorites
+                  {t('header.favorites')}
                 </Link>
               )}
             </nav>
@@ -408,7 +422,7 @@ const Header: React.FC = () => {
                     className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
                   >
                     {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                    <span>Toggle theme</span>
+                    <span>{t('header.toggleTheme')}</span>
                   </button>
                 </div>
               )}
@@ -426,7 +440,7 @@ const Header: React.FC = () => {
                       : 'btn-outline hover:bg-[#01aaa7] hover:text-white'
                   }`}
                 >
-                  {user?.role === 'admin' ? 'Admin Dashboard' : 'My Account'}
+                  {user?.role === 'admin' ? t('header.adminDashboard') : t('header.myAccount')}
                 </Link>
                 
                 {/* User Profile Dropdown */}
@@ -473,26 +487,26 @@ const Header: React.FC = () => {
                         to="/profile" 
                         className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
                       >
-                        Profile Settings
+                        {t('header.profileSettings')}
                       </Link>
                       <Link 
                         to={user?.role === 'admin' ? '/admin' : '/dashboard'}
                         className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
                       >
-                        {user?.role === 'admin' ? 'Admin Dashboard' : 'My Account'}
+                        {user?.role === 'admin' ? t('header.adminDashboard') : t('header.myAccount')}
                       </Link>
                       <Link 
                         to="/my-rentals" 
                         className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
                       >
-                        My Rentals
+                        {t('header.myRentals')}
                       </Link>
                       <hr className="my-1 border-platform-light-grey dark:border-gray-600" />
                       <button 
                         onClick={logout} 
                         className="block w-full text-left px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
                       >
-                        Sign Out
+                        {t('header.signOut')}
                       </button>
                     </div>
                   )}
@@ -504,14 +518,14 @@ const Header: React.FC = () => {
                   to="/login" 
                   className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium btn-outline"
                 >
-                  Log In
+                  {t('header.login')}
                 </Link>
                 {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
                   <Link 
                     to="/register" 
                     className="inline-flex items-center px-4 py-2 text-sm font-medium bg-[#01aaa7] text-white rounded-platform hover:opacity-90"
                   >
-                    Sign Up
+                    {t('header.signUp')}
                   </Link>
                 )}
               </div>
@@ -540,7 +554,7 @@ const Header: React.FC = () => {
                     ref={searchInputRef}
                   value={q}
                     onChange={(e) => handleSearchInputChange(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && submitSearch()}
+                  onKeyDown={(e) => e.key === 'Enter' && submitSearch()}
                     onFocus={() => setShowSuggestions(q.length >= 2 || recentSearches.length > 0)}
                     placeholder={t('header.searchPlaceholder')}
                     className="flex-1 text-sm outline-none placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-transparent"
@@ -633,7 +647,7 @@ const Header: React.FC = () => {
                 {nearMe && lat && lng ? (
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 text-xs px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700">
-                      ✓ Location enabled
+                      ✓ {t('header.locationEnabled')}
                     </span>
                     <input
                       type="number"
@@ -641,8 +655,8 @@ const Header: React.FC = () => {
                       value={radiusKm}
                       onChange={(e) => setRadiusKm(Number(e.target.value) || 25)}
                       className="w-16 px-2 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
-                      placeholder="km"
-                      title="Radius in kilometers"
+                      placeholder={t('header.kmPlaceholder')}
+                      title={t('header.radiusKmTitle')}
                     />
                   </div>
                 ) : (
@@ -652,7 +666,7 @@ const Header: React.FC = () => {
                     className="inline-flex items-center gap-2 px-3 py-2 text-sm text-[#01aaa7] hover:text-[#008a87] border border-[#01aaa7] hover:border-[#008a87] rounded-lg hover:bg-[#01aaa7]/5 transition-colors"
                   >
                     <span aria-hidden>📍</span>
-                    Use my location
+                    {t('header.useMyLocation')}
                   </button>
                 )}
               </div>
@@ -662,7 +676,7 @@ const Header: React.FC = () => {
 
         {/* Search Suggestions Dropdown */}
         {showSuggestions && (
-          <div className="hidden md:block absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-4xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
+          <div ref={suggestionsRef} className="hidden md:block absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-4xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
             {/* Recent Searches */}
             {recentSearches.length > 0 && !q && (
               <div className="p-3 border-b border-gray-100 dark:border-gray-700">
@@ -707,7 +721,7 @@ const Header: React.FC = () => {
             {q.length >= 2 && searchSuggestions.length > 0 && (
               <div className="p-3">
                 <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                  Suggestions
+                  {t('header.suggestions')}
                 </div>
                 {searchSuggestions.map((suggestion, index) => (
                   <button
@@ -724,7 +738,7 @@ const Header: React.FC = () => {
             {/* No Results */}
             {q.length >= 2 && searchSuggestions.length === 0 && (
               <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
-                No suggestions found for "{q}"
+                {t('header.noSuggestionsFor')} "{q}"
               </div>
             )}
           </div>
@@ -738,7 +752,7 @@ const Header: React.FC = () => {
                 to="/items" 
                 className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
               >
-                Browse Items
+                {t('header.browseItems')}
               </Link>
               {/* Top categories quick links */}
               <div className="grid grid-cols-2 gap-2 px-2">
@@ -752,7 +766,7 @@ const Header: React.FC = () => {
                 to="/list-property" 
                 className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
               >
-                List Your Item
+                {t('header.listYourItem')}
               </Link>
               {isAuthenticated && (
                 <>
@@ -761,10 +775,10 @@ const Header: React.FC = () => {
                     className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                   >
                     <div className="flex items-center justify-between">
-                      <span>{user?.role === 'admin' ? 'Admin Dashboard' : 'My Account'}</span>
+                      <span>{user?.role === 'admin' ? t('header.adminDashboard') : t('header.myAccount')}</span>
                       {user?.role === 'admin' && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                          Admin
+                          {t('header.admin')}
                         </span>
                       )}
                     </div>
@@ -773,24 +787,24 @@ const Header: React.FC = () => {
                     to="/favorites" 
                     className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                   >
-                    Favorites
+                    {t('header.favorites')}
                   </Link>
                 </>
               )}
               
               {!isAuthenticated && (
                 <div className="pt-2 space-y-2">
-                                      <Link 
+                  <Link 
                       to="/login" 
                       className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                     >
-                      Log In
+                      {t('header.login')}
                     </Link>
                   <Link 
                     to="/register" 
                     className="block px-2 py-2 text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition-all duration-200 text-center"
                   >
-                    Sign Up
+                    {t('header.signUp')}
                   </Link>
                 </div>
               )}
