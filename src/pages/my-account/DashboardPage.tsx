@@ -449,6 +449,22 @@ const DashboardPage: React.FC = () => {
         const token = localStorage.getItem('token');
         const bookingsRes = await fetchUserBookings(token);
         const bookings = bookingsRes.data || [];
+        
+        // Console log to debug status issue
+        console.log('🔍 [DashboardPage] Bookings from API response:', {
+          totalBookings: bookings.length,
+          bookings: bookings.map((b: any) => ({
+            id: b.id,
+            booking_number: b.booking_number,
+            status: b.status,
+            payment_status: b.payment_status,
+            renter_id: b.renter_id || b.renterId,
+            owner_id: b.owner_id || b.ownerId,
+            product_id: b.product_id,
+            fullBooking: b // Full booking object to inspect
+          }))
+        });
+        
         setUserBookings(bookings);
 
         // Fetch product details and images for each booking

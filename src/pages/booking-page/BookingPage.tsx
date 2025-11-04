@@ -11,7 +11,7 @@ import {
   Shield,
 } from 'react-feather';
 import { createBooking } from './service/api';
-import { fetchProductImages, getProductById } from '../admin/service';
+import { fetchProductImages, getProductById, fetchProductPricesByProductId } from '../admin/service';
 import { useToast } from '../../contexts/ToastContext';
 import ReviewForm from './components/ReviewForm';
 import PaymentStepper from './components/PaymentStepper';
@@ -40,32 +40,168 @@ const BookingPage: React.FC = () => {
   const [formData, setFormData] = useState({
     startDate: '',
     endDate: '',
-    pickupTime: '10:00',
-    returnTime: '10:00',
-    pickupMethod: 'pickup',
+    pickupTime: '',
+    returnTime: '',
+    pickupMethod: '',
     renterNotes: '',
   });
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [productPricing, setProductPricing] = useState<any>(null); // Add pricing state
 
-  // Rental calculation
+  // Fetch product pricing when product is loaded
+  useEffect(() => {
+    const fetchPricing = async () => {
+      if (bookingItem?.id) {
+        try {
+          const pricingResult = await fetchProductPricesByProductId(bookingItem.id, { page: 1, limit: 1 });
+          if (pricingResult.success && pricingResult.data && pricingResult.data.length > 0) {
+            setProductPricing(pricingResult.data[0]); // Get first active pricing
+          }
+        } catch (error) {
+          console.error('Error fetching product pricing:', error);
+        }
+      }
+    };
+    fetchPricing();
+  }, [bookingItem?.id]);
+
+  // Updated rental calculation with flexible pricing
   const rentalDetails = useMemo(() => {
-    const startDate = formData.startDate ? new Date(formData.startDate) : null;
-    const endDate = formData.endDate ? new Date(formData.endDate) : null;
-    let rentalDays = 0;
-    if (startDate && endDate) {
-      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-      rentalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (rentalDays === 0) rentalDays = 1;
+    if (!formData.startDate || !formData.endDate) {
+      return { 
+        rentalDays: 0, 
+        rentalHours: 0, 
+        totalDays: 0,
+        remainingHours: 0,
+        itemPrice: 0, 
+        amount: 0, 
+        serviceFee: 0, 
+        totalCost: 0, 
+        pricingType: 'daily',
+        currency: bookingItem?.base_currency || 'RWF',
+        baseRate: 0,
+        unitsUsed: 0,
+        hasHourlyPricing: false
+      };
     }
-    const itemPrice = bookingItem?.base_price_per_day || 0;
-    const amount = itemPrice * rentalDays;
-    const serviceFee = amount * 0.1;
-    const totalCost = amount + serviceFee;
-    return { rentalDays, itemPrice, amount, serviceFee, totalCost };
-  }, [formData, bookingItem]);
+
+    // Helper function to combine date and time
+    const combineDateTime = (dateStr: string, timeStr?: string): Date => {
+      const time = timeStr || '00:00';
+      const timeParts = time.split(':');
+      const hours = timeParts[0] || '00';
+      const minutes = timeParts[1] || '00';
+      const seconds = timeParts[2] || '00';
+      const combinedDateTime = `${dateStr}T${hours}:${minutes}:${seconds}.000Z`;
+      return new Date(combinedDateTime);
+    };
+
+    // Calculate exact timestamps if times are provided, otherwise use dates only
+    const startDateTime = formData.pickupTime 
+      ? combineDateTime(formData.startDate, formData.pickupTime)
+      : new Date(formData.startDate);
+    const endDateTime = formData.returnTime 
+      ? combineDateTime(formData.endDate, formData.returnTime)
+      : new Date(formData.endDate);
+
+    // Calculate exact duration in hours
+    const durationMs = endDateTime.getTime() - startDateTime.getTime();
+    const totalHours = durationMs / (1000 * 60 * 60); // Convert milliseconds to hours
+    const totalDays = Math.floor(totalHours / 24); // Full days
+    const remainingHours = totalHours % 24; // Remaining hours after full days
+    const totalDaysForTier = Math.ceil(totalHours / 24); // For tier selection
+
+    // Get pricing from product_prices or fallback to product.base_price_per_day
+    const pricePerDay = productPricing?.price_per_day 
+      ? parseFloat(productPricing.price_per_day) 
+      : (bookingItem?.base_price_per_day || 0);
+    const pricePerHour = productPricing?.price_per_hour 
+      ? parseFloat(productPricing.price_per_hour) 
+      : null;
+    const pricePerWeek = productPricing?.price_per_week 
+      ? parseFloat(productPricing.price_per_week) 
+      : null;
+    const pricePerMonth = productPricing?.price_per_month 
+      ? parseFloat(productPricing.price_per_month) 
+      : null;
+    const currency = productPricing?.currency || bookingItem?.base_currency || 'RWF';
+    const marketAdjustment = productPricing?.market_adjustment_factor 
+      ? parseFloat(productPricing.market_adjustment_factor) 
+      : 1;
+
+    const hasHourlyPricing = pricePerHour && pricePerHour > 0;
+    let baseAmount = 0;
+    let baseRate: number;
+    let unitsUsed: number;
+    let pricingType: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'mixed';
+
+    // Apply pricing logic (same as backend)
+    if (hasHourlyPricing) {
+      if (totalHours < 24) {
+        // Less than 24 hours: charge hourly only
+        baseRate = pricePerHour!;
+        unitsUsed = totalHours;
+        baseAmount = baseRate * unitsUsed;
+        pricingType = 'hourly';
+      } else {
+        // 24 hours or more: charge daily for full days + hourly for remaining hours
+        baseRate = pricePerDay;
+        unitsUsed = totalDays;
+        const dailyAmount = baseRate * unitsUsed;
+        const hourlyAmount = remainingHours > 0 ? pricePerHour! * remainingHours : 0;
+        baseAmount = dailyAmount + hourlyAmount;
+        pricingType = 'mixed';
+      }
+    } else {
+      // No hourly pricing available: use daily/weekly/monthly pricing tiers only
+      const rentalDays = totalDaysForTier;
+      
+      if (rentalDays >= 30 && pricePerMonth) {
+        baseRate = pricePerMonth;
+        unitsUsed = Math.ceil(rentalDays / 30);
+        pricingType = 'monthly';
+      } else if (rentalDays >= 7 && pricePerWeek) {
+        baseRate = pricePerWeek;
+        unitsUsed = Math.ceil(rentalDays / 7);
+        pricingType = 'weekly';
+      } else {
+        // Always use daily rate as minimum (minimum 1 day)
+        baseRate = pricePerDay;
+        unitsUsed = Math.max(1, Math.ceil(rentalDays));
+        pricingType = 'daily';
+      }
+      
+      baseAmount = baseRate * unitsUsed;
+    }
+
+    // Apply market adjustment
+    baseAmount *= marketAdjustment;
+
+    // Calculate fees
+    const subtotal = baseAmount;
+    const serviceFee = subtotal * 0.1; // 10% service fee
+    const totalCost = subtotal + serviceFee;
+
+    return {
+      rentalDays: totalDaysForTier,
+      rentalHours: totalHours,
+      totalDays: totalDays,
+      remainingHours: remainingHours,
+      itemPrice: baseRate,
+      amount: subtotal,
+      serviceFee,
+      totalCost,
+      pricingType,
+      currency,
+      baseRate,
+      unitsUsed,
+      hasHourlyPricing,
+      pricePerHour: pricePerHour || 0
+    };
+  }, [formData, bookingItem, productPricing]);
 
   // Fetch item and images
   console.log(bookingItem,'data to check why booking item not visible')
@@ -195,11 +331,55 @@ const BookingPage: React.FC = () => {
     const errors: Record<string, string> = {};
     if (!formData.startDate) errors.startDate = 'Pickup date is required';
     if (!formData.endDate) errors.endDate = 'Return date is required';
+    
+    // Validate dates are not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (formData.startDate) {
+      const startDate = new Date(formData.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      if (startDate < today) {
+        errors.startDate = 'Start date cannot be in the past. Please select a future date.';
+      }
+    }
+    
+    if (formData.endDate) {
+      const endDate = new Date(formData.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      if (endDate < today) {
+        errors.endDate = 'End date cannot be in the past. Please select a future date.';
+      }
+    }
+    
     if (formData.startDate && formData.endDate && new Date(formData.startDate) > new Date(formData.endDate)) {
       errors.dates = 'Return date must be after pickup date';
     }
-    if (!formData.pickupTime) errors.pickupTime = 'Pickup time is required';
-    if (!formData.returnTime) errors.returnTime = 'Return time is required';
+    
+    // Validate time range (1am to 23:00 / 11pm)
+    if (!formData.pickupTime) {
+      errors.pickupTime = 'Pickup time is required';
+    } else {
+      const [hours, minutes] = formData.pickupTime.split(':').map(Number);
+      if (hours < 1 || hours > 23 || (hours === 23 && minutes > 0)) {
+        errors.pickupTime = 'Pickup time must be between 1:00 AM and 11:00 PM (23:00).';
+      }
+    }
+    
+    if (!formData.returnTime) {
+      errors.returnTime = 'Return time is required';
+    } else {
+      const [hours, minutes] = formData.returnTime.split(':').map(Number);
+      if (hours < 1 || hours > 23 || (hours === 23 && minutes > 0)) {
+        errors.returnTime = 'Return time must be between 1:00 AM and 11:00 PM (23:00).';
+      }
+    }
+    
+    // Validate pickup method is selected
+    if (!formData.pickupMethod) {
+      errors.pickupMethod = 'Pickup method is required';
+    }
+    
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setIsSubmitting(false);
@@ -227,7 +407,11 @@ const BookingPage: React.FC = () => {
         setCurrentStep(1);
         showToast('Booking details confirmed', 'success');
       } else {
-        const errMsg = (response as any)?.error || (response as any)?.message || 'Failed to create booking';
+        // Extract actual error message - prioritize errors array, then error field, then message
+        const errMsg = (response as any)?.errors?.[0]?.message || 
+                       (response as any)?.error || 
+                       (response as any)?.message || 
+                       'Failed to create booking';
         showToast(errMsg, 'error');
       }
     } catch {
@@ -323,6 +507,7 @@ const BookingPage: React.FC = () => {
                       name="startDate" 
                       value={formData.startDate} 
                       onChange={handleChange}
+                      min={new Date().toISOString().split('T')[0]}
                       className={`
                         w-full px-4 py-3 border rounded-xl transition-all duration-200 dark:bg-slate-900 dark:text-slate-100
                         focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none
@@ -346,6 +531,8 @@ const BookingPage: React.FC = () => {
                       name="pickupTime" 
                       value={formData.pickupTime} 
                       onChange={handleChange}
+                      min="01:00"
+                      max="23:00"
                       className={`
                         w-full px-4 py-3 border rounded-xl transition-all duration-200 dark:bg-slate-900 dark:text-slate-100
                         focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none
@@ -371,6 +558,7 @@ const BookingPage: React.FC = () => {
                       name="endDate" 
                       value={formData.endDate} 
                       onChange={handleChange}
+                      min={new Date().toISOString().split('T')[0]}
                       className={`
                         w-full px-4 py-3 border rounded-xl transition-all duration-200 dark:bg-slate-900 dark:text-slate-100
                         focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none
@@ -394,6 +582,8 @@ const BookingPage: React.FC = () => {
                       name="returnTime" 
                       value={formData.returnTime} 
                       onChange={handleChange}
+                      min="01:00"
+                      max="23:00"
                       className={`
                         w-full px-4 py-3 border rounded-xl transition-all duration-200 dark:bg-slate-900 dark:text-slate-100
                         focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none
@@ -488,6 +678,12 @@ const BookingPage: React.FC = () => {
                   </div>
                 </label>
               </div>
+              {validationErrors.pickupMethod && (
+                <p className="text-red-500 text-sm mt-4 flex items-center bg-red-50 p-3 rounded-lg">
+                  <span className="w-4 h-4 mr-2">⚠</span>
+                  {validationErrors.pickupMethod}
+                </p>
+              )}
             </div>
 
             {/* Additional Notes */}
@@ -547,7 +743,7 @@ const BookingPage: React.FC = () => {
           <PaymentStepper
             bookingId={bookingId}
             amount={rentalDetails.totalCost}
-            currency={bookingItem?.base_currency || "USD"}
+            currency={rentalDetails.currency || bookingItem?.base_currency || "USD"}
             onSuccess={handlePaymentSuccess}
           />
         </div>
@@ -581,7 +777,7 @@ const BookingPage: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-slate-400">Total Paid</span>
                   <span className="font-medium text-[#00aaa9]">
-                    {rentalDetails.totalCost}/{bookingItem.base_currency}
+                    {formatCurrency(rentalDetails.totalCost, rentalDetails.currency || bookingItem?.base_currency || 'RWF')}
                   </span>
                 </div>
               </div>
@@ -687,35 +883,66 @@ const BookingPage: React.FC = () => {
                 <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Price Breakdown</h4>
                   <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-slate-400">Daily Rate</span>
-                      <span className="font-medium">
-                        {formatCurrency(rentalDetails.itemPrice, bookingItem?.base_currency)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-slate-400">Duration</span>
-                      <span className="font-medium">
-                        {rentalDetails.rentalDays} {rentalDetails.rentalDays === 1 ? 'day' : 'days'}
-                      </span>
-                    </div>
+                    {/* Show pricing type */}
+                    {rentalDetails.pricingType === 'hourly' && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-slate-400">
+                          Hourly Rate ({rentalDetails.rentalHours.toFixed(2)} hours)
+                        </span>
+                        <span className="font-medium">
+                          {formatCurrency(rentalDetails.itemPrice, rentalDetails.currency)} × {rentalDetails.unitsUsed.toFixed(2)} hrs
+                        </span>
+                      </div>
+                    )}
+                    {rentalDetails.pricingType === 'mixed' && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-slate-400">
+                            Daily Rate ({rentalDetails.totalDays} {rentalDetails.totalDays === 1 ? 'day' : 'days'})
+                          </span>
+                          <span className="font-medium">
+                            {formatCurrency(rentalDetails.baseRate, rentalDetails.currency)} × {rentalDetails.totalDays}
+                          </span>
+                        </div>
+                        {rentalDetails.remainingHours > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-slate-400">
+                              Additional Hours ({rentalDetails.remainingHours.toFixed(2)} hrs)
+                            </span>
+                            <span className="font-medium">
+                              {formatCurrency(rentalDetails.pricePerHour, rentalDetails.currency)} × {rentalDetails.remainingHours.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {(rentalDetails.pricingType === 'daily' || rentalDetails.pricingType === 'weekly' || rentalDetails.pricingType === 'monthly') && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-slate-400">
+                          {rentalDetails.pricingType === 'monthly' ? 'Monthly' : rentalDetails.pricingType === 'weekly' ? 'Weekly' : 'Daily'} Rate ({rentalDetails.rentalDays} {rentalDetails.rentalDays === 1 ? 'day' : 'days'})
+                        </span>
+                        <span className="font-medium">
+                          {formatCurrency(rentalDetails.itemPrice, rentalDetails.currency)} × {rentalDetails.unitsUsed}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-slate-400">Subtotal</span>
                       <span className="font-medium">
-                        {formatCurrency(rentalDetails.amount, bookingItem?.base_currency)}
+                        {formatCurrency(rentalDetails.amount, rentalDetails.currency)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-slate-400">Service Fee (10%)</span>
                       <span className="font-medium">
-                        {formatCurrency(rentalDetails.serviceFee, bookingItem?.base_currency)}
+                        {formatCurrency(rentalDetails.serviceFee, rentalDetails.currency)}
                       </span>
                     </div>
-                    <div className="border-t border-gray-200 dark:border-slate-700 pt-3">
+                    <div className="border-t border-gray-200 dark:border-slate-700 pt-3 mt-3">
                       <div className="flex justify-between">
                         <span className="font-bold text-gray-900 dark:text-white">Total</span>
                         <span className="font-bold text-xl text-[#00aaa9]">
-                          {formatCurrency(rentalDetails.totalCost, bookingItem?.base_currency)}
+                          {formatCurrency(rentalDetails.totalCost, rentalDetails.currency)}
                         </span>
                       </div>
                     </div>

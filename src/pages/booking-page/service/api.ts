@@ -78,9 +78,19 @@ export async function createBooking(bookingData: any, token: string) {
   } catch (error: any) {
     console.error('Error creating booking:', error);
     
+    // Extract actual error messages from errors array
+    const errorData = error.response?.data;
+    let errorMessage = errorData?.message || error.message || 'Failed to create booking';
+    
+    // If there are specific validation errors, use the first one's message
+    if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+      errorMessage = errorData.errors[0].message || errorMessage;
+    }
+    
     return {
       success: false,
-      error: error.response?.data?.message || error.message || 'Failed to create booking',
+      error: errorMessage,
+      errors: errorData?.errors || [], // Also pass errors array for detailed display
       data: null
     };
   }

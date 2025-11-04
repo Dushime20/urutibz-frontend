@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 
 interface Props {
@@ -31,6 +31,27 @@ const BookingsSection: React.FC<Props> = ({
   onCheckOut,
 }) => {
   const [roleTab, setRoleTab] = useState<'all' | 'renter' | 'owner'>('all');
+
+  // Console log user bookings to see the response data
+  useEffect(() => {
+    console.log('📋 [BookingsSection] User Bookings Data:', {
+      totalBookings: userBookings.length,
+      bookings: userBookings.map((booking) => ({
+        id: booking.id,
+        booking_number: booking.booking_number,
+        status: booking.status,
+        payment_status: booking.payment_status,
+        renter_id: booking.renter_id || booking.renterId,
+        owner_id: booking.owner_id || booking.ownerId,
+        product_id: booking.product_id,
+        start_date: booking.start_date,
+        end_date: booking.end_date,
+        created_at: booking.created_at,
+        updated_at: booking.updated_at,
+        fullBooking: booking // Full booking object for detailed inspection
+      }))
+    });
+  }, [userBookings]);
 
   const currentUserId = useMemo(() => {
     try {
