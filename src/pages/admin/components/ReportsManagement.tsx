@@ -13,12 +13,14 @@ import {
   Eye,
   Edit,
   Trash2,
-  Filter as FilterIcon,
   X,
   CheckCircle,
   ShoppingCart} from 'lucide-react';
 import { Button } from '../../../components/ui/DesignSystem';
 import TrendChart from '../../risk-management/components/TrendChart';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from 'recharts';
 import {
   generateRevenueReport,
   generateUserReport,
@@ -95,6 +97,11 @@ interface TransactionReport {
   totalTransactions: number;
   totalAmount: number;
   successfulTransactions: number;
+  completedAmount?: number;
+  pendingAmount?: number;
+  allStatusAmount?: number;
+  completedCount?: number;
+  pendingCount?: number;
   period: string;
   transactionsByType: Array<{
     type: string;
@@ -134,12 +141,73 @@ interface ReportsManagementProps {
 
 type ReportType = 'revenue' | 'users' | 'bookings' | 'products' | 'transactions' | 'performance' | 'custom';
 
+type DateRangePreset = 'current_month' | 'last_month' | 'last_3_months' | 'last_6_months' | 'last_year' | 'all_time' | 'custom';
+
+// Helper function to get date ranges
+const getDateRange = (preset: DateRangePreset): { startDate: string; endDate: string } => {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  
+  switch (preset) {
+    case 'current_month': {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return {
+        startDate: startOfMonth.toISOString().split('T')[0],
+        endDate: todayStr
+      };
+    }
+    case 'last_month': {
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      return {
+        startDate: lastMonth.toISOString().split('T')[0],
+        endDate: endOfLastMonth.toISOString().split('T')[0]
+      };
+    }
+    case 'last_3_months': {
+      const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+      return {
+        startDate: threeMonthsAgo.toISOString().split('T')[0],
+        endDate: todayStr
+      };
+    }
+    case 'last_6_months': {
+      const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, 1);
+      return {
+        startDate: sixMonthsAgo.toISOString().split('T')[0],
+        endDate: todayStr
+      };
+    }
+    case 'last_year': {
+      const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), 1);
+      return {
+        startDate: oneYearAgo.toISOString().split('T')[0],
+        endDate: todayStr
+      };
+    }
+    case 'all_time': {
+      // Set to a very early date (e.g., 5 years ago)
+      const allTimeStart = new Date(today.getFullYear() - 5, 0, 1);
+      return {
+        startDate: allTimeStart.toISOString().split('T')[0],
+        endDate: todayStr
+      };
+    }
+    case 'custom':
+    default:
+      return {
+        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        endDate: todayStr
+      };
+  }
+};
+
 const ReportsManagement: React.FC<ReportsManagementProps> = () => {
   const [activeTab, setActiveTab] = useState<ReportType>('revenue');
   const [isLoading, setIsLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [showCustomReportModal, setShowCustomReportModal] = useState(false);
   const [customReports, setCustomReports] = useState<CustomReport[]>([]);
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('current_month');
 
   // Report data states
   const [revenueReport, setRevenueReport] = useState<RevenueReport | null>(null);
@@ -149,10 +217,11 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
   const [transactionReport, setTransactionReport] = useState<TransactionReport | null>(null);
   const [performanceReport, setPerformanceReport] = useState<PerformanceReport | null>(null);
 
-  // Filter states
+  // Filter states - default to current month
+  const currentMonthRange = getDateRange('current_month');
   const [filters, setFilters] = useState<ReportFilters>({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-    endDate: new Date().toISOString().split('T')[0], // today
+    startDate: currentMonthRange.startDate,
+    endDate: currentMonthRange.endDate,
   });
 
   // Custom report form state
@@ -179,6 +248,18 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
 
     loadCustomReports();
   }, []);
+
+  // Update filters when preset changes
+  useEffect(() => {
+    if (dateRangePreset !== 'custom') {
+      const range = getDateRange(dateRangePreset);
+      setFilters(prev => ({
+        ...prev,
+        startDate: range.startDate,
+        endDate: range.endDate
+      }));
+    }
+  }, [dateRangePreset]);
 
   // Generate report based on active tab
   useEffect(() => {
@@ -225,6 +306,25 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
 
     generateReport();
   }, [activeTab, filters]);
+
+  // Handle preset change
+  const handlePresetChange = (preset: DateRangePreset) => {
+    setDateRangePreset(preset);
+    if (preset !== 'custom') {
+      const range = getDateRange(preset);
+      setFilters(prev => ({
+        ...prev,
+        startDate: range.startDate,
+        endDate: range.endDate
+      }));
+    }
+  };
+
+  // Handle custom date change
+  const handleCustomDateChange = (field: 'startDate' | 'endDate', value: string) => {
+    setDateRangePreset('custom');
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleExportReport = async (format: 'pdf' | 'csv' | 'excel' | 'json') => {
     try {
@@ -360,6 +460,117 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
             />
           </div>
 
+          {/* Revenue Trends Over Time */}
+          {((Array.isArray((revenueReport as any).revenueTrends) && (revenueReport as any).revenueTrends.length > 0) ||
+            (Array.isArray((revenueReport as any).bookingTrends) && (revenueReport as any).bookingTrends.length > 0)) && (
+            <div className="space-y-6">
+              {/* Revenue Over Time */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Revenue Over Time</h4>
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart 
+                    data={(revenueReport as any).revenueTrends || (revenueReport as any).bookingTrends || []}
+                    margin={{ top: 20, right: 40, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="dateLabel" 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => {
+                        if (!value) return '';
+                        try {
+                          const date = new Date(value);
+                          if (isNaN(date.getTime())) return value;
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        } catch {
+                          return value;
+                        }
+                      }}
+                    />
+                    <YAxis 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                      labelStyle={{ color: '#10b981', fontWeight: 700 }}
+                      itemStyle={{ color: '#374151' }}
+                      formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Revenue']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#10b981"
+                      strokeWidth={3}
+                      fill="url(#colorRevenue)"
+                      activeDot={{ r: 7, fill: '#fff', stroke: '#10b981', strokeWidth: 3 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Bookings Over Time */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Bookings Over Time</h4>
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart 
+                    data={(revenueReport as any).bookingTrends || (revenueReport as any).revenueTrends || []}
+                    margin={{ top: 20, right: 40, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorBookings" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#00aaa9" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#00aaa9" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="dateLabel" 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => {
+                        if (!value) return '';
+                        try {
+                          const date = new Date(value);
+                          if (isNaN(date.getTime())) return value;
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        } catch {
+                          return value;
+                        }
+                      }}
+                    />
+                    <YAxis allowDecimals={false} stroke="#6b7280" fontSize={14} fontWeight={600} />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                      labelStyle={{ color: '#00aaa9', fontWeight: 700 }}
+                      itemStyle={{ color: '#374151' }}
+                      formatter={(value: any) => [value, 'Bookings']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="bookings"
+                      stroke="#00aaa9"
+                      strokeWidth={3}
+                      fill="url(#colorBookings)"
+                      activeDot={{ r: 7, fill: '#fff', stroke: '#00aaa9', strokeWidth: 3 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
           {/* Revenue by Category */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Category</h4>
@@ -443,6 +654,98 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
             />
           </div>
 
+          {/* User Growth Trends */}
+          {Array.isArray((userReport as any).userTrends) && (userReport as any).userTrends.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">User Growth Over Time</h4>
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart 
+                  data={(userReport as any).userTrends || []}
+                  margin={{ top: 20, right: 40, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="colorUserTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00aaa9" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#00aaa9" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="colorNewUsers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="colorActiveUsers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="dateLabel" 
+                    stroke="#6b7280" 
+                    fontSize={14} 
+                    fontWeight={600}
+                    tickFormatter={(value) => {
+                      if (!value) return '';
+                      try {
+                        const date = new Date(value);
+                        if (isNaN(date.getTime())) return value;
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      } catch {
+                        return value;
+                      }
+                    }}
+                  />
+                  <YAxis allowDecimals={false} stroke="#6b7280" fontSize={14} fontWeight={600} />
+                  <Tooltip
+                    contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                    labelStyle={{ color: '#00aaa9', fontWeight: 700 }}
+                    itemStyle={{ color: '#374151' }}
+                    formatter={(value: any, name: string) => {
+                      if (name === 'count') return [value, 'Total Users'];
+                      if (name === 'newUsers') return [value, 'New Users'];
+                      if (name === 'activeUsers') return [value, 'Active Users'];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend 
+                    formatter={(value) => {
+                      if (value === 'count') return 'Total Users';
+                      if (value === 'newUsers') return 'New Users';
+                      if (value === 'activeUsers') return 'Active Users';
+                      return value;
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#00aaa9"
+                    strokeWidth={3}
+                    fill="url(#colorUserTotal)"
+                    name="count"
+                    activeDot={{ r: 7, fill: '#fff', stroke: '#00aaa9', strokeWidth: 3 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="newUsers"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fill="url(#colorNewUsers)"
+                    name="newUsers"
+                    activeDot={{ r: 6, fill: '#fff', stroke: '#10b981', strokeWidth: 2 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="activeUsers"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fill="url(#colorActiveUsers)"
+                    name="activeUsers"
+                    activeDot={{ r: 6, fill: '#fff', stroke: '#3b82f6', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           {/* Top Users */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Top Users</h4>
@@ -517,19 +820,115 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
             </div>
           </div>
 
-          {/* Revenue Over Time */}
-          {Array.isArray(bookingReport.revenueOverTime) && bookingReport.revenueOverTime.length > 0 && (
-            <TrendChart
-              title="Revenue Over Time"
-              color="green"
-              data={bookingReport.revenueOverTime.map((pt: any) => ({
-                date: pt.date || pt.period || '',
-                value: typeof pt.amount === 'number' ? pt.amount : (pt.value || 0),
-                label: pt.label || undefined,
-              }))}
-              formatValue={(v) => `$${Number(v).toLocaleString()}`}
-              className=""
-            />
+          {/* Booking Trends Over Time */}
+          {((Array.isArray((bookingReport as any).bookingTrends) && (bookingReport as any).bookingTrends.length > 0) ||
+            (Array.isArray(bookingReport.revenueOverTime) && bookingReport.revenueOverTime.length > 0)) && (
+            <div className="space-y-6">
+              {/* Bookings Over Time */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Bookings Over Time</h4>
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart 
+                    data={(bookingReport as any).bookingTrends || bookingReport.revenueOverTime || []}
+                    margin={{ top: 20, right: 40, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorBookingCount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#00aaa9" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#00aaa9" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="dateLabel" 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => {
+                        if (!value) return '';
+                        try {
+                          const date = new Date(value);
+                          if (isNaN(date.getTime())) return value;
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        } catch {
+                          return value;
+                        }
+                      }}
+                    />
+                    <YAxis allowDecimals={false} stroke="#6b7280" fontSize={14} fontWeight={600} />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                      labelStyle={{ color: '#00aaa9', fontWeight: 700 }}
+                      itemStyle={{ color: '#374151' }}
+                      formatter={(value: any) => [value, 'Bookings']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="bookings"
+                      stroke="#00aaa9"
+                      strokeWidth={3}
+                      fill="url(#colorBookingCount)"
+                      activeDot={{ r: 7, fill: '#fff', stroke: '#00aaa9', strokeWidth: 3 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Revenue Over Time */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Revenue Over Time</h4>
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart 
+                    data={(bookingReport as any).bookingTrends || bookingReport.revenueOverTime || []}
+                    margin={{ top: 20, right: 40, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorBookingRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="dateLabel" 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => {
+                        if (!value) return '';
+                        try {
+                          const date = new Date(value);
+                          if (isNaN(date.getTime())) return value;
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        } catch {
+                          return value;
+                        }
+                      }}
+                    />
+                    <YAxis 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                      labelStyle={{ color: '#10b981', fontWeight: 700 }}
+                      itemStyle={{ color: '#374151' }}
+                      formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Revenue']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#10b981"
+                      strokeWidth={3}
+                      fill="url(#colorBookingRevenue)"
+                      activeDot={{ r: 7, fill: '#fff', stroke: '#10b981', strokeWidth: 3 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           )}
         </>
       ) : null}
@@ -570,6 +969,98 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
               color="bg-purple-500"
             />
           </div>
+
+          {/* Product Trends Over Time */}
+          {Array.isArray((productReport as any).productTrends) && (productReport as any).productTrends.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Product Growth Over Time</h4>
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart 
+                  data={(productReport as any).productTrends || []}
+                  margin={{ top: 20, right: 40, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="colorProductTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00aaa9" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#00aaa9" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="colorProductActive" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="colorProductRented" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="dateLabel" 
+                    stroke="#6b7280" 
+                    fontSize={14} 
+                    fontWeight={600}
+                    tickFormatter={(value) => {
+                      if (!value) return '';
+                      try {
+                        const date = new Date(value);
+                        if (isNaN(date.getTime())) return value;
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      } catch {
+                        return value;
+                      }
+                    }}
+                  />
+                  <YAxis allowDecimals={false} stroke="#6b7280" fontSize={14} fontWeight={600} />
+                  <Tooltip
+                    contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                    labelStyle={{ color: '#00aaa9', fontWeight: 700 }}
+                    itemStyle={{ color: '#374151' }}
+                    formatter={(value: any, name: string) => {
+                      if (name === 'count') return [value, 'Total Products'];
+                      if (name === 'active') return [value, 'Active Products'];
+                      if (name === 'rented') return [value, 'Rented Products'];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend 
+                    formatter={(value) => {
+                      if (value === 'count') return 'Total Products';
+                      if (value === 'active') return 'Active Products';
+                      if (value === 'rented') return 'Rented Products';
+                      return value;
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#00aaa9"
+                    strokeWidth={3}
+                    fill="url(#colorProductTotal)"
+                    name="count"
+                    activeDot={{ r: 7, fill: '#fff', stroke: '#00aaa9', strokeWidth: 3 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="active"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fill="url(#colorProductActive)"
+                    name="active"
+                    activeDot={{ r: 6, fill: '#fff', stroke: '#10b981', strokeWidth: 2 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="rented"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    fill="url(#colorProductRented)"
+                    name="rented"
+                    activeDot={{ r: 6, fill: '#fff', stroke: '#f59e0b', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Top Products</h4>
@@ -656,7 +1147,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
     <div className="space-y-6">
       {transactionReport ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard
               title="Total Transactions"
               value={(transactionReport.totalTransactions || 0).toLocaleString()}
@@ -680,6 +1171,49 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
             />
           </div>
 
+          {/* Amount Breakdown */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Amount Breakdown</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Completed Amount</span>
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  ${((transactionReport as any).completedAmount || transactionReport.totalAmount || 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {(transactionReport as any).completedCount || transactionReport.successfulTransactions || 0} transactions
+                </div>
+              </div>
+              <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Pending Amount</span>
+                  <Activity className="w-5 h-5 text-orange-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  ${((transactionReport as any).pendingAmount || 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {(transactionReport as any).pendingCount || 0} transactions
+                </div>
+              </div>
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Total Amount</span>
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  ${(transactionReport.totalAmount || 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Pending + Completed
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">By Type</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -692,15 +1226,208 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
             </div>
           </div>
 
-          {Array.isArray((transactionReport as any).monthlyTrends) && (transactionReport as any).monthlyTrends.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Transactions Over Time</h4>
-              <TrendChart
-                title="Transactions"
-                color="blue"
-                data={(transactionReport as any).monthlyTrends.map((m: any) => ({ date: m.month, value: m.count }))}
-                formatValue={(v: number) => `${v}`}
-              />
+          {/* Transactions Over Time - Enhanced Chart */}
+          {((Array.isArray((transactionReport as any).trends) && (transactionReport as any).trends.length > 0) ||
+            (Array.isArray((transactionReport as any).monthlyTrends) && (transactionReport as any).monthlyTrends.length > 0)) && (
+            <div className="space-y-6">
+              {/* Transaction Count Over Time */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Transaction Count Over Time</h4>
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart 
+                    data={(transactionReport as any).trends || (transactionReport as any).monthlyTrends?.map((m: any) => ({
+                      date: m.month || m.date,
+                      dateLabel: m.month || m.date,
+                      count: m.count || 0,
+                      completedCount: m.completedCount || 0,
+                      pendingCount: m.pendingCount || 0
+                    })) || []}
+                    margin={{ top: 20, right: 40, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorTransaction" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="dateLabel" 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => {
+                        // Format date label nicely
+                        if (!value) return '';
+                        try {
+                          const date = new Date(value);
+                          if (isNaN(date.getTime())) return value;
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        } catch {
+                          return value;
+                        }
+                      }}
+                    />
+                    <YAxis allowDecimals={false} stroke="#6b7280" fontSize={14} fontWeight={600} />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                      labelStyle={{ color: '#3b82f6', fontWeight: 700 }}
+                      itemStyle={{ color: '#374151' }}
+                      formatter={(value: any, name: string) => {
+                        if (name === 'count') return [value, 'Total Transactions'];
+                        if (name === 'completedCount') return [value, 'Completed'];
+                        if (name === 'pendingCount') return [value, 'Pending'];
+                        return [value, name];
+                      }}
+                    />
+                    <Legend 
+                      formatter={(value) => {
+                        if (value === 'count') return 'Total Transactions';
+                        if (value === 'completedCount') return 'Completed';
+                        if (value === 'pendingCount') return 'Pending';
+                        return value;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      fill="url(#colorTransaction)"
+                      name="count"
+                      activeDot={{ r: 7, fill: '#fff', stroke: '#3b82f6', strokeWidth: 3 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="completedCount"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fill="url(#colorCompleted)"
+                      name="completedCount"
+                      activeDot={{ r: 6, fill: '#fff', stroke: '#10b981', strokeWidth: 2 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="pendingCount"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      fill="url(#colorPending)"
+                      name="pendingCount"
+                      activeDot={{ r: 6, fill: '#fff', stroke: '#f59e0b', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Transaction Amount Over Time */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Transaction Amount Over Time</h4>
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart 
+                    data={(transactionReport as any).trends || (transactionReport as any).monthlyTrends?.map((m: any) => ({
+                      date: m.month || m.date,
+                      dateLabel: m.month || m.date,
+                      amount: m.amount || 0,
+                      completedAmount: m.completedAmount || 0,
+                      pendingAmount: m.pendingAmount || 0
+                    })) || []}
+                    margin={{ top: 20, right: 40, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorCompletedAmount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorPendingAmount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.7}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="dateLabel" 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => {
+                        if (!value) return '';
+                        try {
+                          const date = new Date(value);
+                          if (isNaN(date.getTime())) return value;
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        } catch {
+                          return value;
+                        }
+                      }}
+                    />
+                    <YAxis 
+                      stroke="#6b7280" 
+                      fontSize={14} 
+                      fontWeight={600}
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', fontSize: 16 }}
+                      labelStyle={{ color: '#8b5cf6', fontWeight: 700 }}
+                      itemStyle={{ color: '#374151' }}
+                      formatter={(value: any, name: string) => {
+                        const formattedValue = `$${Number(value).toLocaleString()}`;
+                        if (name === 'amount') return [formattedValue, 'Total Amount'];
+                        if (name === 'completedAmount') return [formattedValue, 'Completed Amount'];
+                        if (name === 'pendingAmount') return [formattedValue, 'Pending Amount'];
+                        return [formattedValue, name];
+                      }}
+                    />
+                    <Legend 
+                      formatter={(value) => {
+                        if (value === 'amount') return 'Total Amount';
+                        if (value === 'completedAmount') return 'Completed Amount';
+                        if (value === 'pendingAmount') return 'Pending Amount';
+                        return value;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#8b5cf6"
+                      strokeWidth={3}
+                      fill="url(#colorAmount)"
+                      name="amount"
+                      activeDot={{ r: 7, fill: '#fff', stroke: '#8b5cf6', strokeWidth: 3 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="completedAmount"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fill="url(#colorCompletedAmount)"
+                      name="completedAmount"
+                      activeDot={{ r: 6, fill: '#fff', stroke: '#10b981', strokeWidth: 2 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="pendingAmount"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      fill="url(#colorPendingAmount)"
+                      name="pendingAmount"
+                      activeDot={{ r: 6, fill: '#fff', stroke: '#f59e0b', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
         </>
@@ -816,14 +1543,6 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
         </div>
         <div className="flex items-center gap-3">
           <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
-          >
-            <FilterIcon className="w-4 h-4" />
-            {showFilters ? 'Hide' : 'Show'} Filters
-          </Button>
-          <Button
             onClick={() => handleExportReport('pdf')}
             disabled={isLoading}
             className="flex items-center gap-2"
@@ -834,46 +1553,129 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      {showFilters && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Report Filters</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-              <input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select
-                value={filters.category || ''}
-                onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="">All Categories</option>
-                <option value="cars">Cars</option>
-                <option value="bikes">Bikes</option>
-                <option value="boats">Boats</option>
-                <option value="equipment">Equipment</option>
-              </select>
-            </div>
+      {/* Date Range Filters - Always Visible */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-lg font-semibold text-gray-900">Date Range</h4>
+          <div className="text-sm text-gray-500">
+            {filters.startDate && filters.endDate && (
+              <span>
+                {new Date(filters.startDate).toLocaleDateString()} - {new Date(filters.endDate).toLocaleDateString()}
+              </span>
+            )}
           </div>
         </div>
-      )}
+        
+        {/* Preset Buttons */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button
+            onClick={() => handlePresetChange('current_month')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              dateRangePreset === 'current_month'
+                ? 'bg-my-primary text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Current Month
+          </button>
+          <button
+            onClick={() => handlePresetChange('last_month')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              dateRangePreset === 'last_month'
+                ? 'bg-my-primary text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Last Month
+          </button>
+          <button
+            onClick={() => handlePresetChange('last_3_months')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              dateRangePreset === 'last_3_months'
+                ? 'bg-my-primary text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Last 3 Months
+          </button>
+          <button
+            onClick={() => handlePresetChange('last_6_months')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              dateRangePreset === 'last_6_months'
+                ? 'bg-my-primary text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Last 6 Months
+          </button>
+          <button
+            onClick={() => handlePresetChange('last_year')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              dateRangePreset === 'last_year'
+                ? 'bg-my-primary text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Last Year
+          </button>
+          <button
+            onClick={() => handlePresetChange('all_time')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              dateRangePreset === 'all_time'
+                ? 'bg-my-primary text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All Time
+          </button>
+          <button
+            onClick={() => handlePresetChange('custom')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              dateRangePreset === 'custom'
+                ? 'bg-my-primary text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Custom Range
+          </button>
+        </div>
+
+        {/* Custom Date Inputs */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => handleCustomDateChange('startDate', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => handleCustomDateChange('endDate', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category (Optional)</label>
+            <select
+              value={filters.category || ''}
+              onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">All Categories</option>
+              <option value="cars">Cars</option>
+              <option value="bikes">Bikes</option>
+              <option value="boats">Boats</option>
+              <option value="equipment">Equipment</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-xl overflow-x-auto">

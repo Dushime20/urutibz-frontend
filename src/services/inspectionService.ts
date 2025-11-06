@@ -13,7 +13,12 @@ import type {
   CreateDisputeRequest,
   ResolveDisputeRequest,
   Inspector,
-  Dispute
+  Dispute,
+  OwnerPreInspectionData,
+  RenterPreReview,
+  DiscrepancyReport,
+  RenterPostInspectionData,
+  OwnerPostReview
 } from '../types/inspection';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -141,18 +146,19 @@ export const inspectionService = {
     // Map the API response to our expected structure
     const inspection: Inspection = {
       id: data.inspection.id,
-      productId: data.inspection.productId,
-      bookingId: data.inspection.bookingId,
-      inspectorId: data.inspection.inspectorId,
-      inspectionType: data.inspection.inspectionType,
+      productId: data.inspection.productId ?? data.inspection.product_id,
+      bookingId: data.inspection.bookingId ?? data.inspection.booking_id,
+      inspectorId: data.inspection.inspectorId ?? data.inspection.inspector_id,
+      inspectionType: data.inspection.inspectionType ?? data.inspection.inspection_type,
       status: data.inspection.status,
-      scheduledAt: data.inspection.scheduledAt,
-      location: data.inspection.inspectionLocation,
-      notes: data.inspection.generalNotes,
-      inspectorNotes: data.inspection.inspectorNotes,
-      createdAt: data.inspection.createdAt,
-      updatedAt: data.inspection.updatedAt,
-      completedAt: data.inspection.completedAt,
+      scheduledAt: data.inspection.scheduledAt ?? data.inspection.scheduled_at,
+      location: data.inspection.inspectionLocation ?? data.inspection.inspection_location ?? data.inspection.location ?? '',
+      notes: data.inspection.generalNotes ?? data.inspection.general_notes ?? data.inspection.notes ?? '',
+      inspectorNotes: data.inspection.inspectorNotes ?? data.inspection.inspector_notes,
+      createdAt: data.inspection.createdAt ?? data.inspection.created_at,
+      updatedAt: data.inspection.updatedAt ?? data.inspection.updated_at,
+      completedAt: data.inspection.completedAt ?? data.inspection.completed_at ?? undefined,
+      startedAt: data.inspection.startedAt ?? data.inspection.started_at ?? undefined,
       items: data.items || [],
       photos: data.photos || [],
       disputes: data.inspection.hasDispute ? [{
@@ -169,7 +175,22 @@ export const inspectionService = {
         resolutionNotes: '',
         agreedAmount: 0,
         resolvedBy: data.inspection.resolvedBy
-      }] : []
+      }] : [],
+      // New workflow fields
+      ownerPreInspectionData: data.inspection.ownerPreInspectionData ?? data.inspection.owner_pre_inspection_data,
+      ownerPreInspectionConfirmed: data.inspection.ownerPreInspectionConfirmed ?? data.inspection.owner_pre_inspection_confirmed,
+      ownerPreInspectionConfirmedAt: data.inspection.ownerPreInspectionConfirmedAt ?? data.inspection.owner_pre_inspection_confirmed_at,
+      renterPreReviewAccepted: data.inspection.renterPreReviewAccepted ?? data.inspection.renter_pre_review_accepted,
+      renterPreReviewAcceptedAt: data.inspection.renterPreReviewAcceptedAt ?? data.inspection.renter_pre_review_accepted_at,
+      renterDiscrepancyReported: data.inspection.renterDiscrepancyReported ?? data.inspection.renter_discrepancy_reported,
+      renterDiscrepancyData: data.inspection.renterDiscrepancyData ?? data.inspection.renter_discrepancy_data,
+      renterPostInspectionData: data.inspection.renterPostInspectionData ?? data.inspection.renter_post_inspection_data,
+      renterPostInspectionConfirmed: data.inspection.renterPostInspectionConfirmed ?? data.inspection.renter_post_inspection_confirmed,
+      renterPostInspectionConfirmedAt: data.inspection.renterPostInspectionConfirmedAt ?? data.inspection.renter_post_inspection_confirmed_at,
+      ownerPostReviewAccepted: data.inspection.ownerPostReviewAccepted ?? data.inspection.owner_post_review_accepted,
+      ownerPostReviewAcceptedAt: data.inspection.ownerPostReviewAcceptedAt ?? data.inspection.owner_post_review_accepted_at,
+      ownerDisputeRaised: data.inspection.ownerDisputeRaised ?? data.inspection.owner_dispute_raised,
+      ownerDisputeRaisedAt: data.inspection.ownerDisputeRaisedAt ?? data.inspection.owner_dispute_raised_at
     };
 
     return {
@@ -244,6 +265,21 @@ export const inspectionService = {
       inspector: item.inspector,
       product: item.product,
       booking: item.booking,
+      // New workflow fields
+      ownerPreInspectionData: item.ownerPreInspectionData ?? item.owner_pre_inspection_data,
+      ownerPreInspectionConfirmed: item.ownerPreInspectionConfirmed ?? item.owner_pre_inspection_confirmed,
+      ownerPreInspectionConfirmedAt: item.ownerPreInspectionConfirmedAt ?? item.owner_pre_inspection_confirmed_at,
+      renterPreReviewAccepted: item.renterPreReviewAccepted ?? item.renter_pre_review_accepted,
+      renterPreReviewAcceptedAt: item.renterPreReviewAcceptedAt ?? item.renter_pre_review_accepted_at,
+      renterDiscrepancyReported: item.renterDiscrepancyReported ?? item.renter_discrepancy_reported,
+      renterDiscrepancyData: item.renterDiscrepancyData ?? item.renter_discrepancy_data,
+      renterPostInspectionData: item.renterPostInspectionData ?? item.renter_post_inspection_data,
+      renterPostInspectionConfirmed: item.renterPostInspectionConfirmed ?? item.renter_post_inspection_confirmed,
+      renterPostInspectionConfirmedAt: item.renterPostInspectionConfirmedAt ?? item.renter_post_inspection_confirmed_at,
+      ownerPostReviewAccepted: item.ownerPostReviewAccepted ?? item.owner_post_review_accepted,
+      ownerPostReviewAcceptedAt: item.ownerPostReviewAcceptedAt ?? item.owner_post_review_accepted_at,
+      ownerDisputeRaised: item.ownerDisputeRaised ?? item.owner_dispute_raised,
+      ownerDisputeRaisedAt: item.ownerDisputeRaisedAt ?? item.owner_dispute_raised_at,
     }));
 
     const meta = responseData?.data ?? responseData ?? {};
@@ -334,19 +370,64 @@ export const inspectionService = {
     };
   },
 
-  // Create new inspection
+  // Create new inspection (supports combined form with pre-inspection data)
   async createInspection(data: any): Promise<Inspection> {
-    const payload = {
+    // Prepare base inspection payload
+    const payload: any = {
       productId: data.productId,
       bookingId: data.bookingId,
-      inspectorId: data.inspectorId,
+      inspectorId: data.inspectorId, // Optional - can be undefined
       inspectionType: data.inspectionType,
       scheduledAt: data.scheduledAt,
       inspectionLocation: data.location ?? data.inspectionLocation,
       generalNotes: data.notes ?? data.generalNotes,
     };
-    const response = await inspectionApi.post('', payload);
-    return response.data;
+
+    // If ownerPreInspectionData is provided, include it in the payload
+    if (data.ownerPreInspectionData) {
+      // Create FormData for file uploads
+      const formData = new FormData();
+      
+      // Add base inspection fields
+      Object.keys(payload).forEach(key => {
+        if (payload[key] !== undefined) {
+          formData.append(key, payload[key]);
+        }
+      });
+
+      // Add pre-inspection photos (backend expects 'files' field name from uploadMultiple middleware)
+      const photos = data.ownerPreInspectionData.photos || [];
+      photos.forEach((photo: File | string, index: number) => {
+        if (photo instanceof File) {
+          formData.append('files', photo); // Changed from 'ownerPreInspectionPhotos' to 'files'
+        } else {
+          // If it's a string URL, include it in the pre-inspection data JSON
+          // Don't append separately, it will be in the JSON
+        }
+      });
+
+      // Add pre-inspection condition data as JSON (without photos - photos are uploaded separately as files)
+      formData.append('ownerPreInspectionData', JSON.stringify({
+        condition: data.ownerPreInspectionData.condition,
+        notes: data.ownerPreInspectionData.notes,
+        location: data.ownerPreInspectionData.location,
+        timestamp: data.ownerPreInspectionData.timestamp,
+        confirmed: data.ownerPreInspectionData.confirmed
+        // Note: photos are uploaded as 'files' field, not included in JSON
+      }));
+
+      // Use FormData for file upload
+      const response = await inspectionApi.post('', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } else {
+      // Regular inspection creation without pre-inspection data
+      const response = await inspectionApi.post('', payload);
+      return response.data;
+    }
   },
 
   // Update inspection
@@ -449,6 +530,191 @@ export const inspectionService = {
       params: { page, limit }
     });
     return response.data;
+  },
+
+  // =====================================================
+  // NEW WORKFLOW METHODS - Pre-Inspection Phase
+  // =====================================================
+
+  // Pre-Inspection Phase - Owner submits pre-inspection
+  async submitOwnerPreInspection(inspectionId: string, data: any): Promise<any> {
+    const formData = new FormData();
+    
+    // Add photos (backend expects 'files' field name from uploadMultiple middleware)
+    if (data.photos && Array.isArray(data.photos)) {
+      data.photos.forEach((photo: File | string, index: number) => {
+        if (photo instanceof File) {
+          formData.append(`files`, photo);
+        }
+      });
+    }
+
+    // Add condition assessment
+    formData.append('condition', JSON.stringify(data.condition));
+    formData.append('notes', data.notes || '');
+    formData.append('location', JSON.stringify(data.location));
+    formData.append('timestamp', data.timestamp);
+    formData.append('confirmed', String(data.confirmed));
+
+    const response = await inspectionApi.post(`/${inspectionId}/owner-pre-inspection`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data?.data || response.data;
+  },
+
+  // Pre-Inspection Phase - Owner confirms pre-inspection
+  async confirmOwnerPreInspection(inspectionId: string): Promise<any> {
+    const response = await inspectionApi.post(`/${inspectionId}/owner-pre-inspection/confirm`);
+    return response.data?.data || response.data;
+  },
+
+  // Pre-Inspection Phase - Renter reviews pre-inspection
+  async submitRenterPreReview(inspectionId: string, review: any): Promise<any> {
+    // Log the payload being sent
+    console.log('[inspectionService] Submitting renter pre-review:', {
+      inspectionId,
+      review,
+      token: localStorage.getItem('authToken') || localStorage.getItem('token') ? 'Token exists' : 'No token'
+    });
+    
+    const response = await inspectionApi.post(`/${inspectionId}/renter-pre-review`, review);
+    return response.data?.data || response.data;
+  },
+
+  // Pre-Inspection Phase - Renter reports discrepancy
+  async reportRenterDiscrepancy(inspectionId: string, discrepancy: any): Promise<any> {
+    // Log the payload being sent
+    console.log('[inspectionService] Reporting renter discrepancy:', {
+      inspectionId,
+      discrepancy: {
+        issuesCount: discrepancy.issues?.length || 0,
+        notesLength: discrepancy.notes?.length || 0,
+        photosCount: discrepancy.photos?.length || 0
+      },
+      token: localStorage.getItem('authToken') || localStorage.getItem('token') ? 'Token exists' : 'No token'
+    });
+
+    const formData = new FormData();
+    formData.append('issues', JSON.stringify(discrepancy.issues));
+    formData.append('notes', discrepancy.notes);
+    formData.append('timestamp', new Date().toISOString());
+
+    // Add photos (backend expects 'files' field name from uploadMultiple middleware)
+    if (discrepancy.photos && Array.isArray(discrepancy.photos)) {
+      discrepancy.photos.forEach((photo: File) => {
+        if (photo instanceof File) {
+          formData.append('files', photo);
+        }
+      });
+    }
+
+    const response = await inspectionApi.post(`/${inspectionId}/renter-discrepancy`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data?.data || response.data;
+  },
+
+  // Post-Inspection Phase - Renter submits post-inspection
+  async submitRenterPostInspection(inspectionId: string, data: any): Promise<any> {
+    // Log the payload being sent
+    console.log('[inspectionService] Submitting renter post-inspection:', {
+      inspectionId,
+      data: {
+        photosCount: data.returnPhotos?.length || 0,
+        hasCondition: !!data.condition,
+        notesLength: data.notes?.length || 0,
+        hasLocation: !!data.returnLocation,
+        confirmed: data.confirmed
+      },
+      token: localStorage.getItem('authToken') || localStorage.getItem('token') ? 'Token exists' : 'No token'
+    });
+
+    const formData = new FormData();
+    
+    // Add return photos (backend expects 'files' field name from uploadMultiple middleware)
+    if (data.returnPhotos && Array.isArray(data.returnPhotos)) {
+      data.returnPhotos.forEach((photo: File | string, index: number) => {
+        if (photo instanceof File) {
+          formData.append(`files`, photo);
+        }
+      });
+    }
+
+    // Add condition assessment
+    formData.append('condition', JSON.stringify(data.condition));
+    formData.append('notes', data.notes || '');
+    formData.append('returnLocation', JSON.stringify(data.returnLocation));
+    formData.append('timestamp', data.timestamp);
+    formData.append('confirmed', String(data.confirmed));
+
+    const response = await inspectionApi.post(`/${inspectionId}/renter-post-inspection`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data?.data || response.data;
+  },
+
+  // Post-Inspection Phase - Renter confirms post-inspection
+  async confirmRenterPostInspection(inspectionId: string): Promise<any> {
+    const response = await inspectionApi.post(`/${inspectionId}/renter-post-inspection/confirm`);
+    return response.data?.data || response.data;
+  },
+
+  // Post-Inspection Phase - Owner reviews post-inspection
+  async submitOwnerPostReview(inspectionId: string, review: any): Promise<any> {
+    const formData = new FormData();
+    
+    // Add dispute evidence photos if provided (backend expects 'files' field name from uploadMultiple middleware)
+    if (review.ownerReview?.disputeEvidence && Array.isArray(review.ownerReview.disputeEvidence)) {
+      review.ownerReview.disputeEvidence.forEach((photo: File | string, index: number) => {
+        if (photo instanceof File) {
+          formData.append(`files`, photo);
+        }
+      });
+    }
+
+    // Add review data
+    formData.append('accepted', String(review.ownerReview?.accepted ?? false));
+    formData.append('disputeRaised', String(review.ownerReview?.disputeRaised ?? false));
+    formData.append('disputeReason', review.ownerReview?.disputeReason || '');
+    formData.append('confirmedAt', review.ownerReview?.confirmedAt || new Date().toISOString());
+
+    const response = await inspectionApi.post(`/${inspectionId}/owner-post-review`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data?.data || response.data;
+  },
+
+  // Post-Inspection Phase - Owner raises dispute
+  async raiseOwnerDispute(inspectionId: string, dispute: any): Promise<any> {
+    const formData = new FormData();
+    
+    // Add dispute evidence photos if provided (backend expects 'files' field name from uploadMultiple middleware)
+    if (dispute.evidence && Array.isArray(dispute.evidence)) {
+      dispute.evidence.forEach((photo: File | string, index: number) => {
+        if (photo instanceof File) {
+          formData.append(`files`, photo);
+        }
+      });
+    }
+
+    // Add dispute data
+    formData.append('reason', dispute.reason || '');
+    formData.append('timestamp', dispute.timestamp || new Date().toISOString());
+
+    const response = await inspectionApi.post(`/${inspectionId}/owner-dispute`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data?.data || response.data;
   },
 };
 
@@ -574,7 +840,7 @@ export const disputeService = {
   async getDispute(inspectionId: string, disputeId: string): Promise<Dispute> {
     const response = await inspectionApi.get(`/${inspectionId}/disputes/${disputeId}`);
     return response.data;
-  }
+  },
 };
 
 // Photo operations

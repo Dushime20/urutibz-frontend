@@ -46,7 +46,7 @@ import ProductRiskProfile from '../risk-management/components/ProductRiskProfile
 import HandoverReturnPage from '../handover-return/HandoverReturnPage';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
-import CreateInspectionModal from '../../components/inspections/CreateInspectionModal';
+import OwnerPreInspectionFormCombined from '../../components/inspections/OwnerPreInspectionFormCombined';
 import { inspectionService } from '../../services/inspectionService';
 import { useNavigate } from 'react-router-dom';
 import NewListingModal from './models/NewListingModal';
@@ -1180,19 +1180,15 @@ const DashboardPage: React.FC = () => {
 
 
 
-          {/* Request Inspection Modal */}
+          {/* Owner Pre-Inspection Form (Combined) */}
           {showInspectionModal && (
-            <CreateInspectionModal
+            <OwnerPreInspectionFormCombined
               isOpen={showInspectionModal}
               onClose={() => setShowInspectionModal(false)}
-              onSubmit={async (data) => {
-                try {
-                  await inspectionService.createInspection(data as any);
-                  setShowInspectionModal(false);
-                  showToast('Inspection requested successfully!', 'success');
-                } catch (e: any) {
-                  showToast(e?.message || 'Failed to request inspection', 'error');
-                }
+              onSuccess={() => {
+                setShowInspectionModal(false);
+                loadUserInspections(); // Refresh inspections list
+                showToast('Pre-inspection created successfully!', 'success');
               }}
             />
           )}
@@ -1298,7 +1294,10 @@ const DashboardPage: React.FC = () => {
             <InspectionsSection
               loading={inspectionsLoading}
               userInspections={userInspections}
-              onViewInspection={(id: string) => navigate(`/inspections/${id}`, { state: { from: 'my-account' } })}
+              onViewInspection={(id: string) => {
+                // View inspection is now handled in InspectionsSection with modal
+                // This prop is kept for compatibility but not used
+              }}
               onRequestInspection={() => setShowInspectionModal(true)}
             />
           )}

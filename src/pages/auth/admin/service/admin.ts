@@ -447,7 +447,11 @@ export async function generateRevenueReport(filters?: any, token?: string): Prom
 
     const response = await axios.get(`${API_BASE_URL}/admin/analytics`, {
       headers: createAuthHeaders(token),
-      params: { period, granularity: 'day' },
+      params: { 
+        period, 
+        granularity: 'day',
+        ...(start && end && { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] })
+      },
     });
 
     const data = response.data?.data || response.data;
@@ -478,12 +482,23 @@ export async function generateRevenueReport(filters?: any, token?: string): Prom
       revenueByCategory = Object.keys(map).map((k) => ({ category: k, revenue: map[k].revenue, bookings: map[k].bookings }));
     }
 
+    // Extract trend data from analytics
+    const bookingTrends = data?.bookingTrends || [];
+    const revenueTrends = bookingTrends.map((trend: any) => ({
+      date: trend.date || trend.dateLabel || '',
+      dateLabel: trend.dateLabel || trend.date || '',
+      revenue: trend.revenue || trend.amount || 0,
+      bookings: trend.count || trend.total_bookings || 0,
+    }));
+
     return {
       totalRevenue,
       totalBookings,
       averageBookingValue,
       period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
       revenueByCategory,
+      revenueTrends, // New: Revenue trends over time
+      bookingTrends: bookingTrends, // New: Booking trends over time
     };
   } catch (err) {
     return { totalRevenue: 0, totalBookings: 0, averageBookingValue: 0, period: 'N/A', revenueByCategory: [] };
@@ -535,6 +550,57 @@ export async function generateUserReport(filters?: any, token?: string): Promise
       .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
       .slice(0, 10);
 
+    // Calculate user growth trends from the users data
+    const userTrends: Array<{ date: string; dateLabel: string; count: number; newUsers: number; activeUsers: number }> = [];
+    const userMap = new Map<string, { count: number; newUsers: number; activeUsers: number }>();
+    
+    // Use daily or monthly granularity based on date range
+    const daysDiff = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+    const useDaily = daysDiff <= 90;
+    
+    users.forEach((u: any) => {
+      const created = u.created_at || u.createdAt;
+      if (!created) return;
+      
+      const date = new Date(created);
+      if (isNaN(date.getTime())) return;
+      
+      const dateKey = useDaily
+        ? date.toISOString().substring(0, 10) // YYYY-MM-DD
+        : date.toISOString().substring(0, 7); // YYYY-MM
+      
+      if (!userMap.has(dateKey)) {
+        userMap.set(dateKey, { count: 0, newUsers: 0, activeUsers: 0 });
+      }
+      
+      const trend = userMap.get(dateKey)!;
+      trend.count++;
+      
+      if (withinRange(created)) {
+        trend.newUsers++;
+      }
+      
+      if (u.isActive === true || u.active === true || u.status === 'active') {
+        trend.activeUsers++;
+      }
+    });
+    
+    // Convert map to array and format
+    userMap.forEach((data, dateKey) => {
+      const date = new Date(dateKey + (dateKey.length === 7 ? '-01' : ''));
+      const dateLabel = useDaily
+        ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      userTrends.push({
+        date: dateKey,
+        dateLabel,
+        ...data,
+      });
+    });
+    
+    userTrends.sort((a, b) => a.date.localeCompare(b.date));
+
     return {
       totalUsers,
       newUsers,
@@ -542,6 +608,7 @@ export async function generateUserReport(filters?: any, token?: string): Promise
       verifiedUsers,
       period: `${fromDate.toISOString().split('T')[0]} to ${toDate.toISOString().split('T')[0]}`,
       topUsers,
+      userTrends, // New: User growth trends over time
     };
   } catch (err: any) {
     return { totalUsers: 0, newUsers: 0, activeUsers: 0, verifiedUsers: 0, period: 'N/A', topUsers: [] };
@@ -593,15 +660,35 @@ export async function generateBookingReport(filters?: any, token?: string): Prom
     const completedBookings = bookingsByStatus.find(s => s.status === 'completed')?.count || 0;
     const cancelledBookings = bookingsByStatus.find(s => s.status === 'cancelled')?.count || 0;
 
+    // Extract and format booking trends
+    const revenueOverTime = data?.revenue_over_time || data?.revenueOverTime || [];
+    const bookingTrends = data?.bookingTrends || data?.booking_trends || [];
+    
+    // Format trends for display
+    const formattedTrends = bookingTrends.length > 0 
+      ? bookingTrends.map((t: any) => ({
+          date: t.date || '',
+          dateLabel: t.dateLabel || t.date || '',
+          bookings: t.count || t.total_bookings || 0,
+          revenue: t.revenue || t.amount || 0,
+        }))
+      : revenueOverTime.map((r: any) => ({
+          date: r.date || r.period || '',
+          dateLabel: r.date || r.period || '',
+          bookings: 0,
+          revenue: r.amount || r.value || 0,
+        }));
+
     return {
       totalBookings,
       totalRevenue,
       averageBookingValue,
       period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
       bookingsByStatus,
-      revenueOverTime: data?.revenue_over_time || data?.revenueOverTime || [],
+      revenueOverTime: formattedTrends, // Enhanced with booking count
       completedBookings,
       cancelledBookings,
+      bookingTrends: formattedTrends, // New: Booking trends over time
     };
   } catch (err) {
     return { totalBookings: 0, totalRevenue: 0, averageBookingValue: 0, period: 'N/A', bookingsByStatus: [], revenueOverTime: [], completedBookings: 0, cancelledBookings: 0 };
@@ -648,12 +735,65 @@ export async function generateProductReport(filters?: any, token?: string): Prom
       if (paginationTotal) totalProducts = paginationTotal;
     }
 
+    // Calculate product trends from the products data
+    const productTrends: Array<{ date: string; dateLabel: string; count: number; active: number; rented: number }> = [];
+    const productMap = new Map<string, { count: number; active: number; rented: number }>();
+    
+    const toDate = filters?.endDate ? new Date(filters.endDate) : new Date();
+    const fromDate = filters?.startDate ? new Date(filters.startDate) : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const daysDiff = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+    const useDaily = daysDiff <= 90;
+    
+    items.forEach((p: any) => {
+      const created = p.created_at || p.createdAt;
+      if (!created) return;
+      
+      const date = new Date(created);
+      if (isNaN(date.getTime())) return;
+      
+      const dateKey = useDaily
+        ? date.toISOString().substring(0, 10) // YYYY-MM-DD
+        : date.toISOString().substring(0, 7); // YYYY-MM
+      
+      if (!productMap.has(dateKey)) {
+        productMap.set(dateKey, { count: 0, active: 0, rented: 0 });
+      }
+      
+      const trend = productMap.get(dateKey)!;
+      trend.count++;
+      
+      if (p.status === 'active') {
+        trend.active++;
+      }
+      
+      if ((p.bookingsCount || p.totalBookings || 0) > 0) {
+        trend.rented++;
+      }
+    });
+    
+    // Convert map to array and format
+    productMap.forEach((data, dateKey) => {
+      const date = new Date(dateKey + (dateKey.length === 7 ? '-01' : ''));
+      const dateLabel = useDaily
+        ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      productTrends.push({
+        date: dateKey,
+        dateLabel,
+        ...data,
+      });
+    });
+    
+    productTrends.sort((a, b) => a.date.localeCompare(b.date));
+
     return {
       totalProducts,
       activeProducts,
       rentedProducts,
       period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
       topProducts,
+      productTrends, // New: Product trends over time
     };
   } catch (err) {
     return { totalProducts: 0, activeProducts: 0, rentedProducts: 0, period: 'N/A', topProducts: [] };
@@ -663,19 +803,80 @@ export async function generateProductReport(filters?: any, token?: string): Prom
 export async function generateTransactionReport(filters?: any, token?: string): Promise<any> {
   try {
     const params: Record<string, string> = {};
-    if (filters?.startDate) params['created_after'] = filters.startDate;
-    if (filters?.endDate) params['created_before'] = filters.endDate;
+    // Only apply date filters if they are provided and not "All Time"
+    // For "All Time", we don't send date filters to get all transactions
+    if (filters?.startDate && filters?.endDate) {
+      // Check if it's "All Time" by checking if start date is very early (more than 4 years ago)
+      const startDate = new Date(filters.startDate);
+      const fourYearsAgo = new Date();
+      fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+      
+      // Only apply date filters if not "All Time"
+      if (startDate > fourYearsAgo) {
+        params['created_after'] = filters.startDate;
+        params['created_before'] = filters.endDate;
+      }
+      // If "All Time", don't send date filters - get all transactions
+    }
 
     const response = await axios.get(`${API_BASE_URL}/payment-transactions/stats`, {
       headers: createAuthHeaders(token),
       params,
     });
 
+    // Debug: Full response from backend
+    console.log('[Reports] Full backend response:', JSON.stringify(response?.data, null, 2));
+    console.log('[Reports] Response structure:', {
+      hasData: !!response?.data,
+      hasDataData: !!response?.data?.data,
+      responseKeys: response?.data ? Object.keys(response.data) : [],
+      dataKeys: response?.data?.data ? Object.keys(response.data.data) : []
+    });
+
     const data = response.data?.data || response.data;
+    
+    // Debug: Data object structure
+    console.log('[Reports] Extracted data object:', JSON.stringify(data, null, 2));
+    console.log('[Reports] Data keys:', data ? Object.keys(data) : []);
+    console.log('[Reports] TotalAmount fields check:', {
+      totalAmount: data?.totalAmount,
+      totalAmountType: typeof data?.totalAmount,
+      sumAmount: data?.sumAmount,
+      sumAmountType: typeof data?.sumAmount,
+      total_amount: data?.total_amount,
+      total_amountType: typeof data?.total_amount,
+      sum_amount: data?.sum_amount,
+      sum_amountType: typeof data?.sum_amount
+    });
 
     const totalTransactions = data?.totalCount || data?.totalTransactions || 0;
-    const totalAmount = data?.totalAmount || data?.sumAmount || 0;
+    // Ensure totalAmount is a number, not a string (parse it to avoid concatenation issues)
+    const totalAmountRaw = data?.totalAmount || data?.sumAmount || data?.total_amount || data?.sum_amount || 0;
+    console.log('[Reports] TotalAmount raw value:', totalAmountRaw, 'Type:', typeof totalAmountRaw);
+    const totalAmount = typeof totalAmountRaw === 'string' 
+      ? parseFloat(totalAmountRaw) || 0
+      : Number(totalAmountRaw) || 0;
+    console.log('[Reports] TotalAmount after parsing:', totalAmount, 'Type:', typeof totalAmount);
+    
+    // Parse additional amount fields
+    const completedAmountRaw = data?.completedAmount || data?.completed_amount || 0;
+    const completedAmount = typeof completedAmountRaw === 'string' 
+      ? parseFloat(completedAmountRaw) || 0
+      : Number(completedAmountRaw) || 0;
+    
+    const pendingAmountRaw = data?.pendingAmount || data?.pending_amount || 0;
+    const pendingAmount = typeof pendingAmountRaw === 'string' 
+      ? parseFloat(pendingAmountRaw) || 0
+      : Number(pendingAmountRaw) || 0;
+    
+    const allStatusAmountRaw = data?.allStatusAmount || data?.all_status_amount || 0;
+    const allStatusAmount = typeof allStatusAmountRaw === 'string' 
+      ? parseFloat(allStatusAmountRaw) || 0
+      : Number(allStatusAmountRaw) || 0;
+    
     const successfulTransactions = data?.statusBreakdown?.completed || 0;
+    const completedCount = data?.completedCount || data?.completed_count || successfulTransactions || 0;
+    const pendingCount = data?.pendingCount || data?.pending_count || 0;
 
     const transactionsByType: Array<{ type: string; count: number; amount: number }> = [];
     const typeCounts = data?.transactionTypeBreakdown || data?.typeCounts || {};
@@ -683,15 +884,37 @@ export async function generateTransactionReport(filters?: any, token?: string): 
       transactionsByType.push({ type, count: typeCounts[type] || 0, amount: 0 });
     });
 
+    // Parse trends data (new enhanced trends with daily/monthly granularity)
+    const trends = data?.trends || data?.monthlyTrends || [];
+    const monthlyTrends = data?.monthlyTrends || [];
+
     return {
       totalTransactions,
       totalAmount,
       successfulTransactions,
+      completedAmount,
+      pendingAmount,
+      allStatusAmount,
+      completedCount,
+      pendingCount,
       period: `${filters?.startDate || 'N/A'} to ${filters?.endDate || 'N/A'}`,
       transactionsByType,
+      trends, // New enhanced trends with daily/monthly granularity and status breakdown
+      monthlyTrends, // For backward compatibility
     };
   } catch (err) {
-    return { totalTransactions: 0, totalAmount: 0, successfulTransactions: 0, period: 'N/A', transactionsByType: [] };
+    return { 
+      totalTransactions: 0, 
+      totalAmount: 0, 
+      successfulTransactions: 0, 
+      completedAmount: 0,
+      pendingAmount: 0,
+      allStatusAmount: 0,
+      completedCount: 0,
+      pendingCount: 0,
+      period: 'N/A', 
+      transactionsByType: [] 
+    };
   }
 }
 

@@ -420,3 +420,46 @@ html, body {
   background-color: color-mix(in oklab, currentColor 15%, #0000 85%);
   filter: saturate(2.5) brightness(0.9);
 }
+
+/* Microsoft Edge compatibility fixes */
+@supports (-ms-ime-align: auto) {
+  /* Edge-specific fixes */
+  .fixed {
+    position: fixed;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
+/* Ensure proper stacking context for fixed elements - Edge compatibility */
+.fixed {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Fix for grid layout in Edge */
+@supports (-ms-ime-align: auto) {
+  .grid {
+    display: -ms-grid;
+    display: grid;
+  }
+}
+
+/* Fix for transform transitions in Edge */
+@supports (-ms-ime-align: auto) {
+  .transform {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
+/* Fix for backdrop-filter in Edge */
+@supports (-ms-ime-align: auto) {
+  .backdrop-blur-xl {
+    background-color: rgba(255, 255, 255, 0.95);
+  }
+  
+  .dark .backdrop-blur-xl {
+    background-color: rgba(17, 24, 39, 0.95);
+  }
+}

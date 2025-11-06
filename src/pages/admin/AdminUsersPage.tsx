@@ -17,6 +17,7 @@ const AdminUsersPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'admin-settings'>('users');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   // Handle tab navigation
@@ -51,15 +52,25 @@ const AdminUsersPage: React.FC = () => {
     </button>
   );
 
+  const handleMenuToggle = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleMenuClose = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="flex">
-        {/* Sidebar - Fixed width for large screens */}
-        <div className="hidden lg:block lg:w-64 xl:w-72 flex-shrink-0">
+        {/* Sidebar - Fixed width for large screens, mobile menu for small screens */}
+        <div className="xl:block xl:w-64 xl:flex-shrink-0">
           <AdminSidebar 
             activeTab={activeTab} 
             setActiveTab={handleTabChange} 
             AdminNavigationItem={AdminNavigationItem}
+            isMobileMenuOpen={isMobileMenuOpen}
+            onMobileMenuClose={handleMenuClose}
           />
         </div>
         
@@ -71,6 +82,7 @@ const AdminUsersPage: React.FC = () => {
             setSelectedLocation={setSelectedLocation}
             selectedLanguage={selectedLanguage}
             setSelectedLanguage={setSelectedLanguage}
+            onMenuToggle={handleMenuToggle}
           />
           
           {/* Content with proper spacing */}
@@ -81,11 +93,6 @@ const AdminUsersPage: React.FC = () => {
             </div>
           </main>
         </div>
-      </div>
-
-      {/* Mobile Sidebar Overlay */}
-      <div className="lg:hidden">
-        {/* Mobile sidebar implementation would go here if needed */}
       </div>
     </div>
   );

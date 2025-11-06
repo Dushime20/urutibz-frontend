@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Shield, User, LogOut, ChevronDown, UserCircle, RefreshCw, Upload, X, AlertCircle, Lock, Smartphone } from 'lucide-react';
+import { Search, Bell, Shield, User, LogOut, ChevronDown, UserCircle, RefreshCw, Upload, X, AlertCircle, Lock, Smartphone, Menu } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { adminService, type AdminUserProfile } from '../service';
 import { TwoFactorManagement, TwoFactorVerification } from '../../../components/2fa';
@@ -13,9 +13,10 @@ interface AdminHeaderProps {
   setSelectedLocation: (val: string) => void;
   selectedLanguage: string;
   setSelectedLanguage: (val: string) => void;
+  onMenuToggle?: () => void;
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelectedLocation, selectedLanguage, setSelectedLanguage }) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelectedLocation, selectedLanguage, setSelectedLanguage, onMenuToggle }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -164,6 +165,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
         <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
+              {/* Hamburger Menu Button - visible on mobile/tablet, hidden on xl+ */}
+              {onMenuToggle && (
+                <button
+                  onClick={onMenuToggle}
+                  className="xl:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  aria-label="Toggle menu"
+                >
+                  <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                </button>
+              )}
               <div className="flex items-center space-x-2">
                 <Shield className="w-6 h-6 text-my-primary" aria-label="Dashboard" />
                 <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
@@ -181,6 +192,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
+            {/* Hamburger Menu Button - visible on mobile/tablet, hidden on xl+ */}
+            {onMenuToggle && (
+              <button
+                onClick={onMenuToggle}
+                className="xl:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Toggle menu"
+              >
+                <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
             <div className="flex items-center space-x-2">
               <Shield className="w-6 h-6 text-my-primary" aria-label="Dashboard" />
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Calendar, MapPin, Clock, Eye, CheckCircle, AlertTriangle, Play, AlertCircle, MessageSquare, Plus } from 'lucide-react';
+import { Search, Filter, Calendar, MapPin, Clock, Eye, CheckCircle, AlertTriangle, Play, AlertCircle, MessageSquare, Plus, FileText, Upload, X } from 'lucide-react';
 import { disputeService, inspectionService } from '../../../services/inspectionService';
-import { DisputeType } from '../../../types/inspection';
+import { DisputeType, InspectionType, InspectionStatus } from '../../../types/inspection';
+import RenterPreReviewComponent from '../../../components/inspections/RenterPreReviewComponent';
+import RenterPostInspectionForm from '../../../components/inspections/RenterPostInspectionForm';
+import OwnerPostReviewComponent from '../../../components/inspections/OwnerPostReviewComponent';
+import InspectionDetailsModal from '../../../components/inspections/InspectionDetailsModal';
 
 interface Props {
   loading: boolean;
@@ -22,7 +26,7 @@ const InspectionsSection: React.FC<Props> = ({
   const [userDisputes, setUserDisputes] = useState<any[]>([]);
   const [disputesLoading, setDisputesLoading] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
-  const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(null);
+  const [selectedDisputeInspectionId, setSelectedDisputeInspectionId] = useState<string | null>(null);
   const [disputeForm, setDisputeForm] = useState({
     disputeType: DisputeType.DAMAGE_ASSESSMENT,
     reason: '',
@@ -30,12 +34,40 @@ const InspectionsSection: React.FC<Props> = ({
     photos: [] as File[]
   });
 
+  // New workflow form modals
+  const [showRenterPreReviewModal, setShowRenterPreReviewModal] = useState(false);
+  const [showRenterPostInspectionModal, setShowRenterPostInspectionModal] = useState(false);
+  const [showOwnerPostReviewModal, setShowOwnerPostReviewModal] = useState(false);
+  const [showInspectionDetailsModal, setShowInspectionDetailsModal] = useState(false);
+  const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(null);
+  const [selectedInspection, setSelectedInspection] = useState<any>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   // Fetch rented inspections
   const loadRentedInspections = async () => {
     setRentedLoading(true);
     try {
       const response = await inspectionService.getMyInspections();
-      setRentedInspections(response.data || []);
+      const inspections = response.data || [];
+      console.log('📦 Loaded Rented Inspections:', {
+        count: inspections.length,
+        inspections: inspections.map((i: any) => ({
+          id: i.id,
+          type: i.inspectionType,
+          typeRaw: i.inspectionType || i.inspection_type,
+          status: i.status,
+          hasOwnerPreInspection: !!i.ownerPreInspectionData,
+          ownerPreInspectionConfirmed: i.ownerPreInspectionConfirmed,
+          renterPreReviewAccepted: i.renterPreReviewAccepted,
+          renterDiscrepancyReported: i.renterDiscrepancyReported,
+          renterPostInspectionData: i.renterPostInspectionData ? 'exists' : 'missing',
+          renterPostInspectionConfirmed: i.renterPostInspectionConfirmed,
+          ownerPostReviewAccepted: i.ownerPostReviewAccepted,
+          ownerDisputeRaised: i.ownerDisputeRaised,
+          isPostRental: i.inspectionType === InspectionType.POST_RENTAL || i.inspection_type === 'post_rental' || i.inspection_type === 'POST_RENTAL' || i.inspectionType === 'post_return' || i.inspection_type === 'post_return'
+        }))
+      });
+      setRentedInspections(inspections);
     } catch (error) {
       console.error('Error fetching rented inspections:', error);
       setRentedInspections([]);
@@ -83,7 +115,412 @@ const InspectionsSection: React.FC<Props> = ({
     } else if (activeTab === 'disputes') {
       loadUserDisputes();
     }
-  }, [activeTab]);
+  }, [activeTab, refreshTrigger]);
+
+  // Determine which action button to show based on inspection status and user role
+  const getActionButton = (inspection: any, isOwner: boolean) => {
+    const inspectionType = inspection.inspectionType;
+    const status = inspection.status;
+    
+    // Debug logging
+    if (!isOwner && inspectionType === InspectionType.PRE_RENTAL) {
+      console.log('🔍 Renter Pre-Rental Inspection:', {
+        id: inspection.id,
+        ownerPreInspectionConfirmed: inspection.ownerPreInspectionConfirmed,
+        renterPreReviewAccepted: inspection.renterPreReviewAccepted,
+        renterDiscrepancyReported: inspection.renterDiscrepancyReported,
+        ownerPreInspectionData: inspection.ownerPreInspectionData ? 'exists' : 'missing',
+        inspectionType,
+        status
+      });
+    }
+
+    // Owner actions for pre-rental inspection
+    if (isOwner && inspectionType === InspectionType.PRE_RENTAL) {
+      if (!inspection.ownerPreInspectionConfirmed) {
+        // New inspections should have pre-inspection data from creation
+        // This state should not occur with the combined form
+        return (
+          <span className="mt-2 px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full dark:bg-gray-900/20 dark:text-gray-400">
+            Pre-Inspection Pending
+          </span>
+        );
+      }
+      if (inspection.ownerPreInspectionConfirmed && !inspection.renterPreReviewAccepted) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
+            Waiting for Renter Review
+          </span>
+        );
+      }
+    }
+
+    // Renter actions for pre-rental inspection
+    if (!isOwner && inspectionType === InspectionType.PRE_RENTAL) {
+      // Debug: Log inspection data to see what we have
+      console.log('🔍 getActionButton - Renter Pre-Rental:', {
+        id: inspection.id,
+        ownerPreInspectionData: inspection.ownerPreInspectionData ? 'exists' : 'missing',
+        ownerPreInspectionConfirmed: inspection.ownerPreInspectionConfirmed,
+        renterPreReviewAccepted: inspection.renterPreReviewAccepted,
+        renterDiscrepancyReported: inspection.renterDiscrepancyReported,
+        renterPostInspectionData: inspection.renterPostInspectionData ? 'exists' : 'missing',
+        renterPostInspectionConfirmed: inspection.renterPostInspectionConfirmed,
+        booking: inspection.booking,
+        inspectionKeys: Object.keys(inspection)
+      });
+      
+      // Check if booking has ended (for post-inspection)
+      const booking = inspection.booking || (inspection as any).Booking;
+      const bookingEndDate = booking?.end_date || booking?.endDate || booking?.rental_end_date;
+      const now = new Date();
+      const bookingEnded = bookingEndDate ? new Date(bookingEndDate) < now : false;
+      
+      // Check if renter has already provided post-inspection
+      const hasPostInspectionData = 
+        inspection.renterPostInspectionData || 
+        (inspection as any).renter_post_inspection_data;
+      const isPostInspectionConfirmed = 
+        inspection.renterPostInspectionConfirmed || 
+        (inspection as any).renter_post_inspection_confirmed;
+      
+      // If booking has ended and renter hasn't provided post-inspection yet, show post-inspection button
+      if (bookingEnded && !isPostInspectionConfirmed && !hasPostInspectionData) {
+        console.log('✅ Booking ended - Showing "Provide Post-Inspection" button');
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedInspection(inspection);
+              setShowRenterPostInspectionModal(true);
+            }}
+            className="mt-2 px-3 py-1 bg-teal-600 text-white text-xs rounded-full hover:bg-teal-700 transition-colors flex items-center gap-1"
+          >
+            <Upload className="w-3 h-3" />
+            Provide Post-Inspection
+          </button>
+        );
+      }
+      
+      // If post-inspection is provided but owner hasn't reviewed yet
+      if (isPostInspectionConfirmed && !inspection.ownerPostReviewAccepted && !inspection.ownerDisputeRaised) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
+            Waiting for Owner Review
+          </span>
+        );
+      }
+      
+      // Check if owner has provided pre-inspection data (even if not confirmed yet)
+      // Also check for nested data structures
+      const hasOwnerPreInspection = 
+        inspection.ownerPreInspectionData || 
+        inspection.ownerPreInspectionConfirmed ||
+        (inspection as any).owner_pre_inspection_data ||
+        (inspection as any).owner_pre_inspection_confirmed;
+      
+      // Show review button if owner has provided pre-inspection and renter hasn't reviewed yet
+      if (hasOwnerPreInspection && !inspection.renterPreReviewAccepted && !inspection.renterDiscrepancyReported) {
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedInspection(inspection);
+              setShowRenterPreReviewModal(true);
+            }}
+            className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
+          >
+            <FileText className="w-3 h-3" />
+            Review Pre-Inspection
+          </button>
+        );
+      }
+      
+      // Show status if renter has already reviewed
+      if (inspection.renterPreReviewAccepted) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/20 dark:text-green-400">
+            Review Accepted
+          </span>
+        );
+      }
+      
+      // Show status if discrepancy was reported
+      if (inspection.renterDiscrepancyReported) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
+            Discrepancy Reported
+          </span>
+        );
+      }
+      
+      // Show waiting status if owner hasn't provided pre-inspection yet
+      if (!hasOwnerPreInspection) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full dark:bg-gray-900/20 dark:text-gray-400">
+            Waiting for Owner Pre-Inspection
+          </span>
+        );
+      }
+    }
+
+    // Renter actions for post-return inspection
+    // Check inspection type with multiple possible formats (handle both POST_RENTAL and POST_RETURN)
+    const isPostRental = 
+      inspectionType === InspectionType.POST_RENTAL || 
+      inspectionType === 'post_rental' || 
+      inspectionType === 'POST_RENTAL' ||
+      inspectionType === 'post_return' ||  // Backend uses POST_RETURN
+      inspectionType === 'POST_RETURN' ||
+      (inspection as any).inspection_type === 'post_rental' ||
+      (inspection as any).inspection_type === 'POST_RENTAL' ||
+      (inspection as any).inspection_type === 'post_return' ||
+      (inspection as any).inspection_type === 'POST_RETURN';
+    
+    if (!isOwner && isPostRental) {
+      // Debug logging for post-inspection
+      console.log('🔍 getActionButton - Renter Post-Rental:', {
+        id: inspection.id,
+        inspectionType,
+        inspection_type: (inspection as any).inspection_type,
+        isPostRental,
+        isOwner,
+        renterPostInspectionConfirmed: inspection.renterPostInspectionConfirmed,
+        renter_post_inspection_confirmed: (inspection as any).renter_post_inspection_confirmed,
+        renterPostInspectionData: inspection.renterPostInspectionData ? 'exists' : 'missing',
+        renter_post_inspection_data: (inspection as any).renter_post_inspection_data ? 'exists' : 'missing',
+        ownerPostReviewAccepted: inspection.ownerPostReviewAccepted,
+        ownerDisputeRaised: inspection.ownerDisputeRaised,
+        status,
+        allKeys: Object.keys(inspection)
+      });
+      
+      // Check if renter has submitted post-inspection (handle both camelCase and snake_case)
+      const hasPostInspectionData = 
+        inspection.renterPostInspectionData || 
+        (inspection as any).renter_post_inspection_data;
+      const isConfirmed = 
+        inspection.renterPostInspectionConfirmed || 
+        (inspection as any).renter_post_inspection_confirmed;
+      
+      console.log('🔍 Post-Inspection Button Check:', {
+        hasPostInspectionData: !!hasPostInspectionData,
+        isConfirmed,
+        shouldShowButton: !isConfirmed && !hasPostInspectionData
+      });
+      
+      // Show button if post-inspection hasn't been submitted/confirmed yet
+      if (!isConfirmed && !hasPostInspectionData) {
+        console.log('✅ Showing "Provide Post-Inspection" button');
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedInspection(inspection);
+              setShowRenterPostInspectionModal(true);
+            }}
+            className="mt-2 px-3 py-1 bg-teal-600 text-white text-xs rounded-full hover:bg-teal-700 transition-colors flex items-center gap-1"
+          >
+            <Upload className="w-3 h-3" />
+            Provide Post-Inspection
+          </button>
+        );
+      }
+      
+      // Show status if renter has submitted but owner hasn't reviewed yet
+      if (isConfirmed && !inspection.ownerPostReviewAccepted && !inspection.ownerDisputeRaised) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
+            Waiting for Owner Review
+          </span>
+        );
+      }
+      
+      // Show status if owner has accepted
+      if (inspection.ownerPostReviewAccepted) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/20 dark:text-green-400">
+            Owner Accepted
+          </span>
+        );
+      }
+      
+      // Show status if owner raised dispute
+      if (inspection.ownerDisputeRaised) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full dark:bg-red-900/20 dark:text-red-400">
+            Owner Dispute Raised
+          </span>
+        );
+      }
+    }
+
+    // Owner actions for post-return inspection
+    // Check inspection type with multiple possible formats (handle both POST_RENTAL and POST_RETURN)
+    const isPostRentalForOwner = 
+      inspectionType === InspectionType.POST_RENTAL || 
+      inspectionType === 'post_rental' || 
+      inspectionType === 'POST_RENTAL' ||
+      inspectionType === 'post_return' ||  // Backend uses POST_RETURN
+      inspectionType === 'POST_RETURN' ||
+      (inspection as any).inspection_type === 'post_rental' ||
+      (inspection as any).inspection_type === 'POST_RENTAL' ||
+      (inspection as any).inspection_type === 'post_return' ||
+      (inspection as any).inspection_type === 'POST_RETURN';
+    
+    if (isOwner && isPostRentalForOwner) {
+      if (inspection.renterPostInspectionConfirmed && !inspection.ownerPostReviewAccepted && !inspection.ownerDisputeRaised) {
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedInspection(inspection);
+              setShowOwnerPostReviewModal(true);
+            }}
+            className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
+          >
+            <FileText className="w-3 h-3" />
+            Review Post-Inspection
+          </button>
+        );
+      }
+      if (inspection.ownerDisputeRaised) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full dark:bg-red-900/20 dark:text-red-400">
+            Dispute Raised
+          </span>
+        );
+      }
+    }
+
+    return null;
+  };
+
+  // Form submission handlers
+  const handleRenterPreReviewSubmit = async (review: any) => {
+    if (!selectedInspection) return;
+    
+    // Get current user ID from token for debugging
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    let currentUserId = null;
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUserId = payload.id || payload.sub || payload.userId;
+      } catch (e) {
+        console.warn('Could not parse token:', e);
+      }
+    }
+    
+    console.log('[InspectionsSection] Submitting renter pre-review:', {
+      inspectionId: selectedInspection.id,
+      review,
+      currentUserId,
+      inspectionRenterId: selectedInspection.renterId || selectedInspection.renter_id,
+      tokenExists: !!token
+    });
+    
+    try {
+      await inspectionService.submitRenterPreReview(selectedInspection.id, review);
+      setShowRenterPreReviewModal(false);
+      setSelectedInspection(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to submit renter pre-review:', error);
+      throw error;
+    }
+  };
+
+  const handleRenterDiscrepancySubmit = async (discrepancy: any) => {
+    if (!selectedInspection) return;
+    
+    // Get current user ID from token for debugging
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    let currentUserId = null;
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUserId = payload.id || payload.sub || payload.userId;
+      } catch (e) {
+        console.warn('Could not parse token:', e);
+      }
+    }
+    
+    console.log('[InspectionsSection] Reporting renter discrepancy:', {
+      inspectionId: selectedInspection.id,
+      discrepancy: {
+        issuesCount: discrepancy.issues?.length || 0,
+        notesLength: discrepancy.notes?.length || 0,
+        photosCount: discrepancy.photos?.length || 0
+      },
+      currentUserId,
+      inspectionRenterId: selectedInspection.renterId || selectedInspection.renter_id,
+      tokenExists: !!token
+    });
+    
+    try {
+      await inspectionService.reportRenterDiscrepancy(selectedInspection.id, discrepancy);
+      setShowRenterPreReviewModal(false);
+      setSelectedInspection(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to report discrepancy:', error);
+      throw error;
+    }
+  };
+
+  const handleRenterPostInspectionSubmit = async (data: any) => {
+    if (!selectedInspection) return;
+    
+    // Get current user ID from token for debugging
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    let currentUserId = null;
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUserId = payload.id || payload.sub || payload.userId;
+      } catch (e) {
+        console.warn('Could not parse token:', e);
+      }
+    }
+    
+    console.log('[InspectionsSection] Submitting renter post-inspection:', {
+      inspectionId: selectedInspection.id,
+      data: {
+        photosCount: data.returnPhotos?.length || 0,
+        hasCondition: !!data.condition,
+        notesLength: data.notes?.length || 0,
+        hasLocation: !!data.returnLocation,
+        confirmed: data.confirmed
+      },
+      currentUserId,
+      inspectionRenterId: selectedInspection.renterId || selectedInspection.renter_id,
+      tokenExists: !!token
+    });
+    
+    try {
+      await inspectionService.submitRenterPostInspection(selectedInspection.id, data);
+      setShowRenterPostInspectionModal(false);
+      setSelectedInspection(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to submit renter post-inspection:', error);
+      throw error;
+    }
+  };
+
+  const handleOwnerPostReviewSubmit = async (review: any) => {
+    if (!selectedInspection) return;
+    try {
+      await inspectionService.submitOwnerPostReview(selectedInspection.id, review);
+      setShowOwnerPostReviewModal(false);
+      setSelectedInspection(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to submit owner post-review:', error);
+      throw error;
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -132,7 +569,7 @@ const InspectionsSection: React.FC<Props> = ({
   };
 
   const handleRaiseDispute = async () => {
-    if (!selectedInspectionId || !disputeForm.reason.trim()) {
+    if (!selectedDisputeInspectionId || !disputeForm.reason.trim()) {
       return;
     }
 
@@ -148,7 +585,7 @@ const InspectionsSection: React.FC<Props> = ({
         formData.append('photos', photo);
       });
 
-      await disputeService.raiseDispute(selectedInspectionId, formData as any);
+      await disputeService.raiseDispute(selectedDisputeInspectionId, formData as any);
 
       // Reset form and close modal
       setDisputeForm({
@@ -158,7 +595,7 @@ const InspectionsSection: React.FC<Props> = ({
         photos: []
       });
       setShowDisputeModal(false);
-      setSelectedInspectionId(null);
+      setSelectedDisputeInspectionId(null);
       
       // Reload disputes
       loadUserDisputes();
@@ -168,7 +605,7 @@ const InspectionsSection: React.FC<Props> = ({
   };
 
   const openDisputeModal = (inspectionId: string) => {
-    setSelectedInspectionId(inspectionId);
+    setSelectedDisputeInspectionId(inspectionId);
     setShowDisputeModal(true);
   };
 
@@ -266,7 +703,10 @@ const InspectionsSection: React.FC<Props> = ({
               <div
                 key={inspection.id}
                 className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-3 sm:space-y-0 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer overflow-hidden dark:border-slate-700 dark:hover:border-slate-600"
-                onClick={() => onViewInspection(inspection.id)}
+                onClick={() => {
+                  setSelectedInspectionId(inspection.id);
+                  setShowInspectionDetailsModal(true);
+                }}
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
@@ -309,17 +749,21 @@ const InspectionsSection: React.FC<Props> = ({
                       Created {formatDate(inspection.createdAt)}
                     </p>
                   )}
-                  {/* Raise Dispute Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openDisputeModal(inspection.id);
-                    }}
-                    className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full hover:bg-red-200 transition-colors flex items-center gap-1 dark:bg-red-900/20 dark:hover:bg-red-900/30"
-                  >
-                    <AlertCircle className="w-3 h-3" />
-                    Raise Dispute
-                  </button>
+                  {/* Action Button based on inspection status */}
+                  {getActionButton(inspection, true)}
+                  {/* Raise Dispute Button (legacy) */}
+                  {inspection.status === InspectionStatus.DISPUTED && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDisputeModal(inspection.id);
+                      }}
+                      className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full hover:bg-red-200 transition-colors flex items-center gap-1 dark:bg-red-900/20 dark:hover:bg-red-900/30"
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      Raise Dispute
+                    </button>
+                  )}
                 </div>
               </div>
             ))
@@ -341,7 +785,10 @@ const InspectionsSection: React.FC<Props> = ({
               <div
                 key={inspection.id}
                 className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-3 sm:space-y-0 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer overflow-hidden dark:border-slate-700 dark:hover:border-slate-600"
-                onClick={() => onViewInspection(inspection.id)}
+                onClick={() => {
+                  setSelectedInspectionId(inspection.id);
+                  setShowInspectionDetailsModal(true);
+                }}
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
@@ -390,6 +837,8 @@ const InspectionsSection: React.FC<Props> = ({
                       Created {formatDate(inspection.createdAt)}
                     </p>
                   )}
+                  {/* Action Button based on inspection status */}
+                  {getActionButton(inspection, false)}
                 </div>
               </div>
             ))
@@ -553,6 +1002,140 @@ const InspectionsSection: React.FC<Props> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Renter Pre-Review Modal */}
+      {showRenterPreReviewModal && selectedInspection && selectedInspection.ownerPreInspectionData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => {
+            setShowRenterPreReviewModal(false);
+            setSelectedInspection(null);
+          }} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Review Pre-Inspection</h3>
+              <button
+                onClick={() => {
+                  setShowRenterPreReviewModal(false);
+                  setSelectedInspection(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <RenterPreReviewComponent
+                inspectionId={selectedInspection.id}
+                ownerPreInspection={selectedInspection.ownerPreInspectionData}
+                onSubmit={handleRenterPreReviewSubmit}
+                onReportDiscrepancy={handleRenterDiscrepancySubmit}
+                onCancel={() => {
+                  setShowRenterPreReviewModal(false);
+                  setSelectedInspection(null);
+                }}
+                showDiscrepancyFormInitially={selectedInspection._showDiscrepancyForm || false}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Renter Post-Inspection Modal */}
+      {showRenterPostInspectionModal && selectedInspection && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => {
+            setShowRenterPostInspectionModal(false);
+            setSelectedInspection(null);
+          }} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Provide Post-Inspection</h3>
+              <button
+                onClick={() => {
+                  setShowRenterPostInspectionModal(false);
+                  setSelectedInspection(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <RenterPostInspectionForm
+                inspectionId={selectedInspection.id}
+                productId={selectedInspection.productId}
+                bookingId={selectedInspection.bookingId}
+                onSubmit={handleRenterPostInspectionSubmit}
+                onCancel={() => {
+                  setShowRenterPostInspectionModal(false);
+                  setSelectedInspection(null);
+                }}
+                initialData={selectedInspection.renterPostInspectionData}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Owner Post-Review Modal */}
+      {showOwnerPostReviewModal && selectedInspection && selectedInspection.renterPostInspectionData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => {
+            setShowOwnerPostReviewModal(false);
+            setSelectedInspection(null);
+          }} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Review Post-Inspection</h3>
+              <button
+                onClick={() => {
+                  setShowOwnerPostReviewModal(false);
+                  setSelectedInspection(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <OwnerPostReviewComponent
+                inspectionId={selectedInspection.id}
+                renterPostInspection={selectedInspection.renterPostInspectionData}
+                onSubmit={handleOwnerPostReviewSubmit}
+                onCancel={() => {
+                  setShowOwnerPostReviewModal(false);
+                  setSelectedInspection(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inspection Details Modal */}
+      {showInspectionDetailsModal && selectedInspectionId && (
+        <InspectionDetailsModal
+          isOpen={showInspectionDetailsModal}
+          inspectionId={selectedInspectionId}
+          onClose={() => {
+            setShowInspectionDetailsModal(false);
+            setSelectedInspectionId(null);
+          }}
+          userRole={activeTab === 'rented-items' ? 'renter' : activeTab === 'my-items' ? 'owner' : undefined}
+          onReviewPreInspection={(inspection) => {
+            setSelectedInspection(inspection);
+            setShowInspectionDetailsModal(false);
+            setShowRenterPreReviewModal(true);
+          }}
+          onReportDiscrepancy={(inspection) => {
+            // Mark inspection to show discrepancy form when opening review modal
+            const inspectionWithFlag = { ...inspection, _showDiscrepancyForm: true };
+            setSelectedInspection(inspectionWithFlag);
+            setShowInspectionDetailsModal(false);
+            setShowRenterPreReviewModal(true);
+          }}
+        />
       )}
     </div>
   );

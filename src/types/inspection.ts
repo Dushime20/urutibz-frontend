@@ -1,24 +1,4 @@
-export interface Inspection {
-  id: string;
-  productId: string;
-  bookingId: string;
-  inspectorId: string;
-  inspectionType: InspectionType;
-  status: InspectionStatus;
-  scheduledAt: string;
-  location: string;
-  notes: string;
-  inspectorNotes?: string;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  items: InspectionItem[];
-  photos: InspectionPhoto[];
-  disputes: Dispute[];
-  inspector?: Inspector;
-  product?: Product;
-  booking?: Booking;
-}
+// Inspection interface defined below with new workflow fields
 
 export interface InspectionItem {
   id: string;
@@ -230,4 +210,125 @@ export interface CreateDisputeRequest {
 export interface ResolveDisputeRequest {
   resolutionNotes: string;
   agreedAmount?: number;
+}
+
+// =====================================================
+// NEW WORKFLOW INTERFACES
+// =====================================================
+
+// GPS Location interface
+export interface GPSLocation {
+  latitude: number;
+  longitude: number;
+  address?: string;
+  timestamp: string;
+}
+
+// Condition Assessment interface
+export interface ConditionAssessment {
+  overallCondition: ItemCondition;
+  items: Array<{
+    itemName: string;
+    condition: ItemCondition;
+    description: string;
+    photos?: string[];
+  }>;
+  accessories: Array<{
+    name: string;
+    included: boolean;
+    condition?: ItemCondition;
+  }>;
+  knownIssues: string[];
+  maintenanceHistory?: string;
+}
+
+// Owner Pre-Inspection Data
+export interface OwnerPreInspectionData {
+  photos: File[] | string[]; // File[] for upload, string[] for display
+  condition: ConditionAssessment;
+  notes: string;
+  location: GPSLocation;
+  timestamp: string;
+  confirmed: boolean;
+}
+
+// Renter Pre-Review
+export interface RenterPreReview {
+  inspectionId: string;
+  accepted: boolean;
+  concerns?: string[];
+  additionalRequests?: string[];
+  timestamp: string;
+}
+
+// Renter Discrepancy Report
+export interface DiscrepancyReport {
+  inspectionId: string;
+  issues: string[];
+  photos: File[] | string[]; // File[] for upload, string[] for display
+  notes: string;
+  timestamp: string;
+}
+
+// Renter Post-Inspection Data
+export interface RenterPostInspectionData {
+  inspectionId: string;
+  returnPhotos: File[] | string[]; // File[] for upload, string[] for display
+  condition: ConditionAssessment;
+  notes: string;
+  returnLocation: GPSLocation;
+  timestamp: string;
+  confirmed: boolean;
+}
+
+// Owner Post-Review
+export interface OwnerPostReview {
+  inspectionId: string;
+  postInspection: RenterPostInspectionData;
+  ownerReview: {
+    accepted: boolean;
+    confirmedAt?: string;
+    disputeRaised?: boolean;
+    disputeReason?: string;
+    disputeEvidence?: File[] | string[]; // File[] for upload, string[] for display
+  };
+}
+
+// Update Inspection interface to include new workflow fields
+export interface Inspection {
+  id: string;
+  productId: string;
+  bookingId: string;
+  inspectorId: string;
+  inspectionType: InspectionType;
+  status: InspectionStatus;
+  scheduledAt: string;
+  location: string;
+  notes: string;
+  inspectorNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  items: InspectionItem[];
+  photos: InspectionPhoto[];
+  disputes: Dispute[];
+  inspector?: Inspector;
+  product?: Product;
+  booking?: Booking;
+  // New workflow fields
+  ownerPreInspectionData?: OwnerPreInspectionData;
+  ownerPreInspectionConfirmed?: boolean;
+  ownerPreInspectionConfirmedAt?: string;
+  renterPreReviewAccepted?: boolean;
+  renterPreReviewAcceptedAt?: string;
+  renterDiscrepancyReported?: boolean;
+  renterDiscrepancyData?: DiscrepancyReport;
+  renterPostInspectionData?: RenterPostInspectionData;
+  renterPostInspectionConfirmed?: boolean;
+  renterPostInspectionConfirmedAt?: string;
+  ownerPostReviewAccepted?: boolean;
+  ownerPostReviewAcceptedAt?: string;
+  ownerDisputeRaised?: boolean;
+  ownerDisputeRaisedAt?: string;
 }

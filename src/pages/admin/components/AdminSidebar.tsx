@@ -20,7 +20,8 @@ import {
   Brain,
   Activity,
   ArrowRightLeft,
-  User
+  User,
+  X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../context/AuthContext';
@@ -41,17 +42,29 @@ interface AdminSidebarProps {
   activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'admin-settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return';
   setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'admin-settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return') => void;
   AdminNavigationItem: React.FC<AdminNavigationItemProps>;
+  isMobileMenuOpen?: boolean;
+  onMobileMenuClose?: () => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ 
   activeTab, 
   setActiveTab, 
-  AdminNavigationItem 
+  AdminNavigationItem,
+  isMobileMenuOpen = false,
+  onMobileMenuClose
 }) => {
   const navigate = useNavigate();
   const { logout } = useContext<AuthContextType>(AuthContext);
   const { showToast } = useContext<ToastContextType>(ToastContext);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+
+  // Close mobile menu when a navigation item is clicked
+  const handleNavClick = (tab: AdminSidebarProps['activeTab']) => {
+    setActiveTab(tab);
+    if (onMobileMenuClose) {
+      onMobileMenuClose();
+    }
+  };
 
   const handleToggleDarkMode = () => {
     toggleDarkMode();
@@ -167,13 +180,38 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   };
 
   return (
-    <div 
-      className="fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-900 
-        shadow-sm border-r border-gray-100 dark:border-gray-800 
-        z-40 overflow-y-auto scrollbar-hide pt-16"
-    >
-      {/* Navigation */}
-      <nav className="space-y-2 px-4 pt-4">
+    <>
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 xl:hidden"
+          onClick={onMobileMenuClose}
+          aria-hidden="true"
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div 
+        className={`
+          fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-900 
+          shadow-sm border-r border-gray-100 dark:border-gray-800 
+          z-40 overflow-y-auto scrollbar-hide pt-16
+          transform transition-transform duration-300 ease-in-out
+          xl:translate-x-0
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
+        `}
+      >
+        {/* Close button for mobile */}
+        <button
+          className="xl:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-50"
+          onClick={onMobileMenuClose}
+          aria-label="Close menu"
+        >
+          <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+        </button>
+        
+        {/* Navigation */}
+        <nav className="space-y-2 px-4 pt-4">
         {groups.map(group => (
           <div key={group.key} className="mb-2">
             <button
@@ -194,7 +232,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     icon={item.icon}
                     label={item.label}
                     active={activeTab === item.tab}
-                    onClick={() => setActiveTab(item.tab)}
+                    onClick={() => handleNavClick(item.tab)}
                     hasNotification={item.hasNotification}
                   />
                 ))}
@@ -231,6 +269,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         </button>
       </div>
     </div>
+    </>
   );
 };
 

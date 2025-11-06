@@ -709,6 +709,17 @@ const AdminDashboardPage: React.FC = () => {
   (window as any).__setItemStatus = (val: string) => setItemStatus(val);
   (window as any).__setItemSort = (val: 'newest' | 'oldest') => setItemSort(val);
 
+  // Mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleMenuToggle = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleMenuClose = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <>
       <AdminHeader
@@ -716,6 +727,7 @@ const AdminDashboardPage: React.FC = () => {
         setSelectedLocation={setSelectedLocation}
         selectedLanguage={selectedLanguage}
         setSelectedLanguage={setSelectedLanguage}
+        onMenuToggle={handleMenuToggle}
       />
       <div className="py-10 px-4 sm:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="grid grid-cols-1 xl:grid-cols-6 gap-2">
@@ -724,9 +736,11 @@ const AdminDashboardPage: React.FC = () => {
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               AdminNavigationItem={AdminNavigationItem}
+              isMobileMenuOpen={isMobileMenuOpen}
+              onMobileMenuClose={handleMenuClose}
             />
           </div>
-          <div className="xl:col-span-5 ">
+          <div className="xl:col-span-5 w-full">
             <div className="space-y-10">
               {(() => {
                 switch (activeTab) {
