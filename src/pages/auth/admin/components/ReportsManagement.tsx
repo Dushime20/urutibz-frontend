@@ -33,6 +33,7 @@ import {
   deleteCustomReport,
   exportReport
 } from '../service';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 // Define types for reports since they're not exported from service yet
 interface ReportFilters {
@@ -1560,7 +1561,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
           <div className="text-sm text-gray-500">
             {filters.startDate && filters.endDate && (
               <span>
-                {new Date(filters.startDate).toLocaleDateString()} - {new Date(filters.endDate).toLocaleDateString()}
+                {formatDateUTC(filters.startDate)} - {formatDateUTC(filters.endDate)}
               </span>
             )}
           </div>

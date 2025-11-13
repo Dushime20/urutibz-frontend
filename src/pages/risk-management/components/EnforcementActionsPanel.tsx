@@ -9,10 +9,15 @@ import {
   RefreshCw,
   TrendingUp,
   Users,
-  Calendar
+  Calendar,
+  CheckCircle
 } from 'lucide-react';
 import { useToast } from '../../../contexts/ToastContext';
 import { useRiskManagementStats } from '../hooks/useRiskManagementStats';
+import { riskManagementService } from '../../../services/riskManagementService';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import ConfirmationDialog from './ConfirmationDialog';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 interface EnforcementAction {
   id: string;
@@ -41,13 +46,80 @@ const EnforcementActionsPanel: React.FC<EnforcementActionsPanelProps> = ({ class
   const [filter, setFilter] = useState<'all' | 'pending' | 'executed' | 'rejected'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'violations'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showExecuteConfirm, setShowExecuteConfirm] = useState(false);
+  const [actionToExecute, setActionToExecute] = useState<string | null>(null);
 
-  // TODO: Replace with actual enforcement actions API call
+  const queryClient = useQueryClient();
+
+  // Execute enforcement action mutation
+  const executeActionMutation = useMutation({
+    mutationFn: (actionId: string) => riskManagementService.executeEnforcementAction(actionId),
+    onSuccess: () => {
+      showToast('Enforcement action executed successfully', 'success');
+      queryClient.invalidateQueries({ queryKey: ['enforcementActions'] });
+      // Refresh stats
+      refetchStats();
+    },
+    onError: (error: any) => {
+      showToast(
+        error.response?.data?.message || 'Failed to execute enforcement action',
+        'error'
+      );
+    }
+  });
+
+  // Fetch enforcement actions
   useEffect(() => {
-    // For now, we'll show empty state since we don't have enforcement actions API yet
-    setActions([]);
-    setLoading(false);
-  }, []);
+    const fetchActions = async () => {
+      setLoading(true);
+      try {
+        const statusFilter = filter === 'all' ? undefined : [filter];
+        const result = await riskManagementService.getEnforcementActions(
+          { status: statusFilter },
+          1,
+          100 // Get more actions for display
+        );
+        
+        // Map the API response to the component's expected format
+        const mappedActions: EnforcementAction[] = (result.data || []).map((action: any) => ({
+          id: action.id,
+          bookingId: action.bookingId || '',
+          productId: action.productId || '',
+          renterId: action.renterId || '',
+          type: action.type?.toLowerCase() || 'warning',
+          status: action.status?.toLowerCase() || 'pending',
+          message: action.message || '',
+          complianceScore: 0, // Not available in API response
+          violationsCount: 0, // Not available in API response
+          createdAt: action.createdAt || new Date().toISOString(),
+          executedAt: action.executedAt,
+          executedBy: action.executedBy
+        }));
+        
+        setActions(mappedActions);
+      } catch (error) {
+        console.error('Error fetching enforcement actions:', error);
+        showToast('Failed to load enforcement actions', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActions();
+  }, [filter, showToast]);
+
+  const handleExecuteAction = (actionId: string) => {
+    setActionToExecute(actionId);
+    setShowExecuteConfirm(true);
+  };
+
+  const confirmExecuteAction = () => {
+    if (actionToExecute) {
+      executeActionMutation.mutate(actionToExecute);
+      setShowExecuteConfirm(false);
+      setActionToExecute(null);
+    }
+  };
 
   const getActionTypeIcon = (type: string) => {
     switch (type) {
@@ -305,12 +377,12 @@ const EnforcementActionsPanel: React.FC<EnforcementActionsPanelProps> = ({ class
                       <span>Violations: {action.violationsCount}</span>
                       <span className="flex items-center">
                         <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(action.createdAt).toLocaleDateString()}
+                        {formatDateUTC(action.createdAt)}
                       </span>
                     </div>
                     {action.executedAt && (
                       <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-                        Executed: {new Date(action.executedAt).toLocaleString()}
+                        Executed: {formatDateUTC(action.executedAt)}
                         {action.executedBy && ` by ${action.executedBy}`}
                       </div>
                     )}
@@ -324,6 +396,25 @@ const EnforcementActionsPanel: React.FC<EnforcementActionsPanelProps> = ({ class
                     <Eye className="w-3 h-3 mr-1" />
                     View
                   </button>
+                  {action.status === 'pending' && (
+                    <button
+                      onClick={() => handleExecuteAction(action.id)}
+                      disabled={executeActionMutation.isPending}
+                      className="inline-flex items-center px-3 py-1 border border-green-300 dark:border-green-600 rounded-md text-xs font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                    >
+                      {executeActionMutation.isPending ? (
+                        <>
+                          <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                          Executing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Execute
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -340,6 +431,22 @@ const EnforcementActionsPanel: React.FC<EnforcementActionsPanelProps> = ({ class
           </div>
         </div>
       )}
+
+      {/* Execute Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showExecuteConfirm}
+        onClose={() => {
+          setShowExecuteConfirm(false);
+          setActionToExecute(null);
+        }}
+        onConfirm={confirmExecuteAction}
+        title="Execute Enforcement Action"
+        message="Are you sure you want to execute this enforcement action? This will trigger the action (e.g., block booking, send notification, etc.) and cannot be undone."
+        type="warning"
+        confirmText="Execute"
+        cancelText="Cancel"
+        isLoading={executeActionMutation.isPending}
+      />
     </div>
   );
 };

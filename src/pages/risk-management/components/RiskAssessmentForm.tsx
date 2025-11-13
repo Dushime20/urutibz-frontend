@@ -378,7 +378,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
                   </span>
                 </div>
                 <div className="text-sm text-gray-600">
-                  Assessed: {new Date(assessment.assessmentDate).toLocaleString()}
+                  Assessed: {formatDateUTC(assessment.assessmentDate)}
                 </div>
               </div>
             </div>

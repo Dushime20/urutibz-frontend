@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchAdminBookingById, fetchProductImages } from '../service';
 import { formatCurrency } from '../../../lib/utils';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 interface BookingDetailsModalProps {
   bookingId: string | null;
@@ -202,8 +203,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Booking Dates</label>
                 <p className="text-gray-900">
-                  {new Date(bookingDetails.start_date).toLocaleDateString()} - 
-                  {new Date(bookingDetails.end_date).toLocaleDateString()}
+                  {formatDateUTC(bookingDetails.start_date)} - {formatDateUTC(bookingDetails.end_date)}
                 </p>
               </div>
 

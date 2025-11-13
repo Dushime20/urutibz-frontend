@@ -289,8 +289,10 @@ export interface OwnerPostReview {
     accepted: boolean;
     confirmedAt?: string;
     disputeRaised?: boolean;
+    disputeType?: DisputeType;
     disputeReason?: string;
-    disputeEvidence?: File[] | string[]; // File[] for upload, string[] for display
+    disputeEvidence?: string; // Additional evidence/notes
+    disputePhotos?: File[] | string[]; // File[] for upload, string[] for display
   };
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -22,7 +22,33 @@ import {
   List,
   Eye,
   Sun,
-  Moon
+  Moon,
+  Award,
+  Target,
+  Activity,
+  DollarSign,
+  Download,
+  Filter,
+  Search,
+  Plus,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Menu,
+  X,
+  ClipboardCheck,
+  ClipboardList,
+  Briefcase,
+  Home,
+  ChevronRight,
+  Camera,
+  Edit,
+  Compare,
+  Calculator,
+  FileCheck,
+  Users,
+  Building2,
+  Zap
 } from 'lucide-react';
 import type { Inspection, Inspector } from '../../types/inspection';
 import { DisputeType } from '../../types/inspection';
@@ -33,7 +59,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { TwoFactorManagement } from '../../components/2fa/TwoFactorManagement';
 import ProfileSettingsForm from '../my-account/components/ProfileSettingsForm';
-import { fetchUserProfile, updateUser, API_BASE_URL } from '../my-account/service/api';
+import { fetchUserProfile, updateUser, uploadUserAvatar, API_BASE_URL } from '../my-account/service/api';
 import axios from 'axios';
 import VerificationBanner from '../../components/verification/VerificationBanner';
 
@@ -42,8 +68,18 @@ const InspectorDashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
   const { showToast } = useToast();
   
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'overview' | 'inspections' | 'disputes'>('overview');
+  // Navigation state
+  const [activeTab, setActiveTab] = useState<'overview' | 'pre-inspection' | 'post-inspection' | 'third-party' | 'disputes' | 'certifications' | 'settings'>('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('inspector-sidebar-collapsed');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [inspectionTypeFilter, setInspectionTypeFilter] = useState<string>('all');
   
   // Data states
   const [inspections, setInspections] = useState<Inspection[]>([]);
@@ -60,6 +96,19 @@ const InspectorDashboardPage: React.FC = () => {
     completed: 0,
     disputed: 0
   });
+
+  // Performance metrics
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    averageRating: 4.8,
+    totalEarnings: 0,
+    completionRate: 0,
+    onTimeRate: 0,
+    responseTime: '2.5 hours'
+  });
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Modal states
   const [showReschedule, setShowReschedule] = useState<{ open: boolean; id: string | null; value: string }>(() => ({ open: false, id: null, value: '' }));
@@ -239,6 +288,19 @@ const InspectorDashboardPage: React.FC = () => {
         disputed: inspectionsList.filter(i => i.status === 'disputed').length
       };
       setStats(statsData);
+
+      // Calculate performance metrics
+      const completedCount = statsData.completed;
+      const totalCount = statsData.total || 1;
+      const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+      
+      setPerformanceMetrics({
+        averageRating: inspector?.rating || 4.8,
+        totalEarnings: 0, // TODO: Calculate from completed inspections
+        completionRate: Math.round(completionRate),
+        onTimeRate: 95, // TODO: Calculate from scheduled vs actual completion times
+        responseTime: '2.5 hours'
+      });
 
       // Load inspector's disputes
       await loadInspectorDisputes();
@@ -446,29 +508,109 @@ const InspectorDashboardPage: React.FC = () => {
     );
   }
 
+  // Filter inspections based on search, status, and type
+  const filteredInspections = inspections.filter(inspection => {
+    const matchesSearch = !searchQuery || 
+      getTypeLabel(inspection.inspectionType || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      inspection.location?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || inspection.status === statusFilter;
+    
+    // Filter by inspection type based on active tab
+    let matchesType = true;
+    if (activeTab === 'pre-inspection') {
+      matchesType = inspection.inspectionType === 'pre_rental' || inspection.inspection_type === 'pre_rental';
+    } else if (activeTab === 'post-inspection') {
+      matchesType = inspection.inspectionType === 'post_return' || 
+                   inspection.inspectionType === 'post_rental' ||
+                   inspection.inspection_type === 'post_return' ||
+                   inspection.inspection_type === 'post_rental';
+    } else if (activeTab === 'third-party') {
+      matchesType = inspection.inspectionType === 'third_party_professional' ||
+                   inspection.inspection_type === 'third_party_professional' ||
+                   (inspection as any).is_third_party_inspection === true;
+    }
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  // Get inspection counts by type
+  const inspectionCounts = {
+    preInspection: inspections.filter(i => i.inspectionType === 'pre_rental' || i.inspection_type === 'pre_rental').length,
+    postInspection: inspections.filter(i => 
+      i.inspectionType === 'post_return' || 
+      i.inspectionType === 'post_rental' ||
+      i.inspection_type === 'post_return' ||
+      i.inspection_type === 'post_rental'
+    ).length,
+    thirdParty: inspections.filter(i => 
+      i.inspectionType === 'third_party_professional' ||
+      i.inspection_type === 'third_party_professional' ||
+      (i as any).is_third_party_inspection === true
+    ).length
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-950">
-      {/* Professional Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          {/* Top Bar */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex">
+      {/* Professional Sidebar */}
+      <InspectorSidebar 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+        inspectionCounts={inspectionCounts}
+        stats={stats}
+        onLogout={() => { logout(); navigate('/login'); }}
+      />
+
+      {/* Main Content Area */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+        sidebarOpen 
+          ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64') 
+          : 'lg:ml-0'
+      }`}>
+        {/* Enhanced Professional Header */}
+        <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm sticky top-0 z-40">
+          <div className="px-4 sm:px-6 lg:px-8">
+            {/* Top Bar */}
+            <div className="flex items-center justify-between py-4">
+            <div className="flex items-center space-x-4">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+              >
+                {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+              
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                  <Shield className="w-6 h-6 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Inspector Dashboard</h1>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+                    {activeTab === 'overview' && 'Dashboard'}
+                    {activeTab === 'pre-inspection' && 'Pre-Inspections'}
+                    {activeTab === 'post-inspection' && 'Post-Inspections'}
+                    {activeTab === 'third-party' && 'Third-Party Inspections'}
+                    {activeTab === 'disputes' && 'Disputes'}
+                    {activeTab === 'certifications' && 'Certifications'}
+                    {activeTab === 'settings' && 'Settings'}
+                  </h1>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">Professional Inspector</p>
+                </div>
               </div>
-              <div className="hidden md:flex items-center space-x-6 text-sm text-gray-600 dark:text-slate-400">
-                <span className="flex items-center space-x-2">
-                  <UserCheck className="w-4 h-4" />
-                  <span>Professional Inspector</span>
-                </span>
-                <span className="flex items-center space-x-2">
-                  <BarChart3 className="w-4 h-4" />
-                  <span>Performance Tracking</span>
-                </span>
+              <div className="hidden lg:flex items-center space-x-6 text-sm">
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                  <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-emerald-700 dark:text-emerald-300 font-medium">Certified Inspector</span>
+                </div>
+                <div className="flex items-center space-x-2 text-gray-600 dark:text-slate-400">
+                  <Star className="w-4 h-4 text-amber-500 fill-current" />
+                  <span className="font-medium">{performanceMetrics.averageRating.toFixed(1)}</span>
+                  <span className="text-gray-400">Rating</span>
+                </div>
               </div>
             </div>
             
@@ -657,100 +799,150 @@ const InspectorDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Verification banner for unverified users */}
-        <VerificationBanner />
-        {/* Tab Navigation */}
-        <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
-                          <button 
-              onClick={() => setActiveTab('overview')}
-              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
-                activeTab === 'overview'
-                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
-                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Overview</span>
-                          </button>
-                            <button 
-              onClick={() => setActiveTab('inspections')}
-              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
-                activeTab === 'inspections'
-                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
-                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <List className="w-4 h-4" />
-              <span>Inspections</span>
-                            </button>
-                            <button 
-              onClick={() => setActiveTab('disputes')}
-              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
-                activeTab === 'disputes'
-                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
-                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <AlertTriangle className="w-4 h-4" />
-              <span>Disputes</span>
-                        </button>
-                      </div>
-                    </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Verification banner for unverified users */}
+            <VerificationBanner />
+            
+            {/* Performance Metrics Bar - Only show on overview */}
+            {activeTab === 'overview' && (
+              <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <Activity className="w-5 h-5 opacity-90" />
+              <span className="text-xs font-medium opacity-90">Completion Rate</span>
+            </div>
+            <div className="text-3xl font-bold">{performanceMetrics.completionRate}%</div>
+            <div className="text-xs opacity-90 mt-1">{stats.completed} of {stats.total} completed</div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <Target className="w-5 h-5 opacity-90" />
+              <span className="text-xs font-medium opacity-90">On-Time Rate</span>
+            </div>
+            <div className="text-3xl font-bold">{performanceMetrics.onTimeRate}%</div>
+            <div className="text-xs opacity-90 mt-1">Average response time</div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <Star className="w-5 h-5 opacity-90 fill-current" />
+              <span className="text-xs font-medium opacity-90">Average Rating</span>
+            </div>
+            <div className="text-3xl font-bold">{performanceMetrics.averageRating.toFixed(1)}</div>
+            <div className="text-xs opacity-90 mt-1">Based on {stats.completed} reviews</div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <DollarSign className="w-5 h-5 opacity-90" />
+              <span className="text-xs font-medium opacity-90">Total Earnings</span>
+            </div>
+            <div className="text-3xl font-bold">${performanceMetrics.totalEarnings.toLocaleString()}</div>
+                <div className="text-xs opacity-90 mt-1">This month</div>
+              </div>
+            </div>
+            )}
 
-        {/* Tab Content */}
-        {activeTab === 'overview' && (
-          <OverviewTab 
-            stats={stats}
-            inspections={inspections}
-            inspector={inspector}
-            inspectorDisputes={inspectorDisputes}
-            disputesLoading={disputesLoading}
-            onInspectionClick={handleInspectionClick}
-            formatDate={formatDate}
-            getTypeLabel={getTypeLabel}
-          />
-        )}
+            {/* Search and Filter Bar - Show for inspection tabs */}
+            {(activeTab === 'pre-inspection' || activeTab === 'post-inspection' || activeTab === 'third-party') && (
+              <div className="mb-6 flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search inspections..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="disputed">Disputed</option>
+                </select>
+              </div>
+            )}
 
-        {activeTab === 'inspections' && (
-          <InspectionsTab 
-            inspections={inspections}
-            onInspectionClick={handleInspectionClick}
-            onStart={handleStart}
-            onComplete={handleComplete}
-            onReschedule={handleReschedule}
-            onAddItem={handleAddItem}
-            onRaiseDispute={handleRaiseDispute}
-            onResolveDispute={handleResolveDispute}
-            formatDate={formatDate}
-            getTypeLabel={getTypeLabel}
-          />
-        )}
+            {/* Tab Content */}
+            {activeTab === 'overview' && (
+              <OverviewTab 
+                stats={stats}
+                inspections={inspections}
+                inspector={inspector}
+                inspectorDisputes={inspectorDisputes}
+                disputesLoading={disputesLoading}
+                onInspectionClick={handleInspectionClick}
+                formatDate={formatDate}
+                getTypeLabel={getTypeLabel}
+              />
+            )}
 
-        {activeTab === 'disputes' && (
-          <DisputesTab 
-            inspectorDisputes={inspectorDisputes}
-            disputesLoading={disputesLoading}
-            onResolveDispute={handleResolveDispute}
-            formatDate={formatDate}
-          />
-        )}
+            {(activeTab === 'pre-inspection' || activeTab === 'post-inspection' || activeTab === 'third-party') && (
+              <InspectionsTab 
+                inspections={filteredInspections}
+                onInspectionClick={handleInspectionClick}
+                onStart={handleStart}
+                onComplete={handleComplete}
+                onReschedule={handleReschedule}
+                onAddItem={handleAddItem}
+                onRaiseDispute={handleRaiseDispute}
+                onResolveDispute={handleResolveDispute}
+                formatDate={formatDate}
+                getTypeLabel={getTypeLabel}
+                searchQuery={searchQuery}
+                inspectionType={activeTab}
+              />
+            )}
+
+            {activeTab === 'disputes' && (
+              <DisputesTab 
+                inspectorDisputes={inspectorDisputes}
+                disputesLoading={disputesLoading}
+                onResolveDispute={handleResolveDispute}
+                formatDate={formatDate}
+              />
+            )}
+
+            {activeTab === 'certifications' && (
+              <CertificationsTab inspector={inspector} />
+            )}
+
+            {activeTab === 'settings' && (
+              <SettingsTab 
+                user={user}
+                inspector={inspector}
+                onProfileUpdate={() => loadInspectorData()}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
-      {/* Profile Modal */}
+      {/* Enhanced Profile Modal */}
       {showProfileModal && userId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowProfileModal(false)} />
-          <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-lg w-full max-w-2xl p-6 border border-gray-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Edit Profile</h3>
-              <button onClick={() => setShowProfileModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
-            </div>
-            <ProfileSettingsForm userId={userId} token={token} onUpdated={() => { try { loadInspectorData(); } catch {} }} />
-          </div>
-        </div>
+        <InspectorProfileModal
+          userId={userId}
+          token={token}
+          inspector={inspector}
+          user={user}
+          onClose={() => setShowProfileModal(false)}
+          onUpdated={() => { 
+            try { 
+              loadInspectorData(); 
+              setShowProfileModal(false);
+            } catch {} 
+          }}
+        />
       )}
 
       {/* 2FA Modal */}
@@ -1373,38 +1565,57 @@ const OverviewTab: React.FC<{
 }> = ({ stats, inspections, inspectorDisputes, disputesLoading, onInspectionClick, formatDate, getTypeLabel }) => {
   return (
     <div className="space-y-8">
-      {/* Enhanced Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <QuickStatsCard
-          title="Total Assigned"
-          value={stats.total}
-          icon={TrendingUp}
-          color="blue"
-        />
-        <QuickStatsCard
-          title="Pending"
-          value={stats.pending}
-          icon={Clock}
-          color="yellow"
-        />
-        <QuickStatsCard
-          title="In Progress"
-          value={stats.inProgress}
-          icon={Clock}
-          color="blue"
-        />
-        <QuickStatsCard
-          title="Completed"
-          value={stats.completed}
-          icon={CheckCircle}
-          color="green"
-        />
-        <QuickStatsCard
-          title="Disputed"
-          value={stats.disputed}
-          icon={AlertTriangle}
-          color="red"
-        />
+      {/* Enhanced Quick Stats with better design */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.total}</div>
+          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">Total Assigned</div>
+        </div>
+        
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.pending}</div>
+          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">Pending</div>
+        </div>
+        
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
+              <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.inProgress}</div>
+          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">In Progress</div>
+        </div>
+        
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.completed}</div>
+          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">Completed</div>
+        </div>
+        
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.disputed}</div>
+          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">Disputed</div>
+        </div>
       </div>
 
       {/* Today's Schedule */}
@@ -1555,6 +1766,250 @@ const OverviewTab: React.FC<{
   );
 };
 
+// Professional Sidebar Component
+const InspectorSidebar: React.FC<{
+  activeTab: string;
+  setActiveTab: (tab: any) => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  inspectionCounts: { preInspection: number; postInspection: number; thirdParty: number };
+  stats: { total: number; pending: number; inProgress: number; completed: number; disputed: number };
+  onLogout: () => void;
+}> = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, inspectionCounts, stats, onLogout }) => {
+  const { user } = useAuth();
+
+  const toggleCollapse = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    try {
+      localStorage.setItem('inspector-sidebar-collapsed', String(newState));
+    } catch {}
+  };
+
+  const menuItems = [
+    {
+      id: 'overview',
+      label: 'Dashboard',
+      icon: Home,
+      badge: null
+    },
+    {
+      id: 'pre-inspection',
+      label: 'Pre-Inspections',
+      icon: ClipboardCheck,
+      badge: inspectionCounts.preInspection,
+      description: 'Pre-rental inspections'
+    },
+    {
+      id: 'post-inspection',
+      label: 'Post-Inspections',
+      icon: ClipboardList,
+      badge: inspectionCounts.postInspection,
+      description: 'Post-return inspections'
+    },
+    {
+      id: 'third-party',
+      label: 'Third-Party',
+      icon: Briefcase,
+      badge: inspectionCounts.thirdParty,
+      description: 'Professional inspections'
+    },
+    {
+      id: 'disputes',
+      label: 'Disputes',
+      icon: AlertTriangle,
+      badge: stats.disputed,
+      description: 'Manage disputes'
+    },
+    {
+      id: 'certifications',
+      label: 'Certifications',
+      icon: Award,
+      badge: null,
+      description: 'Manage credentials'
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      badge: null,
+      description: 'Account settings'
+    }
+  ];
+
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed top-0 left-0 h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 
+        z-50 transform transition-all duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${sidebarCollapsed ? 'w-20' : 'w-64'}
+        lg:translate-x-0
+        shadow-xl lg:shadow-none
+      `}>
+        {/* Sidebar Header */}
+        <div className={`h-16 flex items-center justify-between border-b border-gray-200 dark:border-slate-800 ${
+          sidebarCollapsed ? 'px-3' : 'px-6'
+        }`}>
+          {!sidebarCollapsed && (
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-gray-900 dark:text-slate-100">Inspector</h2>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Dashboard</p>
+              </div>
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg mx-auto">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+          )}
+          <div className="flex items-center space-x-1">
+            {/* Toggle Collapse Button - Desktop only */}
+            <button
+              onClick={toggleCollapse}
+              className="hidden lg:flex p-1.5 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5 -rotate-90" />
+              )}
+            </button>
+            {/* Close Button - Mobile only */}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3">
+          <div className="space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    if (window.innerWidth < 1024) {
+                      setSidebarOpen(false);
+                    }
+                  }}
+                  className={`
+                    w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
+                    ${sidebarCollapsed ? 'justify-center px-3 py-3' : 'justify-between px-4 py-3'}
+                    ${isActive 
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
+                      : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                    }
+                  `}
+                  title={sidebarCollapsed ? item.label : undefined}
+                >
+                  <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 dark:text-slate-400'}`} />
+                    {!sidebarCollapsed && (
+                      <>
+                        <div className="text-left">
+                          <div className="font-semibold">{item.label}</div>
+                          {item.description && (
+                            <div className={`text-xs ${isActive ? 'text-emerald-50' : 'text-gray-500 dark:text-slate-400'}`}>
+                              {item.description}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {!sidebarCollapsed && (
+                    <>
+                      {item.badge !== null && item.badge > 0 && (
+                        <span className={`
+                          px-2 py-0.5 rounded-full text-xs font-semibold
+                          ${isActive 
+                            ? 'bg-white/20 text-white' 
+                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          }
+                        `}>
+                          {item.badge}
+                        </span>
+                      )}
+                      {isActive && <ChevronRight className="w-4 h-4 text-white" />}
+                    </>
+                  )}
+                  {/* Badge for collapsed state */}
+                  {sidebarCollapsed && item.badge !== null && item.badge > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+              })}
+              </div>
+            </nav>
+
+        {/* Sidebar Footer */}
+        <div className={`border-t border-gray-200 dark:border-slate-800 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
+          {!sidebarCollapsed && (
+            <div className="flex items-center space-x-3 mb-3 px-2">
+              <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+                  {user?.name || user?.email || 'Inspector'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Professional Inspector</p>
+              </div>
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="flex justify-center mb-3">
+              <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+          )}
+          <button
+            onClick={onLogout}
+            className={`w-full flex items-center rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ${
+              sidebarCollapsed 
+                ? 'justify-center px-2 py-2' 
+                : 'space-x-2 px-4 py-2'
+            }`}
+            title={sidebarCollapsed ? 'Sign Out' : undefined}
+          >
+            <LogOut className="w-4 h-4" />
+            {!sidebarCollapsed && <span>Sign Out</span>}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+};
+
 // Inspections Tab Component
 const InspectionsTab: React.FC<{
   inspections: Inspection[];
@@ -1567,7 +2022,9 @@ const InspectionsTab: React.FC<{
   onResolveDispute: (inspectionId: string, disputeId: string) => void;
   formatDate: (date: string) => string;
   getTypeLabel: (type: string) => string;
-}> = ({ inspections, onInspectionClick, onStart, onComplete, onReschedule, onAddItem, onRaiseDispute, formatDate, getTypeLabel }) => {
+  searchQuery?: string;
+  inspectionType?: string;
+}> = ({ inspections, onInspectionClick, onStart, onComplete, onReschedule, onAddItem, onRaiseDispute, formatDate, getTypeLabel, searchQuery, inspectionType }) => {
   return (
     <div className="space-y-8">
       {/* Active Inspections */}
@@ -1594,92 +2051,111 @@ const InspectionsTab: React.FC<{
         
         <div className="p-6">
           {inspections.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <List className="w-8 h-8 text-gray-400" />
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
+                <List className="w-10 h-10 text-gray-400 dark:text-slate-500" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No active inspections</h3>
-              <p className="text-gray-500">All inspections are completed or not yet started.</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
+                {searchQuery ? 'No inspections found' : 'No active inspections'}
+              </h3>
+              <p className="text-gray-500 dark:text-slate-400">
+                {searchQuery ? 'Try adjusting your search or filters' : 'All inspections are completed or not yet started.'}
+              </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {inspections
                 .filter(inspection => inspection.status === 'pending' || inspection.status === 'in_progress')
                 .map((inspection) => (
                 <div
                   key={inspection.id}
-                  className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors"
+                  className="group bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg transition-all duration-200"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="font-semibold text-gray-900">
-                        {getTypeLabel(inspection.inspectionType || '')}
-                      </h4>
-                      <StatusBadge status={inspection.status} />
-                    </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                      {inspection.scheduledAt && (
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{formatDate(inspection.scheduledAt)}</span>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-lg flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
-                      )}
-                      {inspection.location && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          <span>{inspection.location}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-slate-100 text-lg">
+                              {getTypeLabel(inspection.inspectionType || '')}
+                            </h4>
+                            <StatusBadge status={inspection.status} />
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-slate-400">
+                            {inspection.scheduledAt && (
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="w-4 h-4" />
+                                <span>{formatDate(inspection.scheduledAt)}</span>
+                              </div>
+                            )}
+                            {inspection.location && (
+                              <div className="flex items-center gap-1.5">
+                                <MapPin className="w-4 h-4" />
+                                <span className="truncate max-w-xs">{inspection.location}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => onInspectionClick(inspection.id)}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition-colors"
-                      >
-                        View Details
-                      </button>
+                      </div>
                       
-                      {inspection.status === 'pending' && (
+                      {/* Enhanced Action Buttons */}
+                      <div className="flex items-center flex-wrap gap-2 mt-4">
                         <button
-                          onClick={() => onStart(inspection.id)}
-                          className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full hover:bg-green-200 transition-colors"
+                          onClick={() => onInspectionClick(inspection.id)}
+                          className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center space-x-2"
                         >
-                          Start
+                          <Eye className="w-4 h-4" />
+                          <span>View Details</span>
                         </button>
-                      )}
-                      
-                      {inspection.status === 'in_progress' && (
-                        <>
+                        
+                        {inspection.status === 'pending' && (
                           <button
-                            onClick={() => onComplete(inspection.id)}
-                            className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full hover:bg-emerald-200 transition-colors"
+                            onClick={() => onStart(inspection.id)}
+                            className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-sm font-medium rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors flex items-center space-x-2"
                           >
-                            Complete
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Start Inspection</span>
                           </button>
-                          <button
-                            onClick={() => onAddItem(inspection.id)}
-                            className="px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full hover:bg-purple-200 transition-colors"
-                          >
-                            Add Item
-                          </button>
-                        </>
-                      )}
-                      
-                      <button
-                        onClick={() => onReschedule(inspection.id)}
-                        className="px-3 py-1 bg-orange-100 text-orange-700 text-xs rounded-full hover:bg-orange-200 transition-colors"
-                      >
-                        Reschedule
-                      </button>
-                      
-                      <button
-                        onClick={() => onRaiseDispute(inspection.id)}
-                        className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full hover:bg-red-200 transition-colors"
-                      >
-                        Raise Dispute
-                      </button>
+                        )}
+                        
+                        {inspection.status === 'in_progress' && (
+                          <>
+                            <button
+                              onClick={() => onComplete(inspection.id)}
+                              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-medium rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md shadow-emerald-500/20 flex items-center space-x-2"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Complete</span>
+                            </button>
+                            <button
+                              onClick={() => onAddItem(inspection.id)}
+                              className="px-4 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-sm font-medium rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors flex items-center space-x-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span>Add Item</span>
+                            </button>
+                          </>
+                        )}
+                        
+                        <button
+                          onClick={() => onReschedule(inspection.id)}
+                          className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-sm font-medium rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors flex items-center space-x-2"
+                        >
+                          <Calendar className="w-4 h-4" />
+                          <span>Reschedule</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => onRaiseDispute(inspection.id)}
+                          className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm font-medium rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center space-x-2"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                          <span>Raise Dispute</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1871,6 +2347,746 @@ const DisputesTab: React.FC<{
      </div>
    );
  };
+
+// Certifications Tab Component
+const CertificationsTab: React.FC<{ inspector: Inspector | null }> = ({ inspector }) => {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 rounded-lg flex items-center justify-center">
+            <Award className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Certifications</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Manage your professional credentials</p>
+          </div>
+        </div>
+        
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Award className="w-10 h-10 text-gray-400 dark:text-slate-500" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">No certifications yet</h3>
+          <p className="text-gray-500 dark:text-slate-400 mb-4">Add your professional certifications to get more assignments</p>
+          <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+            Add Certification
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Settings Tab Component
+const SettingsTab: React.FC<{ 
+  user: any; 
+  inspector: Inspector | null; 
+  onProfileUpdate: () => void;
+}> = ({ user, inspector, onProfileUpdate }) => {
+  const { showToast } = useToast();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const token = (typeof window !== 'undefined' && localStorage.getItem('token')) || '';
+  const userId = user?.id;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-6">Account Settings</h3>
+        
+        <div className="space-y-4">
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="w-full flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <UserCheck className="w-5 h-5 text-gray-500 dark:text-slate-400" />
+              <div className="text-left">
+                <div className="font-medium text-gray-900 dark:text-slate-100">Profile Settings</div>
+                <div className="text-sm text-gray-500 dark:text-slate-400">Update your personal information</div>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+
+          <button
+            onClick={() => setShow2FAModal(true)}
+            className="w-full flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <Shield className="w-5 h-5 text-gray-500 dark:text-slate-400" />
+              <div className="text-left">
+                <div className="font-medium text-gray-900 dark:text-slate-100">Two-Factor Authentication</div>
+                <div className="text-sm text-gray-500 dark:text-slate-400">Secure your account</div>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+      </div>
+
+      {/* Enhanced Profile Modal */}
+      {showProfileModal && userId && (
+        <InspectorProfileModal
+          userId={userId}
+          token={token}
+          inspector={inspector}
+          user={user}
+          onClose={() => setShowProfileModal(false)}
+          onUpdated={() => { 
+            onProfileUpdate(); 
+            setShowProfileModal(false);
+          }}
+        />
+      )}
+
+      {/* 2FA Modal */}
+      {show2FAModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShow2FAModal(false)} />
+          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Two-Factor Authentication</h3>
+              <button onClick={() => setShow2FAModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+            </div>
+            <TwoFactorManagement onStatusChange={() => {}} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Enhanced Inspector Profile Modal Component
+const InspectorProfileModal: React.FC<{
+  userId: string;
+  token: string;
+  inspector: Inspector | null;
+  user: any;
+  onClose: () => void;
+  onUpdated: () => void;
+}> = ({ userId, token, inspector, user, onClose, onUpdated }) => {
+  const { showToast } = useToast();
+  const [activeSection, setActiveSection] = useState<'personal' | 'professional' | 'location' | 'preferences'>('personal');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    // Personal Info
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    bio: '',
+    date_of_birth: '',
+    gender: '',
+    
+    // Professional Info
+    qualifications: '',
+    specializations: '',
+    experience: '',
+    serviceRadius: '50',
+    languages: '',
+    certifications: '',
+    
+    // Location
+    province: '',
+    district: '',
+    sector: '',
+    cell: '',
+    village: '',
+    address_line: '',
+    latitude: '',
+    longitude: '',
+    
+    // Preferences
+    preferred_currency: 'RWF',
+    notification_preferences: {
+      email: true,
+      sms: false,
+      push: true
+    }
+  });
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchUserProfile(token);
+      const data = res?.data;
+      if (data) {
+        setFormData({
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          email: data.email || '',
+          phone: data.phone || data.phone_number || '',
+          bio: data.bio || '',
+          date_of_birth: data.date_of_birth ? new Date(data.date_of_birth).toISOString().split('T')[0] : '',
+          gender: data.gender || '',
+          qualifications: inspector?.qualifications?.join(', ') || '',
+          specializations: inspector?.specializations?.join(', ') || '',
+          experience: inspector?.experience?.toString() || '',
+          serviceRadius: '50',
+          languages: '',
+          certifications: '',
+          province: data.province || '',
+          district: data.district || '',
+          sector: data.sector || '',
+          cell: data.cell || '',
+          village: data.village || '',
+          address_line: data.address_line || data.addressLine || '',
+          latitude: data.location?.coordinates?.latitude?.toString() || data.location?.lat?.toString() || '',
+          longitude: data.location?.coordinates?.longitude?.toString() || data.location?.lng?.toString() || '',
+          preferred_currency: data.preferred_currency || data.preferredCurrency || 'RWF',
+          notification_preferences: {
+            email: true,
+            sms: false,
+            push: true
+          }
+        });
+        setAvatarUrl(data.profileImageUrl || data.profile_image || null);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload: any = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        bio: formData.bio,
+        date_of_birth: formData.date_of_birth || undefined,
+        gender: formData.gender || undefined,
+        province: formData.province,
+        district: formData.district,
+        sector: formData.sector,
+        cell: formData.cell,
+        village: formData.village,
+        address_line: formData.address_line,
+        preferred_currency: formData.preferred_currency,
+      };
+
+      if (formData.latitude && formData.longitude) {
+        payload.location = {
+          lat: parseFloat(formData.latitude),
+          lng: parseFloat(formData.longitude)
+        };
+      }
+
+      const res = await updateUser(userId, payload, token);
+      if (res?.success) {
+        showToast('Profile updated successfully!', 'success');
+        onUpdated();
+      } else {
+        showToast('Failed to update profile', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      showToast('Failed to save profile. Please try again.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    try {
+      setSaving(true);
+      const res = await uploadUserAvatar(userId, file, token);
+      const url = res?.data?.profileImageUrl || res?.data?.data?.profileImageUrl;
+      if (url) {
+        setAvatarUrl(url);
+        showToast('Avatar updated successfully!', 'success');
+      }
+    } catch (error) {
+      showToast('Failed to upload avatar', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      showToast('Geolocation is not supported by your browser', 'error');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData(prev => ({
+          ...prev,
+          latitude: pos.coords.latitude.toFixed(6),
+          longitude: pos.coords.longitude.toFixed(6)
+        }));
+        showToast('Location updated!', 'success');
+      },
+      () => showToast('Failed to get location', 'error')
+    );
+  };
+
+  const sections = [
+    { id: 'personal', label: 'Personal Info', icon: User },
+    { id: 'professional', label: 'Professional', icon: Briefcase },
+    { id: 'location', label: 'Location', icon: MapPin },
+    { id: 'preferences', label: 'Preferences', icon: Settings }
+  ];
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          <div className="flex items-center justify-center h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-5 border-b border-emerald-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <UserCheck className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Inspector Profile</h2>
+                <p className="text-sm text-emerald-50">Manage your professional profile</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="flex">
+            {/* Sidebar Navigation */}
+            <div className="w-64 bg-gray-50 dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 p-4">
+              <div className="space-y-2">
+                {sections.map((section) => {
+                  const Icon = section.icon;
+                  const isActive = activeSection === section.id;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveSection(section.id as any)}
+                      className={`
+                        w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
+                        ${isActive
+                          ? 'bg-emerald-500 text-white shadow-md'
+                          : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                        }
+                      `}
+                    >
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500 dark:text-slate-400'}`} />
+                      <span>{section.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Avatar Section */}
+              <div className="mt-8 pt-8 border-t border-gray-200 dark:border-slate-700">
+                <div className="flex flex-col items-center">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover ring-4 ring-emerald-500/20 mb-3"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30 flex items-center justify-center mb-3 ring-4 ring-emerald-500/20">
+                      <User className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  )}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const preview = URL.createObjectURL(file);
+                        setAvatarUrl(preview);
+                        handleAvatarUpload(file);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={saving}
+                    className="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 disabled:opacity-50"
+                  >
+                    {saving ? 'Uploading...' : 'Change Photo'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Form Content */}
+            <div className="flex-1 p-6">
+              {/* Personal Info Section */}
+              {activeSection === 'personal' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Personal Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">First Name *</label>
+                        <input
+                          type="text"
+                          value={formData.firstName}
+                          onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="Enter first name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Last Name *</label>
+                        <input
+                          type="text"
+                          value={formData.lastName}
+                          onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="Enter last name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Email</label>
+                        <input
+                          type="email"
+                          value={formData.email}
+                          disabled
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Phone Number</label>
+                        <input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="+250 788 123 456"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Date of Birth</label>
+                        <input
+                          type="date"
+                          value={formData.date_of_birth}
+                          onChange={(e) => setFormData(prev => ({ ...prev, date_of_birth: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Gender</label>
+                        <select
+                          value={formData.gender}
+                          onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        >
+                          <option value="">Select gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Bio</label>
+                        <textarea
+                          value={formData.bio}
+                          onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                          rows={4}
+                          maxLength={500}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="Tell us about yourself and your inspection experience..."
+                        />
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{formData.bio.length}/500 characters</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Professional Section */}
+              {activeSection === 'professional' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Professional Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Qualifications</label>
+                        <input
+                          type="text"
+                          value={formData.qualifications}
+                          onChange={(e) => setFormData(prev => ({ ...prev, qualifications: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="e.g., Certified Inspector, ISO 17020, etc. (comma separated)"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">List your professional qualifications</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Specializations</label>
+                        <input
+                          type="text"
+                          value={formData.specializations}
+                          onChange={(e) => setFormData(prev => ({ ...prev, specializations: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="e.g., Vehicles, Electronics, Equipment (comma separated)"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Product categories you specialize in</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Years of Experience</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.experience}
+                          onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Service Radius (km)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={formData.serviceRadius}
+                          onChange={(e) => setFormData(prev => ({ ...prev, serviceRadius: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="50"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Maximum distance you're willing to travel</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Languages Spoken</label>
+                        <input
+                          type="text"
+                          value={formData.languages}
+                          onChange={(e) => setFormData(prev => ({ ...prev, languages: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="e.g., English, French, Kinyarwanda (comma separated)"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Location Section */}
+              {activeSection === 'location' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Location Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Province</label>
+                        <input
+                          type="text"
+                          value={formData.province}
+                          onChange={(e) => setFormData(prev => ({ ...prev, province: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">District</label>
+                        <input
+                          type="text"
+                          value={formData.district}
+                          onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Sector</label>
+                        <input
+                          type="text"
+                          value={formData.sector}
+                          onChange={(e) => setFormData(prev => ({ ...prev, sector: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Cell</label>
+                        <input
+                          type="text"
+                          value={formData.cell}
+                          onChange={(e) => setFormData(prev => ({ ...prev, cell: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Village</label>
+                        <input
+                          type="text"
+                          value={formData.village}
+                          onChange={(e) => setFormData(prev => ({ ...prev, village: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Address Line</label>
+                        <input
+                          type="text"
+                          value={formData.address_line}
+                          onChange={(e) => setFormData(prev => ({ ...prev, address_line: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="Street address"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Latitude</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={formData.latitude}
+                          onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="e.g., -1.9441"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Longitude</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={formData.longitude}
+                          onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="e.g., 30.0619"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <button
+                          type="button"
+                          onClick={useCurrentLocation}
+                          className="px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors flex items-center space-x-2"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          <span>Use Current Location</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Preferences Section */}
+              {activeSection === 'preferences' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Preferences</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Preferred Currency</label>
+                        <select
+                          value={formData.preferred_currency}
+                          onChange={(e) => setFormData(prev => ({ ...prev, preferred_currency: e.target.value }))}
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        >
+                          <option value="RWF">RWF (R₣)</option>
+                          <option value="USD">USD ($)</option>
+                          <option value="EUR">EUR (€)</option>
+                          <option value="GBP">GBP (£)</option>
+                          <option value="KES">KES (KSh)</option>
+                          <option value="UGX">UGX (USh)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">Notification Preferences</label>
+                        <div className="space-y-3">
+                          <label className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={formData.notification_preferences.email}
+                              onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                notification_preferences: { ...prev.notification_preferences, email: e.target.checked }
+                              }))}
+                              className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">Email Notifications</span>
+                          </label>
+                          <label className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={formData.notification_preferences.sms}
+                              onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                notification_preferences: { ...prev.notification_preferences, sms: e.target.checked }
+                              }))}
+                              className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">SMS Notifications</span>
+                          </label>
+                          <label className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={formData.notification_preferences.push}
+                              onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                notification_preferences: { ...prev.notification_preferences, push: e.target.checked }
+                              }))}
+                              className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">Push Notifications</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-6 py-4 flex items-center justify-between">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default InspectorDashboardPage;
 

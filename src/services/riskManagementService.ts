@@ -23,7 +23,6 @@ import type {
   RiskLevel,
   ViolationType,
   ViolationSeverity,
-  ViolationStatus,
   RiskEnforcementRequest,
   RiskEnforcementResponse,
   RiskAssessmentRequest,
@@ -35,6 +34,7 @@ import type {
   BookingComplianceResponse,
   ProductRiskProfileResponse
 } from '../types/riskManagement';
+import { ViolationStatus } from '../types/riskManagement';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -406,6 +406,20 @@ export const riskManagementService = {
       const violations = apiData.violations || [];
       const pagination = apiData.pagination || {};
       
+      // Map backend status to frontend status
+      const mapStatus = (status: string): ViolationStatus => {
+        const statusMap: Record<string, ViolationStatus> = {
+          'active': ViolationStatus.OPEN,
+          'open': ViolationStatus.OPEN,
+          'under_investigation': ViolationStatus.UNDER_INVESTIGATION,
+          'in_progress': ViolationStatus.IN_PROGRESS,
+          'resolved': ViolationStatus.RESOLVED,
+          'closed': ViolationStatus.CLOSED,
+          'escalated': ViolationStatus.ESCALATED
+        };
+        return statusMap[status.toLowerCase()] || ViolationStatus.OPEN;
+      };
+
       // Transform each violation to match our PolicyViolation interface
       const mappedViolations: PolicyViolation[] = violations.map((violation: any) => ({
         id: violation.id,
@@ -416,7 +430,7 @@ export const riskManagementService = {
         severity: violation.severity as ViolationSeverity,
         description: violation.description,
         penaltyAmount: violation.penaltyAmount,
-        status: violation.status as ViolationStatus,
+        status: mapStatus(violation.status || 'active') as ViolationStatus,
         resolutionActions: violation.resolutionActions || [],
         resolvedAt: violation.resolvedAt,
         detectedAt: violation.detectedAt,
@@ -492,8 +506,11 @@ export const riskManagementService = {
   /**
    * Resolve violation
    */
-  async resolveViolation(id: string, resolutionNotes: string): Promise<PolicyViolation> {
-    const response = await riskManagementApi.patch(`/violations/${id}/resolve`, { resolutionNotes });
+  async resolveViolation(id: string, resolutionData: {
+    resolutionActions: string[];
+    resolutionNotes?: string;
+  }): Promise<PolicyViolation> {
+    const response = await riskManagementApi.post(`/violations/${id}/resolve`, resolutionData);
     return response.data.data || response.data;
   },
 
@@ -504,6 +521,14 @@ export const riskManagementService = {
    */
   async createEnforcementAction(data: CreateEnforcementActionRequest): Promise<EnforcementAction> {
     const response = await riskManagementApi.post('/enforce', data);
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Get enforcement actions for a booking
+   */
+  async getEnforcementActionsByBooking(bookingId: string): Promise<EnforcementAction[]> {
+    const response = await riskManagementApi.get(`/enforce/booking/${bookingId}`);
     return response.data.data || response.data;
   },
 
@@ -549,8 +574,8 @@ export const riskManagementService = {
   /**
    * Execute enforcement action
    */
-  async executeEnforcementAction(id: string, executionNotes: string): Promise<EnforcementAction> {
-    const response = await riskManagementApi.patch(`/enforce/${id}/execute`, { executionNotes });
+  async executeEnforcementAction(actionId: string): Promise<EnforcementAction> {
+    const response = await riskManagementApi.post(`/enforce/${actionId}`);
     return response.data.data || response.data;
   },
 

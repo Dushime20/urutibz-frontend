@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, Upload, Search, Trash2, Eye, AlertTriangle, Shield } from 'lucide-react';
+import { Plus, Upload, Search, Trash2, Eye, Edit, AlertTriangle, Shield } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { riskManagementService } from '../../../services/riskManagementService';
 import { RiskProfile, RiskLevel } from '../../../types/riskManagement';
 import CreateRiskProfileModal from './CreateRiskProfileModal';
 import BulkCreateRiskProfileModal from './BulkCreateRiskProfileModal';
 import RiskProfileDetailsModal from './RiskProfileDetailsModal';
+import EditRiskProfileModal from './EditRiskProfileModal';
+import ConfirmationDialog from './ConfirmationDialog';
 import { useToast } from '../../../contexts/ToastContext';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 const RiskProfilesSection: React.FC = () => {
   const { showToast } = useToast();
@@ -17,6 +20,9 @@ const RiskProfilesSection: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<RiskProfile | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
@@ -52,14 +58,26 @@ const RiskProfilesSection: React.FC = () => {
   });
 
   const handleDeleteProfile = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this risk profile?')) {
-      deleteProfileMutation.mutate(id);
+    setProfileToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteProfile = () => {
+    if (profileToDelete) {
+      deleteProfileMutation.mutate(profileToDelete);
+      setShowDeleteConfirm(false);
+      setProfileToDelete(null);
     }
   };
 
   const handleViewProfile = (profile: RiskProfile) => {
     setSelectedProfile(profile);
     setShowDetailsModal(true);
+  };
+
+  const handleEditProfile = (profile: RiskProfile) => {
+    setSelectedProfile(profile);
+    setShowEditModal(true);
   };
 
   const getRiskLevelColor = (level: RiskLevel) => {
@@ -77,15 +95,8 @@ const RiskProfilesSection: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // Use shared UTC date formatter
+  const formatDate = formatDateUTC;
 
   if (error) {
     return (
@@ -291,6 +302,13 @@ const RiskProfilesSection: React.FC = () => {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => handleEditProfile(profile)}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleDeleteProfile(profile.id)}
                             className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                             title="Delete"
@@ -413,6 +431,37 @@ const RiskProfilesSection: React.FC = () => {
           profile={selectedProfile}
         />
       )}
+
+      {showEditModal && selectedProfile && (
+        <EditRiskProfileModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedProfile(null);
+          }}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedProfile(null);
+            queryClient.invalidateQueries({ queryKey: ['riskProfiles'] });
+          }}
+          profile={selectedProfile}
+        />
+      )}
+
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setProfileToDelete(null);
+        }}
+        onConfirm={confirmDeleteProfile}
+        title="Delete Risk Profile"
+        message="Are you sure you want to delete this risk profile? This action cannot be undone. The profile will be marked as inactive."
+        type="danger"
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deleteProfileMutation.isPending}
+      />
     </div>
   );
 };

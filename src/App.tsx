@@ -25,6 +25,7 @@ import DemoPage from './pages/DemoPage';
 import RoleAwareInspections from './pages/inspections/RoleAwareInspections';
 import InspectorDashboardPage from './pages/inspections/InspectorDashboardPage';
 import InspectionDetailsPage from './pages/inspections/InspectionDetailsPage';
+import ModeratorDashboardPage from './pages/moderator/ModeratorDashboardPage';
 import RiskManagementPage from './pages/risk-management/RiskManagementPage';
 import RiskAssessmentPage from './pages/risk-management/RiskAssessmentPage';
 import { ToastProvider } from './contexts/ToastContext';
@@ -86,6 +87,11 @@ function App() {
               <Route path="inspector" element={
                 <ProtectedRoute>
                   <InspectorDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="moderator" element={
+                <ProtectedRoute>
+                  <ModeratorDashboardPage />
                 </ProtectedRoute>
               } />
               <Route path="inspections/:id" element={

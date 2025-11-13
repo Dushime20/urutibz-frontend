@@ -26,7 +26,9 @@ export const useRiskManagementStats = (): UseRiskManagementStatsReturn => {
       console.log('📊 Fetching risk management statistics...');
       const response = await riskManagementService.getRiskManagementStats();
       
-      setStats(response.data);
+      // Ensure we have the data in the correct format
+      const statsData = response.data || response;
+      setStats(statsData);
       setLastUpdated(new Date());
       
       console.log('✅ Risk management statistics loaded successfully:', response.data);

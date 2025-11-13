@@ -56,6 +56,7 @@ import { TwoFactorManagement } from '../../components/2fa';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 import { disputeService } from '../../services/inspectionService';
 import { Inspection, DisputeType } from '../../types/inspection';
+import { formatDateUTC } from '../../utils/dateUtils';
 
 // TypeScript interfaces for component props
 import type { FormState } from './types';
@@ -1116,7 +1117,7 @@ const DashboardPage: React.FC = () => {
         )}
 
         {/* Desktop Sidebar */}
-        <div className="hidden md:block flex-shrink-0">
+        <div className="hidden md:block flex-shrink-0 relative">
           <MyAccountSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
@@ -1452,7 +1453,7 @@ const DashboardPage: React.FC = () => {
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-slate-100">{selectedReview.title || (selectedReview.id === 'no-review' ? 'No review yet' : 'Review')}</h4>
                       <p className="text-sm text-gray-500 dark:text-slate-400">
-                        {selectedReview.createdAt ? `${new Date(selectedReview.createdAt).toLocaleDateString()} at ${new Date(selectedReview.createdAt).toLocaleTimeString()}` : ''}
+                        {selectedReview.createdAt ? formatDateUTC(selectedReview.createdAt) : ''}
                       </p>
                     </div>
                   </div>
@@ -1541,7 +1542,7 @@ const DashboardPage: React.FC = () => {
                       <span className="text-sm font-medium text-gray-900 dark:text-slate-100">Your Response</span>
                       {selectedReview.responseDate && (
                         <span className="text-xs text-gray-500">
-                          {new Date(selectedReview.responseDate).toLocaleDateString()}
+                          {formatDateUTC(selectedReview.responseDate)}
                         </span>
                       )}
                     </div>

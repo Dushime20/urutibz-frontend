@@ -93,7 +93,9 @@ const ItemSearchPage: React.FC = () => {
         setError(null);
         const token = localStorage.getItem('token') || undefined;
         
-        const result = await fetchAvailableProducts(token, false); // Full filtering for search page
+        // Fetch ALL active products (both booked and non-booked)
+        // Always skip availability check to show all products
+        const result = await fetchAvailableProducts(token, true);
         
         if (result.error) {
           setError(result.error);

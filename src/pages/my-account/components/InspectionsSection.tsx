@@ -6,6 +6,8 @@ import RenterPreReviewComponent from '../../../components/inspections/RenterPreR
 import RenterPostInspectionForm from '../../../components/inspections/RenterPostInspectionForm';
 import OwnerPostReviewComponent from '../../../components/inspections/OwnerPostReviewComponent';
 import InspectionDetailsModal from '../../../components/inspections/InspectionDetailsModal';
+import { formatDateUTC } from '../../../utils/dateUtils';
+import axios from 'axios';
 
 interface Props {
   loading: boolean;
@@ -43,19 +45,87 @@ const InspectionsSection: React.FC<Props> = ({
   const [selectedInspection, setSelectedInspection] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Fetch booking by ID
+  const fetchBookingById = async (bookingId: string): Promise<any | null> => {
+    // Check cache first
+    if (bookingCache[bookingId]) {
+      return bookingCache[bookingId];
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.get(`${API_BASE_URL}/bookings/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const booking = response.data?.data || response.data;
+      if (booking) {
+        // Cache the booking
+        setBookingCache(prev => ({ ...prev, [bookingId]: booking }));
+        return booking;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Error fetching booking ${bookingId}:`, error);
+      return null;
+    }
+  };
+
   // Fetch rented inspections
   const loadRentedInspections = async () => {
     setRentedLoading(true);
     try {
       const response = await inspectionService.getMyInspections();
       const inspections = response.data || [];
+      
+      // Fetch booking data for inspections that don't have it
+      // Backend now includes booking data, but we still need to handle cases where it might be missing
+      const inspectionsWithBookings = await Promise.all(inspections.map(async (inspection: any) => {
+        const bookingId = inspection.bookingId || inspection.booking_id;
+        // Check if booking data exists in various possible formats
+        const hasBooking = inspection.booking || 
+                         (inspection as any).Booking || 
+                         (inspection as any).booking;
+        
+        // If booking data is missing, try to fetch it
+        if (bookingId && !hasBooking) {
+          const booking = await fetchBookingById(bookingId);
+          if (booking) {
+            return { ...inspection, booking };
+          }
+        }
+        
+        // Ensure booking data is accessible in a consistent format
+        if (hasBooking && !inspection.booking) {
+          return { 
+            ...inspection, 
+            booking: inspection.booking || (inspection as any).Booking || (inspection as any).booking 
+          };
+        }
+        
+        return inspection;
+      }));
+      
       console.log('📦 Loaded Rented Inspections:', {
-        count: inspections.length,
-        inspections: inspections.map((i: any) => ({
+        count: inspectionsWithBookings.length,
+        inspections: inspectionsWithBookings.map((i: any) => ({
           id: i.id,
           type: i.inspectionType,
           typeRaw: i.inspectionType || i.inspection_type,
           status: i.status,
+          bookingId: i.bookingId || i.booking_id,
+          hasBooking: !!i.booking,
+          bookingKeys: i.booking ? Object.keys(i.booking) : [],
+          booking: i.booking ? {
+            id: i.booking.id,
+            status: i.booking.status,
+            end_date: i.booking.end_date,
+            endDate: i.booking.endDate,
+            rental_end_date: i.booking.rental_end_date,
+            rentalEndDate: i.booking.rentalEndDate,
+            allKeys: Object.keys(i.booking)
+          } : null,
           hasOwnerPreInspection: !!i.ownerPreInspectionData,
           ownerPreInspectionConfirmed: i.ownerPreInspectionConfirmed,
           renterPreReviewAccepted: i.renterPreReviewAccepted,
@@ -67,7 +137,7 @@ const InspectionsSection: React.FC<Props> = ({
           isPostRental: i.inspectionType === InspectionType.POST_RENTAL || i.inspection_type === 'post_rental' || i.inspection_type === 'POST_RENTAL' || i.inspectionType === 'post_return' || i.inspection_type === 'post_return'
         }))
       });
-      setRentedInspections(inspections);
+      setRentedInspections(inspectionsWithBookings);
     } catch (error) {
       console.error('Error fetching rented inspections:', error);
       setRentedInspections([]);
@@ -119,8 +189,27 @@ const InspectionsSection: React.FC<Props> = ({
 
   // Determine which action button to show based on inspection status and user role
   const getActionButton = (inspection: any, isOwner: boolean) => {
-    const inspectionType = inspection.inspectionType;
+    // Handle multiple possible formats for inspection type
+    const inspectionType = inspection.inspectionType || 
+                          (inspection as any).inspection_type || 
+                          (inspection as any).inspectionType;
     const status = inspection.status;
+    
+    // Debug: Log all inspection data for rented items
+    if (!isOwner) {
+      console.log('🔍 getActionButton - Renter Inspection:', {
+        id: inspection.id,
+        inspectionType,
+        inspection_type: (inspection as any).inspection_type,
+        status,
+        isOwner,
+        renterPostInspectionData: inspection.renterPostInspectionData ? 'exists' : 'missing',
+        renterPostInspectionConfirmed: inspection.renterPostInspectionConfirmed,
+        ownerPostReviewAccepted: inspection.ownerPostReviewAccepted,
+        booking: inspection.booking,
+        allKeys: Object.keys(inspection)
+      });
+    }
     
     // Debug logging
     if (!isOwner && inspectionType === InspectionType.PRE_RENTAL) {
@@ -164,52 +253,9 @@ const InspectionsSection: React.FC<Props> = ({
         ownerPreInspectionConfirmed: inspection.ownerPreInspectionConfirmed,
         renterPreReviewAccepted: inspection.renterPreReviewAccepted,
         renterDiscrepancyReported: inspection.renterDiscrepancyReported,
-        renterPostInspectionData: inspection.renterPostInspectionData ? 'exists' : 'missing',
-        renterPostInspectionConfirmed: inspection.renterPostInspectionConfirmed,
         booking: inspection.booking,
         inspectionKeys: Object.keys(inspection)
       });
-      
-      // Check if booking has ended (for post-inspection)
-      const booking = inspection.booking || (inspection as any).Booking;
-      const bookingEndDate = booking?.end_date || booking?.endDate || booking?.rental_end_date;
-      const now = new Date();
-      const bookingEnded = bookingEndDate ? new Date(bookingEndDate) < now : false;
-      
-      // Check if renter has already provided post-inspection
-      const hasPostInspectionData = 
-        inspection.renterPostInspectionData || 
-        (inspection as any).renter_post_inspection_data;
-      const isPostInspectionConfirmed = 
-        inspection.renterPostInspectionConfirmed || 
-        (inspection as any).renter_post_inspection_confirmed;
-      
-      // If booking has ended and renter hasn't provided post-inspection yet, show post-inspection button
-      if (bookingEnded && !isPostInspectionConfirmed && !hasPostInspectionData) {
-        console.log('✅ Booking ended - Showing "Provide Post-Inspection" button');
-        return (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedInspection(inspection);
-              setShowRenterPostInspectionModal(true);
-            }}
-            className="mt-2 px-3 py-1 bg-teal-600 text-white text-xs rounded-full hover:bg-teal-700 transition-colors flex items-center gap-1"
-          >
-            <Upload className="w-3 h-3" />
-            Provide Post-Inspection
-          </button>
-        );
-      }
-      
-      // If post-inspection is provided but owner hasn't reviewed yet
-      if (isPostInspectionConfirmed && !inspection.ownerPostReviewAccepted && !inspection.ownerDisputeRaised) {
-        return (
-          <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
-            Waiting for Owner Review
-          </span>
-        );
-      }
       
       // Check if owner has provided pre-inspection data (even if not confirmed yet)
       // Also check for nested data structures
@@ -236,22 +282,208 @@ const InspectionsSection: React.FC<Props> = ({
         );
       }
       
-      // Show status if renter has already reviewed
-      if (inspection.renterPreReviewAccepted) {
+      // Check if booking has ended - post-inspection is independent of pre-inspection review
+      // Post-inspection should be available once booking ends, regardless of pre-inspection review status
+      const booking = inspection.booking || (inspection as any).Booking || (inspection as any).booking;
+      // Try multiple possible date field names from backend
+      const bookingEndDate = booking?.end_date || 
+                            booking?.endDate || 
+                            booking?.rental_end_date || 
+                            booking?.rentalEndDate ||
+                            (inspection as any).bookingEndDate ||
+                            (inspection as any).booking_end_date;
+      // Parse booking end date and compare using LOCAL TIME (not UTC)
+      // This makes it easier to understand - we compare dates as the user sees them
+      let bookingEnded = false;
+      if (bookingEndDate) {
+        try {
+          const endDate = new Date(bookingEndDate);
+          const now = new Date();
+          
+          // Check if date is valid
+          if (!isNaN(endDate.getTime())) {
+            // Compare dates using local time components (not UTC)
+            // Get local time components for comparison
+            const endYear = endDate.getFullYear();
+            const endMonth = endDate.getMonth();
+            const endDay = endDate.getDate();
+            const endHour = endDate.getHours();
+            const endMinute = endDate.getMinutes();
+            const endSecond = endDate.getSeconds();
+            
+            const nowYear = now.getFullYear();
+            const nowMonth = now.getMonth();
+            const nowDay = now.getDate();
+            const nowHour = now.getHours();
+            const nowMinute = now.getMinutes();
+            const nowSecond = now.getSeconds();
+            
+            // Compare local times - booking has ended if end date is in the past
+            // Compare year, month, day, hour, minute, second in local time
+            if (endYear < nowYear) {
+              bookingEnded = true;
+            } else if (endYear === nowYear) {
+              if (endMonth < nowMonth) {
+                bookingEnded = true;
+              } else if (endMonth === nowMonth) {
+                if (endDay < nowDay) {
+                  bookingEnded = true;
+                } else if (endDay === nowDay) {
+                  if (endHour < nowHour) {
+                    bookingEnded = true;
+                  } else if (endHour === nowHour) {
+                    if (endMinute < nowMinute) {
+                      bookingEnded = true;
+                    } else if (endMinute === nowMinute) {
+                      bookingEnded = endSecond < nowSecond;
+                    }
+                  }
+                }
+              }
+            }
+            
+            // Calculate time difference in milliseconds (using local time)
+            const endDateLocal = new Date(endYear, endMonth, endDay, endHour, endMinute, endSecond);
+            const nowLocal = new Date(nowYear, nowMonth, nowDay, nowHour, nowMinute, nowSecond);
+            const timeDiff = nowLocal.getTime() - endDateLocal.getTime();
+            const hoursDiff = timeDiff / (1000 * 60 * 60);
+            const minutesDiff = timeDiff / (1000 * 60);
+            
+            const endDateLocalString = `${endYear}-${String(endMonth + 1).padStart(2, '0')}-${String(endDay).padStart(2, '0')} ${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:${String(endSecond).padStart(2, '0')}`;
+            const nowLocalString = `${nowYear}-${String(nowMonth + 1).padStart(2, '0')}-${String(nowDay).padStart(2, '0')} ${String(nowHour).padStart(2, '0')}:${String(nowMinute).padStart(2, '0')}:${String(nowSecond).padStart(2, '0')}`;
+            
+            console.log('📅 Booking end date check (LOCAL TIME):', {
+              inspectionId: inspection.id,
+              bookingEndDate,
+              endDateLocalString,
+              nowLocalString,
+              bookingEnded,
+              timeDiff,
+              hoursDiff: hoursDiff.toFixed(2),
+              minutesDiff: minutesDiff.toFixed(2),
+              endDateLocal: endDate.toLocaleString(),
+              nowLocal: now.toLocaleString()
+            });
+          } else {
+            console.warn('⚠️ Invalid booking end date:', bookingEndDate);
+          }
+        } catch (error) {
+          console.error('❌ Error parsing booking end date:', error, bookingEndDate);
+        }
+      } else {
+        console.log('⚠️ No booking end date found for inspection:', {
+          inspectionId: inspection.id,
+          hasBooking: !!booking,
+          bookingKeys: booking ? Object.keys(booking) : [],
+          inspectionKeys: Object.keys(inspection)
+        });
+      }
+      
+      const hasPostInspectionData = 
+        inspection.renterPostInspectionData || 
+        (inspection as any).renter_post_inspection_data;
+      const isConfirmed = 
+        inspection.renterPostInspectionConfirmed || 
+        (inspection as any).renter_post_inspection_confirmed;
+      
+      // If booking has ended and post-inspection hasn't been submitted, show button
+      // This is independent of pre-inspection review status
+      console.log('🔍 Post-Inspection Button Check:', {
+        inspectionId: inspection.id,
+        bookingEnded,
+        isConfirmed,
+        hasPostInspectionData: !!hasPostInspectionData,
+        bookingEndDate,
+        now: new Date().toISOString(),
+        conditions: {
+          bookingEnded,
+          notConfirmed: !isConfirmed,
+          noPostInspectionData: !hasPostInspectionData,
+          allConditionsMet: bookingEnded && !isConfirmed && !hasPostInspectionData
+        }
+      });
+      
+      if (bookingEnded && !isConfirmed && !hasPostInspectionData) {
+        console.log('✅ Showing "Provide Post-Inspection" button for PRE_RENTAL inspection:', {
+          inspectionId: inspection.id,
+          inspectionType: inspection.inspectionType || inspection.inspection_type,
+          bookingEndDate,
+          hasPostInspectionData: !!hasPostInspectionData,
+          isConfirmed,
+          bookingEnded,
+          booking: booking ? { id: booking.id, status: booking.status } : null
+        });
         return (
-          <span className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/20 dark:text-green-400">
-            Review Accepted
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedInspection(inspection);
+              setShowRenterPostInspectionModal(true);
+            }}
+            className="mt-2 px-3 py-1 bg-teal-600 text-white text-xs rounded-full hover:bg-teal-700 transition-colors flex items-center gap-1"
+          >
+            <Upload className="w-3 h-3" />
+            Provide Post-Inspection
+          </button>
+        );
+      } else {
+        console.log('❌ NOT Showing "Provide Post-Inspection" button - Conditions not met:', {
+          inspectionId: inspection.id,
+          bookingEnded,
+          isConfirmed,
+          hasPostInspectionData: !!hasPostInspectionData,
+          reason: !bookingEnded ? 'Booking has not ended yet' : 
+                  isConfirmed ? 'Post-inspection already confirmed' : 
+                  hasPostInspectionData ? 'Post-inspection data already exists' : 'Unknown reason'
+        });
+      }
+      
+      // If post-inspection is provided but owner hasn't reviewed yet
+      if (isConfirmed && !inspection.ownerPostReviewAccepted && !inspection.ownerDisputeRaised) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
+            Waiting for Owner Review
           </span>
         );
       }
       
-      // Show status if discrepancy was reported
-      if (inspection.renterDiscrepancyReported) {
+      // Show status if owner has accepted
+      if (inspection.ownerPostReviewAccepted) {
         return (
-          <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
-            Discrepancy Reported
+          <span className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/20 dark:text-green-400">
+            Owner Accepted
           </span>
         );
+      }
+      
+      // Show status if owner raised dispute
+      if (inspection.ownerDisputeRaised) {
+        return (
+          <span className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full dark:bg-red-900/20 dark:text-red-400">
+            Owner Dispute Raised
+          </span>
+        );
+      }
+      
+      // If booking hasn't ended yet, show pre-inspection review status
+      if (!bookingEnded) {
+        // Show status if renter has already reviewed
+        if (inspection.renterPreReviewAccepted) {
+          return (
+            <span className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/20 dark:text-green-400">
+              Review Accepted
+            </span>
+          );
+        }
+        
+        // Show status if discrepancy was reported
+        if (inspection.renterDiscrepancyReported) {
+          return (
+            <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
+              Discrepancy Reported
+            </span>
+          );
+        }
       }
       
       // Show waiting status if owner hasn't provided pre-inspection yet
@@ -266,22 +498,28 @@ const InspectionsSection: React.FC<Props> = ({
 
     // Renter actions for post-return inspection
     // Check inspection type with multiple possible formats (handle both POST_RENTAL and POST_RETURN)
+    // Also check raw inspection_type field from backend
+    const rawInspectionType = inspectionType || (inspection as any).inspection_type || (inspection as any).inspectionType;
     const isPostRental = 
       inspectionType === InspectionType.POST_RENTAL || 
       inspectionType === 'post_rental' || 
       inspectionType === 'POST_RENTAL' ||
       inspectionType === 'post_return' ||  // Backend uses POST_RETURN
       inspectionType === 'POST_RETURN' ||
-      (inspection as any).inspection_type === 'post_rental' ||
-      (inspection as any).inspection_type === 'POST_RENTAL' ||
-      (inspection as any).inspection_type === 'post_return' ||
-      (inspection as any).inspection_type === 'POST_RETURN';
+      rawInspectionType === 'post_rental' ||
+      rawInspectionType === 'POST_RENTAL' ||
+      rawInspectionType === 'post_return' ||
+      rawInspectionType === 'POST_RETURN';
     
-    if (!isOwner && isPostRental) {
+    // For renters, check if this is a post-return inspection OR if booking has ended
+    if (!isOwner) {
+      // First, check if it's explicitly a post-return inspection
+      if (isPostRental) {
       // Debug logging for post-inspection
       console.log('🔍 getActionButton - Renter Post-Rental:', {
         id: inspection.id,
         inspectionType,
+        rawInspectionType,
         inspection_type: (inspection as any).inspection_type,
         isPostRental,
         isOwner,
@@ -327,7 +565,7 @@ const InspectionsSection: React.FC<Props> = ({
         );
       }
       
-      // Show status if renter has submitted but owner hasn't reviewed yet
+      // If post-inspection is provided but owner hasn't reviewed yet
       if (isConfirmed && !inspection.ownerPostReviewAccepted && !inspection.ownerDisputeRaised) {
         return (
           <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
@@ -352,6 +590,82 @@ const InspectionsSection: React.FC<Props> = ({
             Owner Dispute Raised
           </span>
         );
+      }
+      }
+      
+      // Fallback: If inspection type is not clearly identified but booking has ended,
+      // and renter hasn't provided post-inspection, show the button anyway
+      // This handles cases where inspection type might be mislabeled or missing
+      if (!isPostRental && inspectionType !== InspectionType.PRE_RENTAL) {
+        const booking = inspection.booking || (inspection as any).Booking || (inspection as any).booking;
+        const bookingEndDate = booking?.end_date || booking?.endDate || booking?.rental_end_date || (inspection as any).bookingEndDate;
+        const now = new Date();
+        
+        // Parse booking end date correctly, handling timezone offsets
+        // Database stores dates like "2025-11-10 21:30:00+02" (UTC+2)
+        // JavaScript Date automatically handles timezone conversion
+        let bookingEnded = false;
+        if (bookingEndDate) {
+          try {
+            const endDate = new Date(bookingEndDate);
+            // Check if date is valid
+            if (!isNaN(endDate.getTime())) {
+              bookingEnded = endDate < now;
+              console.log('📅 Fallback: Booking end date check:', {
+                inspectionId: inspection.id,
+                bookingEndDate,
+                parsedEndDate: endDate.toISOString(),
+                now: now.toISOString(),
+                bookingEnded,
+                timeDiff: now.getTime() - endDate.getTime(),
+                hoursDiff: (now.getTime() - endDate.getTime()) / (1000 * 60 * 60)
+              });
+            } else {
+              console.warn('⚠️ Fallback: Invalid booking end date:', bookingEndDate);
+            }
+          } catch (error) {
+            console.error('❌ Fallback: Error parsing booking end date:', error, bookingEndDate);
+          }
+        } else {
+          console.log('⚠️ Fallback: No booking end date found for inspection:', {
+            inspectionId: inspection.id,
+            hasBooking: !!booking,
+            bookingKeys: booking ? Object.keys(booking) : [],
+            inspectionKeys: Object.keys(inspection)
+          });
+        }
+        
+        const hasPostInspectionData = 
+          inspection.renterPostInspectionData || 
+          (inspection as any).renter_post_inspection_data;
+        const isConfirmed = 
+          inspection.renterPostInspectionConfirmed || 
+          (inspection as any).renter_post_inspection_confirmed;
+        
+        // If booking has ended and no post-inspection data, show button
+        if (bookingEnded && !isConfirmed && !hasPostInspectionData) {
+          console.log('🔍 Fallback: Booking ended, showing post-inspection button:', {
+            inspectionId: inspection.id,
+            inspectionType,
+            rawInspectionType,
+            bookingEndDate,
+            hasPostInspectionData: !!hasPostInspectionData,
+            isConfirmed
+          });
+          return (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedInspection(inspection);
+                setShowRenterPostInspectionModal(true);
+              }}
+              className="mt-2 px-3 py-1 bg-teal-600 text-white text-xs rounded-full hover:bg-teal-700 transition-colors flex items-center gap-1"
+            >
+              <Upload className="w-3 h-3" />
+              Provide Post-Inspection
+            </button>
+          );
+        }
       }
     }
 
@@ -562,11 +876,8 @@ const InspectionsSection: React.FC<Props> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-  };
+  // Use shared UTC date formatter
+  const formatDate = formatDateUTC;
 
   const handleRaiseDispute = async () => {
     if (!selectedDisputeInspectionId || !disputeForm.reason.trim()) {
@@ -709,7 +1020,7 @@ const InspectionsSection: React.FC<Props> = ({
                 }}
               >
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
+                  <div className="flex items-center space-x-2 mb-2 flex-wrap gap-2">
                     <h4 className="font-semibold text-gray-900 capitalize dark:text-slate-100">
                       {inspection.inspectionType?.replace(/_/g, ' ') || 'Inspection'}
                     </h4>
@@ -717,6 +1028,76 @@ const InspectionsSection: React.FC<Props> = ({
                       {getStatusIcon(inspection.status)}
                       {inspection.status?.replace(/_/g, ' ')}
                     </span>
+                    {/* Post-Inspection Badge */}
+                    {(() => {
+                      // Check both camelCase and snake_case formats
+                      const hasPostInspection = inspection.renterPostInspectionData || 
+                                               (inspection as any).renter_post_inspection_data;
+                      const isConfirmed = inspection.renterPostInspectionConfirmed || 
+                                         (inspection as any).renter_post_inspection_confirmed;
+                      const isAccepted = inspection.ownerPostReviewAccepted || 
+                                        (inspection as any).owner_post_review_accepted;
+                      const isDisputed = inspection.ownerDisputeRaised || 
+                                        (inspection as any).owner_dispute_raised;
+                      
+                      // Debug logging for badge visibility
+                      if (hasPostInspection || isConfirmed) {
+                        console.log('🔵 Post-Inspection Badge Check:', {
+                          inspectionId: inspection.id,
+                          hasPostInspection: !!hasPostInspection,
+                          isConfirmed,
+                          isAccepted,
+                          isDisputed,
+                          shouldShow: hasPostInspection && isConfirmed && !isAccepted && !isDisputed,
+                          renterPostInspectionData: inspection.renterPostInspectionData ? 'exists' : 'missing',
+                          renter_post_inspection_data: (inspection as any).renter_post_inspection_data ? 'exists' : 'missing',
+                          renterPostInspectionConfirmed: inspection.renterPostInspectionConfirmed,
+                          renter_post_inspection_confirmed: (inspection as any).renter_post_inspection_confirmed
+                        });
+                      }
+                      
+                      // Show badge if post-inspection is confirmed and owner hasn't reviewed yet
+                      if (hasPostInspection && isConfirmed && !isAccepted && !isDisputed) {
+                        return (
+                          <span 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('🔵 Badge clicked, opening modal for inspection:', inspection.id);
+                              setSelectedInspection(inspection);
+                              setShowOwnerPostReviewModal(true);
+                            }}
+                            className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer transition-colors dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                            title="Post-inspection available for review"
+                          >
+                            <FileText className="w-3 h-3" />
+                            Post-Inspection Available
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {(() => {
+                      const isDisputed = inspection.ownerDisputeRaised || (inspection as any).owner_dispute_raised;
+                      const isAccepted = inspection.ownerPostReviewAccepted || (inspection as any).owner_post_review_accepted;
+                      
+                      if (isDisputed) {
+                        return (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                            <AlertTriangle className="w-3 h-3" />
+                            Dispute Raised
+                          </span>
+                        );
+                      }
+                      if (isAccepted) {
+                        return (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                            <CheckCircle className="w-3 h-3" />
+                            Accepted
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
 
                   <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2 dark:text-slate-400">
@@ -1079,7 +1460,21 @@ const InspectionsSection: React.FC<Props> = ({
       )}
 
       {/* Owner Post-Review Modal */}
-      {showOwnerPostReviewModal && selectedInspection && selectedInspection.renterPostInspectionData && (
+      {showOwnerPostReviewModal && selectedInspection && (() => {
+        const hasData = selectedInspection.renterPostInspectionData || (selectedInspection as any).renter_post_inspection_data;
+        if (showOwnerPostReviewModal) {
+          console.log('🔵 Owner Post-Review Modal Check:', {
+            showModal: showOwnerPostReviewModal,
+            hasInspection: !!selectedInspection,
+            hasData: !!hasData,
+            inspectionId: selectedInspection?.id,
+            renterPostInspectionData: selectedInspection?.renterPostInspectionData ? 'exists' : 'missing',
+            renter_post_inspection_data: (selectedInspection as any)?.renter_post_inspection_data ? 'exists' : 'missing',
+            allKeys: selectedInspection ? Object.keys(selectedInspection) : []
+          });
+        }
+        return hasData;
+      })() ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => {
             setShowOwnerPostReviewModal(false);
@@ -1101,7 +1496,7 @@ const InspectionsSection: React.FC<Props> = ({
             <div className="p-6">
               <OwnerPostReviewComponent
                 inspectionId={selectedInspection.id}
-                renterPostInspection={selectedInspection.renterPostInspectionData}
+                renterPostInspection={selectedInspection.renterPostInspectionData || (selectedInspection as any).renter_post_inspection_data}
                 onSubmit={handleOwnerPostReviewSubmit}
                 onCancel={() => {
                   setShowOwnerPostReviewModal(false);
@@ -1111,7 +1506,7 @@ const InspectionsSection: React.FC<Props> = ({
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Inspection Details Modal */}
       {showInspectionDetailsModal && selectedInspectionId && (
@@ -1134,6 +1529,12 @@ const InspectionsSection: React.FC<Props> = ({
             setSelectedInspection(inspectionWithFlag);
             setShowInspectionDetailsModal(false);
             setShowRenterPreReviewModal(true);
+          }}
+          onViewPostInspection={(inspection) => {
+            console.log('🔵 View Post-Inspection clicked from modal:', inspection.id);
+            setSelectedInspection(inspection);
+            setShowInspectionDetailsModal(false);
+            setShowOwnerPostReviewModal(true);
           }}
         />
       )}

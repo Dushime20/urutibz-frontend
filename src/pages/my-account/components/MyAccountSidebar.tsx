@@ -1,7 +1,7 @@
 // My Account Sidebar Component
-// Following the same patterns as AdminSidebar.tsx
+// Collapsible sidebar with toggle functionality
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   BarChart3, 
   Calendar, 
@@ -13,7 +13,10 @@ import {
   MessageCircle, 
   TrendingUp, 
   ArrowRightLeft,
-  User
+  User,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 
 interface MyAccountSidebarProps {
@@ -27,6 +30,7 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
   setActiveTab, 
   className = '' 
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const navigationItems = [
     { icon: BarChart3, label: 'Overview', tab: 'overview' },
     { icon: Calendar, label: 'Bookings', tab: 'bookings' },
@@ -42,22 +46,41 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
   ];
 
   return (
-    <div className={`w-64 bg-white border-r border-gray-200 h-full dark:bg-slate-900 dark:border-slate-700 ${className}`}>
+    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-full dark:bg-slate-900 dark:border-slate-700 transition-all duration-300 relative ${className}`}>
+      {/* Toggle Button */}
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
+        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {isCollapsed ? (
+          <ChevronRight className="w-4 h-4 text-gray-600 dark:text-slate-300" />
+        ) : (
+          <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-slate-300" />
+        )}
+      </button>
+
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center dark:bg-teal-900/30">
-            <User className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+      <div className={`p-6 border-b border-gray-200 dark:border-slate-700 ${isCollapsed ? 'px-3' : ''}`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
+          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center dark:bg-teal-900/30 flex-shrink-0">
+            {isCollapsed ? (
+              <Menu className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            ) : (
+              <User className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+            )}
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">My Account</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Manage your account</p>
-          </div>
+          {!isCollapsed && (
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 truncate">My Account</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-400 truncate">Manage your account</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="p-4 space-y-2">
+      <nav className={`p-4 space-y-2 ${isCollapsed ? 'px-2' : ''}`}>
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.tab;
@@ -66,18 +89,26 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
             <button
               key={item.tab}
               onClick={() => setActiveTab(item.tab as any)}
-              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors duration-200 ${
+              title={isCollapsed ? item.label : ''}
+              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg text-left transition-colors duration-200 group ${
                 isActive
                   ? 'bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Icon
-                className={`w-5 h-5 ${
+                className={`w-5 h-5 flex-shrink-0 ${
                   isActive ? 'text-teal-600 dark:text-teal-400' : 'text-gray-400 dark:text-slate-500'
                 }`}
               />
-              <span className="font-medium dark:text-slate-200">{item.label}</span>
+              {!isCollapsed && (
+                <span className="font-medium dark:text-slate-200 truncate">{item.label}</span>
+              )}
+              {isCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                  {item.label}
+                </div>
+              )}
             </button>
           );
         })}

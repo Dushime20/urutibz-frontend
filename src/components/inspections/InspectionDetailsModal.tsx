@@ -11,6 +11,7 @@ interface InspectionDetailsModalProps {
   onClose: () => void;
   onReviewPreInspection?: (inspection: Inspection) => void;
   onReportDiscrepancy?: (inspection: Inspection) => void;
+  onViewPostInspection?: (inspection: Inspection) => void;
   userRole?: 'owner' | 'renter' | 'inspector' | 'admin';
 }
 
@@ -20,6 +21,7 @@ const InspectionDetailsModal: React.FC<InspectionDetailsModalProps> = ({
   onClose,
   onReviewPreInspection,
   onReportDiscrepancy,
+  onViewPostInspection,
   userRole
 }) => {
   const [inspection, setInspection] = useState<Inspection | null>(null);
@@ -710,6 +712,62 @@ const InspectionDetailsModal: React.FC<InspectionDetailsModalProps> = ({
           {/* Footer */}
           <div className="sticky bottom-0 bg-white dark:bg-slate-900 px-6 py-4 border-t border-gray-200 dark:border-slate-700 flex justify-between items-center gap-3">
             <div className="flex gap-3">
+              {/* Owner Post-Inspection Review Actions */}
+              {userRole === 'owner' && (
+                <>
+                  {/* Check if renter has provided post-inspection and owner hasn't reviewed yet */}
+                  {(() => {
+                    const hasPostInspection = inspection?.renterPostInspectionData || 
+                                             (inspection as any)?.renter_post_inspection_data;
+                    const isConfirmed = inspection?.renterPostInspectionConfirmed || 
+                                       (inspection as any)?.renter_post_inspection_confirmed;
+                    const isAccepted = inspection?.ownerPostReviewAccepted || 
+                                      (inspection as any)?.owner_post_review_accepted;
+                    const isDisputed = inspection?.ownerDisputeRaised || 
+                                      (inspection as any)?.owner_dispute_raised;
+                    
+                    return hasPostInspection && isConfirmed && !isAccepted && !isDisputed;
+                  })() && onViewPostInspection && (
+                    <button
+                      onClick={() => {
+                        if (inspection && onViewPostInspection) {
+                          onViewPostInspection(inspection);
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      View Post-Inspection
+                    </button>
+                  )}
+                  {/* Status messages for owner */}
+                  {(() => {
+                    const isAccepted = inspection?.ownerPostReviewAccepted || 
+                                      (inspection as any)?.owner_post_review_accepted;
+                    const isDisputed = inspection?.ownerDisputeRaised || 
+                                      (inspection as any)?.owner_dispute_raised;
+                    
+                    if (isAccepted) {
+                      return (
+                        <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg dark:bg-green-900/20 dark:text-green-400 flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          Post-Inspection Accepted
+                        </span>
+                      );
+                    }
+                    if (isDisputed) {
+                      return (
+                        <span className="px-4 py-2 bg-red-100 text-red-700 rounded-lg dark:bg-red-900/20 dark:text-red-400 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4" />
+                          Dispute Raised
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+                </>
+              )}
+              
               {/* Renter Pre-Inspection Review Actions */}
               {userRole === 'renter' && inspection?.inspectionType === 'pre_rental' && (
                 <>

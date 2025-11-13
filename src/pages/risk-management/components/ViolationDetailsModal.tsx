@@ -13,10 +13,13 @@ import {
   Edit,
   CheckCircle,
   Eye,
-  Download
+  Download,
+  Plus
 } from 'lucide-react';
 import { riskManagementService } from '../../../services/riskManagementService';
 import type { PolicyViolation } from '../../../types/riskManagement';
+import { useToast } from '../../../contexts/ToastContext';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 interface ViolationDetailsModalProps {
   violation: PolicyViolation | null;
@@ -25,13 +28,21 @@ interface ViolationDetailsModalProps {
 }
 
 const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation, isOpen, onClose }) => {
+  const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
   const [editData, setEditData] = useState<{
     status?: string;
-    assignedTo?: string;
-    notes?: string;
-    resolution?: string;
+    severity?: string;
+    description?: string;
+    penaltyAmount?: number;
   }>({});
+  const [resolveData, setResolveData] = useState<{
+    resolutionActions: string[];
+    resolutionNotes?: string;
+  }>({
+    resolutionActions: ['']
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userName, setUserName] = useState<string>('');
   const [productName, setProductName] = useState<string>('');
@@ -105,7 +116,12 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
   }, [bookingData]);
 
   const updateViolationMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<PolicyViolation> }) => 
+    mutationFn: ({ id, data }: { id: string; data: {
+      severity?: string;
+      description?: string;
+      penaltyAmount?: number;
+      status?: 'active' | 'resolved' | 'escalated';
+    } }) => 
       riskManagementService.updateViolation(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['violations'] });
@@ -117,13 +133,35 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
     }
   });
 
+  const resolveViolationMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: {
+      resolutionActions: string[];
+      resolutionNotes?: string;
+    } }) => 
+      riskManagementService.resolveViolation(id, data),
+    onSuccess: () => {
+      showToast('Violation resolved successfully', 'success');
+      queryClient.invalidateQueries({ queryKey: ['violations'] });
+      setIsResolving(false);
+      setResolveData({ resolutionActions: [''] });
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error('Error resolving violation:', error);
+      showToast(
+        error.response?.data?.message || 'Failed to resolve violation. Please try again.',
+        'error'
+      );
+    }
+  });
+
   const handleEdit = () => {
     if (violation) {
       setEditData({
         status: violation.status,
-        assignedTo: violation.assignedTo,
-        notes: (violation as any).notes || '',
-        resolution: (violation as any).resolution || ''
+        severity: violation.severity,
+        description: violation.description,
+        penaltyAmount: violation.penaltyAmount
       });
       setIsEditing(true);
     }
@@ -136,7 +174,7 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
     try {
       await updateViolationMutation.mutateAsync({
         id: violation.id,
-        data: editData as Partial<PolicyViolation>
+        data: editData
       });
     } catch (error) {
       console.error('Error updating violation:', error);
@@ -148,6 +186,71 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
   const handleCancel = () => {
     setIsEditing(false);
     setEditData({});
+  };
+
+  const handleResolve = () => {
+    if (violation) {
+      setResolveData({
+        resolutionActions: (violation.resolutionActions && violation.resolutionActions.length > 0) 
+          ? violation.resolutionActions 
+          : [''],
+        resolutionNotes: ''
+      });
+      setIsResolving(true);
+    }
+  };
+
+  const handleResolveSubmit = async () => {
+    if (!violation) return;
+    
+    // Validate resolution actions
+    const actions = resolveData.resolutionActions.filter(a => a.trim().length > 0);
+    if (actions.length === 0) {
+      showToast('Please provide at least one resolution action', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await resolveViolationMutation.mutateAsync({
+        id: violation.id,
+        data: {
+          resolutionActions: actions,
+          resolutionNotes: resolveData.resolutionNotes
+        }
+      });
+    } catch (error: any) {
+      console.error('Error resolving violation:', error);
+      // Error is already handled by the mutation's onError
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResolveCancel = () => {
+    setIsResolving(false);
+    setResolveData({ resolutionActions: [''] });
+  };
+
+  const addResolutionAction = () => {
+    setResolveData(prev => ({
+      ...prev,
+      resolutionActions: [...prev.resolutionActions, '']
+    }));
+  };
+
+  const removeResolutionAction = (index: number) => {
+    setResolveData(prev => ({
+      ...prev,
+      resolutionActions: prev.resolutionActions.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateResolutionAction = (index: number, value: string) => {
+    setResolveData(prev => ({
+      ...prev,
+      resolutionActions: prev.resolutionActions.map((action, i) => i === index ? value : action)
+    }));
   };
 
   const getStatusColor = (status: string) => {
@@ -229,16 +332,17 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
                 <div className="flex space-x-2">
                   <button
                     onClick={handleCancel}
-                    className="px-3 py-1 bg-gray-300 dark:bg-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-400 dark:hover:bg-slate-500"
+                    disabled={isSubmitting || updateViolationMutation.isPending}
+                    className="px-3 py-1 bg-gray-300 dark:bg-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-400 dark:hover:bg-slate-500 disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || updateViolationMutation.isPending}
                     className="px-3 py-1 bg-teal-600 dark:bg-teal-500 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 disabled:opacity-50 flex items-center gap-2"
                   >
-                    {isSubmitting ? (
+                    {isSubmitting || updateViolationMutation.isPending ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                         Saving...
@@ -294,9 +398,22 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
                   <DollarSign className="h-5 w-5 text-gray-400 dark:text-slate-500 mr-2" />
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-slate-400">Severity</p>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityColor(violation.severity)}`}>
-                      {violation.severity.charAt(0).toUpperCase() + violation.severity.slice(1)}
-                    </span>
+                    {isEditing ? (
+                      <select
+                        value={editData.severity || violation.severity}
+                        onChange={(e) => setEditData(prev => ({ ...prev, severity: e.target.value }))}
+                        className="mt-1 px-2 py-1 text-xs border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    ) : (
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityColor(violation.severity)}`}>
+                        {violation.severity.charAt(0).toUpperCase() + violation.severity.slice(1)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -379,7 +496,7 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
                     <Calendar className="h-4 w-4 text-gray-400 dark:text-slate-500 mr-2" />
                     <div>
                       <p className="text-sm font-medium text-gray-600 dark:text-slate-400">Reported At</p>
-                      <p className="text-sm text-gray-900 dark:text-slate-100">{violation.reportedAt ? new Date(violation.reportedAt).toLocaleString() : 'N/A'}</p>
+                      <p className="text-sm text-gray-900 dark:text-slate-100">{violation.reportedAt ? formatDateUTC(violation.reportedAt) : 'N/A'}</p>
                     </div>
                   </div>
                   {violation.assignedAt && (
@@ -387,7 +504,7 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
                       <Clock className="h-4 w-4 text-gray-400 dark:text-slate-500 mr-2" />
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-slate-400">Assigned At</p>
-                        <p className="text-sm text-gray-900 dark:text-slate-100">{new Date(violation.assignedAt).toLocaleString()}</p>
+                        <p className="text-sm text-gray-900 dark:text-slate-100">{formatDateUTC(violation.assignedAt)}</p>
                       </div>
                     </div>
                   )}
@@ -396,7 +513,7 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
                       <CheckCircle className="h-4 w-4 text-gray-400 dark:text-slate-500 mr-2" />
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-slate-400">Resolved At</p>
-                        <p className="text-sm text-gray-900 dark:text-slate-100">{new Date(violation.resolvedAt).toLocaleString()}</p>
+                        <p className="text-sm text-gray-900 dark:text-slate-100">{formatDateUTC(violation.resolvedAt)}</p>
                       </div>
                     </div>
                   )}
@@ -404,38 +521,159 @@ const ViolationDetailsModal: React.FC<ViolationDetailsModalProps> = ({ violation
               </div>
             </div>
 
-            {/* Notes and Resolution */}
+            {/* Description and Penalty */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-slate-700 p-6 rounded-lg border border-gray-200 dark:border-slate-600">
-                <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-3">Notes</h4>
+                <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-3">Description</h4>
                 {isEditing ? (
                   <textarea
-                    value={editData.notes || ''}
-                    onChange={(e) => setEditData(prev => ({ ...prev, notes: e.target.value }))}
+                    value={editData.description || violation.description}
+                    onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
                     rows={4}
-                    placeholder="Add notes about this violation..."
+                    placeholder="Enter violation description..."
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                   />
                 ) : (
-                  <p className="text-gray-700 dark:text-slate-300">{(violation as any).notes || 'No notes available'}</p>
+                  <p className="text-gray-700 dark:text-slate-300">{violation.description || 'No description available'}</p>
                 )}
               </div>
 
               <div className="bg-white dark:bg-slate-700 p-6 rounded-lg border border-gray-200 dark:border-slate-600">
-                <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-3">Resolution</h4>
+                <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-3">Penalty Amount</h4>
                 {isEditing ? (
-                  <textarea
-                    value={editData.resolution || ''}
-                    onChange={(e) => setEditData(prev => ({ ...prev, resolution: e.target.value }))}
-                    rows={4}
-                    placeholder="Describe how this violation was resolved..."
+                  <input
+                    type="number"
+                    value={editData.penaltyAmount || violation.penaltyAmount || 0}
+                    onChange={(e) => setEditData(prev => ({ ...prev, penaltyAmount: parseFloat(e.target.value) || 0 }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                    min="0"
+                    step="0.01"
                   />
                 ) : (
-                  <p className="text-gray-700 dark:text-slate-300">{(violation as any).resolution || 'No resolution provided'}</p>
+                  <p className="text-gray-700 dark:text-slate-300">
+                    ${violation.penaltyAmount ? parseFloat(violation.penaltyAmount.toString()).toFixed(2) : '0.00'}
+                  </p>
                 )}
               </div>
             </div>
+
+            {/* Resolve Section */}
+            {violation.status !== 'resolved' && !isResolving && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                      Resolve Violation
+                    </h4>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      Mark this violation as resolved with resolution actions
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleResolve}
+                    className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Resolve
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {isResolving && (
+              <div className="bg-white dark:bg-slate-700 p-6 rounded-lg border border-gray-200 dark:border-slate-600">
+                <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-4">
+                  Resolve Violation
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Resolution Actions *
+                    </label>
+                    {resolveData.resolutionActions.map((action, index) => (
+                      <div key={index} className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="text"
+                          value={action}
+                          onChange={(e) => updateResolutionAction(index, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                          placeholder="Enter resolution action"
+                        />
+                        {resolveData.resolutionActions.length > 1 && (
+                          <button
+                            onClick={() => removeResolutionAction(index)}
+                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      onClick={addResolutionAction}
+                      className="text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 text-sm flex items-center gap-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Action
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Resolution Notes
+                    </label>
+                    <textarea
+                      value={resolveData.resolutionNotes || ''}
+                      onChange={(e) => setResolveData(prev => ({ ...prev, resolutionNotes: e.target.value }))}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                      placeholder="Enter resolution notes (optional)"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={handleResolveCancel}
+                      className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleResolveSubmit}
+                      disabled={isSubmitting || resolveViolationMutation.isPending}
+                      className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isSubmitting || resolveViolationMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Resolving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4" />
+                          Resolve Violation
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Resolution Actions (if resolved) */}
+            {violation.status === 'resolved' && violation.resolutionActions && violation.resolutionActions.length > 0 && (
+              <div className="bg-white dark:bg-slate-700 p-6 rounded-lg border border-gray-200 dark:border-slate-600">
+                <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-3">Resolution Actions</h4>
+                <ul className="list-disc list-inside space-y-2">
+                  {violation.resolutionActions.map((action, index) => (
+                    <li key={index} className="text-gray-700 dark:text-slate-300">{action}</li>
+                  ))}
+                </ul>
+                {violation.resolvedAt && (
+                  <p className="mt-4 text-sm text-gray-500 dark:text-slate-400">
+                    Resolved: {formatDateUTC(violation.resolvedAt)}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Evidence and Attachments */}
             {violation.evidence && violation.evidence.length > 0 && (

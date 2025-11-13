@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useProductRiskProfile } from '../hooks/useProductRiskProfile';
 import { useToast } from '../../../contexts/ToastContext';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 interface ProductRiskProfileProps {
   onProfileLoaded?: (profile: any) => void;
@@ -400,7 +401,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                   <div>
                     <div className="text-sm text-gray-600">Created</div>
                     <div className="text-sm font-medium text-gray-900">
-                      {profile.createdAt ? new Date(profile.createdAt).toLocaleString() : 'Unknown'}
+                      {profile.createdAt ? formatDateUTC(profile.createdAt) : 'Unknown'}
                     </div>
                   </div>
                 </div>
@@ -409,7 +410,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                   <div>
                     <div className="text-sm text-gray-600">Last Updated</div>
                     <div className="text-sm font-medium text-gray-900">
-                      {profile.updatedAt ? new Date(profile.updatedAt).toLocaleString() : 'Unknown'}
+                      {profile.updatedAt ? formatDateUTC(profile.updatedAt) : 'Unknown'}
                     </div>
                   </div>
                 </div>

@@ -71,25 +71,11 @@ const HomePage: React.FC = () => {
       
       const token = localStorage.getItem('token') || undefined;
 
-      // First load: get active products quickly (skip availability check for performance)
+      // Fetch ALL active products (both booked and non-booked)
+      // Always skip availability check to show all products
       const result = await fetchAvailableProducts(token, true);
       const initial = result.data || [];
       setProducts(initial);
-
-      // Background load: get fully filtered products (with availability check)
-      // But only update if we don't lose too many products
-      setTimeout(async () => {
-        try {
-          const filteredResult = await fetchAvailableProducts(token, false);
-          if (filteredResult.data && filteredResult.data.length >= initial.length * 0.7) {
-            // Only update if we don't lose more than 30% of products
-            setProducts(filteredResult.data);
-          }
-        } catch (backgroundError) {
-          console.warn('Background product fetch failed:', backgroundError);
-          // Don't show error for background fetch, just log it
-        }
-      }, 2000);
       
     } catch (err: any) {
       console.error('Failed to fetch products:', err);

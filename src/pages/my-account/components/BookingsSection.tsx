@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 interface Props {
   loadingBookings: boolean;
@@ -147,7 +148,7 @@ const BookingsSection: React.FC<Props> = ({
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-900 mb-1 dark:text-slate-100 truncate">{product?.title || 'Product'}</h4>
                     <p className="text-sm text-gray-500 mb-2 dark:text-slate-400 break-words">
-                      {new Date(booking.start_date).toLocaleString()} - {new Date(booking.end_date).toLocaleString()}
+                      {formatDateUTC(booking.start_date)} - {formatDateUTC(booking.end_date)}
                     </p>
                     <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-medium ${
                       booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :

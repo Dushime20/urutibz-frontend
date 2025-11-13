@@ -670,8 +670,8 @@ export const inspectionService = {
     const formData = new FormData();
     
     // Add dispute evidence photos if provided (backend expects 'files' field name from uploadMultiple middleware)
-    if (review.ownerReview?.disputeEvidence && Array.isArray(review.ownerReview.disputeEvidence)) {
-      review.ownerReview.disputeEvidence.forEach((photo: File | string, index: number) => {
+    if (review.ownerReview?.disputePhotos && Array.isArray(review.ownerReview.disputePhotos)) {
+      review.ownerReview.disputePhotos.forEach((photo: File | string) => {
         if (photo instanceof File) {
           formData.append(`files`, photo);
         }
@@ -681,7 +681,13 @@ export const inspectionService = {
     // Add review data
     formData.append('accepted', String(review.ownerReview?.accepted ?? false));
     formData.append('disputeRaised', String(review.ownerReview?.disputeRaised ?? false));
+    if (review.ownerReview?.disputeType) {
+      formData.append('disputeType', review.ownerReview.disputeType);
+    }
     formData.append('disputeReason', review.ownerReview?.disputeReason || '');
+    if (review.ownerReview?.disputeEvidence) {
+      formData.append('disputeEvidence', review.ownerReview.disputeEvidence);
+    }
     formData.append('confirmedAt', review.ownerReview?.confirmedAt || new Date().toISOString());
 
     const response = await inspectionApi.post(`/${inspectionId}/owner-post-review`, formData, {

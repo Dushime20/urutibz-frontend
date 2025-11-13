@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle, X, AlertTriangle, Image as ImageIcon, MapPin, Clock, Upload, AlertCircle } from 'lucide-react';
-import { RenterPostInspectionData, OwnerPostReview, ItemCondition } from '../../types/inspection';
+import { RenterPostInspectionData, OwnerPostReview, ItemCondition, DisputeType } from '../../types/inspection';
 
 interface OwnerPostReviewComponentProps {
   inspectionId: string;
@@ -17,7 +17,9 @@ const OwnerPostReviewComponent: React.FC<OwnerPostReviewComponentProps> = ({
 }) => {
   const [accepted, setAccepted] = useState(false);
   const [disputeRaised, setDisputeRaised] = useState(false);
+  const [disputeType, setDisputeType] = useState<DisputeType>(DisputeType.DAMAGE_ASSESSMENT);
   const [disputeReason, setDisputeReason] = useState('');
+  const [disputeEvidence, setDisputeEvidence] = useState('');
   const [disputePhotos, setDisputePhotos] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,11 @@ const OwnerPostReviewComponent: React.FC<OwnerPostReviewComponentProps> = ({
       return;
     }
 
+    if (disputeRaised && !disputeType) {
+      setError('Please select a dispute type');
+      return;
+    }
+
     const review: OwnerPostReview = {
       inspectionId,
       postInspection: renterPostInspection,
@@ -53,8 +60,10 @@ const OwnerPostReviewComponent: React.FC<OwnerPostReviewComponentProps> = ({
         accepted: accepted && !disputeRaised,
         confirmedAt: accepted && !disputeRaised ? new Date().toISOString() : undefined,
         disputeRaised,
+        disputeType: disputeRaised ? disputeType : undefined,
         disputeReason: disputeRaised ? disputeReason : undefined,
-        disputeEvidence: disputeRaised ? disputePhotos : undefined
+        disputeEvidence: disputeRaised ? disputeEvidence : undefined,
+        disputePhotos: disputeRaised ? disputePhotos : undefined
       }
     };
 
@@ -246,10 +255,10 @@ const OwnerPostReviewComponent: React.FC<OwnerPostReviewComponentProps> = ({
             />
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
-                I accept the renter's post-inspection and confirm the return condition
+                I confirm there is no issue - everything is clear and acceptable
               </p>
               <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                This will close the rental record automatically
+                This will close the rental record automatically. All items are returned in good condition with no problems.
               </p>
             </div>
           </label>
@@ -272,10 +281,10 @@ const OwnerPostReviewComponent: React.FC<OwnerPostReviewComponentProps> = ({
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                I need to raise a dispute
+                I need to claim - there is an issue, problem, missing device, or damaged tools
               </p>
               <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                If the returned product doesn't match the renter's description or there are problems
+                If there are issues, problems, missing devices, damaged tools, or anything doesn't match the renter's description
               </p>
             </div>
           </label>
@@ -286,16 +295,53 @@ const OwnerPostReviewComponent: React.FC<OwnerPostReviewComponentProps> = ({
           <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                Dispute Reason <span className="text-red-500">*</span>
+                Dispute Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={disputeType}
+                onChange={(e) => setDisputeType(e.target.value as DisputeType)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 dark:bg-slate-800 dark:text-slate-100"
+                required
+              >
+                <option value={DisputeType.DAMAGE_ASSESSMENT}>Damage Assessment</option>
+                <option value={DisputeType.CONDITION_DISAGREEMENT}>Condition Disagreement</option>
+                <option value={DisputeType.COST_DISPUTE}>Cost Dispute</option>
+                <option value={DisputeType.PROCEDURE_VIOLATION}>Procedure Violation</option>
+                <option value={DisputeType.OTHER}>Other</option>
+              </select>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                Select the type of issue you're disputing
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Issue/Problem Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={disputeReason}
                 onChange={(e) => setDisputeReason(e.target.value)}
                 rows={4}
-                placeholder="Describe the problems you found, why the renter's description doesn't match, what damage or missing items you've discovered..."
+                placeholder="Describe in detail: What issues did you find? What problems occurred? What devices/tools are missing? What items are damaged? How does it differ from the renter's description?"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 dark:bg-slate-800 dark:text-slate-100"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Additional Information & Evidence Details
+              </label>
+              <textarea
+                value={disputeEvidence}
+                onChange={(e) => setDisputeEvidence(e.target.value)}
+                rows={3}
+                placeholder="Provide any additional details, context, or information that supports your claim. Include specific details about missing items, damage extent, repair costs, replacement needs, etc."
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 dark:bg-slate-800 dark:text-slate-100"
+              />
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                Provide all necessary information and details. This will help inspectors resolve the claim effectively.
+              </p>
             </div>
 
             <div>
@@ -332,7 +378,7 @@ const OwnerPostReviewComponent: React.FC<OwnerPostReviewComponentProps> = ({
                 </label>
               </div>
               <p className="text-xs text-gray-500 dark:text-slate-400">
-                Upload photos showing damage or missing items as evidence
+                Upload photos showing damage, missing items, or any issues as proof. Include multiple angles and clear images.
               </p>
             </div>
           </div>
@@ -366,12 +412,12 @@ const OwnerPostReviewComponent: React.FC<OwnerPostReviewComponentProps> = ({
             ) : disputeRaised ? (
               <>
                 <AlertTriangle className="h-4 w-4" />
-                Raise Dispute
+                Submit Claim
               </>
             ) : (
               <>
                 <CheckCircle className="h-4 w-4" />
-                Confirm & Accept
+                Confirm No Issue & Close Rental
               </>
             )}
           </button>

@@ -3,6 +3,7 @@ import { X, Shield, CheckCircle } from 'lucide-react';
 import { RiskProfile, RiskLevel } from '../../../types/riskManagement';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 interface Props {
   isOpen: boolean;
@@ -72,15 +73,8 @@ const RiskProfileDetailsModal: React.FC<Props> = ({ isOpen, onClose, profile }) 
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // Use shared UTC date formatter
+  const formatDate = formatDateUTC;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">

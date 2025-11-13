@@ -9,6 +9,7 @@ import VerificationDetailsModal from './VerificationDetailsModal';
 import Pagination from '../../../components/ui/Pagination';
 import UserRegistrationModal from './UserRegistrationModal';
 import { Users as UsersIcon } from 'lucide-react';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 interface UserManagementProps {
   Button: React.FC<any>;
@@ -391,13 +392,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
     });
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  // Use shared UTC date formatter
+  const formatDate = formatDateUTC;
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -1447,9 +1443,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                   <div className="text-gray-500 dark:text-gray-400">Role: <span className="text-gray-900 dark:text-gray-200">{viewUser.role || 'N/A'}</span></div>
                   <div className="text-gray-500 dark:text-gray-400">Status: <span className="text-gray-900 dark:text-gray-200">{viewUser.status || 'N/A'}</span></div>
                   <div className="text-gray-500 dark:text-gray-400">KYC: <span className="text-gray-900 dark:text-gray-200">{viewUser.kyc_status || 'pending'}</span></div>
-                  <div className="text-gray-500 dark:text-gray-400">Last Login: <span className="text-gray-900 dark:text-gray-200">{viewUser.last_login ? new Date(viewUser.last_login).toLocaleString() : 'N/A'}</span></div>
-                  <div className="text-gray-500 dark:text-gray-400">Created: <span className="text-gray-900 dark:text-gray-200">{viewUser.created_at ? new Date(viewUser.created_at).toLocaleString() : (viewUser.createdAt ? new Date(viewUser.createdAt).toLocaleString() : 'N/A')}</span></div>
-                  <div className="text-gray-500 dark:text-gray-400">Updated: <span className="text-gray-900 dark:text-gray-200">{viewUser.updated_at ? new Date(viewUser.updated_at).toLocaleString() : (viewUser.updatedAt ? new Date(viewUser.updatedAt).toLocaleString() : 'N/A')}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Last Login: <span className="text-gray-900 dark:text-gray-200">{viewUser.last_login ? formatDateUTC(viewUser.last_login) : 'N/A'}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Created: <span className="text-gray-900 dark:text-gray-200">{viewUser.created_at ? formatDateUTC(viewUser.created_at) : (viewUser.createdAt ? formatDateUTC(viewUser.createdAt) : 'N/A')}</span></div>
+                  <div className="text-gray-500 dark:text-gray-400">Updated: <span className="text-gray-900 dark:text-gray-200">{viewUser.updated_at ? formatDateUTC(viewUser.updated_at) : (viewUser.updatedAt ? formatDateUTC(viewUser.updatedAt) : 'N/A')}</span></div>
                   <div className="text-gray-500 dark:text-gray-400">Total Bookings: <span className="text-gray-900 dark:text-gray-200">{typeof viewUser.total_bookings !== 'undefined' ? viewUser.total_bookings : 'N/A'}</span></div>
                   <div className="text-gray-500 dark:text-gray-400">Total Products: <span className="text-gray-900 dark:text-gray-200">{typeof viewUser.total_products !== 'undefined' ? viewUser.total_products : 'N/A'}</span></div>
                   <div className="text-gray-500 dark:text-gray-400">Total Reviews: <span className="text-gray-900 dark:text-gray-200">{typeof viewUser.total_reviews !== 'undefined' ? viewUser.total_reviews : 'N/A'}</span></div>

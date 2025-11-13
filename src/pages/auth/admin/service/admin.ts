@@ -9,6 +9,7 @@ import type {
   AdminBooking,
   PaginationResponse 
 } from '../interfaces';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 // Admin Dashboard Functions
 export async function fetchAdminStats(token?: string): Promise<AdminStats> {
@@ -283,11 +284,7 @@ export async function fetchRecentUsers(limit: number = 5, token?: string): Promi
         avatar: user.profile_image || user.profileImageUrl || defaultAvatar,
         role: user.role,
         status: user.status,
-        joinDate: new Date(user.created_at).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        }),
+        joinDate: formatDateUTC(user.created_at),
         verified: isVerified,
         initials: initials
       };
@@ -335,16 +332,8 @@ export async function fetchRecentBookings(limit: number = 5, token?: string): Pr
         customerName: `${booking.renter_first_name} ${booking.renter_last_name}`,
         amount: booking.pricing?.totalAmount || 0,
         status: booking.status,
-        startDate: new Date(booking.start_date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        }),
-        endDate: new Date(booking.end_date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        }),
+        startDate: formatDateUTC(booking.start_date),
+        endDate: formatDateUTC(booking.end_date),
         category: 'General', // Default category
         icon: Package // Default icon
       };

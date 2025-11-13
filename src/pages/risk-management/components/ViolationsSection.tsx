@@ -20,11 +20,17 @@ import { riskManagementService } from '../../../services/riskManagementService';
 import type { PolicyViolation, ViolationFilters } from '../../../types/riskManagement';
 import CreateViolationModal from './CreateViolationModal';
 import ViolationDetailsModal from './ViolationDetailsModal';
+import ConfirmationDialog from './ConfirmationDialog';
+import { useToast } from '../../../contexts/ToastContext';
+import { formatDateUTC } from '../../../utils/dateUtils';
 
 const ViolationsSection: React.FC = () => {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'all' | 'open' | 'investigating' | 'resolved'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [violationToDelete, setViolationToDelete] = useState<string | null>(null);
   const [selectedViolation, setSelectedViolation] = useState<PolicyViolation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters] = useState<ViolationFilters>({});
@@ -44,13 +50,28 @@ const ViolationsSection: React.FC = () => {
   const deleteViolationMutation = useMutation({
     mutationFn: riskManagementService.deleteViolation,
     onSuccess: () => {
+      showToast('Violation deleted successfully', 'success');
       queryClient.invalidateQueries({ queryKey: ['violations'] });
     },
+    onError: (error: any) => {
+      console.error('Error deleting violation:', error);
+      showToast(
+        error.response?.data?.message || 'Failed to delete violation. Please try again.',
+        'error'
+      );
+    }
   });
 
   const handleDeleteViolation = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this violation?')) {
-      deleteViolationMutation.mutate(id);
+    setViolationToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteViolation = () => {
+    if (violationToDelete) {
+      deleteViolationMutation.mutate(violationToDelete);
+      setShowDeleteConfirm(false);
+      setViolationToDelete(null);
     }
   };
 
@@ -372,7 +393,7 @@ const ViolationsSection: React.FC = () => {
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 text-gray-400 dark:text-slate-500 mr-2" />
                         <span className="text-sm text-gray-900 dark:text-slate-100">
-                          {new Date(violation.createdAt).toLocaleDateString()}
+                          {formatDateUTC(violation.createdAt)}
                         </span>
                       </div>
                     </td>
@@ -394,6 +415,7 @@ const ViolationsSection: React.FC = () => {
                           <Eye className="h-4 w-4" />
                         </button>
                         <button
+                          onClick={() => handleViewDetails(violation)}
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                           title="Edit"
                         >
@@ -492,7 +514,26 @@ const ViolationsSection: React.FC = () => {
       <ViolationDetailsModal
         violation={selectedViolation}
         isOpen={showDetailsModal}
-        onClose={() => setShowDetailsModal(false)}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedViolation(null);
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setViolationToDelete(null);
+        }}
+        onConfirm={confirmDeleteViolation}
+        title="Delete Violation"
+        message="Are you sure you want to delete this violation? This action cannot be undone."
+        type="danger"
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deleteViolationMutation.isPending}
       />
     </div>
   );
