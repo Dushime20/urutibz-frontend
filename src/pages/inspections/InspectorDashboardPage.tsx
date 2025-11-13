@@ -502,8 +502,8 @@ const InspectorDashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-emerald-500"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-my-primary"></div>
       </div>
     );
   }
@@ -550,7 +550,7 @@ const InspectorDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Professional Sidebar */}
       <InspectorSidebar 
         activeTab={activeTab}
@@ -571,7 +571,7 @@ const InspectorDashboardPage: React.FC = () => {
           : 'lg:ml-0'
       }`}>
         {/* Enhanced Professional Header */}
-        <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm sticky top-0 z-40">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-40">
           <div className="px-4 sm:px-6 lg:px-8">
             {/* Top Bar */}
             <div className="flex items-center justify-between py-4">
@@ -579,17 +579,17 @@ const InspectorDashboardPage: React.FC = () => {
               {/* Mobile menu button */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+                className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
               
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <div className="w-10 h-10 bg-my-primary rounded-xl flex items-center justify-center shadow-lg shadow-my-primary/20">
                   <Shield className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                     {activeTab === 'overview' && 'Dashboard'}
                     {activeTab === 'pre-inspection' && 'Pre-Inspections'}
                     {activeTab === 'post-inspection' && 'Post-Inspections'}
@@ -598,15 +598,15 @@ const InspectorDashboardPage: React.FC = () => {
                     {activeTab === 'certifications' && 'Certifications'}
                     {activeTab === 'settings' && 'Settings'}
                   </h1>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">Professional Inspector</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Professional Inspector</p>
                 </div>
               </div>
               <div className="hidden lg:flex items-center space-x-6 text-sm">
-                <div className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
-                  <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-emerald-700 dark:text-emerald-300 font-medium">Certified Inspector</span>
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-my-primary/10 rounded-lg">
+                  <Award className="w-4 h-4 text-my-primary" />
+                  <span className="text-my-primary font-medium">Certified Inspector</span>
                 </div>
-                <div className="flex items-center space-x-2 text-gray-600 dark:text-slate-400">
+                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
                   <Star className="w-4 h-4 text-amber-500 fill-current" />
                   <span className="font-medium">{performanceMetrics.averageRating.toFixed(1)}</span>
                   <span className="text-gray-400">Rating</span>
@@ -619,7 +619,7 @@ const InspectorDashboardPage: React.FC = () => {
               {/* Theme Toggle */}
               <button
                 onClick={() => toggleTheme(isDark ? 'light' : 'dark')}
-                className="p-2 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 aria-label="Toggle theme"
                 title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
@@ -629,7 +629,7 @@ const InspectorDashboardPage: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors notifications-button"
+                  className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors notifications-button"
                 >
                   <Bell className="w-5 h-5" />
                   {notifications.filter(n => n.unread).length > 0 && (
@@ -641,29 +641,29 @@ const InspectorDashboardPage: React.FC = () => {
                 
                 {/* Notifications Dropdown */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-gray-200 dark:border-slate-800 z-50 notifications-dropdown">
-                    <div className="p-4 border-b border-gray-200 dark:border-slate-800">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Notifications</h3>
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 notifications-dropdown">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notifications.map((notification) => (
-                        <div key={notification.id} className={`p-4 border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 ${notification.unread ? 'bg-blue-50 dark:bg-slate-800/60' : ''}`}>
+                        <div key={notification.id} className={`p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 ${notification.unread ? 'bg-my-primary/5 dark:bg-gray-800/60' : ''}`}>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <p className={`text-sm ${notification.unread ? 'font-medium text-gray-900 dark:text-slate-100' : 'text-gray-700 dark:text-slate-300'}`}>
+                              <p className={`text-sm ${notification.unread ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{notification.time}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
                             </div>
                             {notification.unread && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full ml-2"></div>
+                              <div className="w-2 h-2 bg-my-primary rounded-full ml-2"></div>
                             )}
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div className="p-3 border-t border-gray-200 dark:border-slate-800">
-                      <button className="w-full text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium">
+                    <div className="p-3 border-t border-gray-200 dark:border-gray-800">
+                      <button className="w-full text-sm text-my-primary hover:text-my-primary/80 font-medium">
                         View All Notifications
                       </button>
                     </div>
@@ -719,8 +719,8 @@ const InspectorDashboardPage: React.FC = () => {
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                   className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded-lg transition-colors profile-button"
                 >
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 bg-my-primary/10 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-my-primary" />
                   </div>
                   <div className="hidden md:block text-left">
                     <p className="text-sm font-medium text-gray-900">
@@ -735,8 +735,8 @@ const InspectorDashboardPage: React.FC = () => {
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 profile-dropdown">
                     <div className="p-4 border-b border-gray-200">
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                          <User className="w-6 h-6 text-emerald-600" />
+                        <div className="w-12 h-12 bg-my-primary/10 rounded-full flex items-center justify-center">
+                          <User className="w-6 h-6 text-my-primary" />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900">
@@ -816,7 +816,7 @@ const InspectorDashboardPage: React.FC = () => {
             <div className="text-xs opacity-90 mt-1">{stats.completed} of {stats.total} completed</div>
           </div>
           
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
+          <div className="bg-my-primary rounded-xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <Target className="w-5 h-5 opacity-90" />
               <span className="text-xs font-medium opacity-90">On-Time Rate</span>
@@ -855,13 +855,13 @@ const InspectorDashboardPage: React.FC = () => {
                     placeholder="Search inspections..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                   />
                 </div>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -949,10 +949,10 @@ const InspectorDashboardPage: React.FC = () => {
       {show2FAModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShow2FAModal(false)} />
-          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-6">
+          <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Two-Factor Authentication</h3>
-              <button onClick={() => setShow2FAModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Two-Factor Authentication</h3>
+              <button onClick={() => setShow2FAModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
             </div>
             <TwoFactorManagement onStatusChange={() => { /* could refetch status if needed */ }} />
           </div>
@@ -963,22 +963,22 @@ const InspectorDashboardPage: React.FC = () => {
       {showQuickSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowQuickSettings(false)} />
-          <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Quick Settings</h3>
-              <button onClick={() => setShowQuickSettings(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Quick Settings</h3>
+              <button onClick={() => setShowQuickSettings(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
             </div>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Theme</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
                 <div className="flex gap-2">
-                  <button onClick={() => toggleTheme('light')} className={`px-3 py-2 rounded-lg border ${!isDark ? 'bg-gray-100 border-gray-300' : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200'}`}>Light</button>
-                  <button onClick={() => toggleTheme('dark')} className={`px-3 py-2 rounded-lg border ${isDark ? 'bg-slate-800 text-white border-slate-600' : 'border-gray-300 text-gray-700'}`}>Dark</button>
+                  <button onClick={() => toggleTheme('light')} className={`px-3 py-2 rounded-lg border ${!isDark ? 'bg-gray-100 border-gray-300' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'}`}>Light</button>
+                  <button onClick={() => toggleTheme('dark')} className={`px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-800 text-white border-gray-600' : 'border-gray-300 text-gray-700'}`}>Dark</button>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Preferred Currency</label>
-                <select value={preferredCurrency} onChange={(e) => setPreferredCurrency(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preferred Currency</label>
+                <select value={preferredCurrency} onChange={(e) => setPreferredCurrency(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                   <option value="USD">USD</option>
                   <option value="RWF">RWF</option>
                   <option value="EUR">EUR</option>
@@ -1008,7 +1008,7 @@ const InspectorDashboardPage: React.FC = () => {
               type="datetime-local"
               value={showReschedule.value}
               onChange={(e) => setShowReschedule((s) => ({ ...s, value: e.target.value }))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             />
             <div className="mt-6 flex justify-end gap-2">
               <button onClick={() => setShowReschedule({ open: false, id: null, value: '' })} className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Cancel</button>
@@ -1027,7 +1027,7 @@ const InspectorDashboardPage: React.FC = () => {
                     showToast('Failed to reschedule inspection', 'error');
                   }
                 }}
-                className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
+                className="px-4 py-2 rounded bg-my-primary text-white hover:bg-opacity-90"
               >
                 Save
               </button>
@@ -1047,7 +1047,7 @@ const InspectorDashboardPage: React.FC = () => {
               rows={3}
               value={showComplete.notes}
               onChange={(e) => setShowComplete((s) => ({ ...s, notes: e.target.value }))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               placeholder="Add any notes (optional)"
             />
             <div className="mt-4">
@@ -1064,7 +1064,7 @@ const InspectorDashboardPage: React.FC = () => {
                     }
                     return { ...s, items: [...s.items, { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }] };
                   })}
-                  className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                  className="text-xs px-2 py-1 rounded bg-my-primary/10 text-my-primary border border-my-primary/20 hover:bg-my-primary/20"
                 >
                   Add item
                 </button>
@@ -1182,7 +1182,7 @@ const InspectorDashboardPage: React.FC = () => {
                      type="text"
                      value={showAddItem.item.itemName}
                      onChange={(e) => setShowAddItem(s => ({ ...s, item: { ...s.item, itemName: e.target.value } }))}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-my-primary focus:border-my-primary"
                      placeholder="e.g., Camera Body, Lens, Tripod"
                    />
                  </div>
@@ -1192,7 +1192,7 @@ const InspectorDashboardPage: React.FC = () => {
                    <select
                      value={showAddItem.item.condition}
                      onChange={(e) => setShowAddItem(s => ({ ...s, item: { ...s.item, condition: e.target.value } }))}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-my-primary focus:border-my-primary"
                    >
                      <option value="excellent">Excellent</option>
                      <option value="good">Good</option>
@@ -1284,7 +1284,7 @@ const InspectorDashboardPage: React.FC = () => {
                     type="checkbox"
                     checked={showAddItem.item.requiresRepair}
                     onChange={(e) => setShowAddItem(s => ({ ...s, item: { ...s.item, requiresRepair: e.target.checked } }))}
-                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    className="rounded border-gray-300 text-my-primary focus:ring-my-primary"
                   />
                   <span className="ml-2 text-sm text-gray-700">Requires Repair</span>
                 </label>
@@ -1294,7 +1294,7 @@ const InspectorDashboardPage: React.FC = () => {
                     type="checkbox"
                     checked={showAddItem.item.requiresReplacement}
                     onChange={(e) => setShowAddItem(s => ({ ...s, item: { ...s.item, requiresReplacement: e.target.checked } }))}
-                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    className="rounded border-gray-300 text-my-primary focus:ring-my-primary"
                   />
                   <span className="ml-2 text-sm text-gray-700">Requires Replacement</span>
                 </label>
@@ -1304,7 +1304,7 @@ const InspectorDashboardPage: React.FC = () => {
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setShowAddItem({ open: false, inspectionId: null, item: { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false, photos: [] } })}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
               >
                 Cancel
               </button>
@@ -1359,7 +1359,7 @@ const InspectorDashboardPage: React.FC = () => {
                      showToast('Failed to add item', 'error');
                    }
                  }}
-                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                >
                  Add Item
                </button>
@@ -1442,7 +1442,7 @@ const InspectorDashboardPage: React.FC = () => {
              <div className="mt-6 flex justify-end gap-3">
                <button
                  onClick={() => setShowDispute({ open: false, inspectionId: null, disputeType: DisputeType.DAMAGE_ASSESSMENT, reason: '', evidence: '', photos: [] })}
-                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                >
                  Cancel
                </button>
@@ -1532,7 +1532,7 @@ const InspectorDashboardPage: React.FC = () => {
              <div className="mt-6 flex justify-end gap-3">
                <button 
                  onClick={() => setShowResolveDispute({ open: false, inspectionId: null, disputeId: null, resolutionNotes: '', agreedAmount: 0 })}
-                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                >
                  Cancel
                </button>
@@ -1567,64 +1567,64 @@ const OverviewTab: React.FC<{
     <div className="space-y-8">
       {/* Enhanced Quick Stats with better design */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.total}</div>
-          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">Total Assigned</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.total}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Assigned</div>
         </div>
         
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.pending}</div>
-          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">Pending</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.pending}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Pending</div>
         </div>
         
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
-              <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 bg-my-primary/10 rounded-lg flex items-center justify-center">
+              <Activity className="w-5 h-5 text-my-primary" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.inProgress}</div>
-          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">In Progress</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.inProgress}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">In Progress</div>
         </div>
         
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 bg-my-primary/10 rounded-lg flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-my-primary" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.completed}</div>
-          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">Completed</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.completed}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</div>
         </div>
         
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">{stats.disputed}</div>
-          <div className="text-sm text-gray-600 dark:text-slate-400 font-medium">Disputed</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.disputed}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Disputed</div>
         </div>
       </div>
 
       {/* Today's Schedule */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-blue-50">
+        <div className="px-6 py-6 border-b border-gray-200 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-emerald-600" />
+              <div className="w-10 h-10 bg-my-primary/10 rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-my-primary" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">Today's Schedule</h3>
@@ -1743,7 +1743,7 @@ const OverviewTab: React.FC<{
                       </h4>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         dispute.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                        dispute.status === 'under_review' ? 'bg-blue-100 text-blue-700' :
+                        dispute.status === 'under_review' ? 'bg-my-primary/10 text-my-primary' :
                         'bg-yellow-100 text-yellow-700'
                       }`}>
                         {dispute.status?.replace(/_/g, ' ')}
@@ -1851,7 +1851,7 @@ const InspectorSidebar: React.FC<{
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 
+        fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-slate-800 
         z-50 transform transition-all duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         ${sidebarCollapsed ? 'w-20' : 'w-64'}
@@ -1859,22 +1859,22 @@ const InspectorSidebar: React.FC<{
         shadow-xl lg:shadow-none
       `}>
         {/* Sidebar Header */}
-        <div className={`h-16 flex items-center justify-between border-b border-gray-200 dark:border-slate-800 ${
+        <div className={`h-16 flex items-center justify-between border-b border-gray-200 dark:border-gray-800 ${
           sidebarCollapsed ? 'px-3' : 'px-6'
         }`}>
           {!sidebarCollapsed && (
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-my-primary rounded-lg flex items-center justify-center shadow-lg">
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-gray-900 dark:text-slate-100">Inspector</h2>
-                <p className="text-xs text-gray-500 dark:text-slate-400">Dashboard</p>
+                <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">Inspector</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Dashboard</p>
               </div>
             </div>
           )}
           {sidebarCollapsed && (
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg mx-auto">
+            <div className="w-10 h-10 bg-my-primary rounded-lg flex items-center justify-center shadow-lg mx-auto">
               <Shield className="w-6 h-6 text-white" />
             </div>
           )}
@@ -1882,7 +1882,7 @@ const InspectorSidebar: React.FC<{
             {/* Toggle Collapse Button - Desktop only */}
             <button
               onClick={toggleCollapse}
-              className="hidden lg:flex p-1.5 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              className="hidden lg:flex p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
               title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {sidebarCollapsed ? (
@@ -1921,20 +1921,20 @@ const InspectorSidebar: React.FC<{
                     w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
                     ${sidebarCollapsed ? 'justify-center px-3 py-3' : 'justify-between px-4 py-3'}
                     ${isActive 
-                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
-                      : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                      ? 'bg-my-primary/10 text-my-primary font-semibold shadow-sm' 
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
                     }
                   `}
                   title={sidebarCollapsed ? item.label : undefined}
                 >
                   <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
-                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 dark:text-slate-400'}`} />
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
                     {!sidebarCollapsed && (
                       <>
                         <div className="text-left">
                           <div className="font-semibold">{item.label}</div>
                           {item.description && (
-                            <div className={`text-xs ${isActive ? 'text-emerald-50' : 'text-gray-500 dark:text-slate-400'}`}>
+                            <div className={`text-xs ${isActive ? 'text-my-primary' : 'text-gray-500 dark:text-gray-400'}`}>
                               {item.description}
                             </div>
                           )}
@@ -1949,7 +1949,7 @@ const InspectorSidebar: React.FC<{
                           px-2 py-0.5 rounded-full text-xs font-semibold
                           ${isActive 
                             ? 'bg-white/20 text-white' 
-                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                            : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                           }
                         `}>
                           {item.badge}
@@ -1971,24 +1971,24 @@ const InspectorSidebar: React.FC<{
             </nav>
 
         {/* Sidebar Footer */}
-        <div className={`border-t border-gray-200 dark:border-slate-800 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
+        <div className={`border-t border-gray-200 dark:border-gray-800 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
           {!sidebarCollapsed && (
             <div className="flex items-center space-x-3 mb-3 px-2">
-              <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-8 h-8 bg-my-primary/10 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-my-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                   {user?.name || user?.email || 'Inspector'}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">Professional Inspector</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Professional Inspector</p>
               </div>
             </div>
           )}
           {sidebarCollapsed && (
             <div className="flex justify-center mb-3">
-              <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 bg-my-primary/10 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-my-primary" />
               </div>
             </div>
           )}
@@ -2029,11 +2029,11 @@ const InspectionsTab: React.FC<{
     <div className="space-y-8">
       {/* Active Inspections */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="px-6 py-6 border-b border-gray-200 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <List className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-my-primary/10 rounded-lg flex items-center justify-center">
+                <List className="w-5 h-5 text-my-primary" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">Active Inspections</h3>
@@ -2055,10 +2055,10 @@ const InspectionsTab: React.FC<{
               <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
                 <List className="w-10 h-10 text-gray-400 dark:text-slate-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 {searchQuery ? 'No inspections found' : 'No active inspections'}
               </h3>
-              <p className="text-gray-500 dark:text-slate-400">
+              <p className="text-gray-500 dark:text-gray-400">
                 {searchQuery ? 'Try adjusting your search or filters' : 'All inspections are completed or not yet started.'}
               </p>
             </div>
@@ -2069,22 +2069,22 @@ const InspectionsTab: React.FC<{
                 .map((inspection) => (
                 <div
                   key={inspection.id}
-                  className="group bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg transition-all duration-200"
+                  className="group bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-my-primary hover:shadow-lg transition-all duration-200"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-lg flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="w-10 h-10 bg-my-primary/10 rounded-lg flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-my-primary" />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h4 className="font-semibold text-gray-900 dark:text-slate-100 text-lg">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
                               {getTypeLabel(inspection.inspectionType || '')}
                             </h4>
                             <StatusBadge status={inspection.status} />
                           </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-slate-400">
+                          <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                             {inspection.scheduledAt && (
                               <div className="flex items-center gap-1.5">
                                 <Clock className="w-4 h-4" />
@@ -2105,7 +2105,7 @@ const InspectionsTab: React.FC<{
                       <div className="flex items-center flex-wrap gap-2 mt-4">
                         <button
                           onClick={() => onInspectionClick(inspection.id)}
-                          className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center space-x-2"
+                          className="px-4 py-2 bg-my-primary/10 text-my-primary text-sm font-medium rounded-lg hover:bg-my-primary/20 transition-colors flex items-center space-x-2"
                         >
                           <Eye className="w-4 h-4" />
                           <span>View Details</span>
@@ -2114,7 +2114,7 @@ const InspectionsTab: React.FC<{
                         {inspection.status === 'pending' && (
                           <button
                             onClick={() => onStart(inspection.id)}
-                            className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-sm font-medium rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors flex items-center space-x-2"
+                            className="px-4 py-2 bg-my-primary/10 text-my-primary text-sm font-medium rounded-lg hover:bg-my-primary/20 transition-colors flex items-center space-x-2"
                           >
                             <CheckCircle className="w-4 h-4" />
                             <span>Start Inspection</span>
@@ -2125,7 +2125,7 @@ const InspectionsTab: React.FC<{
                           <>
                             <button
                               onClick={() => onComplete(inspection.id)}
-                              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-medium rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md shadow-emerald-500/20 flex items-center space-x-2"
+                              className="px-4 py-2 bg-my-primary text-white text-sm font-medium rounded-lg hover:bg-opacity-90 transition-all shadow-md shadow-my-primary/20 flex items-center space-x-2"
                             >
                               <CheckCircle2 className="w-4 h-4" />
                               <span>Complete</span>
@@ -2167,11 +2167,11 @@ const InspectionsTab: React.FC<{
 
       {/* Completed Inspections */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        <div className="px-6 py-6 border-b border-gray-200 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 bg-my-primary/10 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-my-primary" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">Completed Inspections</h3>
@@ -2277,7 +2277,7 @@ const DisputesTab: React.FC<{
         <div className="p-6">
           {disputesLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-my-primary mx-auto mb-4"></div>
               <p className="text-gray-600 font-medium">Loading disputes...</p>
             </div>
           ) : inspectorDisputes.length === 0 ? (
@@ -2330,7 +2330,7 @@ const DisputesTab: React.FC<{
                         <>
                           <button
                             onClick={() => onResolveDispute(dispute.inspectionId, dispute.id)}
-                            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors font-medium text-sm"
+                            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-my-primary text-white hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary transition-colors font-medium text-sm"
                           >
                             Resolve Dispute
                           </button>
@@ -2352,24 +2352,24 @@ const DisputesTab: React.FC<{
 const CertificationsTab: React.FC<{ inspector: Inspector | null }> = ({ inspector }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center space-x-3 mb-6">
           <div className="w-12 h-12 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 rounded-lg flex items-center justify-center">
             <Award className="w-6 h-6 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Certifications</h3>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Manage your professional credentials</p>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Certifications</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Manage your professional credentials</p>
           </div>
         </div>
         
         <div className="text-center py-12">
-          <div className="w-20 h-20 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Award className="w-10 h-10 text-gray-400 dark:text-slate-500" />
+          <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Award className="w-10 h-10 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">No certifications yet</h3>
-          <p className="text-gray-500 dark:text-slate-400 mb-4">Add your professional certifications to get more assignments</p>
-          <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No certifications yet</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">Add your professional certifications to get more assignments</p>
+          <button className="px-4 py-2 bg-my-primary text-white rounded-lg hover:bg-opacity-90 transition-colors">
             Add Certification
           </button>
         </div>
@@ -2392,19 +2392,19 @@ const SettingsTab: React.FC<{
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-6">Account Settings</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Account Settings</h3>
         
         <div className="space-y-4">
           <button
             onClick={() => setShowProfileModal(true)}
-            className="w-full flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             <div className="flex items-center space-x-3">
-              <UserCheck className="w-5 h-5 text-gray-500 dark:text-slate-400" />
+              <UserCheck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               <div className="text-left">
-                <div className="font-medium text-gray-900 dark:text-slate-100">Profile Settings</div>
-                <div className="text-sm text-gray-500 dark:text-slate-400">Update your personal information</div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">Profile Settings</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Update your personal information</div>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -2412,13 +2412,13 @@ const SettingsTab: React.FC<{
 
           <button
             onClick={() => setShow2FAModal(true)}
-            className="w-full flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+            className="w-full flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             <div className="flex items-center space-x-3">
-              <Shield className="w-5 h-5 text-gray-500 dark:text-slate-400" />
+              <Shield className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               <div className="text-left">
-                <div className="font-medium text-gray-900 dark:text-slate-100">Two-Factor Authentication</div>
-                <div className="text-sm text-gray-500 dark:text-slate-400">Secure your account</div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">Two-Factor Authentication</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Secure your account</div>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -2445,10 +2445,10 @@ const SettingsTab: React.FC<{
       {show2FAModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShow2FAModal(false)} />
-          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-6">
+          <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Two-Factor Authentication</h3>
-              <button onClick={() => setShow2FAModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Two-Factor Authentication</h3>
+              <button onClick={() => setShow2FAModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
             </div>
             <TwoFactorManagement onStatusChange={() => {}} />
           </div>
@@ -2645,7 +2645,7 @@ const InspectorProfileModal: React.FC<{
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-        <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
           <div className="flex items-center justify-center h-96">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
           </div>
@@ -2657,9 +2657,9 @@ const InspectorProfileModal: React.FC<{
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-5 border-b border-emerald-600">
+        <div className="bg-my-primary px-6 py-5 border-b border-my-primary">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -2667,7 +2667,7 @@ const InspectorProfileModal: React.FC<{
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white">Inspector Profile</h2>
-                <p className="text-sm text-emerald-50">Manage your professional profile</p>
+                <p className="text-sm text-white/90">Manage your professional profile</p>
               </div>
             </div>
             <button
@@ -2683,7 +2683,7 @@ const InspectorProfileModal: React.FC<{
         <div className="flex-1 overflow-y-auto">
           <div className="flex">
             {/* Sidebar Navigation */}
-            <div className="w-64 bg-gray-50 dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 p-4">
+            <div className="w-64 bg-gray-50 dark:bg-slate-800 border-r border-gray-200 dark:border-gray-700 p-4">
               <div className="space-y-2">
                 {sections.map((section) => {
                   const Icon = section.icon;
@@ -2695,12 +2695,12 @@ const InspectorProfileModal: React.FC<{
                       className={`
                         w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
                         ${isActive
-                          ? 'bg-emerald-500 text-white shadow-md'
-                          : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                          ? 'bg-my-primary text-white shadow-md'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
                         }
                       `}
                     >
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500 dark:text-slate-400'}`} />
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
                       <span>{section.label}</span>
                     </button>
                   );
@@ -2708,7 +2708,7 @@ const InspectorProfileModal: React.FC<{
               </div>
 
               {/* Avatar Section */}
-              <div className="mt-8 pt-8 border-t border-gray-200 dark:border-slate-700">
+              <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col items-center">
                   {avatarUrl ? (
                     <img
@@ -2753,7 +2753,7 @@ const InspectorProfileModal: React.FC<{
               {activeSection === 'personal' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Personal Information</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Personal Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">First Name *</label>
@@ -2761,7 +2761,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.firstName}
                           onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="Enter first name"
                         />
                       </div>
@@ -2771,7 +2771,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.lastName}
                           onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="Enter last name"
                         />
                       </div>
@@ -2781,7 +2781,7 @@ const InspectorProfileModal: React.FC<{
                           type="email"
                           value={formData.email}
                           disabled
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 cursor-not-allowed"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                         />
                       </div>
                       <div>
@@ -2790,7 +2790,7 @@ const InspectorProfileModal: React.FC<{
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="+250 788 123 456"
                         />
                       </div>
@@ -2800,7 +2800,7 @@ const InspectorProfileModal: React.FC<{
                           type="date"
                           value={formData.date_of_birth}
                           onChange={(e) => setFormData(prev => ({ ...prev, date_of_birth: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -2808,7 +2808,7 @@ const InspectorProfileModal: React.FC<{
                         <select
                           value={formData.gender}
                           onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         >
                           <option value="">Select gender</option>
                           <option value="male">Male</option>
@@ -2823,10 +2823,10 @@ const InspectorProfileModal: React.FC<{
                           onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                           rows={4}
                           maxLength={500}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="Tell us about yourself and your inspection experience..."
                         />
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{formData.bio.length}/500 characters</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formData.bio.length}/500 characters</p>
                       </div>
                     </div>
                   </div>
@@ -2837,7 +2837,7 @@ const InspectorProfileModal: React.FC<{
               {activeSection === 'professional' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Professional Information</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Professional Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Qualifications</label>
@@ -2845,10 +2845,10 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.qualifications}
                           onChange={(e) => setFormData(prev => ({ ...prev, qualifications: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="e.g., Certified Inspector, ISO 17020, etc. (comma separated)"
                         />
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">List your professional qualifications</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">List your professional qualifications</p>
                       </div>
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Specializations</label>
@@ -2856,10 +2856,10 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.specializations}
                           onChange={(e) => setFormData(prev => ({ ...prev, specializations: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="e.g., Vehicles, Electronics, Equipment (comma separated)"
                         />
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Product categories you specialize in</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Product categories you specialize in</p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Years of Experience</label>
@@ -2868,7 +2868,7 @@ const InspectorProfileModal: React.FC<{
                           min="0"
                           value={formData.experience}
                           onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="0"
                         />
                       </div>
@@ -2879,10 +2879,10 @@ const InspectorProfileModal: React.FC<{
                           min="1"
                           value={formData.serviceRadius}
                           onChange={(e) => setFormData(prev => ({ ...prev, serviceRadius: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="50"
                         />
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Maximum distance you're willing to travel</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Maximum distance you're willing to travel</p>
                       </div>
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Languages Spoken</label>
@@ -2890,7 +2890,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.languages}
                           onChange={(e) => setFormData(prev => ({ ...prev, languages: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="e.g., English, French, Kinyarwanda (comma separated)"
                         />
                       </div>
@@ -2903,7 +2903,7 @@ const InspectorProfileModal: React.FC<{
               {activeSection === 'location' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Location Information</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Location Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Province</label>
@@ -2911,7 +2911,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.province}
                           onChange={(e) => setFormData(prev => ({ ...prev, province: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -2920,7 +2920,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.district}
                           onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -2929,7 +2929,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.sector}
                           onChange={(e) => setFormData(prev => ({ ...prev, sector: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -2938,7 +2938,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.cell}
                           onChange={(e) => setFormData(prev => ({ ...prev, cell: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -2947,7 +2947,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.village}
                           onChange={(e) => setFormData(prev => ({ ...prev, village: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -2956,7 +2956,7 @@ const InspectorProfileModal: React.FC<{
                           type="text"
                           value={formData.address_line}
                           onChange={(e) => setFormData(prev => ({ ...prev, address_line: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="Street address"
                         />
                       </div>
@@ -2967,7 +2967,7 @@ const InspectorProfileModal: React.FC<{
                           step="any"
                           value={formData.latitude}
                           onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="e.g., -1.9441"
                         />
                       </div>
@@ -2978,7 +2978,7 @@ const InspectorProfileModal: React.FC<{
                           step="any"
                           value={formData.longitude}
                           onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                           placeholder="e.g., 30.0619"
                         />
                       </div>
@@ -3001,14 +3001,14 @@ const InspectorProfileModal: React.FC<{
               {activeSection === 'preferences' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Preferences</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Preferences</h3>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Preferred Currency</label>
                         <select
                           value={formData.preferred_currency}
                           onChange={(e) => setFormData(prev => ({ ...prev, preferred_currency: e.target.value }))}
-                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         >
                           <option value="RWF">RWF (R₣)</option>
                           <option value="USD">USD ($)</option>
@@ -3068,7 +3068,7 @@ const InspectorProfileModal: React.FC<{
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-6 py-4 flex items-center justify-between">
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 px-6 py-4 flex items-center justify-between">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -3101,23 +3101,23 @@ const ChangePasswordModal: React.FC<{ onClose: () => void; onSubmit: (currentPas
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
+      <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Change Password</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Change Password</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
         </div>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Current Password</label>
-            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100" />
+            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">New Password</label>
-            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100" />
+            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Confirm New Password</label>
-            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100" />
+            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100" />
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-2">
