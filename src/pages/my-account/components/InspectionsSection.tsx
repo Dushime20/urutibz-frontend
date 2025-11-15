@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Calendar, MapPin, Clock, Eye, CheckCircle, AlertTriangle, Play, AlertCircle, MessageSquare, Plus, FileText, Upload, X } from 'lucide-react';
+import { Search, Filter, Calendar, MapPin, Clock, Eye, CheckCircle, AlertTriangle, Play, AlertCircle, MessageSquare, Plus, FileText, Upload, X, DollarSign } from 'lucide-react';
 import { disputeService, inspectionService } from '../../../services/inspectionService';
 import { DisputeType, InspectionType, InspectionStatus } from '../../../types/inspection';
 import RenterPreReviewComponent from '../../../components/inspections/RenterPreReviewComponent';
 import RenterPostInspectionForm from '../../../components/inspections/RenterPostInspectionForm';
 import OwnerPostReviewComponent from '../../../components/inspections/OwnerPostReviewComponent';
 import InspectionDetailsModal from '../../../components/inspections/InspectionDetailsModal';
+import InspectionPaymentModal from './InspectionPaymentModal';
 import { formatDateUTC } from '../../../utils/dateUtils';
 import axios from 'axios';
 
@@ -13,7 +14,7 @@ interface Props {
   loading: boolean;
   userInspections: any[];
   onViewInspection: (id: string) => void;
-  onRequestInspection: () => void;
+  onRequestInspection: (productId?: string) => void;
 }
 
 const InspectionsSection: React.FC<Props> = ({
@@ -44,6 +45,9 @@ const InspectionsSection: React.FC<Props> = ({
   const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(null);
   const [selectedInspection, setSelectedInspection] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentInspection, setPaymentInspection] = useState<any>(null);
+  const [bookingCache, setBookingCache] = useState<Record<string, any>>({});
 
   // Fetch booking by ID
   const fetchBookingById = async (bookingId: string): Promise<any | null> => {
@@ -841,6 +845,7 @@ const InspectionsSection: React.FC<Props> = ({
       case 'completed': return 'bg-green-100 text-green-700';
       case 'in_progress': return 'bg-blue-100 text-blue-700';
       case 'pending': return 'bg-yellow-100 text-yellow-700';
+      case 'pending_payment': return 'bg-orange-100 text-orange-700';
       case 'disputed': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
@@ -851,8 +856,32 @@ const InspectionsSection: React.FC<Props> = ({
       case 'completed': return <CheckCircle className="w-4 h-4" />;
       case 'in_progress': return <Play className="w-4 h-4" />;
       case 'pending': return <Clock className="w-4 h-4" />;
+      case 'pending_payment': return <DollarSign className="w-4 h-4" />;
       case 'disputed': return <AlertTriangle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const handlePayInspection = (inspection: any) => {
+    setPaymentInspection({
+      id: inspection.id,
+      inspectionCost: inspection.inspection_cost || inspection.inspectionCost || 0,
+      currency: inspection.currency || 'USD',
+      inspectionTier: inspection.inspection_tier || inspection.inspectionTier || 'standard',
+      scheduledAt: inspection.scheduled_at || inspection.scheduledAt,
+      productId: inspection.product_id || inspection.productId,
+      bookingId: inspection.booking_id || inspection.bookingId
+    });
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    setPaymentInspection(null);
+    setRefreshTrigger(prev => prev + 1);
+    if (activeTab === 'my-items') {
+      // Refresh inspections if needed
+      onViewInspection('refresh');
     }
   };
 
@@ -978,7 +1007,7 @@ const InspectionsSection: React.FC<Props> = ({
         </div>
         <div className="flex gap-2">
           {activeTab === 'my-items' && (
-            <button onClick={onRequestInspection} className="bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 rounded text-sm">
+            <button onClick={() => onRequestInspection()} className="bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 rounded text-sm">
               Request Inspection
             </button>
           )}
@@ -1003,7 +1032,7 @@ const InspectionsSection: React.FC<Props> = ({
               <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Inspections Yet</h3>
               <p className="text-gray-500 mb-4 dark:text-slate-400">You haven't requested any inspections yet.</p>
               <button
-                onClick={onRequestInspection}
+                onClick={() => onRequestInspection()}
                 className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
               >
                 Request Your First Inspection
@@ -1132,6 +1161,27 @@ const InspectionsSection: React.FC<Props> = ({
                   )}
                   {/* Action Button based on inspection status */}
                   {getActionButton(inspection, true)}
+                  
+                  {/* Third-party inspection payment button */}
+                  {inspection.isThirdPartyInspection || inspection.is_third_party_inspection ? (
+                    inspection.status === 'pending_payment' ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePayInspection(inspection);
+                        }}
+                        className="mt-2 px-3 py-1 bg-emerald-600 text-white text-xs rounded-full hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                      >
+                        <DollarSign className="w-3 h-3" />
+                        Pay Now
+                      </button>
+                    ) : inspection.inspection_cost || inspection.inspectionCost ? (
+                      <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
+                        Cost: {inspection.currency || 'USD'} {inspection.inspection_cost || inspection.inspectionCost}
+                      </div>
+                    ) : null
+                  ) : null}
+                  
                   {/* Raise Dispute Button (legacy) */}
                   {inspection.status === InspectionStatus.DISPUTED && (
                     <button
@@ -1536,6 +1586,33 @@ const InspectionsSection: React.FC<Props> = ({
             setShowInspectionDetailsModal(false);
             setShowOwnerPostReviewModal(true);
           }}
+          onPayInspection={(inspection) => {
+            // Set up payment modal with inspection data
+            setPaymentInspection({
+              id: inspection.id,
+              inspectionCost: (inspection as any).inspection_cost || (inspection as any).inspectionCost || 0,
+              currency: (inspection as any).currency || 'USD',
+              inspectionTier: (inspection as any).inspection_tier || (inspection as any).inspectionTier || 'standard',
+              scheduledAt: inspection.scheduledAt || (inspection as any).scheduled_at,
+              productId: inspection.productId || (inspection as any).product_id,
+              bookingId: inspection.bookingId || (inspection as any).booking_id
+            });
+            setShowInspectionDetailsModal(false);
+            setShowPaymentModal(true);
+          }}
+        />
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && paymentInspection && (
+        <InspectionPaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setPaymentInspection(null);
+          }}
+          onSuccess={handlePaymentSuccess}
+          inspection={paymentInspection}
         />
       )}
     </div>

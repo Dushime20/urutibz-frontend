@@ -5,7 +5,7 @@ interface Props {
   loading: boolean;
   myListings: any[];
   productImages: { [k: string]: any[] };
-  onRequestInspection: () => void;
+  onRequestInspection: (productId?: string) => void;
   onAddListing: () => void;
   onOpenListing: (id: string) => void;
   openMenuId: string | null;
@@ -52,7 +52,7 @@ const ListingsSection: React.FC<Props> = ({
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 hidden sm:block">My Listings</h3>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={onRequestInspection} className="bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 rounded text-sm">Request Inspection</button>
+          <button onClick={() => onRequestInspection()} className="bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 rounded text-sm">Request Inspection</button>
           <button onClick={onAddListing} className="bg-teal-600 text-white px-3 py-2 rounded text-sm">Add New Listing</button>
         </div>
       </div>
@@ -82,10 +82,11 @@ const ListingsSection: React.FC<Props> = ({
               <div className="relative inline-block text-left more-menu">
                 <button onClick={() => setOpenMenuId(openMenuId === listing.id ? null : listing.id)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800">⋮</button>
                 {openMenuId === listing.id && (
-                  <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-50 dark:bg-slate-900 dark:border-slate-700">
+                  <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg z-50 dark:bg-slate-900 dark:border-slate-700">
                     <button onClick={() => { setSelectedProductId(listing.id); setShowProductDetail(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800">View</button>
                     <button onClick={() => { setEditProductId(listing.id); setShowEditModal(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800">Edit</button>
-                    <button onClick={() => { setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-red-900/20">Delete</button>
+                    <button onClick={() => { onRequestInspection(listing.id); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800">Request Inspection</button>
+                    <button onClick={() => { setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-red-900/20">Delete</button>
                   </div>
                 )}
               </div>

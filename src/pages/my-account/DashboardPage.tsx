@@ -47,6 +47,8 @@ import HandoverReturnPage from '../handover-return/HandoverReturnPage';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import OwnerPreInspectionFormCombined from '../../components/inspections/OwnerPreInspectionFormCombined';
+import ThirdPartyInspectionRequestModal from './components/ThirdPartyInspectionRequestModal';
+import InspectionPaymentModal from './components/InspectionPaymentModal';
 import { inspectionService } from '../../services/inspectionService';
 import { useNavigate } from 'react-router-dom';
 import NewListingModal from './models/NewListingModal';
@@ -149,6 +151,10 @@ const DashboardPage: React.FC = () => {
   const [productImages, setProductImages] = useState<{ [productId: string]: any[] }>({});
   const [loadingListings, setLoadingListings] = useState(false);
   const [showInspectionModal, setShowInspectionModal] = useState(false);
+  const [showThirdPartyInspectionModal, setShowThirdPartyInspectionModal] = useState(false);
+  const [selectedProductForInspection, setSelectedProductForInspection] = useState<string | undefined>(undefined);
+  const [showInspectionPaymentModal, setShowInspectionPaymentModal] = useState(false);
+  const [paymentInspection, setPaymentInspection] = useState<any>(null);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(null);
   const [disputeForm, setDisputeForm] = useState({
@@ -1167,7 +1173,10 @@ const DashboardPage: React.FC = () => {
               loading={loadingListings}
               myListings={myListings}
               productImages={productImages}
-              onRequestInspection={() => setShowInspectionModal(true)}
+              onRequestInspection={(productId) => {
+                setSelectedProductForInspection(productId);
+                setShowThirdPartyInspectionModal(true);
+              }}
               onAddListing={handleOpenModal}
               onOpenListing={(id) => { setSelectedProductId(id); setShowProductDetail(true); }}
               openMenuId={openMenuId}
@@ -1191,6 +1200,60 @@ const DashboardPage: React.FC = () => {
                 loadUserInspections(); // Refresh inspections list
                 showToast('Pre-inspection created successfully!', 'success');
               }}
+            />
+          )}
+
+          {/* Third-Party Inspection Request Modal */}
+          {showThirdPartyInspectionModal && (
+            <ThirdPartyInspectionRequestModal
+              isOpen={showThirdPartyInspectionModal}
+              onClose={() => {
+                setShowThirdPartyInspectionModal(false);
+                setSelectedProductForInspection(undefined);
+              }}
+              onSuccess={() => {
+                setShowThirdPartyInspectionModal(false);
+                setSelectedProductForInspection(undefined);
+                loadUserInspections(); // Refresh inspections list
+                showToast('Third-party inspection request created! Payment required.', 'success');
+              }}
+              onNavigateToPayment={(inspection) => {
+                // Set up payment modal with inspection data
+                const inspectionData = inspection.data || inspection;
+                setPaymentInspection({
+                  id: inspectionData.id,
+                  inspectionCost: inspectionData.inspection_cost || inspectionData.inspectionCost || 0,
+                  currency: inspectionData.currency || 'USD',
+                  inspectionTier: inspectionData.inspection_tier || inspectionData.inspectionTier || 'standard',
+                  scheduledAt: inspectionData.scheduled_at || inspectionData.scheduledAt,
+                  productId: inspectionData.product_id || inspectionData.productId,
+                  bookingId: inspectionData.booking_id || inspectionData.bookingId
+                });
+                setShowThirdPartyInspectionModal(false);
+                setSelectedProductForInspection(undefined);
+                setShowInspectionPaymentModal(true);
+                loadUserInspections(); // Refresh inspections list
+                showToast('Inspection request created! Please proceed with payment.', 'success');
+              }}
+              productId={selectedProductForInspection}
+            />
+          )}
+
+          {/* Inspection Payment Modal */}
+          {showInspectionPaymentModal && paymentInspection && (
+            <InspectionPaymentModal
+              isOpen={showInspectionPaymentModal}
+              onClose={() => {
+                setShowInspectionPaymentModal(false);
+                setPaymentInspection(null);
+              }}
+              onSuccess={() => {
+                setShowInspectionPaymentModal(false);
+                setPaymentInspection(null);
+                loadUserInspections(); // Refresh inspections list
+                showToast('Payment processed successfully! Inspection is now pending.', 'success');
+              }}
+              inspection={paymentInspection}
             />
           )}
 
@@ -1299,7 +1362,10 @@ const DashboardPage: React.FC = () => {
                 // View inspection is now handled in InspectionsSection with modal
                 // This prop is kept for compatibility but not used
               }}
-              onRequestInspection={() => setShowInspectionModal(true)}
+              onRequestInspection={(productId) => {
+                setSelectedProductForInspection(productId);
+                setShowThirdPartyInspectionModal(true);
+              }}
             />
           )}
           {activeTab === 'profile' && (

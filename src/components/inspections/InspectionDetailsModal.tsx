@@ -12,6 +12,7 @@ interface InspectionDetailsModalProps {
   onReviewPreInspection?: (inspection: Inspection) => void;
   onReportDiscrepancy?: (inspection: Inspection) => void;
   onViewPostInspection?: (inspection: Inspection) => void;
+  onPayInspection?: (inspection: Inspection) => void; // Callback to open payment modal
   userRole?: 'owner' | 'renter' | 'inspector' | 'admin';
 }
 
@@ -22,6 +23,7 @@ const InspectionDetailsModal: React.FC<InspectionDetailsModalProps> = ({
   onReviewPreInspection,
   onReportDiscrepancy,
   onViewPostInspection,
+  onPayInspection,
   userRole
 }) => {
   const [inspection, setInspection] = useState<Inspection | null>(null);
@@ -221,6 +223,40 @@ const InspectionDetailsModal: React.FC<InspectionDetailsModalProps> = ({
                         </div>
                       </div>
                     )}
+                    {/* Third-Party Inspection Details */}
+                    {(() => {
+                      const isThirdParty = inspection?.isThirdPartyInspection || 
+                                         (inspection as any)?.is_third_party_inspection ||
+                                         inspection?.inspectionType === 'third_party_professional';
+                      if (!isThirdParty) return null;
+                      
+                      const tier = (inspection as any).inspection_tier || (inspection as any).inspectionTier || 'standard';
+                      const cost = (inspection as any).inspection_cost || (inspection as any).inspectionCost;
+                      const currency = (inspection as any).currency || 'USD';
+                      const totalPoints = (inspection as any).total_points || (inspection as any).totalPoints;
+                      
+                      return (
+                        <>
+                          {tier && (
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Inspection Tier</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 capitalize">
+                                {tier} {totalPoints && `(${totalPoints}-point check)`}
+                              </p>
+                            </div>
+                          )}
+                          {cost !== undefined && cost !== null && (
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Inspection Cost</p>
+                              <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-slate-100">
+                                <DollarSign className="w-4 h-4" />
+                                <span>{currency} {parseFloat(cost.toString()).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                   {inspection.inspectorNotes && (
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
@@ -712,6 +748,30 @@ const InspectionDetailsModal: React.FC<InspectionDetailsModalProps> = ({
           {/* Footer */}
           <div className="sticky bottom-0 bg-white dark:bg-slate-900 px-6 py-4 border-t border-gray-200 dark:border-slate-700 flex justify-between items-center gap-3">
             <div className="flex gap-3">
+              {/* Third-Party Inspection Payment Button */}
+              {(() => {
+                const isThirdParty = inspection?.isThirdPartyInspection || 
+                                   (inspection as any)?.is_third_party_inspection ||
+                                   inspection?.inspectionType === 'third_party_professional';
+                const needsPayment = inspection?.status === 'pending_payment' || 
+                                    (inspection as any)?.status === 'pending_payment';
+                const isOwner = userRole === 'owner';
+                
+                return isThirdParty && needsPayment && isOwner && onPayInspection;
+              })() && (
+                <button
+                  onClick={() => {
+                    if (inspection && onPayInspection) {
+                      onPayInspection(inspection);
+                    }
+                  }}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Pay Now
+                </button>
+              )}
+
               {/* Owner Post-Inspection Review Actions */}
               {userRole === 'owner' && (
                 <>
