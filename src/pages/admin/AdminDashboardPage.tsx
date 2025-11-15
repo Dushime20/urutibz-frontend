@@ -92,6 +92,7 @@ const AdminDashboardPage: React.FC = () => {
   const { formatCurrency, formatDate, settings } = useAdminSettingsContext();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'admin-settings'>('overview');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
   const [itemStatus, setItemStatus] = useState<string>('all');
@@ -729,18 +730,30 @@ const AdminDashboardPage: React.FC = () => {
         setSelectedLanguage={setSelectedLanguage}
         onMenuToggle={handleMenuToggle}
       />
-      <div className="py-10 px-4 sm:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div className="grid grid-cols-1 xl:grid-cols-6 gap-2">
-          <div className="xl:col-span-1">
-            <AdminSidebar
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              AdminNavigationItem={AdminNavigationItem}
-              isMobileMenuOpen={isMobileMenuOpen}
-              onMobileMenuClose={handleMenuClose}
-            />
-          </div>
-          <div className="xl:col-span-5 w-full">
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Mobile Sidebar Overlay */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 bg-black/50 z-30 xl:hidden" onClick={handleMenuClose} />
+        )}
+        
+        {/* Sidebar - Desktop and Mobile */}
+        <div className="fixed xl:static inset-y-0 left-0 z-40 xl:z-auto xl:flex-shrink-0 xl:relative xl:pt-2">
+          <AdminSidebar
+            activeTab={activeTab}
+            setActiveTab={(tab: any) => { 
+              setActiveTab(tab); 
+              if (isMobileMenuOpen) handleMenuClose(); 
+            }}
+            AdminNavigationItem={AdminNavigationItem}
+            isMobileMenuOpen={isMobileMenuOpen}
+            onMobileMenuClose={handleMenuClose}
+            onCollapseChange={setIsSidebarCollapsed}
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto xl:pt-2 w-full">
+          <div className="px-4 sm:px-8 py-4">
             <div className="space-y-10">
               {(() => {
                 switch (activeTab) {
