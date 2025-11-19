@@ -3,12 +3,15 @@ import { useHandoverMessages } from '../../../hooks/useHandoverMessages';
 import { useToast } from '../../../contexts/ToastContext';
 import handoverReturnService from '../../../services/handoverReturnService';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface Props {
   userId?: string;
 }
 
 const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
+  const { tSync } = useTranslation();
   const { showToast } = useToast();
   // Prefer stored user object, fallback to JWT
   const derivedUserId = React.useMemo(() => {
@@ -110,8 +113,8 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
       <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100">Handover & Return</h3>
-            <p className="text-sm text-gray-500 dark:text-slate-400">View conversation for a session.</p>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Handover & Return" /></h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="View conversation for a session." /></p>
           </div>
           <div className="flex gap-2">
             <button
@@ -119,14 +122,14 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
               onClick={() => setShowComposer(true)}
               disabled={!handoverSessionId && !returnSessionId}
             >
-              New Message
+              <TranslatedText text="New Message" />
             </button>
             <button
               className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               onClick={() => setShowScheduler(true)}
               disabled={!handoverSessionId && !returnSessionId}
             >
-              Schedule Notification
+              <TranslatedText text="Schedule Notification" />
             </button>
           </div>
         </div>
@@ -134,7 +137,7 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
 
       <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <h4 className="font-medium text-gray-900 mb-3 dark:text-slate-100">Session & Messages</h4>
+          <h4 className="font-medium text-gray-900 mb-3 dark:text-slate-100"><TranslatedText text="Session & Messages" /></h4>
           <div className="space-y-3">
             {/* Tabs */}
             <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg w-max dark:bg-slate-800">
@@ -144,14 +147,14 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
                   onClick={() => setActiveTab(tab)}
                   className={`px-3 py-1 rounded-md text-sm ${activeTab === tab ? 'bg-white text-teal-600 shadow-sm dark:bg-slate-900' : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
                 >
-                  {tab === 'handover' ? 'Handover messages' : 'Return messages'}
+                  {tab === 'handover' ? <><TranslatedText text="Handover messages" /></> : <><TranslatedText text="Return messages" /></>}
                 </button>
               ))}
             </div>
 
             {/* All sessions list - click to load conversation */}
             <div>
-              <label className="block text-sm text-gray-700 mb-2 dark:text-slate-300">Your Sessions</label>
+              <label className="block text-sm text-gray-700 mb-2 dark:text-slate-300"><TranslatedText text="Your Sessions" /></label>
               <div className="max-h-56 overflow-auto border border-gray-200 rounded-md divide-y dark:border-slate-700 dark:divide-slate-700">
                 {(activeTab === 'handover'
                   ? handoverSessionsForBooking.map((s: any) => ({ ...s, _type: 'handover' as const }))
@@ -173,7 +176,7 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-900 dark:text-slate-100">
-                          {s._type === 'handover' ? 'Handover' : 'Return'} • {s.status}
+                          {s._type === 'handover' ? <TranslatedText text="Handover" /> : <TranslatedText text="Return" />} • {s.status}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-slate-400">{new Date(s.updatedAt || s.createdAt).toLocaleString()}</div>
                       </div>
@@ -185,13 +188,13 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
             <div className="grid grid-cols-2 gap-3">
               {activeTab === 'handover' ? (
                 <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Handover Session</label>
+                  <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Handover Session" /></label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                     value={handoverSessionId}
                     onChange={async (e) => { const id=e.target.value; setHandoverSessionId(id); setReturnSessionId(''); navigate(`/my-account/messages/handover/${id}`); }}
                   >
-                    <option value="">Select handover session</option>
+                    <option value=""><TranslatedText text="Select handover session" /></option>
                     {handoverSessionsForBooking.map(s => (
                       <option key={s.id} value={s.id}>
                         {s.status} • {new Date(s.updatedAt || s.createdAt).toLocaleString()}
@@ -201,13 +204,13 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
                 </div>
               ) : (
                 <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Return Session</label>
+                  <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Return Session" /></label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                     value={returnSessionId}
                     onChange={async (e) => { const id=e.target.value; setReturnSessionId(id); setHandoverSessionId(''); navigate(`/my-account/messages/return/${id}`); }}
                   >
-                    <option value="">Select return session</option>
+                    <option value=""><TranslatedText text="Select return session" /></option>
                     {returnSessionsForBooking.map(s => (
                       <option key={s.id} value={s.id}>
                         {s.status} • {new Date(s.updatedAt || s.createdAt).toLocaleString()}
@@ -218,7 +221,7 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
               )}
             </div>
             {linkingSessions && (
-              <p className="text-xs text-gray-500 dark:text-slate-400">Loading your sessions…</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Loading your sessions…" /></p>
             )}
           </div>
         </div>
@@ -226,39 +229,39 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
         <div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
             <div className="px-5 py-3 border-b border-gray-100 dark:border-slate-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Handover & Return Stats</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Handover & Return Stats" /></h2>
             </div>
             <div className="p-5">
               {statsError && <div className="text-sm text-red-600 mb-2">{statsError}</div>}
               {stats ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Total Handovers</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Total Handovers" /></div>
                     <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalHandovers}</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Total Returns</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Total Returns" /></div>
                     <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalReturns}</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Handover Success</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Handover Success" /></div>
                     <div className="text-xl font-semibold text-teal-600">{stats.handoverSuccessRate}%</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Return On-Time</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Return On-Time" /></div>
                     <div className="text-xl font-semibold text-teal-600">{stats.returnOnTimeRate}%</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Avg Handover Time</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Avg Handover Time" /></div>
                     <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageHandoverTime} min</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Avg Return Processing</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Avg Return Processing" /></div>
                     <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageReturnProcessingTime} min</div>
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-gray-500 dark:text-slate-400">Loading stats…</div>
+                <div className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Loading stats…" /></div>
               )}
             </div>
           </div>
@@ -270,36 +273,36 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowComposer(false)} />
           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-lg p-6 dark:bg-slate-900">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3 dark:text-slate-100">New Message</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3 dark:text-slate-100"><TranslatedText text="New Message" /></h4>
             <div className="mb-3">
-              <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Select Session</label>
-              <select
+                <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Select Session" /></label>
+                <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                 value={composeSessionId}
                 onChange={(e) => setComposeSessionId(e.target.value)}
               >
-                <option value="">{activeTab === 'handover' ? 'Select handover session' : 'Select return session'}</option>
+                <option value="">{activeTab === 'handover' ? <TranslatedText text="Select handover session" /> : <TranslatedText text="Select return session" />}</option>
                 {(activeTab === 'handover' ? handoverSessionsForBooking : returnSessionsForBooking).map((s:any)=> (
                   <option key={s.id} value={s.id}>{s.status} • {new Date(s.updatedAt || s.createdAt).toLocaleString()}</option>
                 ))}
               </select>
             </div>
             <div className="mb-3">
-              <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Sender Type</label>
+              <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Sender Type" /></label>
               <select className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" value={senderType} onChange={(e)=> setSenderType(e.target.value as any)}>
-                <option value="renter">renter</option>
-                <option value="owner">owner</option>
+                <option value="renter"><TranslatedText text="renter" /></option>
+                <option value="owner"><TranslatedText text="owner" /></option>
               </select>
             </div>
             <textarea
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
               rows={4}
-              placeholder="Write your message..."
+              placeholder={tSync('Write your message...')}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
             />
             <div className="mt-4 flex justify-end gap-2">
-              <button className="px-3 py-2 border border-gray-300 rounded-md dark:border-slate-700 dark:text-slate-200" onClick={() => setShowComposer(false)}>Cancel</button>
+              <button className="px-3 py-2 border border-gray-300 rounded-md dark:border-slate-700 dark:text-slate-200" onClick={() => setShowComposer(false)}><TranslatedText text="Cancel" /></button>
               <button
                 className="px-3 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50"
                 disabled={!messageText.trim() || !composeSessionId}
@@ -332,7 +335,7 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
                   }
                 }}
               >
-                Send
+                <TranslatedText text="Send" />
               </button>
             </div>
           </div>
@@ -344,16 +347,16 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowScheduler(false)} />
           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-lg p-6 dark:bg-slate-900">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3 dark:text-slate-100">Schedule Notification</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3 dark:text-slate-100"><TranslatedText text="Schedule Notification" /></h4>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300">Select Session</label>
+                <label className="block text-sm text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Select Session" /></label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
                   value={scheduleSessionId}
                   onChange={(e) => setScheduleSessionId(e.target.value)}
                 >
-                  <option value="">{activeTab === 'handover' ? 'Select handover session' : 'Select return session'}</option>
+                  <option value="">{activeTab === 'handover' ? <TranslatedText text="Select handover session" /> : <TranslatedText text="Select return session" />}</option>
                   {(activeTab === 'handover' ? handoverSessionsForBooking : returnSessionsForBooking).map((s:any)=> (
                     <option key={s.id} value={s.id}>{s.status} • {new Date(s.updatedAt || s.createdAt).toLocaleString()}</option>
                   ))}
@@ -366,26 +369,26 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
                 onChange={(e) => setScheduledAt(e.target.value)}
               />
               <select className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100" value={channel} onChange={(e) => setChannel(e.target.value as any)}>
-                <option value="email">email</option>
-                <option value="sms">sms</option>
-                <option value="push">push</option>
+                <option value="email"><TranslatedText text="email" /></option>
+                <option value="sms"><TranslatedText text="sms" /></option>
+                <option value="push"><TranslatedText text="push" /></option>
               </select>
               <input
                 className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
-                placeholder="Title / Note"
+                placeholder={tSync('Title / Note')}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
               <textarea
                 className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
-                placeholder="Message"
+                placeholder={tSync('Message')}
                 rows={3}
                 value={scheduleMessage}
                 onChange={(e) => setScheduleMessage(e.target.value)}
               />
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button className="px-3 py-2 border border-gray-300 rounded-md dark:border-slate-700 dark:text-slate-200" onClick={() => setShowScheduler(false)}>Cancel</button>
+              <button className="px-3 py-2 border border-gray-300 rounded-md dark:border-slate-700 dark:text-slate-200" onClick={() => setShowScheduler(false)}><TranslatedText text="Cancel" /></button>
               <button
                 className="px-3 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50"
                 disabled={!scheduledAt.trim() || !scheduleSessionId || !scheduleMessage.trim()}
@@ -414,7 +417,7 @@ const HandoverReturnAccountSection: React.FC<Props> = ({ userId }) => {
                   }
                 }}
               >
-                Schedule
+                <TranslatedText text="Schedule" />
               </button>
             </div>
           </div>

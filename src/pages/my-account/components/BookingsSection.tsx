@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 import { formatDateUTC } from '../../../utils/dateUtils';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface Props {
   loadingBookings: boolean;
@@ -31,6 +33,7 @@ const BookingsSection: React.FC<Props> = ({
   onCheckIn,
   onCheckOut,
 }) => {
+  const { tSync } = useTranslation();
   const [roleTab, setRoleTab] = useState<'all' | 'renter' | 'owner'>('all');
 
   // Console log user bookings to see the response data
@@ -88,20 +91,20 @@ const BookingsSection: React.FC<Props> = ({
   return (
     <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 hidden sm:block">My Bookings</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 hidden sm:block"><TranslatedText text="My Bookings" /></h3>
         <div className="flex items-center space-x-2 overflow-x-auto flex-1 sm:flex-none whitespace-nowrap">
           <button
             onClick={() => setRoleTab('all')}
             className={`px-3 py-1.5 text-sm font-medium rounded-xl transition-colors whitespace-nowrap ${roleTab === 'all' ? 'bg-teal-600 text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'}`}
-          >All {roleTab === 'all' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{allCount}</span>}</button>
+          ><TranslatedText text="All" /> {roleTab === 'all' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{allCount}</span>}</button>
           <button
             onClick={() => setRoleTab('renter')}
             className={`px-3 py-1.5 text-sm font-medium rounded-xl transition-colors whitespace-nowrap ${roleTab === 'renter' ? 'bg-teal-600 text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'}`}
-          >Renter {roleTab === 'renter' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{renterCount}</span>}</button>
+          ><TranslatedText text="Renter" /> {roleTab === 'renter' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{renterCount}</span>}</button>
           <button
             onClick={() => setRoleTab('owner')}
             className={`px-3 py-1.5 text-sm font-medium rounded-xl transition-colors whitespace-nowrap ${roleTab === 'owner' ? 'bg-teal-600 text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'}`}
-          >Owner {roleTab === 'owner' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{ownerCount}</span>}</button>
+          ><TranslatedText text="Owner" /> {roleTab === 'owner' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{ownerCount}</span>}</button>
         </div>
       </div>
       <div className="space-y-4">
@@ -132,9 +135,9 @@ const BookingsSection: React.FC<Props> = ({
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 dark:bg-slate-800">
               <Calendar className="w-10 h-10 text-gray-400 dark:text-slate-500" />
             </div>
-            <h4 className="text-lg font-semibold text-gray-600 mb-2 dark:text-slate-300">No bookings found</h4>
-            <p className="text-gray-500 mb-6 dark:text-slate-400">You haven't made any bookings yet. Start exploring and book your first item.</p>
-            <button onClick={navigateToBrowse} className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors">Browse Items</button>
+            <h4 className="text-lg font-semibold text-gray-600 mb-2 dark:text-slate-300"><TranslatedText text="No bookings found" /></h4>
+            <p className="text-gray-500 mb-6 dark:text-slate-400"><TranslatedText text="You haven't made any bookings yet. Start exploring and book your first item." /></p>
+            <button onClick={navigateToBrowse} className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors"><TranslatedText text="Browse Items" /></button>
           </div>
         ) : (
           roleFilteredBookings.map((booking) => {
@@ -160,7 +163,7 @@ const BookingsSection: React.FC<Props> = ({
                       booking.status === 'disputed' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' :
                       'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                     }`}>
-                      {booking.status === 'cancellation_requested' ? '🔄 Cancellation Requested' : booking.status?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                      {booking.status === 'cancellation_requested' ? '🔄 ' + tSync('Cancellation Requested') : booking.status?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                     </span>
                   </div>
                   <div className="sm:text-right text-left">
@@ -174,13 +177,13 @@ const BookingsSection: React.FC<Props> = ({
                     <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                       {/* Left side - Review */}
                       <div className="flex items-center space-x-2">
-                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
-                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Review" /></h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} {reviewCount !== 1 ? tSync('reviews') : tSync('review')}</span>}
                         <button
                           onClick={() => onViewBookingReview(booking.id)}
                           className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
                         >
-                          View Review
+                          <TranslatedText text="View Review" />
                         </button>
                       </div>
                       
@@ -197,7 +200,7 @@ const BookingsSection: React.FC<Props> = ({
                                 }}
                                 className="text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5 transition-colors"
                               >
-                                 Pay Now
+                                 <TranslatedText text="Pay Now" />
                               </button>
                             )}
                             {/* Hide cancel button for pending bookings - only show for confirmed bookings before start_date */}
@@ -210,7 +213,7 @@ const BookingsSection: React.FC<Props> = ({
                                 onClick={() => onConfirmBooking(booking.id)}
                                 className="text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5 transition-colors"
                               >
-                                Confirm Booking
+                                <TranslatedText text="Confirm Booking" />
                               </button>
                             )}
                             {onCancelBooking && (
@@ -218,7 +221,7 @@ const BookingsSection: React.FC<Props> = ({
                                 onClick={() => onCancelBooking(booking.id)}
                                 className="text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg px-3 py-1.5 transition-colors"
                               >
-                                Reject
+                                <TranslatedText text="Reject" />
                               </button>
                             )}
                           </>
@@ -237,11 +240,11 @@ const BookingsSection: React.FC<Props> = ({
                           <span className="text-orange-600 dark:text-orange-400">🔄</span>
                         </div>
                         <div className="flex-1">
-                          <h5 className="font-medium text-orange-900 dark:text-orange-100 mb-1">Cancellation Requested</h5>
-                          <p className="text-sm text-orange-700 dark:text-orange-300">The renter has requested to cancel this booking. Please review and decide.</p>
+                          <h5 className="font-medium text-orange-900 dark:text-orange-100 mb-1"><TranslatedText text="Cancellation Requested" /></h5>
+                          <p className="text-sm text-orange-700 dark:text-orange-300"><TranslatedText text="The renter has requested to cancel this booking. Please review and decide." /></p>
                           {booking.cancellation_reason && (
                             <div className="mt-2 p-2 bg-white dark:bg-slate-800 rounded text-xs text-gray-700 dark:text-slate-300">
-                              <strong>Reason:</strong> {booking.cancellation_reason}
+                              <strong><TranslatedText text="Reason" />:</strong> {booking.cancellation_reason}
                             </div>
                           )}
                         </div>
@@ -250,13 +253,13 @@ const BookingsSection: React.FC<Props> = ({
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       {/* Left side - Review */}
                       <div className="flex items-center space-x-2">
-                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
-                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Review" /></h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} {reviewCount !== 1 ? tSync('reviews') : tSync('review')}</span>}
                         <button
                           onClick={() => onViewBookingReview(booking.id)}
                           className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
                         >
-                          View Review
+                          <TranslatedText text="View Review" />
                         </button>
                       </div>
                       
@@ -267,7 +270,7 @@ const BookingsSection: React.FC<Props> = ({
                             onClick={() => onReviewCancellation(booking.id)}
                             className="text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg px-3 py-1.5 transition-colors"
                           >
-                            🔍 Review Cancellation
+                            🔍 <TranslatedText text="Review Cancellation" />
                           </button>
                         )}
                       </div>
@@ -281,13 +284,13 @@ const BookingsSection: React.FC<Props> = ({
                     <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                       {/* Left side - Review */}
                       <div className="flex items-center space-x-2">
-                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
-                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Review" /></h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} {reviewCount !== 1 ? tSync('reviews') : tSync('review')}</span>}
                         <button
                           onClick={() => onViewBookingReview(booking.id)}
                           className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
                         >
-                          View Review
+                          <TranslatedText text="View Review" />
                         </button>
                       </div>
                       
@@ -298,7 +301,7 @@ const BookingsSection: React.FC<Props> = ({
                             onClick={() => onCheckIn(booking.id)}
                             className="text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg px-3 py-1.5 transition-colors"
                           >
-                            Check In
+                            <TranslatedText text="Check In" />
                           </button>
                         )}
                         {/* Show cancel button only for renters and before start_date */}
@@ -311,7 +314,7 @@ const BookingsSection: React.FC<Props> = ({
                               onClick={() => onCancelBooking(booking.id)}
                               className="text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg px-3 py-1.5 transition-colors"
                             >
-                              Cancel Booking
+                              <TranslatedText text="Cancel Booking" />
                             </button>
                           ) : null;
                         })()}
@@ -326,13 +329,13 @@ const BookingsSection: React.FC<Props> = ({
                     <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                       {/* Left side - Review */}
                       <div className="flex items-center space-x-2">
-                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
-                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Review" /></h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} {reviewCount !== 1 ? tSync('reviews') : tSync('review')}</span>}
                         <button
                           onClick={() => onViewBookingReview(booking.id)}
                           className="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg px-3 py-1.5 transition-colors"
                         >
-                          View Review
+                          <TranslatedText text="View Review" />
                         </button>
                       </div>
                       
@@ -343,7 +346,7 @@ const BookingsSection: React.FC<Props> = ({
                             onClick={() => onCheckOut(booking.id)}
                             className="text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg px-3 py-1.5 transition-colors"
                           >
-                            Check Out
+                            <TranslatedText text="Check Out" />
                           </button>
                         )}
                       </div>
@@ -356,8 +359,8 @@ const BookingsSection: React.FC<Props> = ({
                   <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
                     <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                       <div className="flex items-center space-x-2">
-                        <h5 className="font-medium text-gray-900 dark:text-slate-100">Review</h5>
-                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>}
+                        <h5 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Review" /></h5>
+                        {reviewCount > 0 && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full dark:bg-primary-900/20 dark:text-primary-400">{reviewCount} {reviewCount !== 1 ? tSync('reviews') : tSync('review')}</span>}
                       </div>
                       <button
                         onClick={() => onViewBookingReview(booking.id)}

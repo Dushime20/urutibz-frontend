@@ -1,5 +1,6 @@
 import React from 'react';
 import { BarChart3, Calendar, Car, Wallet, Shield, BookOpen, Settings, MessageCircle, TrendingUp, ArrowRightLeft } from 'lucide-react';
+import { TranslatedText } from '../../../components/translated-text';
 
 type TabKey = 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return';
 
@@ -27,7 +28,7 @@ const Item = ({
 }) => (
   <button onClick={onClick} className={`${buttonBase}${active ? activeClasses : ' ' + inactiveClasses}`}>
     <Icon className={`w-5 h-5 mr-3 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-105'}`} />
-    <span className="flex-1 text-left truncate">{label}</span>
+    <span className="flex-1 text-left truncate"><TranslatedText text={label} /></span>
     {hasNotification && <div className="w-2 h-2 bg-red-500 rounded-full ml-auto animate-pulse"></div>}
   </button>
 );

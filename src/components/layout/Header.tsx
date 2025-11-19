@@ -1,30 +1,63 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { ChevronDown, Globe, Menu, X, Bot, Moon, Sun, Search, User, PlusCircle, Clock, TrendingUp } from 'lucide-react';
+import {
+  ChevronDown,
+  Globe,
+  Menu,
+  X,
+  Moon,
+  Sun,
+  Search,
+  User,
+  PlusCircle,
+  Clock,
+  TrendingUp,
+  MapPin,
+  Calendar,
+  Filter,
+  Headphones,
+  Phone,
+  Sparkles
+} from 'lucide-react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
-import { useI18n } from '../../contexts/I18nContext';
+import { useTranslation } from '../../hooks/useTranslation';
+import { LanguageSwitcher } from '../language-switcher';
+import { TranslatedText } from '../translated-text';
 import RealtimeNotifications from '../RealtimeNotifications';
 import axios from '../../lib/http';
 import { API_BASE_URL } from '../../pages/admin/service/config';
 
-const languages = [
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'rw', label: 'Kinyarwanda', flag: '🇷🇼' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'sw', label: 'Swahili', flag: '🇰🇪' },
+type HeaderCategory = { id: string; label: string };
+
+const primaryNavLinks = [
+  { label: 'Marketplace', to: '/items' },
+  { label: 'For Renters', to: '/favorites' },
+  { label: 'For Suppliers', to: '/create-listing' },
+  { label: 'Enterprise', to: '/risk-management' },
+  { label: 'Support', to: '/faq' }
 ];
 
-type HeaderCategory = { id: string; label: string };
+const quickFilterPresets = [
+  { label: 'Instant book', value: 'instant', query: 'instant booking' },
+  { label: 'Verified hosts', value: 'verified', query: 'verified host' },
+  { label: 'Long term', value: 'long term', query: 'monthly rental' },
+  { label: 'Premium gear', value: 'premium', query: 'pro equipment' }
+];
+
+const tickerMessages = [
+  '45 countries onboarding new rental fleets this month',
+  'New: AI condition reports now live in Spanish & French',
+  'Enterprise SLA: 30-min global support, 24/7/365'
+];
 
 const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { settings } = useAdminSettingsContext();
-  const { language, setLanguage, t } = useI18n();
+  const { language, tSync } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [topCategories, setTopCategories] = useState<HeaderCategory[]>([]);
@@ -32,24 +65,40 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Professional search state
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
   const searchTimeoutRef = useRef<number | null>(null);
+  const autoSearchTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const autoSearchTimeoutRef = useRef<number | null>(null);
+  const [tickerIndex, setTickerIndex] = useState(0);
 
-  // Integrated search state
+  const roleDestination =
+    user?.role === 'admin'
+      ? '/admin'
+      : user?.role === 'inspector'
+      ? '/inspector'
+      : user?.role === 'moderator'
+      ? '/moderator'
+      : '/dashboard';
+
+  const roleLinkLabel =
+    user?.role === 'admin'
+      ? 'Admin Console'
+      : user?.role === 'inspector'
+      ? 'Inspector Console'
+      : user?.role === 'moderator'
+      ? 'Moderator Console'
+      : 'My Account';
+
   const params = new URLSearchParams(location.search);
   const [q, setQ] = useState<string>(params.get('q') || '');
   const [category, setCategory] = useState<string>(params.get('category') || 'all');
   const [checkIn, setCheckIn] = useState<string>(params.get('checkIn') || '');
   const [checkOut, setCheckOut] = useState<string>(params.get('checkOut') || '');
-  // Guests removed per business request
   const [nearMe, setNearMe] = useState<boolean>(params.get('nearMe') === 'true');
   const [lat, setLat] = useState<string>(params.get('lat') || '');
   const [lng, setLng] = useState<string>(params.get('lng') || '');
@@ -58,15 +107,17 @@ const Header: React.FC = () => {
   const [priceMax, setPriceMax] = useState<string>(params.get('priceMax') || '');
 
   useEffect(() => {
-    // Fetch categories for header dropdown
     (async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/categories`);
-        const rows = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
+        const rows = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+          ? res.data
+          : [];
         const cats: HeaderCategory[] = rows.map((c: any) => ({ id: c.id || c.slug || c.name, label: c.name }));
         setTopCategories(cats.slice(0, 12));
       } catch {
-        // Fallback to empty; keep menu hidden if none
         setTopCategories([]);
       }
     })();
@@ -83,113 +134,152 @@ const Header: React.FC = () => {
     setPriceMax(p.get('priceMax') || '');
   }, [location.search]);
 
-  // Professional search functions
   const generateSearchSuggestions = useCallback((query: string): string[] => {
     if (!query || query.length < 2) return [];
-    
+
     const suggestions = [
-      // Category-based suggestions
-      'camera rental', 'car rental', 'laptop rental', 'drone rental',
-      'event equipment', 'photography gear', 'outdoor gear', 'tools rental',
-      'party supplies', 'fitness equipment', 'travel gear', 'home appliances',
-      
-      // Brand-based suggestions
-      'Canon camera', 'Nikon lens', 'DJI drone', 'MacBook Pro',
-      'iPhone rental', 'iPad rental', 'Sony camera', 'GoPro',
-      
-      // Event-based suggestions
-      'wedding photography', 'corporate events', 'birthday party',
-      'conference equipment', 'trade show booth', 'exhibition setup',
-      
-      // Location-based suggestions
-      'near me', 'downtown', 'city center', 'airport pickup',
-      
-      // Duration-based suggestions
-      'daily rental', 'weekly rental', 'monthly rental', 'long term'
+      'camera rental',
+      'car rental',
+      'laptop rental',
+      'drone rental',
+      'event equipment',
+      'photography gear',
+      'outdoor gear',
+      'tools rental',
+      'party supplies',
+      'fitness equipment',
+      'travel gear',
+      'home appliances',
+      'Canon camera',
+      'Nikon lens',
+      'DJI drone',
+      'MacBook Pro',
+      'iPhone rental',
+      'iPad rental',
+      'Sony camera',
+      'GoPro',
+      'wedding photography',
+      'corporate events',
+      'birthday party',
+      'conference equipment',
+      'trade show booth',
+      'exhibition setup',
+      'near me',
+      'downtown',
+      'city center',
+      'airport pickup',
+      'daily rental',
+      'weekly rental',
+      'monthly rental',
+      'long term'
     ];
-    
+
     return suggestions
-      .filter(suggestion => 
-        suggestion.toLowerCase().includes(query.toLowerCase()) ||
-        query.toLowerCase().split(' ').some(word => 
-          suggestion.toLowerCase().includes(word)
-        )
+      .filter(
+        (suggestion) =>
+          suggestion.toLowerCase().includes(query.toLowerCase()) ||
+          query
+            .toLowerCase()
+            .split(' ')
+            .some((word) => suggestion.toLowerCase().includes(word))
       )
       .slice(0, 8);
   }, []);
 
-  const performAutoSearch = useCallback(() => {
-    const sp = new URLSearchParams();
-    if (q) sp.set('q', q);
-    if (category && category !== 'all') sp.set('category', category);
-    if (priceMin) sp.set('priceMin', priceMin);
-    if (priceMax) sp.set('priceMax', priceMax);
-    if (checkIn) sp.set('checkIn', checkIn);
-    if (checkOut) sp.set('checkOut', checkOut);
-    if (nearMe && lat && lng) {
-      sp.set('nearMe', 'true');
-      sp.set('lat', lat);
-      sp.set('lng', lng);
-      if (radiusKm) sp.set('radiusKm', String(radiusKm));
-    }
-
-    // Add to recent searches only when there's a meaningful query
-    if (q && q.length >= 2) {
-      const newRecentSearches = [q, ...recentSearches.filter(s => s !== q)].slice(0, 5);
-      setRecentSearches(newRecentSearches);
-      localStorage.setItem('recentSearches', JSON.stringify(newRecentSearches));
-    }
-
-    // If on homepage, dispatch event regardless of query
-    if (location.pathname === '/') {
-      const searchEvent = new CustomEvent('homepageSearch', {
-        detail: {
-          query: q,
-          category: category !== 'all' ? category : '',
-          priceMin,
-          priceMax,
-          checkIn,
-          checkOut,
-          nearMe,
-          lat,
-          lng,
-          radiusKm
-        }
-      });
-      window.dispatchEvent(searchEvent);
-      setShowSuggestions(false);
-      return;
-    }
-
-    // Otherwise, navigate to search page
-    navigate(`/items/search${sp.toString() ? `?${sp.toString()}` : ''}`);
-    setShowSuggestions(false);
-  }, [q, category, priceMin, priceMax, checkIn, checkOut, nearMe, lat, lng, radiusKm, recentSearches, navigate, location.pathname]);
-
-  const debouncedSearch = useCallback((query: string) => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    if (autoSearchTimeoutRef.current) {
-      clearTimeout(autoSearchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = window.setTimeout(() => {
-      if (query.length >= 2) {
-        setIsSearching(true);
-        setSearchSuggestions(generateSearchSuggestions(query));
-        setShowSuggestions(true);
-
-        autoSearchTimeoutRef.current = window.setTimeout(() => {
-          performAutoSearch();
-        }, 1000);
-      } else {
-        setSearchSuggestions([]);
-        setShowSuggestions(false);
+  const buildSearchParams = useCallback(
+    (overrides?: Partial<{ q: string; category: string; priceMin: string; priceMax: string; checkIn: string; checkOut: string; nearMe: boolean; lat: string; lng: string; radiusKm: number }>) => {
+      const effective = {
+        q,
+        category,
+        priceMin,
+        priceMax,
+        checkIn,
+        checkOut,
+        nearMe,
+        lat,
+        lng,
+        radiusKm,
+        ...overrides
+      };
+      const sp = new URLSearchParams();
+      if (effective.q) sp.set('q', effective.q);
+      if (effective.category && effective.category !== 'all') sp.set('category', effective.category);
+      if (effective.priceMin) sp.set('priceMin', effective.priceMin);
+      if (effective.priceMax) sp.set('priceMax', effective.priceMax);
+      if (effective.checkIn) sp.set('checkIn', effective.checkIn);
+      if (effective.checkOut) sp.set('checkOut', effective.checkOut);
+      if (effective.nearMe && effective.lat && effective.lng) {
+        sp.set('nearMe', 'true');
+        sp.set('lat', effective.lat);
+        sp.set('lng', effective.lng);
+        if (effective.radiusKm) sp.set('radiusKm', String(effective.radiusKm));
       }
-      setIsSearching(false);
-    }, 300);
-  }, [generateSearchSuggestions, performAutoSearch]);
+      return { params: sp, effective };
+    },
+    [q, category, priceMin, priceMax, checkIn, checkOut, nearMe, lat, lng, radiusKm]
+  );
+
+  const performAutoSearch = useCallback(
+    (overrides?: Parameters<typeof buildSearchParams>[0]) => {
+      const { params, effective } = buildSearchParams(overrides);
+      const queryString = params.toString();
+      const recentValue = overrides?.q ?? effective.q;
+      if (recentValue && recentValue.length >= 2) {
+        const newRecentSearches = [recentValue, ...recentSearches.filter((s) => s !== recentValue)].slice(0, 5);
+        setRecentSearches(newRecentSearches);
+        localStorage.setItem('recentSearches', JSON.stringify(newRecentSearches));
+      }
+      navigate(`/items${queryString ? `?${queryString}` : ''}`);
+      setShowSuggestions(false);
+    },
+    [buildSearchParams, navigate, recentSearches]
+  );
+
+  const handleCategoryChange = useCallback(
+    (value: string) => {
+      setCategory(value);
+      performAutoSearch({ category: value });
+    },
+    [performAutoSearch]
+  );
+
+  const performQuickSearch = useCallback(
+    (override: Partial<{ q: string; category: string }>) => {
+      if (override.q !== undefined) setQ(override.q);
+      if (override.category !== undefined) setCategory(override.category);
+      performAutoSearch(override);
+    },
+    [performAutoSearch]
+  );
+
+  const performAutoSearchOnQuery = useCallback(() => {
+    performAutoSearch();
+    setIsMenuOpen(false);
+  }, [performAutoSearch]);
+
+  const debouncedSearch = useCallback(
+    (query: string) => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      if (autoSearchTimeoutRef.current) clearTimeout(autoSearchTimeoutRef.current);
+
+      searchTimeoutRef.current = window.setTimeout(() => {
+        if (query.length >= 2) {
+          setIsSearching(true);
+          setSearchSuggestions(generateSearchSuggestions(query));
+          setShowSuggestions(true);
+
+          autoSearchTimeoutRef.current = window.setTimeout(() => {
+            performAutoSearch();
+          }, 1000);
+        } else {
+          setSearchSuggestions([]);
+          setShowSuggestions(false);
+        }
+        setIsSearching(false);
+      }, 300);
+    },
+    [generateSearchSuggestions, performAutoSearch]
+  );
 
   useEffect(() => {
     return () => {
@@ -198,7 +288,12 @@ const Header: React.FC = () => {
     };
   }, []);
 
-  
+  useEffect(() => {
+    const tickerInterval = window.setInterval(() => {
+      setTickerIndex((prev) => (prev + 1) % tickerMessages.length);
+    }, 6000);
+    return () => window.clearInterval(tickerInterval);
+  }, []);
 
   const handleSearchInputChange = (value: string) => {
     setQ(value);
@@ -208,50 +303,28 @@ const Header: React.FC = () => {
   const handleSuggestionClick = (suggestion: string) => {
     setQ(suggestion);
     setShowSuggestions(false);
-    performAutoSearch();
+    performAutoSearch({ q: suggestion });
   };
 
   const submitSearch = () => {
-    performAutoSearch();
-    setIsMenuOpen(false);
+    performAutoSearchOnQuery();
   };
 
-  // On homepage, immediately dispatch search updates when any filter changes
-  useEffect(() => {
-    if (location.pathname !== '/') return;
-    const searchEvent = new CustomEvent('homepageSearch', {
-      detail: {
-        query: q,
-        category: category !== 'all' ? category : '',
-        priceMin,
-        priceMax,
-        checkIn,
-        checkOut,
-        nearMe,
-        lat,
-        lng,
-        radiusKm
-      }
-    });
-    window.dispatchEvent(searchEvent);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, category, priceMin, priceMax, checkIn, checkOut, nearMe, lat, lng, radiusKm, location.pathname]);
-
-  // Load recent searches from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches');
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
-    }
-    
-    // Mock trending searches (in real app, fetch from API)
+    if (saved) setRecentSearches(JSON.parse(saved));
     setTrendingSearches([
-      'camera rental', 'car rental', 'event equipment', 'drone rental',
-      'photography gear', 'party supplies', 'tools rental', 'laptop rental'
+      'camera rental',
+      'car rental',
+      'event equipment',
+      'drone rental',
+      'photography gear',
+      'party supplies',
+      'tools rental',
+      'laptop rental'
     ]);
   }, []);
 
-  // Handle clicks outside search suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -264,7 +337,6 @@ const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Geolocation trigger
   const detectLocation = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
@@ -272,13 +344,14 @@ const Header: React.FC = () => {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        const latitude = String(pos.coords.latitude);
+        const longitude = String(pos.coords.longitude);
         setNearMe(true);
-        setLat(String(pos.coords.latitude));
-        setLng(String(pos.coords.longitude));
+        setLat(latitude);
+        setLng(longitude);
+        performAutoSearch({ nearMe: true, lat: latitude, lng: longitude });
       },
-      () => {
-        alert('Unable to retrieve your location. Please allow location access.');
-      },
+      () => alert('Unable to retrieve your location. Please allow location access.'),
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };
@@ -286,403 +359,299 @@ const Header: React.FC = () => {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
-      if ((target as HTMLElement)?.closest?.('[data-sticky-portal]')) {
-        return; // ignore clicks inside sticky portals (e.g., Notification modal)
-      }
-      if (profileRef.current && !profileRef.current.contains(target)) {
+      if ((target as HTMLElement)?.closest?.('[data-sticky-portal]')) return;
+      if (profileRef.current && !profileRef.current.contains(target as Node)) {
         setIsProfileOpen(false);
       }
     }
-    if (isProfileOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isProfileOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
-  return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md dark:bg-gray-900/80 border-b border-platform-light-grey/80 dark:border-gray-700/60 shadow-sm w-full ml-0">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-3 lg:py-4">
-          {/* Logo and Brand */}
-          <div className="flex items-center space-x-4 lg:space-x-8">
-            <Link to="/" className="flex items-center space-x-2 lg:space-x-3">
-              <div className="flex items-center">
-                <img 
-                  src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'} 
-                  alt={settings?.business?.companyName || settings?.platform?.siteName || 'UrutiBz'} 
-                  className="h-24 w-52  lg:w-auto object-contain opacity-100 flex-shrink-0 drop-shadow-sm" 
-                />
-              </div>
-              {/* <div className="hidden md:flex items-center space-x-1 bg-gradient-to-r from-active/10 to-active/20 px-2 lg:px-3 py-1 rounded-full border border-active/20">
-                <Bot className="h-3 w-3 lg:h-4 lg:w-4 text-active" />
-                <span className="text-xs font-medium text-active">{settings?.platform?.siteTagline || 'AI-Powered'}</span>
-              </div> */}
-            </Link>
+  const normalizedCategories = React.useMemo(() => {
+    const seen = new Set<string>();
+    return topCategories
+      .filter((c) => c?.label && c.label.trim().length > 0)
+      .filter((c) => {
+        const key = c.label.trim().toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }, [topCategories]);
 
-            {/* Main Navigation - Desktop */}
-            <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-              <Link 
-                to="/items" 
-                className="nav-link text-sm xl:text-base"
-              >
-                {t('header.browseItems')}
+  const displayCurrency = ((settings?.platform as any)?.defaultCurrency) || 'USD';
+
+  return (
+    <header className="sticky top-0 z-50 shadow-sm bg-white/90 dark:bg-gray-900/80 backdrop-blur-md border-b border-white/20 dark:border-gray-700/60">
+      {/* Global ticker */}
+      <div className="hidden md:block bg-slate-900 text-white text-xs tracking-wide">
+        <div className="max-w-9xl mx-auto px-6 lg:px-10 py-2 flex items-center justify-between gap-6">
+          <div className="flex items-center gap-2 uppercase">
+            <Sparkles className="w-4 h-4 text-teal-300" />
+            <span>{tSync(tickerMessages[tickerIndex])}</span>
+          </div>
+          <div className="flex items-center gap-5 text-white/80">
+            <span className="inline-flex items-center gap-2">
+              <Phone className="w-3.5 h-3.5" />
+              <span>+1 (415) 555-0112</span>
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Headphones className="w-3.5 h-3.5" />
+              <TranslatedText text="24/7 Global Support" />
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Globe className="w-3.5 h-3.5" />
+              <span>{language?.toUpperCase() || 'EN'} · {displayCurrency}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center gap-4 py-3 lg:py-4">
+            <div className="flex items-center gap-4 lg:gap-6">
+              <Link to="/" className="flex items-center gap-3">
+                <img
+                  src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'}
+                  alt={settings?.business?.companyName || settings?.platform?.siteName || 'UrutiBz'}
+                  className="h-12 lg:h-14 object-contain"
+                />
+                
               </Link>
-              {/* Categories dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                  className="inline-flex items-center gap-1 nav-link text-sm xl:text-base"
-                >
-                  {t('header.categories')}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                {isCategoriesOpen && topCategories.length > 0 && (
-                  <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-platform shadow-platform-lg border border-platform-light-grey dark:border-gray-600 py-2 z-30">
-                    {topCategories.map((c) => (
+
+              <nav className="hidden xl:flex items-center gap-6">
+                <div className="relative">
+                  <button
+                    onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-200 hover:text-teal-600"
+                  >
+                    <TranslatedText text="Browse categories" />
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                {isCategoriesOpen && normalizedCategories.length > 0 && (
+                  <div className="absolute left-0 mt-2 w-72 max-h-[420px] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-3 px-4 z-30">
+                    {normalizedCategories.map((c) => (
                       <Link
                         key={c.id}
                         to={`/items?category=${encodeURIComponent(c.id)}`}
                         onClick={() => setIsCategoriesOpen(false)}
-                        className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-100 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors"
                       >
+                        <span className="inline-flex h-2 w-2 rounded-full bg-teal-500" />
                         {c.label}
                       </Link>
                     ))}
                   </div>
                 )}
-              </div>
-              <Link 
-                to="/create-listing" 
-                className="inline-flex items-center gap-2 text-sm xl:text-base px-3 py-2 rounded-full border hover:border-[#01aaa7] text-[#01aaa7]"
-              >
-                <PlusCircle className="w-4 h-4" />
-                {t('header.listItem')}
-              </Link>
-              {isAuthenticated && (
-                <Link 
-                  to="/favorites" 
-                  className="nav-link text-sm xl:text-base"
-                >
-                  {t('header.favorites')}
-                </Link>
-              )}
-            </nav>
-          </div>
-
-          {/* Right Side Actions */}
-          <div className="flex items-center space-x-2 lg:space-x-4">
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 text-platform-grey dark:text-gray-300 hover:text-platform-dark-grey dark:hover:text-white hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 rounded-platform transition-colors duration-200"
-              aria-label="Toggle dark mode"
-            >
-              {isDarkMode ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
-
-            {/* Language / Theme */}
-            <div className="relative">
-              <button
-                onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className="flex items-center px-2 py-2 text-platform-grey dark:text-gray-300 hover:text-platform-dark-grey dark:hover:text-white hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 rounded-platform transition-colors duration-200"
-                aria-label="Select language"
-              >
-                <Globe className="h-4 w-4" />
-                <ChevronDown className="h-3 w-3 ml-1" />
-              </button>
-              
-              {isLanguageOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-platform shadow-platform-lg border border-platform-light-grey dark:border-gray-600 py-1 z-20">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code as 'en' | 'fr' | 'rw');
-                        setIsLanguageOpen(false);
-                      }}
-                      className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 transition-colors duration-200 ${
-                        language === lang.code 
-                          ? 'text-platform-primary dark:text-[#01aaa7] font-medium' 
-                          : 'text-platform-grey dark:text-gray-300 hover:text-platform-dark-grey dark:hover:text-white'
-                      }`}
-                    >
-                      <span>{lang.flag}</span>
-                      <span>{lang.label}</span>
-                    </button>
-                  ))}
-                  <hr className="my-1 border-platform-light-grey dark:border-gray-600" />
-                  <button
-                    onClick={() => { toggleDarkMode(); setIsLanguageOpen(false); }}
-                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
-                  >
-                    {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                    <span>{t('header.toggleTheme')}</span>
-                  </button>
                 </div>
-              )}
+                {primaryNavLinks.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`text-sm font-medium ${
+                      location.pathname.startsWith(item.to)
+                        ? 'text-teal-600'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-teal-600'
+                    }`}
+                  >
+                    {tSync(item.label)}
+                  </Link>
+                ))}
+              </nav>
             </div>
 
-            {/* Authentication */}
-            {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                {/* My Account Button */}
-                <Link 
-                  to={user?.role === 'admin' ? '/admin' : '/dashboard'}
-                  className={`hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-                    user?.role === 'admin' 
-                      ? 'btn-outline hover:bg-[#01aaa7] hover:text-white' 
-                      : 'btn-outline hover:bg-[#01aaa7] hover:text-white'
-                  }`}
+            {/* Center search bar */}
+            <div className="hidden md:flex flex-1 min-w-[280px]">
+              <div className="flex items-stretch flex-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                <div className="relative">
+                  <select
+                    value={category}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="h-full rounded-l-full bg-gray-50 dark:bg-gray-900/40 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 border-r border-gray-200 dark:border-gray-700 focus:outline-none"
+                  >
+                    <option value="all">{tSync('All')}</option>
+                    {topCategories.slice(0, 8).map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </span>
+                </div>
+                <div className="flex items-center flex-1 px-4">
+                  <Search className={`w-4 h-4 mr-3 ${isSearching ? 'text-teal-500 animate-pulse' : 'text-slate-400'}`} />
+                  <input
+                    ref={searchInputRef}
+                    value={q}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && submitSearch()}
+                    onFocus={() => setShowSuggestions(q.length >= 2 || recentSearches.length > 0)}
+                    placeholder={tSync('Search inventory, suppliers, SKU...')}
+                    className="flex-1 bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={submitSearch}
+                  className="px-5 rounded-r-full bg-teal-600 text-white text-sm font-semibold hover:bg-teal-500 focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
                 >
-                  {user?.role === 'admin' ? t('header.adminDashboard') : t('header.myAccount')}
-                </Link>
-                
-                {/* User Profile Dropdown */}
-                <div className="relative flex items-center gap-3">
+                  <TranslatedText text="Search" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 lg:gap-3 ml-auto">
+              <button
+                onClick={toggleDarkMode}
+                className="inline-flex p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
+                aria-label={tSync('Toggle theme')}
+              >
+                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
+              <div className="hidden md:block">
+                <LanguageSwitcher buttonClassName="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-200 hover:text-teal-600 rounded-lg" />
+              </div>
+
+              <Link
+                to="/create-listing"
+                className="hidden lg:inline-flex items-center gap-2 px-4 py-2 rounded-full border border-teal-500 text-teal-600 font-semibold hover:bg-teal-50"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <TranslatedText text="List inventory" />
+              </Link>
+
+              {isAuthenticated ? (
+                <div className="flex items-center gap-3">
                   <RealtimeNotifications />
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-2 p-1 rounded-full hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 transition-colors duration-200"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-teal-400"
                   >
                     {user?.avatar ? (
-                      <img 
-                        src={user.avatar} 
-                        alt={user.name} 
-                        className="h-8 w-8 rounded-full object-cover border-2 border-platform-light-grey" 
-                      />
+                      <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-[#01aaa7] flex items-center justify-center text-white">
-                        <User className="h-4 w-4" />
+                      <div className="h-8 w-8 rounded-full bg-teal-500 flex items-center justify-center text-white">
+                        <User className="w-4 h-4" />
                       </div>
                     )}
-                    <ChevronDown className="h-4 w-4 text-platform-grey dark:text-gray-300" />
+                    <div className="hidden lg:flex flex-col items-start">
+                      <span className="text-[0.6rem] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
+                        {user?.role === 'admin' ? tSync('Operator') : tSync('Member')}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-1">
+                        {user?.name}
+                      </span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-slate-500" />
                   </button>
-                  
+
                   {isProfileOpen && (
-                    <div ref={profileRef} className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-platform shadow-platform-lg border border-platform-light-grey dark:border-gray-600 py-2 z-20">
-                      <div className="px-4 py-2 border-b border-platform-light-grey dark:border-gray-600">
-                          <p className="text-sm font-medium text-platform-dark-grey dark:text-white">{user?.name}</p>
-                          <p className="text-xs text-platform-grey dark:text-gray-300">{user?.email}</p>
-                          {user?.role && (
-                            <div className="mt-2">
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                user.role === 'admin' 
-                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' 
-                                  : user.role === 'moderator'
-                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                              }`}>
-                                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      <Link 
-                        to="/profile" 
-                        className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
-                      >
-                        {t('header.profileSettings')}
-                      </Link>
-                      <Link 
-                        to={user?.role === 'admin' ? '/admin' : '/dashboard'}
-                        className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
-                      >
-                        {user?.role === 'admin' ? t('header.adminDashboard') : t('header.myAccount')}
-                      </Link>
-                      <Link 
-                        to="/my-rentals" 
-                        className="block px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
-                      >
-                        {t('header.myRentals')}
-                      </Link>
-                      <hr className="my-1 border-platform-light-grey dark:border-gray-600" />
-                      <button 
-                        onClick={logout} 
-                        className="block w-full text-left px-4 py-2 text-sm text-platform-grey dark:text-gray-300 hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 hover:text-platform-dark-grey dark:hover:text-white transition-colors duration-200"
-                      >
-                        {t('header.signOut')}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <Link 
-                  to="/login" 
-                  className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium btn-outline"
-                >
-                  {t('header.login')}
-                </Link>
-                {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
-                  <Link 
-                    to="/register" 
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium bg-[#01aaa7] text-white rounded-platform hover:opacity-90"
-                  >
-                    {t('header.signUp')}
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-platform-grey dark:text-gray-300 hover:text-platform-dark-grey dark:hover:text-white hover:bg-platform-light-grey/50 dark:hover:bg-gray-700 rounded-platform transition-colors duration-200"
-              aria-label="Toggle menu"
-            >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Professional Search Section */}
-        <div className="hidden md:block pb-4">
-          <div className="max-w-6xl mx-auto">
-            {/* Main Search Bar */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex-1 relative">
-                <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 shadow-sm">
-                  <Search className={`h-5 w-5 mr-3 ${isSearching ? 'text-[#01aaa7] animate-pulse' : 'text-gray-400'}`} />
-                <input
-                    ref={searchInputRef}
-                  value={q}
-                    onChange={(e) => handleSearchInputChange(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && submitSearch()}
-                    onFocus={() => setShowSuggestions(q.length >= 2 || recentSearches.length > 0)}
-                    placeholder={t('header.searchPlaceholder')}
-                    className="flex-1 text-sm outline-none placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-transparent"
-                  />
-                  {isSearching && (
-                    <div className="ml-3 px-4 py-2 text-sm text-[#01aaa7] font-medium">
-                      {t('header.searching')}
-                    </div>
-                  )}
-                  {!isSearching && q.length >= 2 && (
-                    <button
-                      onClick={submitSearch}
-                      className="ml-3 px-6 py-2 bg-[#01aaa7] text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                    <div
+                      ref={profileRef}
+                      className="absolute top-full right-6 mt-3 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-3 z-40"
                     >
-                      {t('common.search')}
-                    </button>
+                      <div className="px-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
+                      </div>
+                      <div className="py-2">
+                        {/* <Link to="/profile" className="block px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-800">
+                          <TranslatedText text="Profile" />
+                        </Link> */}
+                        <Link
+                          to={roleDestination}
+                          className="block px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-800"
+                        >
+                          <TranslatedText text={roleLinkLabel} />
+                        </Link>
+                        {/* <Link to="/my-rentals" className="block px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-800">
+                          <TranslatedText text="Orders & inspections" />
+                        </Link> */}
+                      </div>
+                      <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
+                        <button
+                          onClick={logout}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-2xl"
+                        >
+                          <TranslatedText text="Sign out" />
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-              </div>
-
-            {/* Filter Row */}
-            <div className="flex items-center gap-4 flex-wrap">
-              {/* Category Filter */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('header.category')}:</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
-                >
-                  <option value="all">{t('header.allItems')}</option>
-                  {topCategories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Price Range Filter */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('header.price')}:</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={priceMin}
-                    onChange={(e) => setPriceMin(e.target.value)}
-                    placeholder="Min"
-                    className="w-20 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
-                  />
-                  <span className="text-gray-500 dark:text-gray-400">-</span>
-                  <input
-                    type="number"
-                    value={priceMax}
-                    onChange={(e) => setPriceMax(e.target.value)}
-                    placeholder="Max"
-                    className="w-20 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
-                  />
+              ) : (
+                <div className="hidden sm:flex items-center gap-2">
+                  <Link to="/login" className="px-4 py-2 rounded-full border border-gray-200 text-sm font-semibold text-slate-600 hover:border-teal-400">
+                    <TranslatedText text="Log in" />
+                  </Link>
+                  {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
+                    <Link to="/register" className="px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-sky-500 text-white text-sm font-semibold shadow-lg hover:opacity-90">
+                      <TranslatedText text="Create account" />
+                    </Link>
+                  )}
                 </div>
-              </div>
+              )}
 
-              {/* Date Range Filters */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('header.dates')}:</label>
-                <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={checkIn}
-                  onChange={(e) => setCheckIn(e.target.value)}
-                    placeholder="Start date"
-                    className="w-32 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
-                  onFocus={(e) => { e.currentTarget.type = 'date'; }}
-                  onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
-                />
-                  <span className="text-gray-500 dark:text-gray-400">to</span>
-                <input
-                  type="text"
-                  value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                    placeholder="End date"
-                    className="w-32 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
-                  onFocus={(e) => { e.currentTarget.type = 'date'; }}
-                  onBlur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
-                />
-                </div>
-              </div>
-
-              {/* Location Filter */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('header.location')}:</label>
-                {nearMe && lat && lng ? (
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 text-xs px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700">
-                      ✓ {t('header.locationEnabled')}
-                    </span>
-                    <input
-                      type="number"
-                      min={1}
-                      value={radiusKm}
-                      onChange={(e) => setRadiusKm(Number(e.target.value) || 25)}
-                      className="w-16 px-2 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#01aaa7] focus:border-transparent"
-                      placeholder={t('header.kmPlaceholder')}
-                      title={t('header.radiusKmTitle')}
-                    />
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={detectLocation}
-                    className="inline-flex items-center gap-2 px-3 py-2 text-sm text-[#01aaa7] hover:text-[#008a87] border border-[#01aaa7] hover:border-[#008a87] rounded-lg hover:bg-[#01aaa7]/5 transition-colors"
-                  >
-                    <span aria-hidden>📍</span>
-                    {t('header.useMyLocation')}
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="md:hidden p-2 rounded-full border border-gray-200 dark:border-gray-700"
+                aria-label="Toggle menu"
+              >
+                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
             </div>
           </div>
+
+          {/* Slim filter rail */}
+          {/* <div className="hidden lg:flex items-center gap-3 border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
+            <button
+              type="button"
+              onClick={detectLocation}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:border-teal-400"
+            >
+              <MapPin className="w-3.5 h-3.5 text-teal-500" />
+              {nearMe && lat && lng ? tSync('Near you') : tSync('Use location')}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-300"
+            >
+              <Calendar className="w-3.5 h-3.5 text-teal-500" />
+              {checkIn || checkOut ? `${checkIn || 'Start'} → ${checkOut || 'End'}` : tSync('Dates')}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-300"
+            >
+              <Filter className="w-3.5 h-3.5 text-teal-500" />
+              <TranslatedText text="Filters" />
+            </button>
+            {quickFilterPresets.map((preset) => (
+              <button
+                key={preset.value}
+                onClick={() => performQuickSearch({ q: preset.query })}
+                className="px-3 py-1.5 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:border-teal-400"
+              >
+                {tSync(preset.label)}
+              </button>
+            ))}
+          </div> */}
         </div>
 
-        {/* Search Suggestions Dropdown */}
         {showSuggestions && (
-          <div ref={suggestionsRef} className="hidden md:block absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-4xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
-            {/* Recent Searches */}
+          <div
+            ref={suggestionsRef}
+            className="hidden md:block absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-4xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto"
+          >
             {recentSearches.length > 0 && !q && (
               <div className="p-3 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
                   <Clock className="h-3 w-3" />
-                  {t('header.recentSearches')}
+                  <TranslatedText text="Recent Searches" />
                 </div>
                 {recentSearches.map((search, index) => (
                   <button
@@ -696,12 +665,11 @@ const Header: React.FC = () => {
               </div>
             )}
 
-            {/* Trending Searches */}
             {!q && (
               <div className="p-3 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
                   <TrendingUp className="h-3 w-3" />
-                  {t('header.trendingSearches')}
+                  <TranslatedText text="Trending Searches" />
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {trendingSearches.slice(0, 6).map((search, index) => (
@@ -717,11 +685,10 @@ const Header: React.FC = () => {
               </div>
             )}
 
-            {/* Search Suggestions */}
             {q.length >= 2 && searchSuggestions.length > 0 && (
               <div className="p-3">
                 <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                  {t('header.suggestions')}
+                  <TranslatedText text="Suggestions" />
                 </div>
                 {searchSuggestions.map((suggestion, index) => (
                   <button
@@ -735,77 +702,74 @@ const Header: React.FC = () => {
               </div>
             )}
 
-            {/* No Results */}
             {q.length >= 2 && searchSuggestions.length === 0 && (
               <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
-                {t('header.noSuggestionsFor')} "{q}"
+                <TranslatedText text="No suggestions for" /> "{q}"
               </div>
             )}
           </div>
         )}
 
-        {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 dark:border-gray-600 py-4">
-            <div className="space-y-2">
-              <Link 
-                to="/items" 
-                className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+          <div className="md:hidden border-t border-gray-200 dark:border-gray-600 py-4 px-4">
+            <div className="space-y-3">
+              <Link
+                to="/items"
+                className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-teal-500"
               >
-                {t('header.browseItems')}
+                <TranslatedText text="Marketplace" />
               </Link>
-              {/* Top categories quick links */}
-              <div className="grid grid-cols-2 gap-2 px-2">
-                {topCategories.slice(0,6).map(c => (
-                  <Link key={c.id} to={`/items?category=${c.id}`} className="text-sm px-3 py-2 rounded-lg border hover:border-[#01aaa7] text-gray-700 dark:text-gray-300">
+
+              <div className="grid grid-cols-2 gap-2">
+                {topCategories.slice(0, 6).map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/items?category=${c.id}`}
+                    className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+                  >
                     {c.label}
                   </Link>
                 ))}
               </div>
-              <Link 
-                to="/list-property" 
-                className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+
+              <Link
+                to="/create-listing"
+                className="block px-3 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-sky-500 text-white text-center font-semibold"
               >
-                {t('header.listYourItem')}
+                <TranslatedText text="List inventory" />
               </Link>
-              {isAuthenticated && (
+
+              {isAuthenticated ? (
                 <>
-                  <Link 
+                  <Link
                     to={user?.role === 'admin' ? '/admin' : '/dashboard'}
-                    className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                    className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
                   >
-                    <div className="flex items-center justify-between">
-                      <span>{user?.role === 'admin' ? t('header.adminDashboard') : t('header.myAccount')}</span>
-                      {user?.role === 'admin' && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                          {t('header.admin')}
-                        </span>
-                      )}
-                    </div>
+                    {user?.role === 'admin' ? <TranslatedText text="Admin Console" /> : <TranslatedText text="My Account" />}
                   </Link>
-                  <Link 
-                    to="/favorites" 
-                    className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                  <Link
+                    to="/favorites"
+                    className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
                   >
-                    {t('header.favorites')}
+                    <TranslatedText text="Favorites" />
                   </Link>
                 </>
-              )}
-              
-              {!isAuthenticated && (
-                <div className="pt-2 space-y-2">
-                  <Link 
-                      to="/login" 
-                      className="block px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                    >
-                      {t('header.login')}
-                    </Link>
-                  <Link 
-                    to="/register" 
-                    className="block px-2 py-2 text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition-all duration-200 text-center"
+              ) : (
+                <div className="space-y-2">
+                  <Link
+                    to="/login"
+                    className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-center"
                   >
-                    {t('header.signUp')}
+                    <TranslatedText text="Log in" />
                   </Link>
+                  {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
+                    <Link
+                      to="/register"
+                      className="block px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center font-semibold"
+                    >
+                      <TranslatedText text="Create account" />
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
@@ -817,3 +781,4 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+

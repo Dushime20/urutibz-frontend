@@ -50,8 +50,23 @@ inspectionApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access
+      // Only redirect if we're not already on login page and token exists
+      // This prevents redirect loops and handles token expiration gracefully
+      const token = localStorage.getItem('token');
+      const currentPath = window.location.pathname;
+      
+      console.warn('⚠️ [inspectionApi] 401 Unauthorized:', {
+        path: currentPath,
+        hasToken: !!token,
+        url: error.config?.url
+      });
+      
+      // Only clear auth and redirect if we have a token (means it was invalid/expired)
+      // If no token, the user is already logged out, so don't redirect
+      if (token && currentPath !== '/login') {
+        console.warn('🔒 [inspectionApi] Token invalid/expired, clearing auth and redirecting to login');
       clearAuthAndRedirect();
+      }
     }
     return Promise.reject(error);
   }
@@ -472,7 +487,8 @@ export const inspectionService = {
     });
 
     const body = response.data;
-    const dataBlock = body?.data ?? body; // supports { success, message, data } or raw
+    // Backend returns: { success: true, message: "...", data: { data: [...], page, limit, total, totalPages, ... } }
+    const dataBlock = body?.data ?? body; // Get PaginationResult
     const rawList = Array.isArray(dataBlock)
       ? dataBlock
       : (Array.isArray(dataBlock?.data) ? dataBlock.data : []);
@@ -486,8 +502,9 @@ export const inspectionService = {
       inspectionType: item.inspectionType,
       status: item.status,
       scheduledAt: item.scheduledAt,
-      location: item.inspectionLocation,
-      notes: item.generalNotes,
+      startedAt: item.startedAt,
+      location: item.inspectionLocation || item.location,
+      notes: item.generalNotes || item.notes,
       inspectorNotes: item.inspectorNotes,
       // timestamps
       createdAt: item.createdAt,
@@ -499,6 +516,7 @@ export const inspectionService = {
       disputes: [],
     }));
 
+    // Extract pagination info from PaginationResult structure
     const total = Number(dataBlock?.total ?? inspections.length);
     const currentPage = Number(dataBlock?.page ?? page);
     const pageLimit = Number(dataBlock?.limit ?? limit);
@@ -889,13 +907,27 @@ export const inspectorService = {
   async getInspectors(role?: string): Promise<Inspector[]> {
     const url = role ? `/inspectors?role=${encodeURIComponent(role)}` : '/inspectors';
     const response = await inspectionApi.get(url);
-    return response.data;
+    const body = response.data;
+    // Backend returns: { success: true, message: "...", data: [...] }
+    const dataBlock = body?.data ?? body;
+    return Array.isArray(dataBlock) ? dataBlock : [];
   },
 
-  // Get inspector by ID
+  // Get inspector by ID (Note: Backend doesn't have /inspectors/:id endpoint, so we search the list)
   async getInspector(id: string): Promise<Inspector> {
-    const response = await inspectionApi.get(`/inspectors/${id}`);
-    return response.data;
+    // Backend only has GET /inspections/inspectors (list), not /inspections/inspectors/:id
+    // So we fetch the list and find the matching inspector
+    const response = await inspectionApi.get('/inspectors');
+    const body = response.data;
+    const dataBlock = body?.data ?? body; // Handle { success, message, data } or raw array
+    const inspectorsList = Array.isArray(dataBlock) ? dataBlock : (Array.isArray(dataBlock?.data) ? dataBlock.data : []);
+    const inspector = inspectorsList.find((insp: any) => insp.id === id);
+    
+    if (!inspector) {
+      throw new Error(`Inspector with id ${id} not found`);
+    }
+    
+    return inspector;
   },
 
   // Create inspector

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Package, DollarSign, Shield, ArrowUpRight, Calendar, TrendingUp, Euro, PoundSterling, Banknote, Clock, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface Props {
   dashboardStats: {
@@ -31,7 +33,7 @@ const StatCard = ({ icon: Icon, title, value, subtitle, trend, color, bgColor, g
           {trend && (
             <div className="flex items-center space-x-1 text-teal-600 bg-teal-50 px-2 py-1 rounded-full">
               <TrendingUp className="w-3 h-3" />
-              <span className="text-xs font-medium">Live</span>
+              <span className="text-xs font-medium"><TranslatedText text="Live" /></span>
             </div>
           )}
         </div>
@@ -97,8 +99,8 @@ const ActivityItem = ({ item, type }: { item: any, type: 'booking' | 'transactio
           <div className="flex-1">
             <h4 className="font-semibold text-gray-900 dark:text-white truncate">
               {isBooking 
-                ? (item.product?.title || 'Product Booking')
-                : (item.transaction_type?.replace(/_/g, ' ') || 'Payment')
+                ? (item.product?.title || <TranslatedText text="Product Booking" />)
+                : (item.transaction_type?.replace(/_/g, ' ') || <TranslatedText text="Payment" />)
               }
             </h4>
             <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-slate-400 mt-1">
@@ -115,7 +117,7 @@ const ActivityItem = ({ item, type }: { item: any, type: 'booking' | 'transactio
             </div>
             {isBooking && item.product?.base_price_per_day && (
               <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-                ${item.product.base_price_per_day} per day
+                ${item.product.base_price_per_day} <TranslatedText text="per day" />
               </p>
             )}
             {!isBooking && item.metadata?.description && (
@@ -159,12 +161,13 @@ const EmptyState = ({ icon: Icon, message }: { icon: any, message: string }) => 
       <Icon className="w-8 h-8 text-gray-400 dark:text-slate-500" />
     </div>
     <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">{message}</p>
-    <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Data will appear here once available</p>
+    <p className="text-xs text-gray-400 dark:text-slate-500 mt-1"><TranslatedText text="Data will appear here once available" /></p>
   </div>
 );
 
 const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBookings, recentDashboardTransactions, onGoBookings, onGoWallet }) => {
   const navigate = useNavigate();
+  const { tSync } = useTranslation();
   const preferredCurrency = (dashboardStats as any)?.preferredCurrency || 'USD';
 
   const getCurrencyIcon = (code: string) => {
@@ -216,9 +219,9 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           icon={Package} 
-          title="Active Bookings" 
+          title={<TranslatedText text="Active Bookings" />} 
           value={formatNumber(dashboardStats.activeBookings)} 
-          subtitle="View all →" 
+          subtitle={tSync('View all') + ' →'} 
           trend={true} 
           color="text-teal-600" 
           bgColor="bg-teal-50 dark:bg-teal-900/30"
@@ -228,9 +231,9 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
         />
         <StatCard 
           icon={getCurrencyIcon(preferredCurrency)} 
-          title="Total Earnings" 
+          title={<TranslatedText text="Total Earnings" />} 
           value={`${preferredCurrency} ${formatEarnings(dashboardStats.totalEarnings)}`} 
-          subtitle="Available" 
+          subtitle={tSync('Available')} 
           trend={true} 
           color="text-emerald-600" 
           bgColor="bg-emerald-50 dark:bg-emerald-900/30"
@@ -239,7 +242,7 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
         />
         <StatCard 
           icon={getCurrencyIcon(preferredCurrency)} 
-          title="Transactions" 
+          title={<TranslatedText text="Transactions" />} 
           value={`${preferredCurrency} ${formatEarnings(dashboardStats.totalTransactions)}`} 
           subtitle="+12% this month" 
           trend={true} 
@@ -250,9 +253,9 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
         />
         <StatCard 
           icon={Shield} 
-          title="Inspections" 
+          title={<TranslatedText text="Inspections" />} 
           value={dashboardStats.activeInspections} 
-          subtitle="In progress" 
+          subtitle={tSync('In progress')} 
           trend={true} 
           color="text-purple-600" 
           bgColor="bg-purple-50 dark:bg-purple-900/30"
@@ -268,8 +271,8 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100/50 dark:border-slate-700/50">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Bookings</h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Latest booking activities</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white"><TranslatedText text="Recent Bookings" /></h3>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1"><TranslatedText text="Latest booking activities" /></p>
               </div>
               <button onClick={goBookings} className="text-sm text-teal-600 dark:text-teal-400 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors hover:bg-teal-100 dark:hover:bg-teal-900/30">
                 View all
@@ -279,7 +282,7 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
             
             <div className="space-y-3">
               {recentDashboardBookings.length === 0 ? (
-                <EmptyState icon={Calendar} message="No recent bookings found" />
+                <EmptyState icon={Calendar} message={tSync('No recent bookings found')} />
               ) : (
                 <ActivityItem key={`booking-${recentDashboardBookings[0].id}`} item={recentDashboardBookings[0]} type="booking" />
               )}
@@ -292,18 +295,18 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100/50 dark:border-slate-700/50">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Transactions</h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Latest payment activities</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white"><TranslatedText text="Recent Transactions" /></h3>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1"><TranslatedText text="Latest payment activities" /></p>
               </div>
               <button onClick={goWallet} className="text-sm text-teal-600 dark:text-teal-400 font-semibold flex items-center group bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-full transition-colors hover:bg-teal-100 dark:hover:bg-teal-900/30">
-                View all
+                <TranslatedText text="View all" />
                 <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </button>
             </div>
             
             <div className="space-y-3">
               {recentDashboardTransactions.length === 0 ? (
-                <EmptyState icon={DollarSign} message="No transactions yet" />
+                <EmptyState icon={DollarSign} message={tSync('No transactions yet')} />
               ) : (
                 <ActivityItem key={`transaction-${recentDashboardTransactions[0].id}`} item={recentDashboardTransactions[0]} type="transaction" />
               )}

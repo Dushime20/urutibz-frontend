@@ -65,10 +65,24 @@ riskManagementApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Only redirect if we're not already on login page and token exists
+      const token = localStorage.getItem('token');
+      const currentPath = window.location.pathname;
+      
+      console.warn('⚠️ [riskManagementApi] 401 Unauthorized:', {
+        path: currentPath,
+        hasToken: !!token,
+        url: error.config?.url
+      });
+      
+      // Only clear auth and redirect if we have a token (means it was invalid/expired)
+      if (token && currentPath !== '/login') {
+        console.warn('🔒 [riskManagementApi] Token invalid/expired, clearing auth and redirecting to login');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

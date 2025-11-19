@@ -1,5 +1,7 @@
 import React from 'react';
 import ProfileSettingsForm from './ProfileSettingsForm';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface Props {
   realUser: any;
@@ -7,6 +9,7 @@ interface Props {
 }
 
 const ProfileSection: React.FC<Props> = ({ realUser, setRealUser }) => {
+  const { tSync } = useTranslation();
   const token = (typeof window !== 'undefined' && localStorage.getItem('token')) || '';
   let userId = '';
   try {
@@ -18,7 +21,7 @@ const ProfileSection: React.FC<Props> = ({ realUser, setRealUser }) => {
     <div className="space-y-6">
       <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100">Profile Settings</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Profile Settings" /></h3>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:gap-6">
           <div className="lg:col-span-1">
@@ -34,15 +37,15 @@ const ProfileSection: React.FC<Props> = ({ realUser, setRealUser }) => {
             {realUser && (
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-500 dark:text-slate-400">Email:</span>
+                  <span className="text-slate-500 dark:text-slate-400"><TranslatedText text="Email" />:</span>
                   <span className="font-medium text-slate-900 dark:text-slate-100">{realUser.email || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-500 dark:text-slate-400">Phone:</span>
+                  <span className="text-slate-500 dark:text-slate-400"><TranslatedText text="Phone" />:</span>
                   <span className="font-medium text-slate-900 dark:text-slate-100">{realUser.phone || '—'}</span>
                 </div>
                 <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
-                  <span className="text-slate-500 dark:text-slate-400">Verification:</span>
+                  <span className="text-slate-500 dark:text-slate-400"><TranslatedText text="Verification" />:</span>
                   {(() => {
                     console.log( realUser.emailVerified,'email is veriefied or not')
                     const idVerified = realUser.kyc_status === 'verified' || realUser.kyc_status === 'approved';
@@ -50,9 +53,9 @@ const ProfileSection: React.FC<Props> = ({ realUser, setRealUser }) => {
                     const emailOk = realUser.emailVerified === true || realUser.email_verified === true || !!realUser.email_verified_at;
                     return (
                       <>
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${idVerified ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>ID {idVerified ? 'Verified' : 'Unverified'}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${phoneOk ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>Phone {phoneOk ? 'Verified' : 'Unverified'}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${emailOk ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}>Email {emailOk ? 'Verified' : 'Unverified'}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${idVerified ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}><TranslatedText text="ID" /> {idVerified ? <TranslatedText text="Verified" /> : <TranslatedText text="Unverified" />}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${phoneOk ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}><TranslatedText text="Phone" /> {phoneOk ? <TranslatedText text="Verified" /> : <TranslatedText text="Unverified" />}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${emailOk ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'}`}><TranslatedText text="Email" /> {emailOk ? <TranslatedText text="Verified" /> : <TranslatedText text="Unverified" />}</span>
                       </>
                     );
                   })()}

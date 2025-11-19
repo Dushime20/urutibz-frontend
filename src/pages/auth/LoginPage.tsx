@@ -67,7 +67,19 @@ const LoginPage: React.FC = () => {
         // ALWAYS fetch full user profile after login to ensure complete fields
         const profileRes: any = await fetchUserProfile(data.token);
         const userObj = profileRes?.data ?? profileRes; // support both {success,data} and raw
-        if (userObj) setAuthenticatedUser(userObj);
+        
+        console.log('🔑 [LoginPage] User profile fetched:', {
+          hasUserObj: !!userObj,
+          userObj: userObj ? { id: userObj.id, role: userObj.role, email: userObj.email } : null,
+          fullResponse: profileRes
+        });
+        
+        if (userObj) {
+          setAuthenticatedUser(userObj);
+          console.log('✅ [LoginPage] User authenticated and set in context');
+        } else {
+          console.error('❌ [LoginPage] No user object received from profile fetch');
+        }
 
         // reset attempts on success
         const key = 'loginAttempts';
@@ -79,6 +91,12 @@ const LoginPage: React.FC = () => {
         // Check 2FA flag from whichever user object we have
         const twoFAEnabled = userObj?.twoFactorEnabled === true || userObj?.two_factor_enabled === true;
         const role = userObj?.role;
+        
+        console.log('🎯 [LoginPage] Navigation decision:', {
+          role,
+          twoFAEnabled,
+          willNavigateTo: role === "admin" ? "/admin" : role === "inspector" ? "/inspector" : role === "moderator" ? "/moderator" : "/dashboard"
+        });
 
         // If org requires 2FA for admins and this admin hasn't enabled it yet → force setup
         const requireTwoFactorOrg = Boolean((settings as any)?.security?.twoFactorRequired) || (localStorage.getItem('security.requireTwoFactor') === 'true');
@@ -96,9 +114,29 @@ const LoginPage: React.FC = () => {
 
         // No 2FA required → navigate normally
         setTimeout(() => {
-          if (role === "admin") navigate("/admin");
-          else if (role === "inspector") navigate("/inspector");
-          else navigate("/dashboard");
+          // Double-check user is set before navigating
+          const storedUser = localStorage.getItem('user');
+          const storedToken = localStorage.getItem('token');
+          
+          if (!storedUser || !storedToken) {
+            console.error('❌ [LoginPage] User or token missing before navigation');
+            return;
+          }
+          
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            const finalRole = parsedUser?.role || role;
+            
+            console.log('🚀 [LoginPage] Navigating to:', finalRole);
+            
+            if (finalRole === "admin") navigate("/admin");
+            else if (finalRole === "inspector") navigate("/inspector");
+            else if (finalRole === "moderator") navigate("/moderator");
+            else navigate("/dashboard");
+          } catch (parseError) {
+            console.error('❌ [LoginPage] Error parsing stored user:', parseError);
+            navigate("/dashboard"); // Fallback to dashboard
+          }
         }, 1500);
       }
     } catch (err: any) {
@@ -275,9 +313,30 @@ const LoginPage: React.FC = () => {
                 const role = pendingUserRole;
                 // Defer navigation to next tick to avoid race with modal unmount
                 setTimeout(() => {
-                  if (role === 'admin') navigate('/admin');
-                  else if (role === 'inspector') navigate('/inspector');
-                  else navigate('/dashboard');
+                  // Double-check user is set before navigating
+                  const storedUser = localStorage.getItem('user');
+                  const storedToken = localStorage.getItem('token');
+                  
+                  if (!storedUser || !storedToken) {
+                    console.error('❌ [LoginPage] User or token missing before 2FA navigation');
+                    navigate('/dashboard');
+                    return;
+                  }
+                  
+                  try {
+                    const parsedUser = JSON.parse(storedUser);
+                    const finalRole = parsedUser?.role || role;
+                    
+                    console.log('🚀 [LoginPage] Navigating after 2FA to:', finalRole);
+                    
+                    if (finalRole === 'admin') navigate('/admin');
+                    else if (finalRole === 'inspector') navigate('/inspector');
+                    else if (finalRole === 'moderator') navigate('/moderator');
+                    else navigate('/dashboard');
+                  } catch (parseError) {
+                    console.error('❌ [LoginPage] Error parsing stored user after 2FA:', parseError);
+                    navigate('/dashboard'); // Fallback to dashboard
+                  }
                 }, 0);
               }}
               onCancel={() => setRequireTwoFactor(false)}

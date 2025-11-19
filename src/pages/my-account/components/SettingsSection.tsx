@@ -5,6 +5,8 @@ import { fetchUserProfile, updateUser } from '../service/api';
 import { useToast } from '../../../contexts/ToastContext';
 import LoginHistoryModal from './LoginHistoryModal';
 import ChangePasswordModal from './ChangePasswordModal';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface Props {
   twoFactorStatus: { isLoading: boolean; enabled: boolean };
@@ -13,6 +15,7 @@ interface Props {
 }
 
 const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) => {
+  const { tSync } = useTranslation();
   const [showLoginHistory, setShowLoginHistory] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [isDark, setIsDark] = useState<boolean>(false);
@@ -109,8 +112,8 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
       <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100">Security & Privacy</h3>
-            <p className="text-gray-600 dark:text-slate-400">Manage your account security and privacy settings</p>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Security & Privacy" /></h3>
+            <p className="text-gray-600 dark:text-slate-400"><TranslatedText text="Manage your account security and privacy settings" /></p>
           </div>
         </div>
         <div className="space-y-6">
@@ -119,8 +122,8 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
               <div className="flex items-center gap-3">
                 <Lock className="w-5 h-5 text-gray-400 dark:text-slate-500" />
                 <div>
-                  <h4 className="font-medium text-gray-900 dark:text-slate-100">Password</h4>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Last updated 3 months ago</p>
+                  <h4 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Password" /></h4>
+                  <p className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Last updated 3 months ago" /></p>
                 </div>
               </div>
               <Button 
@@ -129,7 +132,7 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
                 onClick={() => setShowChangePassword(true)}
               >
                 <Edit2 className="w-4 h-4" />
-                Change Password
+                <TranslatedText text="Change Password" />
               </Button>
             </div>
           </div>
@@ -138,16 +141,16 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
               <div className="flex items-center gap-3">
                 <Shield className="w-5 h-5 text-gray-400 dark:text-slate-500" />
                 <div>
-                  <h4 className="font-medium text-gray-900 dark:text-slate-100">Two-Factor Authentication</h4>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Add an extra layer of security to your account</p>
+                  <h4 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Two-Factor Authentication" /></h4>
+                  <p className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Add an extra layer of security to your account" /></p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <span className={`text-sm font-medium ${twoFactorStatus.isLoading ? 'text-gray-400 dark:text-slate-500' : twoFactorStatus.enabled ? 'text-green-600' : 'text-gray-500 dark:text-slate-400'}`}>
-                  {twoFactorStatus.isLoading ? 'Loading...' : twoFactorStatus.enabled ? 'Enabled' : 'Disabled'}
+                  {twoFactorStatus.isLoading ? <TranslatedText text="Loading..." /> : twoFactorStatus.enabled ? <TranslatedText text="Enabled" /> : <TranslatedText text="Disabled" />}
                 </span>
                 <Button onClick={() => setShow2FAModal(true)} disabled={twoFactorStatus.isLoading} className={`px-3 py-1 ${twoFactorStatus.isLoading ? 'bg-gray-400 cursor-not-allowed' : twoFactorStatus.enabled ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-my-primary hover:bg-primary-700 text-white'}`}>
-                  {twoFactorStatus.isLoading ? 'Loading...' : twoFactorStatus.enabled ? 'Manage' : 'Enable'}
+                  {twoFactorStatus.isLoading ? <TranslatedText text="Loading..." /> : twoFactorStatus.enabled ? <TranslatedText text="Manage" /> : <TranslatedText text="Enable" />}
                 </Button>
               </div>
             </div>
@@ -157,8 +160,8 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
               <div className="flex items-center gap-3">
                 <Eye className="w-5 h-5 text-gray-400 dark:text-slate-500" />
                 <div>
-                  <h4 className="font-medium text-gray-900 dark:text-slate-100">Login Activity</h4>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">View your recent login history</p>
+                  <h4 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Login Activity" /></h4>
+                  <p className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="View your recent login history" /></p>
                 </div>
               </div>
               <Button 
@@ -166,7 +169,7 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
                 className="w-full sm:w-auto text-gray-700 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800"
                 onClick={() => setShowLoginHistory(true)}
               >
-                View Activity
+                <TranslatedText text="View Activity" />
               </Button>
             </div>
           </div>
@@ -174,14 +177,14 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
       </div>
 
       <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 dark:text-slate-100">Preferences</h3>
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 dark:text-slate-100"><TranslatedText text="Preferences" /></h3>
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 border-b border-gray-100 dark:border-slate-700">
             <div className="flex items-center gap-3">
               <DollarSign className="w-5 h-5 text-gray-400 dark:text-slate-500" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-slate-100">Preferred Currency</h4>
-                <p className="text-sm text-gray-500 dark:text-slate-400">Display prices in your favorite currency</p>
+                <h4 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Preferred Currency" /></h4>
+                <p className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Display prices in your favorite currency" /></p>
               </div>
             </div>
             <select
@@ -189,7 +192,7 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
               onChange={(e) => savePreferredCurrency(e.target.value)}
               className="w-full sm:w-auto px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
             >
-              <option value="">Select currency</option>
+              <option value=""><TranslatedText text="Select currency" /></option>
               <option value="USD">USD ($)</option>
               <option value="RWF">RWF (R₣)</option>
               <option value="EUR">EUR (€)</option>
@@ -202,8 +205,8 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
             <div className="flex items-center gap-3">
               <Moon className="w-5 h-5 text-gray-400 dark:text-slate-500" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-slate-100">Theme</h4>
-                <p className="text-sm text-gray-500 dark:text-slate-400">Choose your preferred theme</p>
+                <h4 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Theme" /></h4>
+                <p className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Choose your preferred theme" /></p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -233,8 +236,8 @@ const SettingsSection: React.FC<Props> = ({ twoFactorStatus, setShow2FAModal }) 
             <div className="flex items-center gap-3">
               <Bell className="w-5 h-5 text-gray-400 dark:text-slate-500" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-slate-100">Email Notifications</h4>
-                <p className="text-sm text-gray-500 dark:text-slate-400">Receive important updates via email</p>
+                <h4 className="font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Email Notifications" /></h4>
+                <p className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Receive important updates via email" /></p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">

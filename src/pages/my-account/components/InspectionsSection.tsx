@@ -9,6 +9,8 @@ import InspectionDetailsModal from '../../../components/inspections/InspectionDe
 import InspectionPaymentModal from './InspectionPaymentModal';
 import { formatDateUTC } from '../../../utils/dateUtils';
 import axios from 'axios';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface Props {
   loading: boolean;
@@ -23,6 +25,7 @@ const InspectionsSection: React.FC<Props> = ({
   onViewInspection,
   onRequestInspection,
 }) => {
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<'my-items' | 'rented-items' | 'disputes'>('my-items');
   const [rentedInspections, setRentedInspections] = useState<any[]>([]);
   const [rentedLoading, setRentedLoading] = useState(false);
@@ -235,14 +238,14 @@ const InspectionsSection: React.FC<Props> = ({
         // This state should not occur with the combined form
         return (
           <span className="mt-2 px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full dark:bg-gray-900/20 dark:text-gray-400">
-            Pre-Inspection Pending
+            <TranslatedText text="Pre-Inspection Pending" />
           </span>
         );
       }
       if (inspection.ownerPreInspectionConfirmed && !inspection.renterPreReviewAccepted) {
         return (
           <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
-            Waiting for Renter Review
+            <TranslatedText text="Waiting for Renter Review" />
           </span>
         );
       }
@@ -281,7 +284,7 @@ const InspectionsSection: React.FC<Props> = ({
             className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
           >
             <FileText className="w-3 h-3" />
-            Review Pre-Inspection
+            <TranslatedText text="Review Pre-Inspection" />
           </button>
         );
       }
@@ -427,7 +430,7 @@ const InspectionsSection: React.FC<Props> = ({
             className="mt-2 px-3 py-1 bg-teal-600 text-white text-xs rounded-full hover:bg-teal-700 transition-colors flex items-center gap-1"
           >
             <Upload className="w-3 h-3" />
-            Provide Post-Inspection
+            <TranslatedText text="Provide Post-Inspection" />
           </button>
         );
       } else {
@@ -446,7 +449,7 @@ const InspectionsSection: React.FC<Props> = ({
       if (isConfirmed && !inspection.ownerPostReviewAccepted && !inspection.ownerDisputeRaised) {
         return (
           <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
-            Waiting for Owner Review
+            <TranslatedText text="Waiting for Owner Review" />
           </span>
         );
       }
@@ -455,7 +458,7 @@ const InspectionsSection: React.FC<Props> = ({
       if (inspection.ownerPostReviewAccepted) {
         return (
           <span className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/20 dark:text-green-400">
-            Owner Accepted
+            <TranslatedText text="Owner Accepted" />
           </span>
         );
       }
@@ -464,7 +467,7 @@ const InspectionsSection: React.FC<Props> = ({
       if (inspection.ownerDisputeRaised) {
         return (
           <span className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full dark:bg-red-900/20 dark:text-red-400">
-            Owner Dispute Raised
+            <TranslatedText text="Owner Dispute Raised" />
           </span>
         );
       }
@@ -475,7 +478,7 @@ const InspectionsSection: React.FC<Props> = ({
         if (inspection.renterPreReviewAccepted) {
           return (
             <span className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/20 dark:text-green-400">
-              Review Accepted
+              <TranslatedText text="Review Accepted" />
             </span>
           );
         }
@@ -484,7 +487,7 @@ const InspectionsSection: React.FC<Props> = ({
         if (inspection.renterDiscrepancyReported) {
           return (
             <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
-              Discrepancy Reported
+              <TranslatedText text="Discrepancy Reported" />
             </span>
           );
         }
@@ -494,7 +497,7 @@ const InspectionsSection: React.FC<Props> = ({
       if (!hasOwnerPreInspection) {
         return (
           <span className="mt-2 px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full dark:bg-gray-900/20 dark:text-gray-400">
-            Waiting for Owner Pre-Inspection
+            <TranslatedText text="Waiting for Owner Pre-Inspection" />
           </span>
         );
       }
@@ -564,7 +567,7 @@ const InspectionsSection: React.FC<Props> = ({
             className="mt-2 px-3 py-1 bg-teal-600 text-white text-xs rounded-full hover:bg-teal-700 transition-colors flex items-center gap-1"
           >
             <Upload className="w-3 h-3" />
-            Provide Post-Inspection
+            <TranslatedText text="Provide Post-Inspection" />
           </button>
         );
       }
@@ -573,7 +576,7 @@ const InspectionsSection: React.FC<Props> = ({
       if (isConfirmed && !inspection.ownerPostReviewAccepted && !inspection.ownerDisputeRaised) {
         return (
           <span className="mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
-            Waiting for Owner Review
+            <TranslatedText text="Waiting for Owner Review" />
           </span>
         );
       }
@@ -582,7 +585,7 @@ const InspectionsSection: React.FC<Props> = ({
       if (inspection.ownerPostReviewAccepted) {
         return (
           <span className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full dark:bg-green-900/20 dark:text-green-400">
-            Owner Accepted
+            <TranslatedText text="Owner Accepted" />
           </span>
         );
       }
@@ -591,7 +594,7 @@ const InspectionsSection: React.FC<Props> = ({
       if (inspection.ownerDisputeRaised) {
         return (
           <span className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full dark:bg-red-900/20 dark:text-red-400">
-            Owner Dispute Raised
+            <TranslatedText text="Owner Dispute Raised" />
           </span>
         );
       }
@@ -666,7 +669,7 @@ const InspectionsSection: React.FC<Props> = ({
               className="mt-2 px-3 py-1 bg-teal-600 text-white text-xs rounded-full hover:bg-teal-700 transition-colors flex items-center gap-1"
             >
               <Upload className="w-3 h-3" />
-              Provide Post-Inspection
+              <TranslatedText text="Provide Post-Inspection" />
             </button>
           );
         }
@@ -698,7 +701,7 @@ const InspectionsSection: React.FC<Props> = ({
             className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
           >
             <FileText className="w-3 h-3" />
-            Review Post-Inspection
+            <TranslatedText text="Review Post-Inspection" />
           </button>
         );
       }
@@ -982,7 +985,7 @@ const InspectionsSection: React.FC<Props> = ({
                 : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            My Items ({userInspections.length})
+            <TranslatedText text="My Items" /> ({userInspections.length})
           </button>
           <button
             onClick={() => setActiveTab('rented-items')}
@@ -992,7 +995,7 @@ const InspectionsSection: React.FC<Props> = ({
                 : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            Rented Items ({rentedInspections.length})
+            <TranslatedText text="Rented Items" /> ({rentedInspections.length})
           </button>
           <button
             onClick={() => setActiveTab('disputes')}
@@ -1002,13 +1005,13 @@ const InspectionsSection: React.FC<Props> = ({
                 : 'text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            Disputes ({userDisputes.length})
+            <TranslatedText text="Disputes" /> ({userDisputes.length})
           </button>
         </div>
         <div className="flex gap-2">
           {activeTab === 'my-items' && (
             <button onClick={() => onRequestInspection()} className="bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 rounded text-sm">
-              Request Inspection
+              <TranslatedText text="Request Inspection" />
             </button>
           )}
           {activeTab === 'disputes' && (
@@ -1017,7 +1020,7 @@ const InspectionsSection: React.FC<Props> = ({
               className="bg-red-600 text-white px-3 py-2 hover:bg-red-700 rounded flex items-center gap-2 text-sm"
             >
               <Plus className="w-4 h-4" />
-              Raise Dispute
+              <TranslatedText text="Raise Dispute" />
             </button>
           )}
         </div>
@@ -1029,13 +1032,13 @@ const InspectionsSection: React.FC<Props> = ({
           {userInspections.length === 0 ? (
             <div className="text-center py-8">
               <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Inspections Yet</h3>
-              <p className="text-gray-500 mb-4 dark:text-slate-400">You haven't requested any inspections yet.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100"><TranslatedText text="No Inspections Yet" /></h3>
+              <p className="text-gray-500 mb-4 dark:text-slate-400"><TranslatedText text="You haven't requested any inspections yet." /></p>
               <button
                 onClick={() => onRequestInspection()}
                 className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
               >
-                Request Your First Inspection
+                <TranslatedText text="Request Your First Inspection" />
               </button>
             </div>
           ) : (
@@ -1051,7 +1054,7 @@ const InspectionsSection: React.FC<Props> = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2 flex-wrap gap-2">
                     <h4 className="font-semibold text-gray-900 capitalize dark:text-slate-100">
-                      {inspection.inspectionType?.replace(/_/g, ' ') || 'Inspection'}
+                      {inspection.inspectionType?.replace(/_/g, ' ') || <TranslatedText text="Inspection" />}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(inspection.status)}`}>
                       {getStatusIcon(inspection.status)}
@@ -1099,7 +1102,7 @@ const InspectionsSection: React.FC<Props> = ({
                             title="Post-inspection available for review"
                           >
                             <FileText className="w-3 h-3" />
-                            Post-Inspection Available
+                            <TranslatedText text="Post-Inspection Available" />
                           </span>
                         );
                       }
@@ -1113,7 +1116,7 @@ const InspectionsSection: React.FC<Props> = ({
                         return (
                           <span className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400">
                             <AlertTriangle className="w-3 h-3" />
-                            Dispute Raised
+                            <TranslatedText text="Dispute Raised" />
                           </span>
                         );
                       }
@@ -1121,7 +1124,7 @@ const InspectionsSection: React.FC<Props> = ({
                         return (
                           <span className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400">
                             <CheckCircle className="w-3 h-3" />
-                            Accepted
+                            <TranslatedText text="Accepted" />
                           </span>
                         );
                       }
@@ -1152,11 +1155,11 @@ const InspectionsSection: React.FC<Props> = ({
                 <div className="sm:text-right text-left">
                   <div className="flex items-center gap-2">
                     <Eye className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-                    <span className="text-xs text-gray-500 dark:text-slate-400">View Details</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="View Details" /></span>
                   </div>
                   {inspection.createdAt && (
                     <p className="text-xs text-gray-400 mt-1 break-words dark:text-slate-500">
-                      Created {formatDate(inspection.createdAt)}
+                      <TranslatedText text="Created" /> {formatDate(inspection.createdAt)}
                     </p>
                   )}
                   {/* Action Button based on inspection status */}
@@ -1173,11 +1176,11 @@ const InspectionsSection: React.FC<Props> = ({
                         className="mt-2 px-3 py-1 bg-emerald-600 text-white text-xs rounded-full hover:bg-emerald-700 transition-colors flex items-center gap-1"
                       >
                         <DollarSign className="w-3 h-3" />
-                        Pay Now
+                        <TranslatedText text="Pay Now" />
                       </button>
                     ) : inspection.inspection_cost || inspection.inspectionCost ? (
                       <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
-                        Cost: {inspection.currency || 'USD'} {inspection.inspection_cost || inspection.inspectionCost}
+                        <TranslatedText text="Cost" />: {inspection.currency || 'USD'} {inspection.inspection_cost || inspection.inspectionCost}
                       </div>
                     ) : null
                   ) : null}
@@ -1192,7 +1195,7 @@ const InspectionsSection: React.FC<Props> = ({
                       className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full hover:bg-red-200 transition-colors flex items-center gap-1 dark:bg-red-900/20 dark:hover:bg-red-900/30"
                     >
                       <AlertCircle className="w-3 h-3" />
-                      Raise Dispute
+                      <TranslatedText text="Raise Dispute" />
                     </button>
                   )}
                 </div>
@@ -1208,8 +1211,8 @@ const InspectionsSection: React.FC<Props> = ({
           {rentedInspections.length === 0 ? (
             <div className="text-center py-8">
               <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Rented Item Inspections</h3>
-              <p className="text-gray-500 mb-4 dark:text-slate-400">You haven't rented any items that require inspections yet.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100"><TranslatedText text="No Rented Item Inspections" /></h3>
+              <p className="text-gray-500 mb-4 dark:text-slate-400"><TranslatedText text="You haven't rented any items that require inspections yet." /></p>
             </div>
           ) : (
             rentedInspections.map((inspection) => (
@@ -1224,7 +1227,7 @@ const InspectionsSection: React.FC<Props> = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <h4 className="font-semibold text-gray-900 capitalize dark:text-slate-100">
-                      {inspection.inspectionType?.replace(/_/g, ' ') || 'Inspection'}
+                      {inspection.inspectionType?.replace(/_/g, ' ') || <TranslatedText text="Inspection" />}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(inspection.status)}`}>
                       {getStatusIcon(inspection.status)}
@@ -1253,7 +1256,7 @@ const InspectionsSection: React.FC<Props> = ({
 
                   {inspection.inspectorNotes && (
                     <p className="text-sm text-gray-600 mb-2 italic dark:text-slate-400">
-                      Inspector Notes: {inspection.inspectorNotes}
+                      <TranslatedText text="Inspector Notes" />: {inspection.inspectorNotes}
                     </p>
                   )}
                 </div>
@@ -1261,11 +1264,11 @@ const InspectionsSection: React.FC<Props> = ({
                 <div className="sm:text-right text-left">
                   <div className="flex items-center gap-2">
                     <Eye className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-                    <span className="text-xs text-gray-500 dark:text-slate-400">View Details</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="View Details" /></span>
                   </div>
                   {inspection.createdAt && (
                     <p className="text-xs text-gray-400 mt-1 break-words dark:text-slate-500">
-                      Created {formatDate(inspection.createdAt)}
+                      <TranslatedText text="Created" /> {formatDate(inspection.createdAt)}
                     </p>
                   )}
                   {/* Action Button based on inspection status */}
@@ -1283,13 +1286,13 @@ const InspectionsSection: React.FC<Props> = ({
           {userDisputes.length === 0 ? (
             <div className="text-center py-8">
               <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Disputes Yet</h3>
-              <p className="text-gray-500 mb-4 dark:text-slate-400">You haven't raised any disputes yet.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100"><TranslatedText text="No Disputes Yet" /></h3>
+              <p className="text-gray-500 mb-4 dark:text-slate-400"><TranslatedText text="You haven't raised any disputes yet." /></p>
               <button
                 onClick={() => setShowDisputeModal(true)}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
               >
-                Raise Your First Dispute
+                <TranslatedText text="Raise Your First Dispute" />
               </button>
             </div>
           ) : (
@@ -1301,7 +1304,7 @@ const InspectionsSection: React.FC<Props> = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <h4 className="font-semibold text-gray-900 capitalize dark:text-slate-100">
-                      {dispute.disputeType?.replace(/_/g, ' ') || 'Dispute'}
+                      {dispute.disputeType?.replace(/_/g, ' ') || <TranslatedText text="Dispute" />}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getDisputeStatusColor(dispute.status)}`}>
                       {getDisputeStatusIcon(dispute.status)}
@@ -1313,13 +1316,13 @@ const InspectionsSection: React.FC<Props> = ({
                     {dispute.createdAt && (
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        <span>Raised {formatDate(dispute.createdAt)}</span>
+                        <span><TranslatedText text="Raised" /> {formatDate(dispute.createdAt)}</span>
                       </div>
                     )}
                     {dispute.inspectionId && (
                       <div className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
-                        <span>Inspection #{dispute.inspectionId}</span>
+                        <span><TranslatedText text="Inspection" /> #{dispute.inspectionId}</span>
                       </div>
                     )}
                   </div>
@@ -1332,11 +1335,11 @@ const InspectionsSection: React.FC<Props> = ({
                 <div className="text-right">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-                    <span className="text-xs text-gray-500 dark:text-slate-400">Dispute</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Dispute" /></span>
                   </div>
                   {dispute.updatedAt && (
                     <p className="text-xs text-gray-400 mt-1 dark:text-slate-500">
-                      Updated {formatDate(dispute.updatedAt)}
+                      <TranslatedText text="Updated" /> {formatDate(dispute.updatedAt)}
                     </p>
                   )}
                 </div>
@@ -1351,47 +1354,47 @@ const InspectionsSection: React.FC<Props> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowDisputeModal(false)} />
           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 dark:bg-slate-900">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 dark:text-slate-100">Raise Dispute</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 dark:text-slate-100"><TranslatedText text="Raise Dispute" /></h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Dispute Type *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Dispute Type" /> *</label>
                 <select
                   value={disputeForm.disputeType}
                   onChange={(e) => setDisputeForm(prev => ({ ...prev, disputeType: e.target.value as DisputeType }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 >
-                  <option value={DisputeType.DAMAGE_ASSESSMENT}>Damage Assessment</option>
-                  <option value={DisputeType.COST_DISPUTE}>Cost Dispute</option>
-                  <option value={DisputeType.PROCEDURE_VIOLATION}>Procedure Violation</option>
-                  <option value={DisputeType.OTHER}>Other</option>
+                  <option value={DisputeType.DAMAGE_ASSESSMENT}><TranslatedText text="Damage Assessment" /></option>
+                  <option value={DisputeType.COST_DISPUTE}><TranslatedText text="Cost Dispute" /></option>
+                  <option value={DisputeType.PROCEDURE_VIOLATION}><TranslatedText text="Procedure Violation" /></option>
+                  <option value={DisputeType.OTHER}><TranslatedText text="Other" /></option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Reason *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Reason" /> *</label>
                 <textarea
                   value={disputeForm.reason}
                   onChange={(e) => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                  placeholder="Describe the reason for this dispute..."
+                  placeholder={tSync('Describe the reason for this dispute...')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Evidence</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Evidence" /></label>
                 <textarea
                   value={disputeForm.evidence}
                   onChange={(e) => setDisputeForm(prev => ({ ...prev, evidence: e.target.value }))}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                  placeholder="Provide any supporting evidence or additional details..."
+                  placeholder={tSync('Provide any supporting evidence or additional details...')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Supporting Photos</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300"><TranslatedText text="Supporting Photos" /></label>
                 <input
                   type="file"
                   multiple
@@ -1402,10 +1405,10 @@ const InspectionsSection: React.FC<Props> = ({
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
-                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Upload photos to support your dispute (optional)</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Upload photos to support your dispute (optional)" /></p>
                 {disputeForm.photos.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-sm text-gray-600 dark:text-slate-400">Selected files:</p>
+                    <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Selected files" />:</p>
                     <ul className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                       {disputeForm.photos.map((file, index) => (
                         <li key={index}>{file.name}</li>
@@ -1421,14 +1424,14 @@ const InspectionsSection: React.FC<Props> = ({
                 onClick={() => setShowDisputeModal(false)}
                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
               >
-                Cancel
+                <TranslatedText text="Cancel" />
               </button>
 
               <button
                 onClick={handleRaiseDispute}
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
-                Raise Dispute
+                <TranslatedText text="Raise Dispute" />
               </button>
             </div>
           </div>
@@ -1444,7 +1447,7 @@ const InspectionsSection: React.FC<Props> = ({
           }} />
           <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Review Pre-Inspection</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Review Pre-Inspection" /></h3>
               <button
                 onClick={() => {
                   setShowRenterPreReviewModal(false);
@@ -1481,7 +1484,7 @@ const InspectionsSection: React.FC<Props> = ({
           }} />
           <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Provide Post-Inspection</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Provide Post-Inspection" /></h3>
               <button
                 onClick={() => {
                   setShowRenterPostInspectionModal(false);
@@ -1532,7 +1535,7 @@ const InspectionsSection: React.FC<Props> = ({
           }} />
           <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Review Post-Inspection</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Review Post-Inspection" /></h3>
               <button
                 onClick={() => {
                   setShowOwnerPostReviewModal(false);

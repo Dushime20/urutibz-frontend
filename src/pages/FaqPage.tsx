@@ -1,40 +1,40 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { Home, MessageCircle } from 'lucide-react';
 import FaqSection from '../components/sections/FaqSection';
 
 const FaqPage: React.FC = () => {
   return (
     <>
-      {/* Breadcrumb */}
-      <div className="breadcrumb-bar bg-gray-100 py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-center text-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">FAQ</h2>
-              <nav aria-label="breadcrumb">
-                <ol className="flex items-center justify-center space-x-2 text-gray-600">
-                  <li>
-                    <a href="/" className="text-blue-600 hover:text-blue-800">Home</a>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    <a href="#" className="text-blue-600 hover:text-blue-800">Pages</a>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span className="text-gray-500">FAQ</span>
-                  </li>
-                </ol>
-              </nav>
+      <section className="relative overflow-hidden bg-slate-900 text-white dark:bg-slate-950">
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-12 py-16 lg:py-20">
+          <div className="flex flex-col items-start gap-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-1 text-xs font-semibold tracking-[0.2em] uppercase text-teal-200">
+              <MessageCircle className="w-4 h-4 text-teal-200" />
+              <span>Help Center</span>
             </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight text-white">
+                Frequently Asked Questions
+              </h1>
+              <p className="mt-3 text-base md:text-lg text-slate-200 max-w-2xl">
+                Everything you need to know about our global renting system—trust, AI automations, payouts, and cross-border logistics.
+              </p>
+            </div>
+            <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-slate-300">
+              <Link to="/" className="inline-flex items-center gap-1 text-teal-200 hover:text-white transition">
+                <Home className="w-4 h-4" />
+                Home
+              </Link>
+              <span className="text-slate-500">/</span>
+              <span className="text-slate-400">Support</span>
+              <span className="text-slate-500">/</span>
+              <span className="text-white font-medium">FAQ</span>
+            </nav>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* FAQ Section */}
       <FaqSection />
     </>
   );

@@ -46,6 +46,8 @@ interface AuthContextType {
   canListItems: () => boolean;
   canRentItems: () => boolean;
   isAdmin: () => boolean;
+  isModerator: () => boolean;
+  isInspector: () => boolean;
   error: string | null;
   setAuthenticatedUser: (user: User) => void;
 }
@@ -63,6 +65,8 @@ const AuthContext = createContext<AuthContextType>({
   canListItems: () => false,
   canRentItems: () => false,
   isAdmin: () => false,
+  isModerator: () => false,
+  isInspector: () => false,
   error: null,
   setAuthenticatedUser: () => {},
 });
@@ -84,64 +88,128 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        // In a real application, you would verify the token with your backend
+        const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
         
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          
-          // Ensure verification object has all required properties
-          if (parsedUser.verification) {
-            const verification = parsedUser.verification;
-            
-            // Set default values for missing verification properties
-            verification.isProfileComplete = verification.isProfileComplete ?? false;
-            verification.isEmailVerified = verification.isEmailVerified ?? false;
-            verification.isPhoneVerified = verification.isPhoneVerified ?? false;
-            verification.isIdVerified = verification.isIdVerified ?? false;
-            verification.isAddressVerified = verification.isAddressVerified ?? false;
-            
-            // Calculate isFullyVerified if not present
-            if (verification.isFullyVerified === undefined) {
-              verification.isFullyVerified = (
-                verification.isProfileComplete &&
-                verification.isEmailVerified &&
-                verification.isPhoneVerified &&
-                verification.isIdVerified &&
-                verification.isAddressVerified
-              );
+        // If we have a token but no user, or if we have a user, try to verify/refresh
+        if (token) {
+          // If we have stored user, use it immediately for faster UI
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              
+              // Ensure verification object has all required properties
+              if (parsedUser.verification) {
+                const verification = parsedUser.verification;
+                
+                // Set default values for missing verification properties
+                verification.isProfileComplete = verification.isProfileComplete ?? false;
+                verification.isEmailVerified = verification.isEmailVerified ?? false;
+                verification.isPhoneVerified = verification.isPhoneVerified ?? false;
+                verification.isIdVerified = verification.isIdVerified ?? false;
+                verification.isAddressVerified = verification.isAddressVerified ?? false;
+                
+                // Calculate isFullyVerified if not present
+                if (verification.isFullyVerified === undefined) {
+                  verification.isFullyVerified = (
+                    verification.isProfileComplete &&
+                    verification.isEmailVerified &&
+                    verification.isPhoneVerified &&
+                    verification.isIdVerified &&
+                    verification.isAddressVerified
+                  );
+                }
+                
+                // Set default verification step if not present
+                if (!verification.verificationStep) {
+                  if (verification.isFullyVerified) {
+                    verification.verificationStep = 'complete';
+                  } else if (!verification.isProfileComplete) {
+                    verification.verificationStep = 'profile';
+                  } else if (!verification.isEmailVerified) {
+                    verification.verificationStep = 'email';
+                  } else if (!verification.isPhoneVerified) {
+                    verification.verificationStep = 'phone';
+                  } else if (!verification.isIdVerified) {
+                    verification.verificationStep = 'id';
+                  } else if (!verification.isAddressVerified) {
+                    verification.verificationStep = 'address';
+                  } else {
+                    verification.verificationStep = 'profile';
+                  }
+                }
+              }
+              
+              // Ensure KYC status is set
+              if (!parsedUser.kyc_status) {
+                parsedUser.kyc_status = 'pending';
+              }
+              
+              // Set user immediately from localStorage
+              setUser(parsedUser);
+              console.log('✅ [AuthContext] User loaded from localStorage:', { id: parsedUser.id, role: parsedUser.role });
+              
+              // Optionally verify token with backend (non-blocking)
+              try {
+                const { fetchUserProfile } = await import('../pages/auth/service/api');
+                const profileRes: any = await fetchUserProfile(token);
+                const userObj = profileRes?.data ?? profileRes;
+                if (userObj && userObj.id) {
+                  // Update user with fresh data from backend
+                  setUser(userObj);
+                  localStorage.setItem('user', JSON.stringify(userObj));
+                  console.log('✅ [AuthContext] User profile refreshed from backend:', { id: userObj.id, role: userObj.role });
+                }
+              } catch (profileError: any) {
+                // Only clear user if it's a 401 (unauthorized) - token is invalid
+                // For other errors (network, 500, etc.), keep using cached user
+                if (profileError?.response?.status === 401) {
+                  console.warn('⚠️ [AuthContext] Token invalid (401), clearing auth:', profileError);
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  setUser(null);
+                } else {
+                  console.warn('⚠️ [AuthContext] Failed to refresh user profile, using cached data:', profileError);
+                  // Keep using cached user if refresh fails for non-auth reasons
+                }
+              }
+            } catch (parseError) {
+              console.error('❌ [AuthContext] Error parsing stored user:', parseError);
+              localStorage.removeItem('user');
             }
-            
-            // Set default verification step if not present
-            if (!verification.verificationStep) {
-              if (verification.isFullyVerified) {
-                verification.verificationStep = 'complete';
-              } else if (!verification.isProfileComplete) {
-                verification.verificationStep = 'profile';
-              } else if (!verification.isEmailVerified) {
-                verification.verificationStep = 'email';
-              } else if (!verification.isPhoneVerified) {
-                verification.verificationStep = 'phone';
-              } else if (!verification.isIdVerified) {
-                verification.verificationStep = 'id';
-              } else if (!verification.isAddressVerified) {
-                verification.verificationStep = 'address';
+          } else {
+            // No stored user but have token - try to fetch user profile
+            try {
+              const { fetchUserProfile } = await import('../pages/auth/service/api');
+              const profileRes: any = await fetchUserProfile(token);
+              const userObj = profileRes?.data ?? profileRes;
+              if (userObj && userObj.id) {
+                setUser(userObj);
+                localStorage.setItem('user', JSON.stringify(userObj));
+                console.log('✅ [AuthContext] User profile loaded from backend:', { id: userObj.id, role: userObj.role });
+              }
+            } catch (profileError: any) {
+              // Only clear token if it's a 401 (unauthorized)
+              // For other errors, keep the token and let the user try again
+              if (profileError?.response?.status === 401) {
+                console.warn('⚠️ [AuthContext] Token invalid (401), clearing:', profileError);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setUser(null);
               } else {
-                verification.verificationStep = 'profile';
+                console.warn('⚠️ [AuthContext] Failed to fetch user profile (non-auth error), keeping token:', profileError);
               }
             }
           }
-          
-          // Ensure KYC status is set
-          if (!parsedUser.kyc_status) {
-            parsedUser.kyc_status = 'pending';
-          }
-          
-          setUser(parsedUser);
+        } else if (storedUser) {
+          // No token but have stored user - clear it (invalid state)
+          console.warn('⚠️ [AuthContext] Found stored user but no token, clearing user');
+          localStorage.removeItem('user');
         }
       } catch (error) {
-        console.error('Authentication error:', error);
+        console.error('❌ [AuthContext] Authentication error:', error);
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
       } finally {
         setIsLoading(false);
       }
@@ -158,24 +226,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try { return parseInt(localStorage.getItem('security.sessionTimeout') || '0') || 0; } catch { return 0; }
     })();
     const timeoutSec = settings?.security?.sessionTimeout || settings?.system?.sessionTimeout || storedTimeout || 0;
-    if (!timeoutSec) return;
+    
+    // Only enable auto-logout if timeout is explicitly set and is reasonable (at least 5 minutes)
+    if (!timeoutSec || timeoutSec < 300) {
+      console.log('ℹ️ [AuthContext] Auto-logout disabled (timeout not set or too short)');
+      return;
+    }
+
+    console.log(`⏰ [AuthContext] Auto-logout enabled: ${timeoutSec} seconds (${Math.round(timeoutSec / 60)} minutes)`);
 
     let timer: number | undefined;
     const resetTimer = () => {
       if (timer) window.clearTimeout(timer);
       timer = window.setTimeout(() => {
-        try { localStorage.removeItem('user'); } catch {}
+        console.warn(`⚠️ [AuthContext] Session timeout reached (${timeoutSec}s), logging out user`);
+        try { 
+          localStorage.removeItem('user'); 
+          localStorage.removeItem('token');
+        } catch {}
         setUser(null);
       }, timeoutSec * 1000);
     };
 
-    const onActivity = () => resetTimer();
+    // Track more activity events to prevent premature logout
+    const onActivity = () => {
+      resetTimer();
+    };
+    
     resetTimer();
+    
+    // Add more activity listeners
     window.addEventListener('mousemove', onActivity);
     window.addEventListener('keydown', onActivity);
+    window.addEventListener('click', onActivity);
+    window.addEventListener('scroll', onActivity, { passive: true });
+    window.addEventListener('touchstart', onActivity, { passive: true });
+    
     return () => {
       window.removeEventListener('mousemove', onActivity);
       window.removeEventListener('keydown', onActivity);
+      window.removeEventListener('click', onActivity);
+      window.removeEventListener('scroll', onActivity);
+      window.removeEventListener('touchstart', onActivity);
       if (timer) window.clearTimeout(timer);
     };
   }, [user, settings?.security?.sessionTimeout, settings?.system?.sessionTimeout]);
@@ -456,9 +548,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return user?.role === 'admin';
   };
 
+  // Check if user is a moderator
+  const isModerator = (): boolean => {
+    return user?.role === 'moderator';
+  };
+
+  // Check if user is an inspector
+  const isInspector = (): boolean => {
+    return user?.role === 'inspector';
+  };
+
   const setAuthenticatedUser = (user: User) => {
     setUser(user);
     localStorage.setItem('user', JSON.stringify(user));
+    setIsLoading(false); // Ensure loading is false when user is set
+    console.log('✅ [AuthContext] setAuthenticatedUser called:', { id: user.id, role: user.role });
   };
 
   const value = {
@@ -473,6 +577,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     canListItems,
     canRentItems,
     isAdmin,
+    isModerator,
+    isInspector,
     error,
     setAuthenticatedUser,
   };

@@ -61,6 +61,8 @@ import {
 import { Users, Calendar, Cpu, Clock, CheckCircle, Activity, User as UserIcon, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { inspectionService, inspectionItemService } from '../../services/inspectionService';
+import { useTranslation } from '../../hooks/useTranslation';
+import { TranslatedText } from '../../components/translated-text';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -91,6 +93,7 @@ interface Owner {
 const AdminDashboardPage: React.FC = () => {
   const { formatCurrency, formatDate, settings } = useAdminSettingsContext();
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'admin-settings'>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -775,13 +778,13 @@ const AdminDashboardPage: React.FC = () => {
                                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
                                     <div className="p-2 rounded-full bg-my-primary/10 dark:bg-my-primary/20 mb-2"><Users className="w-6 h-6 text-my-primary" aria-label="Active Users" /></div>
                                     <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.activeUsers}</div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active Users</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><TranslatedText text="Active Users" /></div>
                                   </div>
                                   {/* Current Bookings */}
                                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
                                     <div className="p-2 rounded-full bg-purple-50 dark:bg-purple-900/20 mb-2"><Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" aria-label="Current Bookings" /></div>
                                     <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.currentBookings}</div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Current Bookings</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><TranslatedText text="Current Bookings" /></div>
                                   </div>
                                   {/* System Load */}
                                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
@@ -902,7 +905,7 @@ const AdminDashboardPage: React.FC = () => {
                                     itemStyle={{ color: '#374151' }}
                                   />
                                   <Legend />
-                                  <Bar dataKey="booking_count" fill="#00aaa9" name="Bookings" barSize={32} radius={[8, 8, 0, 0]} />
+                                  <Bar dataKey="booking_count" fill="#00aaa9" name={tSync('Bookings')} barSize={32} radius={[8, 8, 0, 0]} />
                                 </BarChart>
                               </ResponsiveContainer>
                             </div>
@@ -1091,14 +1094,14 @@ const AdminDashboardPage: React.FC = () => {
                                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
                                     </div>
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${user.verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
-                                      {user.verified ? 'Verified' : 'Pending'}
+                                      {user.verified ? <TranslatedText text="Verified" /> : <TranslatedText text="Pending" />}
                                     </span>
                                   </div>
                                 ))}
                               </div>
                               {recentUsers.length === 0 && (
                                 <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                                  No recent users found
+                                  <TranslatedText text="No recent users found" />
                                 </div>
                               )}
 
@@ -1107,7 +1110,7 @@ const AdminDashboardPage: React.FC = () => {
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
                                   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
                                     <div className="flex justify-between items-center mb-4">
-                                      <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">User Details</h4>
+                                      <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="User Details" /></h4>
                                       <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-my-primary text-xl">&times;</button>
                                     </div>
                                     <div className="flex items-center gap-4 mb-4">
@@ -1134,7 +1137,7 @@ const AdminDashboardPage: React.FC = () => {
                                         <div className="text-gray-500 dark:text-gray-400 text-sm">{selectedUser.email || ''}</div>
                                         <div className="mt-2">
                                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedUser.verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
-                                            {selectedUser.verified ? 'Verified' : 'Pending'}
+                                            {selectedUser.verified ? <TranslatedText text="Verified" /> : <TranslatedText text="Pending" />}
                                           </span>
                                         </div>
                                       </div>

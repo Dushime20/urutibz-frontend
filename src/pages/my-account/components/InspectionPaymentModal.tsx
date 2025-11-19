@@ -221,6 +221,7 @@ const InspectionPaymentModal: React.FC<InspectionPaymentModalProps> = ({
     }
     
     // For cards, check if using new method form or existing method
+    if (paymentType === 'card') {
     if (showNewMethodForm) {
       // Validate new card form
       if (!newMethodForm.provider || !newMethodForm.card_number || !newMethodForm.card_brand || !newMethodForm.exp_month || !newMethodForm.exp_year || !newMethodForm.cvv) {
@@ -234,6 +235,7 @@ const InspectionPaymentModal: React.FC<InspectionPaymentModalProps> = ({
       if (!selectedMethod) {
         setError('Please select a payment method');
         return;
+        }
       }
     }
 

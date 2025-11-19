@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Heart, TrendingUp, AlertCircle, RefreshCw, Package, Wifi, WifiOff, Search, X } from 'lucide-react';
+import { Star, Heart, TrendingUp, AlertCircle, RefreshCw, Package, Wifi, WifiOff, Search, X, ShieldCheck, Sparkles, Handshake, Globe, Briefcase, Users } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
-import { useI18n } from '../contexts/I18nContext';
+import { useTranslation } from '../hooks/useTranslation';
+import { TranslatedText } from '../components/translated-text';
 
 import { fetchAvailableProducts, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, getProductInteractions } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
@@ -28,9 +29,77 @@ function formatCurrency(amount: string, currency: string): string {
   return symbol === currency ? `${currency} ${amount}` : `${symbol}${amount}`;
 }
 
+const heroBackgrounds = [
+  // 'url("https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1600&q=80")',
+  // url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80")','
+  'url("https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=80")'
+];
+
+const demandCities = ['Berlin', 'Jakarta', 'São Paulo', 'Nairobi'];
+
+const featuredStories = [
+  {
+    id: 'seller-1',
+    sellerName: 'Nomad Wheels',
+    location: 'Lisbon, Portugal',
+    story: 'Built a cross-border camper rental line with Uruti Bz safety checks.',
+    avatarBg: 'bg-emerald-500',
+    metrics: { listings: 38, countries: 6 },
+    rating: 4.9,
+    category: 'Mobility fleet',
+    heroImage: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80',
+    volume: '$2.4M GMV'
+  },
+  {
+    id: 'seller-2',
+    sellerName: 'Skyline Tools',
+    location: 'Singapore, Singapore',
+    story: 'Scaled B2B tool rentals to 4 markets using secure escrow handovers.',
+    avatarBg: 'bg-blue-500',
+    metrics: { listings: 112, countries: 4 },
+    rating: 4.8,
+    category: 'Industrial MRO',
+    heroImage: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1600&q=80',
+    volume: '$4.1M GMV'
+  },
+  {
+    id: 'seller-3',
+    sellerName: 'Andes Outfitters',
+    location: 'Cusco, Peru',
+    story: 'Offers expedition gear with multilingual concierge for travelers.',
+    avatarBg: 'bg-orange-500',
+    metrics: { listings: 57, countries: 9 },
+    rating: 4.95,
+    category: 'Adventure gear',
+    heroImage: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&q=80',
+    volume: '$1.1M GMV'
+  }
+];
+
+const quickActionItems = [
+  {
+    title: 'Global compliance ready',
+    description: 'Automated KYC, insurance, and escrow templates per region.',
+    icon: ShieldCheck,
+    link: '/risk-management'
+  },
+  {
+    title: 'Intelligent matching',
+    description: 'AI surfaces the best buyers for idle inventory in seconds.',
+    icon: Sparkles,
+    link: '/items'
+  },
+  {
+    title: 'Handshake logistics',
+    description: 'Fleet inspections, courier scheduling, and damage coverage.',
+    icon: Handshake,
+    link: '/handover-return-demo'
+  }
+];
+
 const HomePage: React.FC = () => {
   const { showToast } = useToast();
-  const { t } = useI18n();
+  const { tSync } = useTranslation();
   const [products, setProducts] = useState<any[]>([]);
   const [productImages, setProductImages] = useState<Record<string, string[]>>({});
   const [itemLocations, setItemLocations] = useState<Record<string, { city: string | null; country: string | null }>>({});
@@ -38,6 +107,11 @@ const HomePage: React.FC = () => {
   const [locationsLoading, setLocationsLoading] = useState<Record<string, boolean>>({});
   const [productInteractions, setProductInteractions] = useState<Record<string, any[]>>({});
   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
+  const [heroBgIndex, setHeroBgIndex] = useState(0);
+  const [activeStory, setActiveStory] = useState(0);
+  const [liveDemandData, setLiveDemandData] = useState(
+    () => demandCities.map((city) => ({ city, requests: Math.floor(Math.random() * 35) + 15 }))
+  );
   
   // Loading and error states
   const [loading, setLoading] = useState(true);
@@ -96,6 +170,32 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const bgInterval = window.setInterval(() => {
+      setHeroBgIndex((prev) => (prev + 1) % heroBackgrounds.length);
+    }, 8000);
+    return () => window.clearInterval(bgInterval);
+  }, []);
+
+  useEffect(() => {
+    const storyInterval = window.setInterval(() => {
+      setActiveStory((prev) => (prev + 1) % featuredStories.length);
+    }, 9000);
+    return () => window.clearInterval(storyInterval);
+  }, []);
+
+  useEffect(() => {
+    const liveDemandInterval = window.setInterval(() => {
+      setLiveDemandData(
+        demandCities.map((city) => ({
+          city,
+          requests: Math.floor(Math.random() * 35) + 15
+        }))
+      );
+    }, 12000);
+    return () => window.clearInterval(liveDemandInterval);
   }, []);
 
   // Listen for search events from Header
@@ -417,8 +517,8 @@ const HomePage: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#01aaa7] mx-auto mb-4"></div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('home.loadingProductsTitle')}</h3>
-              <p className="text-gray-600">{t('home.loadingProductsSubtitle')}</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2"><TranslatedText text="Loading Products" /></h3>
+              <p className="text-gray-600"><TranslatedText text="Please wait while we fetch the latest listings..." /></p>
             </div>
           </div>
         </div>
@@ -437,9 +537,9 @@ const HomePage: React.FC = () => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
                   <WifiOff className="h-8 w-8 text-red-600 dark:text-red-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">{t('home.connectionLostTitle')}</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="Connection Lost" /></h3>
                 <p className="text-gray-600 dark:text-slate-400 mb-6">
-                  {t('home.connectionLostBody')}
+                  <TranslatedText text="We couldn't connect to the server. Please check your internet connection and try again." />
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
@@ -447,13 +547,13 @@ const HomePage: React.FC = () => {
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    {t('home.tryAgain')}
+                    <TranslatedText text="Try Again" />
                   </button>
                   <button
                     onClick={() => window.location.reload()}
                     className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
-                    {t('home.refreshPage')}
+                    <TranslatedText text="Refresh Page" />
                   </button>
                 </div>
               </div>
@@ -475,7 +575,7 @@ const HomePage: React.FC = () => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
                   <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">{t('home.somethingWentWrongTitle')}</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="Something Went Wrong" /></h3>
                 <p className="text-gray-600 dark:text-slate-400 mb-6">{error}</p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
@@ -511,9 +611,9 @@ const HomePage: React.FC = () => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 dark:bg-slate-700 mb-4">
                   <Package className="h-8 w-8 text-gray-600 dark:text-slate-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">{t('home.noProducts')}</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="No Products Found" /></h3>
                 <p className="text-gray-600 dark:text-slate-400 mb-6">
-                  {t('home.tryDifferentSearch')}
+                  <TranslatedText text="Try adjusting your search filters or browse different categories." />
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
@@ -539,35 +639,287 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <div className="space-y-8 sm:space-y-10">
-        {/* Search Bar removed (moved into Header) */}
+        {/* Hero Section */}
+        <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          <div
+            className="rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 shadow-xl relative"
+            style={{
+              backgroundImage: heroBackgrounds[heroBgIndex],
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            <div className="absolute inset-0 bg-slate-900/80"></div>
+            <div className="relative px-8 sm:px-12 lg:px-16 py-10 sm:py-14 lg:py-16 text-white flex flex-col lg:flex-row gap-10 lg:gap-16">
+              <div className="flex-1 space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                  <TranslatedText text="Trusted rentals across 45+ countries" />
+                </div>
+                <div className="space-y-4">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
+                    {tSync('Rent anything, anywhere — with Uruti Bz protection')}
+                  </h1>
+                  <p className="text-base sm:text-lg text-white/80 max-w-2xl">
+                    {tSync('Connect with verified hosts, manage multilingual inspections, and grow your rental business with real-time risk insights.')}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link
+                    to="/create-listing"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white text-slate-900 font-semibold shadow-lg shadow-slate-900/10 hover:bg-slate-100 transition-colors"
+                  >
+                    <TranslatedText text="Start selling" />
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                  <Link
+                    to="/items"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-white/40 text-white font-semibold hover:bg-white/10 transition-colors"
+                  >
+                    <TranslatedText text="Find inventory" />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-white/80">
+                  <div>
+                    <p className="text-3xl font-semibold text-white">210K+</p>
+                    <p><TranslatedText text="Monthly rentals" /></p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-semibold text-white">76</p>
+                    <p><TranslatedText text="Markets launched" /></p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-semibold text-white">24/7</p>
+                    <p><TranslatedText text="Live inspections" /></p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-semibold text-white">18</p>
+                    <p><TranslatedText text="Languages supported" /></p>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full lg:max-w-sm">
+                <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 space-y-6 border border-white/10">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm uppercase tracking-wide text-white/70"><TranslatedText text="Live demand" /></p>
+                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full"><TranslatedText text="Updated now" /></span>
+                  </div>
+                  <ul className="space-y-4 text-sm">
+                    {liveDemandData.map((slot) => (
+                      <li key={slot.city} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                          <span>{slot.city}</span>
+                        </div>
+                        <span className="text-white/70">{slot.requests} <TranslatedText text="active requests" /></span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="p-4 rounded-xl bg-black/20">
+                    <p className="text-sm text-white/70"><TranslatedText text="Need help launching in a new region?" /></p>
+                    <p className="text-lg font-semibold"><TranslatedText text="Dedicated onboarding team is live." /></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        {/* Category chips removed to declutter above Popular listings */}
+        {/* Enterprise trust and quick actions */}
+        <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20">
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-lg space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-my-primary/10 text-my-primary">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-my-primary uppercase tracking-wide"><TranslatedText text="Enterprise-ready" /></p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                    <TranslatedText text="Designed for international rental operators" />
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-slate-400">
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-slate-700">
+                  <ShieldCheck className="w-4 h-4 text-my-primary" />
+                  <TranslatedText text="Insurance-ready workflows" />
+                </span>
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-slate-700">
+                  <Users className="w-4 h-4 text-my-primary" />
+                  <TranslatedText text="Verified identity network" />
+                </span>
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-slate-700">
+                  <Briefcase className="w-4 h-4 text-my-primary" />
+                  <TranslatedText text="Enterprise SLAs" />
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {quickActionItems.map((card) => (
+                <Link
+                  key={card.title}
+                  to={card.link}
+                  className="group h-full rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/60 p-6 flex flex-col gap-4 hover:border-my-primary hover:bg-white dark:hover:bg-slate-900 transition-colors"
+                >
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 text-my-primary shadow-sm">
+                    <card.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-slate-100">{tSync(card.title)}</p>
+                    <p className="text-sm text-gray-600 dark:text-slate-400">{tSync(card.description)}</p>
+                  </div>
+                  <span className="mt-auto text-sm font-semibold text-my-primary group-hover:underline flex items-center gap-2">
+                    <TranslatedText text="Explore" /> <span aria-hidden="true">→</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured stories */}
+        <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20">
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xl space-y-8">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-my-primary font-semibold uppercase tracking-[0.2em]"><TranslatedText text="Featured sellers" /></p>
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <h2 className="text-3xl font-semibold text-gray-900 dark:text-slate-100">
+                  <TranslatedText text="Stories from the Uruti Bz community" />
+                </h2>
+                <p className="text-gray-500 dark:text-slate-400 max-w-2xl">
+                  <TranslatedText text="Operators in 70+ cities scale their rental businesses with Uruti Bz compliance, multilingual support, and intelligence that rivals the biggest marketplaces." />
+                </p>
+              </div>
+            </div>
+
+            {featuredStories[activeStory] && (
+              <div className="flex flex-col lg:flex-row gap-8">
+                <article className="relative flex-1 overflow-hidden rounded-3xl h-[420px]">
+                  <img
+                    src={featuredStories[activeStory].heroImage}
+                    alt={featuredStories[activeStory].sellerName}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-transparent" />
+                  <div className="relative h-full p-8 flex flex-col justify-between text-white">
+                    <div className="space-y-4">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-sm">
+                        <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                        {featuredStories[activeStory].category}
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-full ${featuredStories[activeStory].avatarBg} text-white flex items-center justify-center text-xl font-semibold`}>
+                          {featuredStories[activeStory].sellerName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-xl font-semibold">{featuredStories[activeStory].sellerName}</p>
+                          <p className="text-white/80">{featuredStories[activeStory].location}</p>
+                        </div>
+                      </div>
+                      <p className="text-lg leading-relaxed">{featuredStories[activeStory].story}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-6 text-sm text-white/80">
+                      <span className="inline-flex items-center gap-2">
+                        <Star className="w-4 h-4 text-yellow-300" />
+                        {featuredStories[activeStory].rating} <TranslatedText text="avg rating" />
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <Package className="w-4 h-4" />
+                        {featuredStories[activeStory].metrics.listings} <TranslatedText text="active listings" />
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        {featuredStories[activeStory].metrics.countries} <TranslatedText text="countries" />
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4" />
+                        {featuredStories[activeStory].volume}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Link
+                        to="/items"
+                        className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-slate-900 font-semibold shadow-lg hover:bg-slate-100"
+                      >
+                        <TranslatedText text="View inventory" /> →
+                      </Link>
+                      <Link
+                        to="/create-listing"
+                        className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl border border-white/30 text-white hover:bg-white/10"
+                      >
+                        <TranslatedText text="Become a featured seller" />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+
+                <div className="w-full lg:w-80 space-y-4">
+                  {featuredStories.map((story, index) => (
+                    <button
+                      key={story.id}
+                      onClick={() => setActiveStory(index)}
+                      className={`w-full text-left rounded-2xl border p-4 flex items-center justify-between gap-4 transition-all ${
+                        index === activeStory
+                          ? 'border-my-primary bg-my-primary/10 dark:bg-teal-900/20'
+                          : 'border-gray-100 dark:border-slate-800 hover:border-my-primary/60'
+                      }`}
+                    >
+                      <div>
+                        <p className="text-sm uppercase tracking-wide text-gray-500 dark:text-slate-400">{story.category}</p>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-slate-100">{story.sellerName}</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400">{story.location}</p>
+                      </div>
+                      <div className="text-right text-sm text-gray-600 dark:text-slate-300">
+                        <p className="font-semibold">{story.volume}</p>
+                        <p>{story.metrics.listings} listings</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                'Buyer protection included',
+                'Multilingual concierge',
+                'AI-powered pricing',
+                'Same-day payouts'
+              ].map((promise) => (
+                <div key={promise} className="rounded-2xl border border-dashed border-gray-200 dark:border-slate-800 px-4 py-3 text-sm text-gray-600 dark:text-slate-400">
+                  {tSync(promise)}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* Results grid */}
-        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20">
           {/* Section header */}
           <div className="mb-4 sm:mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100">
-                {searchQuery ? `${t('home.searchResults')} "${searchQuery}"` : t('home.popularListings')}
+                {searchQuery ? <><TranslatedText text="Search Results" /> "{searchQuery}"</> : <TranslatedText text="Popular Listings" />}
               </h2>
               {searchQuery ? (
                 <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                   <Search className="w-3 h-3" />
-                  {filtered.length} {t('home.results')}
+                  {filtered.length} <TranslatedText text="results" />
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-my-primary/10 text-my-primary dark:bg-my-primary/20 dark:text-teal-400">
                   <TrendingUp className="w-3 h-3" />
-                  {t('home.aiTrending')}
+                  <TranslatedText text="AI Trending" />
                 </span>
               )}
               {loading && (
                 <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                   <RefreshCw className="w-3 h-3 animate-spin" />
-                  {t('home.updating')}
+                  <TranslatedText text="Updating..." />
                 </span>
               )}
               {/* Network status indicator */}
@@ -581,7 +933,7 @@ const HomePage: React.FC = () => {
                 ) : (
                   <WifiOff className="w-3 h-3" />
                 )}
-                {navigator.onLine ? t('home.online') : t('home.offline')}
+                {navigator.onLine ? <TranslatedText text="Online" /> : <TranslatedText text="Offline" />}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -599,10 +951,10 @@ const HomePage: React.FC = () => {
                     setSearchLng('');
                     setSearchRadiusKm(25);
                     setVisibleCount(100);
-                    showToast(t('home.searchCleared'), 'info');
+                    showToast(tSync('Search cleared'), 'info');
                   }}
                   className="text-sm text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  title={t('home.clearSearch')}
+                  title={tSync('Clear Search')}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -610,7 +962,7 @@ const HomePage: React.FC = () => {
               <button
                 onClick={handleRefresh}
                 className="text-sm text-gray-600 dark:text-slate-400 hover:text-my-primary dark:hover:text-teal-400 transition-colors"
-                title={t('home.refresh')}
+                title={tSync('Refresh')}
                 disabled={loading}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -623,9 +975,9 @@ const HomePage: React.FC = () => {
                 disabled={loading || loadingMore}
                 className="text-sm text-my-primary dark:text-teal-400 hover:underline disabled:opacity-50"
               >
-                {loadingMore ? t('home.fetching') : t('home.fetchAllProducts')}
+                {loadingMore ? <TranslatedText text="Fetching..." /> : <TranslatedText text="Fetch All Products" />}
               </button>
-              <Link to="/items" className="text-sm text-my-primary dark:text-teal-400 hover:underline">{t('home.viewAll')}</Link>
+              <Link to="/items" className="text-sm text-my-primary dark:text-teal-400 hover:underline"><TranslatedText text="View All" /></Link>
             </div>
           </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -657,7 +1009,7 @@ const HomePage: React.FC = () => {
                   {productImages[item.id]?.[0] ? (
                     <img
                       src={productImages[item.id][0]}
-                      alt={item.title || t('home.listingAlt')}
+                      alt={item.title || tSync('Product listing')}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         // Hide the image and show icon instead
@@ -671,12 +1023,12 @@ const HomePage: React.FC = () => {
                     <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-sm font-medium">{t('home.noImage')}</span>
+                    <span className="text-sm font-medium"><TranslatedText text="No Image" /></span>
                   </div>
                   {/* Heart Icon */}
                   <button
                     type="button"
-                    aria-label={t('home.addToFavorites')}
+                    aria-label={tSync('Add to favorites')}
                     className="absolute top-3 right-3 w-8 h-8 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40 rounded-full flex items-center justify-center transition-colors"
                     onClick={async (e) => {
                       e.preventDefault();
@@ -738,11 +1090,11 @@ const HomePage: React.FC = () => {
                     {locationsLoading[item.id] ? (
                       <span className="flex items-center gap-1">
                         <div className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin"></div>
-                        {t('home.loadingLocation')}
+                        <TranslatedText text="Loading location..." />
                       </span>
                     ) : (
                       <>
-                        {itemLocations[item.id]?.city || t('home.unknownLocation')}
+                        {itemLocations[item.id]?.city || <TranslatedText text="Unknown Location" />}
                         {itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
                       </>
                     )}
@@ -755,15 +1107,15 @@ const HomePage: React.FC = () => {
                         <span className="font-semibold">
                           {formatCurrency(productPrices[item.id].price_per_day, productPrices[item.id].currency)}
                         </span>
-                        <span className="text-sm"> / {t('home.perDay')}</span>
+                        <span className="text-sm"> / <TranslatedText text="per day" /></span>
                       </>
                     ) : item.base_price_per_day != null ? (
                       <>
                         <span className="font-semibold">${item.base_price_per_day}</span>
-                        <span className="text-sm"> / {t('home.perDay')}</span>
+                        <span className="text-sm"> / <TranslatedText text="per day" /></span>
                       </>
                     ) : (
-                      <span className="font-semibold">{t('home.priceOnRequest')}</span>
+                      <span className="font-semibold"><TranslatedText text="Price on Request" /></span>
                     )}
                   </div>
 
@@ -790,14 +1142,14 @@ const HomePage: React.FC = () => {
               className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary transition-colors"
             >
               <Package className="w-4 h-4 mr-2" />
-              {t('home.loadMore')} ({filtered.length - visibleCount} remaining)
+              <TranslatedText text="Load More" /> ({filtered.length - visibleCount} remaining)
             </button>
           </div>
         )}
 
         {/* Show total count */}
         <div className="text-center mt-4 text-sm text-gray-600 dark:text-slate-400">
-          {t('home.showing')} {Math.min(visibleCount, filtered.length)} {t('home.of')} {filtered.length} {t('home.products')}
+          <TranslatedText text="Showing" /> {Math.min(visibleCount, filtered.length)} <TranslatedText text="of" /> {filtered.length} <TranslatedText text="products" />
         </div>
        
         </div>

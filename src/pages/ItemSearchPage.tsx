@@ -7,7 +7,8 @@ import { getProductImagesByProductId } from './my-account/service/api';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 import { formatCurrency } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { useI18n } from '../contexts/I18nContext';
+import { useTranslation } from '../hooks/useTranslation';
+import { TranslatedText } from '../components/translated-text';
 
 // Product type definition with better typing
 type Product = {
@@ -58,7 +59,7 @@ interface ProductImage {
 const ItemSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { tSync } = useTranslation();
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -455,7 +456,7 @@ const ItemSearchPage: React.FC = () => {
                   className="appearance-none pl-4 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-my-primary focus:border-my-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 min-w-48 cursor-pointer transition-all duration-200"
                   aria-label="Select category"
                 >
-                  <option value="all">{t('searchPage.filters.allCategories')}</option>
+                  <option value="all"><TranslatedText text="All Categories" /></option>
                   {itemCategories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.icon} {category.name}
@@ -472,7 +473,7 @@ const ItemSearchPage: React.FC = () => {
                   className="appearance-none pl-4 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-my-primary focus:border-my-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 min-w-40 cursor-pointer transition-all duration-200"
                   aria-label="Select location"
                 >
-                  <option value="all">{t('searchPage.filters.allLocations')}</option>
+                  <option value="all"><TranslatedText text="All Locations" /></option>
                   <option value="Kigali">🇷🇼 Kigali</option>
                   <option value="Butare">🇷🇼 Butare</option>
                   <option value="Kampala">🇺🇬 Kampala</option>
@@ -489,7 +490,7 @@ const ItemSearchPage: React.FC = () => {
                 aria-label={showFilters ? 'Hide filters' : 'Show more filters'}
               >
                 <Filter className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('searchPage.filters.more')}</span>
+                <span className="hidden sm:inline"><TranslatedText text="More" /></span>
               </button>
 
               {/* View Toggle */}
@@ -504,7 +505,7 @@ const ItemSearchPage: React.FC = () => {
                   aria-label="Grid view"
                 >
                   <Grid className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('searchPage.view.grid')}</span>
+                  <span className="hidden sm:inline"><TranslatedText text="Grid" /></span>
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
@@ -516,7 +517,7 @@ const ItemSearchPage: React.FC = () => {
                   aria-label="List view"
                 >
                   <List className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('searchPage.view.list')}</span>
+                  <span className="hidden sm:inline"><TranslatedText text="List" /></span>
                 </button>
               </div>
             </div>
@@ -527,37 +528,37 @@ const ItemSearchPage: React.FC = () => {
             <div className="mt-6 p-6 border border-gray-200 dark:border-slate-600 rounded-2xl bg-gray-50 dark:bg-slate-800 animate-in slide-in-from-top duration-200">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">{t('searchPage.filters.priceRange')}</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3"><TranslatedText text="Price Range" /></label>
                   <div className="flex gap-3">
                     <input
                       type="number"
                       value={priceRange.min}
                       onChange={(e) => setPriceRange({...priceRange, min: Number(e.target.value)})}
-                      placeholder={t('searchPage.filters.min')}
+                      placeholder={tSync('Min')}
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                     />
                     <input
                       type="number"
                       value={priceRange.max}
                       onChange={(e) => setPriceRange({...priceRange, max: Number(e.target.value)})}
-                      placeholder={t('searchPage.filters.max')}
+                      placeholder={tSync('Max')}
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">{t('searchPage.filters.sortBy')}</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3"><TranslatedText text="Sort By" /></label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                   >
-                    <option value="relevance">{t('searchPage.sort.relevance')}</option>
-                    <option value="price-low">{t('searchPage.sort.priceLowToHigh')}</option>
-                    <option value="price-high">{t('searchPage.sort.priceHighToLow')}</option>
-                    <option value="rating">{t('searchPage.sort.highestRated')}</option>
-                    <option value="newest">{t('searchPage.sort.newest')}</option>
+                    <option value="relevance"><TranslatedText text="Relevance" /></option>
+                    <option value="price-low"><TranslatedText text="Price: Low to High" /></option>
+                    <option value="price-high"><TranslatedText text="Price: High to Low" /></option>
+                    <option value="rating"><TranslatedText text="Highest Rated" /></option>
+                    <option value="newest"><TranslatedText text="Newest" /></option>
                   </select>
                 </div>
 
@@ -567,7 +568,7 @@ const ItemSearchPage: React.FC = () => {
                     className="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-all duration-200 flex items-center gap-2"
                   >
                     <X className="w-4 h-4" />
-                    {t('searchPage.filters.clearAll')}
+                    <TranslatedText text="Clear All" />
                   </Button>
                 </div>
               </div>
@@ -592,10 +593,10 @@ const ItemSearchPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">
-              {searchQuery ? `${t('searchPage.resultsFor')} "${searchQuery}"` : t('searchPage.browseRentals')}
+              {searchQuery ? <><TranslatedText text="Results for" /> "{searchQuery}"</> : <TranslatedText text="Browse Rentals" />}
             </h1>
             <p className="text-gray-600 dark:text-slate-400">
-              {loading ? t('searchPage.searching') : `${filteredItems.length} ${t('searchPage.itemsAvailable')}`}
+              {loading ? <TranslatedText text="Searching..." /> : <>{filteredItems.length} <TranslatedText text="items available" /></>}
             </p>
           </div>
         </div>
@@ -622,7 +623,7 @@ const ItemSearchPage: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-my-primary dark:border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-gray-600 dark:text-slate-400 font-medium">{t('searchPage.loading')}</p>
+            <p className="text-gray-600 dark:text-slate-400 font-medium"><TranslatedText text="Loading items..." /></p>
           </div>
         ) : filteredItems.length > 0 ? (
                      <div className={viewMode === 'grid' 
@@ -711,11 +712,11 @@ const ItemSearchPage: React.FC = () => {
                        {locationsLoading[item.id] ? (
                          <span className="flex items-center gap-1">
                            <div className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin"></div>
-                           {t('searchPage.item.loadingLocation')}
+                           <TranslatedText text="Loading location..." />
                          </span>
                        ) : (
                          <>
-                           {itemLocations[item.id]?.city || t('searchPage.item.unknownLocation')}
+                           {itemLocations[item.id]?.city || <TranslatedText text="Unknown Location" />}
                            {itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
                          </>
                        )}
@@ -733,10 +734,10 @@ const ItemSearchPage: React.FC = () => {
                        ) : item.base_price_per_day != null ? (
                          <>
                            <span className="font-semibold">${item.base_price_per_day}</span>
-                           <span className="text-sm"> / {t('searchPage.item.perDay')}</span>
+                           <span className="text-sm"> / <TranslatedText text="per day" /></span>
                          </>
                        ) : (
-                         <span className="font-semibold">{t('searchPage.item.priceOnRequest')}</span>
+                         <span className="font-semibold"><TranslatedText text="Price on Request" /></span>
                        )}
                      </div>
                    </div>
@@ -817,7 +818,7 @@ const ItemSearchPage: React.FC = () => {
                         <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-slate-400">
                           <MapPin className="w-4 h-4" />
                             <span className="truncate">
-                            {itemLocations[item.id]?.city || t('searchPage.item.unknownLocation')}{itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
+                            {itemLocations[item.id]?.city || <TranslatedText text="Unknown Location" />}{itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
                           </span>
                         </div>
                       </div>
@@ -826,7 +827,7 @@ const ItemSearchPage: React.FC = () => {
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
                             <span className="text-xl font-bold text-my-primary dark:text-teal-400">
-                              {item.base_price_per_day != null && item.base_currency ? `$${item.base_price_per_day}` : t('searchPage.item.noPrice')}
+                              {item.base_price_per_day != null && item.base_currency ? `$${item.base_price_per_day}` : <TranslatedText text="Price not available" />}
                             </span>
                             <span className="text-sm text-gray-600 dark:text-slate-400">{item.base_price_per_day != null && item.base_currency ? `/${item.base_currency}` : ''}</span>
                           </div>
@@ -838,18 +839,18 @@ const ItemSearchPage: React.FC = () => {
                           {item.pickup_methods?.includes('delivery') && (
                             <div className="flex items-center gap-1">
                               <Truck className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{t('searchPage.item.delivery')}</span>
+                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium"><TranslatedText text="Delivery" /></span>
                             </div>
                           )}
                           {item.pickup_methods?.includes('pickup') && (
                             <div className="flex items-center gap-1">
                               <Package className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-                              <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">{t('searchPage.item.pickup')}</span>
+                              <span className="text-xs text-purple-600 dark:text-purple-400 font-medium"><TranslatedText text="Pickup" /></span>
                             </div>
                           )}
                         </div>
                         <Button className="px-6 py-2.5 bg-my-primary dark:bg-teal-500 hover:bg-my-primary/90 dark:hover:bg-teal-600 text-white rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md">
-                          {t('searchPage.item.viewDetails')}
+                          <TranslatedText text="View Details" />
                         </Button>
                       </div>
                       
@@ -864,7 +865,7 @@ const ItemSearchPage: React.FC = () => {
                             ))}
                             {item.features.length > 4 && (
                               <span className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                                +{item.features.length - 4} {t('searchPage.item.moreFeatures')}
+                                +{item.features.length - 4} <TranslatedText text="more features" />
                               </span>
                             )}
                           </div>
@@ -880,15 +881,15 @@ const ItemSearchPage: React.FC = () => {
           <div className="text-center py-20">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 max-w-md mx-auto">
               <Package className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('searchPage.noItems.title')}</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3"><TranslatedText text="No Items Found" /></h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                {t('searchPage.noItems.message')}
+                <TranslatedText text="Try adjusting your search filters or browse different categories." />
               </p>
               <Button 
                 onClick={clearAllFilters}
                 className="px-6 py-3 bg-[#00aaa9] hover:bg-[#008b8a] text-white rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                {t('searchPage.filters.clearAll')}
+                <TranslatedText text="Clear All" />
               </Button>
             </div>
           </div>

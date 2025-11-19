@@ -18,6 +18,8 @@ import {
   ChevronRight,
   Menu
 } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface MyAccountSidebarProps {
   activeTab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile';
@@ -30,6 +32,7 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
   setActiveTab, 
   className = '' 
 }) => {
+  const { tSync } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigationItems = [
     { icon: BarChart3, label: 'Overview', tab: 'overview' },
@@ -72,8 +75,8 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 truncate">My Account</h2>
-              <p className="text-sm text-gray-500 dark:text-slate-400 truncate">Manage your account</p>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 truncate"><TranslatedText text="My Account" /></h2>
+              <p className="text-sm text-gray-500 dark:text-slate-400 truncate"><TranslatedText text="Manage your account" /></p>
             </div>
           )}
         </div>
@@ -89,7 +92,7 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
             <button
               key={item.tab}
               onClick={() => setActiveTab(item.tab as any)}
-              title={isCollapsed ? item.label : ''}
+              title={isCollapsed ? tSync(item.label) : ''}
               className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg text-left transition-colors duration-200 group ${
                 isActive
                   ? 'bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800'
@@ -102,11 +105,11 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
                 }`}
               />
               {!isCollapsed && (
-                <span className="font-medium dark:text-slate-200 truncate">{item.label}</span>
+                <span className="font-medium dark:text-slate-200 truncate"><TranslatedText text={item.label} /></span>
               )}
               {isCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                  {item.label}
+                  <TranslatedText text={item.label} />
                 </div>
               )}
             </button>

@@ -3,8 +3,11 @@ import { Shield, AlertTriangle, CheckCircle, XCircle, Flag, Clock, TrendingUp, U
 import ModerationActionsManagement from './components/ModerationActionsManagement';
 import ProductModerationHistory from './components/ProductModerationHistory';
 import { fetchModerationStats, fetchModerationActions } from './service';
+import { useTranslation } from '../../hooks/useTranslation';
+import { TranslatedText } from '../../components/translated-text';
 
 const ModerationDashboardPage: React.FC = () => {
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<'overview' | 'actions' | 'history'>('overview');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [stats, setStats] = useState<any>(null);
@@ -67,15 +70,15 @@ const ModerationDashboardPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                Moderation Dashboard
+                <TranslatedText text="Moderation Dashboard" />
               </h1>
               <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Monitor and manage content moderation across the platform
+                <TranslatedText text="Monitor and manage content moderation across the platform" />
               </p>
             </div>
             <div className="flex items-center space-x-3">
               <div className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium">
-                Active
+                <TranslatedText text="Active" />
               </div>
             </div>
           </div>
@@ -95,7 +98,7 @@ const ModerationDashboardPage: React.FC = () => {
                 }`}
               >
                 {tab.icon}
-                <span>{tab.label}</span>
+                <span><TranslatedText text={tab.label} /></span>
               </button>
             ))}
           </nav>
@@ -113,9 +116,9 @@ const ModerationDashboardPage: React.FC = () => {
                       <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Actions</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400"><TranslatedText text="Total Actions" /></p>
                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {loadingStats ? 'Loading...' : (stats?.totalActions || 0)}
+                        {loadingStats ? <TranslatedText text="Loading..." /> : (stats?.totalActions || 0)}
                       </p>
                     </div>
                   </div>
@@ -127,9 +130,9 @@ const ModerationDashboardPage: React.FC = () => {
                       <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Approved</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400"><TranslatedText text="Approved" /></p>
                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {loadingStats ? 'Loading...' : (stats?.actionsByType?.approve || 0)}
+                        {loadingStats ? <TranslatedText text="Loading..." /> : (stats?.actionsByType?.approve || 0)}
                       </p>
                     </div>
                   </div>
@@ -141,9 +144,9 @@ const ModerationDashboardPage: React.FC = () => {
                       <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Rejected</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400"><TranslatedText text="Rejected" /></p>
                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {loadingStats ? 'Loading...' : (stats?.actionsByType?.reject || 0)}
+                        {loadingStats ? <TranslatedText text="Loading..." /> : (stats?.actionsByType?.reject || 0)}
                       </p>
                     </div>
                   </div>
@@ -155,9 +158,9 @@ const ModerationDashboardPage: React.FC = () => {
                       <Flag className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Flagged</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400"><TranslatedText text="Flagged" /></p>
                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {loadingStats ? 'Loading...' : (stats?.actionsByType?.flag || 0)}
+                        {loadingStats ? <TranslatedText text="Loading..." /> : (stats?.actionsByType?.flag || 0)}
                       </p>
                     </div>
                   </div>

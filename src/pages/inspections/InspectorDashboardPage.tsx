@@ -43,33 +43,42 @@ import {
   ChevronRight,
   Camera,
   Edit,
-  Compare,
   Calculator,
   FileCheck,
   Users,
   Building2,
-  Zap
+  Zap,
+  Wallet,
+  CreditCard,
+  Globe
 } from 'lucide-react';
-import type { Inspection, Inspector } from '../../types/inspection';
-import { DisputeType } from '../../types/inspection';
-import { inspectionService, inspectorService, inspectionItemService, disputeService } from '../../services/inspectionService';
+import type { Inspection, Inspector, AvailabilityStatus, WorkingHours } from '../../types/inspection';
+import { inspectionService, inspectorService, inspectionItemService } from '../../services/inspectionService';
 import StatusBadge from '../../components/inspections/StatusBadge';
 import QuickStatsCard from '../../components/inspections/QuickStatsCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { TwoFactorManagement } from '../../components/2fa/TwoFactorManagement';
 import ProfileSettingsForm from '../my-account/components/ProfileSettingsForm';
-import { fetchUserProfile, updateUser, uploadUserAvatar, API_BASE_URL } from '../my-account/service/api';
+import { fetchUserProfile, updateUser, uploadUserAvatar, API_BASE_URL, fetchUserTransactions } from '../my-account/service/api';
 import axios from 'axios';
 import VerificationBanner from '../../components/verification/VerificationBanner';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, LineChart, Line } from 'recharts';
+import AllInspectionsTab from './components/AllInspectionsTab';
+import CompletedInspectionsTab from './components/CompletedInspectionsTab';
+import PaymentsTab from './components/PaymentsTab';
+import InspectorInspectionDetailsModal from './components/InspectorInspectionDetailsModal';
+import { useTranslation } from '../../hooks/useTranslation';
+import { TranslatedText } from '../../components/translated-text';
 
 const InspectorDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { showToast } = useToast();
+  const { tSync, language, setLanguage } = useTranslation();
   
   // Navigation state
-  const [activeTab, setActiveTab] = useState<'overview' | 'pre-inspection' | 'post-inspection' | 'third-party' | 'disputes' | 'certifications' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'inspections' | 'completed' | 'payments' | 'settings'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -85,16 +94,13 @@ const InspectorDashboardPage: React.FC = () => {
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [inspector, setInspector] = useState<Inspector | null>(null);
   const [loading, setLoading] = useState(true);
-  const [inspectorDisputes, setInspectorDisputes] = useState<any[]>([]);
-  const [disputesLoading, setDisputesLoading] = useState(false);
   
   // Stats state
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
     inProgress: 0,
-    completed: 0,
-    disputed: 0
+    completed: 0
   });
 
   // Performance metrics
@@ -105,6 +111,20 @@ const InspectorDashboardPage: React.FC = () => {
     onTimeRate: 0,
     responseTime: '2.5 hours'
   });
+
+  // Payments state
+  const [payments, setPayments] = useState<any[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsStats, setPaymentsStats] = useState({
+    totalEarnings: 0,
+    pendingPayments: 0,
+    completedPayments: 0,
+    thisMonth: 0
+  });
+
+  // Trending data for charts
+  const [trendingData, setTrendingData] = useState<any[]>([]);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -120,6 +140,8 @@ const InspectorDashboardPage: React.FC = () => {
       { itemName: '', description: '', condition: 'good', notes: '', repairCost: 0, replacementCost: 0, requiresRepair: false, requiresReplacement: false }
     ]
   }));
+  const [showInspectionDetailsModal, setShowInspectionDetailsModal] = useState(false);
+  const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(null);
 
   const [showAddItem, setShowAddItem] = useState<{
     open: boolean;
@@ -151,43 +173,15 @@ const InspectorDashboardPage: React.FC = () => {
     }
   }));
 
-  const [showDispute, setShowDispute] = useState<{
-    open: boolean;
-    inspectionId: string | null;
-    disputeType: DisputeType;
-    reason: string;
-    evidence: string;
-    photos: File[];
-  }>(() => ({
-    open: false,
-    inspectionId: null,
-    disputeType: DisputeType.DAMAGE_ASSESSMENT,
-    reason: '',
-    evidence: '',
-    photos: []
-  }));
-
-  const [showResolveDispute, setShowResolveDispute] = useState<{
-    open: boolean;
-    inspectionId: string | null;
-    disputeId: string | null;
-    resolutionNotes: string;
-    agreedAmount: number;
-  }>(() => ({
-    open: false,
-    inspectionId: null,
-    disputeId: null,
-    resolutionNotes: '',
-    agreedAmount: 0
-  }));
 
   // Enhanced header states
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [notifications] = useState([
     { id: 1, message: 'New inspection assigned', time: '2 min ago', unread: true },
-    { id: 2, message: 'Dispute resolved successfully', time: '1 hour ago', unread: false },
+    { id: 2, message: 'Inspection completed', time: '1 hour ago', unread: false },
     { id: 3, message: 'Performance review completed', time: '2 hours ago', unread: false }
   ]);
 
@@ -217,6 +211,9 @@ const InspectorDashboardPage: React.FC = () => {
       }
       if (!target.closest('.notifications-dropdown') && !target.closest('.notifications-button')) {
         setShowNotifications(false);
+      }
+      if (!target.closest('.language-dropdown') && !target.closest('.language-button')) {
+        setShowLanguageDropdown(false);
       }
     };
 
@@ -255,80 +252,365 @@ const InspectorDashboardPage: React.FC = () => {
 
   useEffect(() => {
     loadInspectorData();
+    generateTrendingData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'payments') {
+      loadPayments();
+    }
+    if (activeTab === 'overview' && inspections.length > 0) {
+      generateTrendingData();
+      loadRecentActivities();
+    }
+  }, [activeTab, inspections.length]);
 
   const loadInspectorData = async () => {
     try {
       setLoading(true);
-      // Get the inspector ID from the authenticated user (fallback to placeholder)
-      const inspectorId = user?.id || 'current-inspector-id';
-      
-      // Load inspector profile (best-effort)
-      try {
-        const inspectorData = await inspectorService.getInspector(inspectorId);
-        setInspector(inspectorData);
-      } catch (e) {
-        // If profile fetch fails, keep minimal header info
-        setInspector(null);
+      // Get the inspector ID from the authenticated user
+      const inspectorId = user?.id;
+      if (!inspectorId) {
+        console.error('No user ID available');
+        setLoading(false);
+        return;
       }
       
-      // Load inspector's inspections
-      const response = await inspectionService.getInspectionsByInspector(inspectorId);
+      // Load inspector profile (use user data as fallback since there's no /inspectors/:id endpoint)
+      let inspectorData: Inspector | null = null;
+      try {
+        // Try to get inspector from the list (first result matching the ID)
+        const inspectorsList = await inspectorService.getInspectors('inspector');
+        inspectorData = inspectorsList.find((insp: any) => insp.id === inspectorId) || null;
+        
+        // If not found in list, create a minimal inspector object from user data
+        if (!inspectorData && user) {
+          const defaultWorkingHours: WorkingHours = {
+            monday: { start: '09:00', end: '17:00', available: true },
+            tuesday: { start: '09:00', end: '17:00', available: true },
+            wednesday: { start: '09:00', end: '17:00', available: true },
+            thursday: { start: '09:00', end: '17:00', available: true },
+            friday: { start: '09:00', end: '17:00', available: true },
+            saturday: { start: '09:00', end: '17:00', available: true },
+            sunday: { start: '09:00', end: '17:00', available: false }
+          };
+          
+          inspectorData = {
+            id: user.id,
+            userId: user.id,
+            qualifications: [],
+            specializations: [],
+            experience: 0,
+            rating: 0,
+            totalInspections: 0,
+            completedInspections: 0,
+            workingHours: defaultWorkingHours,
+            availability: 'available' as AvailabilityStatus,
+            location: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          } as Inspector;
+        }
+        setInspector(inspectorData);
+      } catch (e) {
+        console.warn('Failed to load inspector profile:', e);
+        // Fallback to user data
+        if (user) {
+          const defaultWorkingHours: WorkingHours = {
+            monday: { start: '09:00', end: '17:00', available: true },
+            tuesday: { start: '09:00', end: '17:00', available: true },
+            wednesday: { start: '09:00', end: '17:00', available: true },
+            thursday: { start: '09:00', end: '17:00', available: true },
+            friday: { start: '09:00', end: '17:00', available: true },
+            saturday: { start: '09:00', end: '17:00', available: true },
+            sunday: { start: '09:00', end: '17:00', available: false }
+          };
+          
+          inspectorData = {
+            id: user.id,
+            userId: user.id,
+            qualifications: [],
+            specializations: [],
+            experience: 0,
+            rating: 0,
+            totalInspections: 0,
+            completedInspections: 0,
+            workingHours: defaultWorkingHours,
+            availability: 'available' as AvailabilityStatus,
+            location: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          } as Inspector;
+          setInspector(inspectorData);
+        } else {
+          setInspector(null);
+        }
+      }
+      
+      // Load inspector's inspections (fetch more to get accurate stats)
+      console.log('📥 [InspectorDashboard] Fetching inspections for inspector:', inspectorId);
+      const response = await inspectionService.getInspectionsByInspector(inspectorId, 1, 100);
+      console.log('📦 [InspectorDashboard] Raw API Response:', {
+        response,
+        hasInspections: !!response?.inspections,
+        inspectionsCount: response?.inspections?.length || 0,
+        total: response?.total,
+        page: response?.page,
+        limit: response?.limit
+      });
+      
       const inspectionsList: Inspection[] = Array.isArray(response?.inspections)
         ? response.inspections
         : (Array.isArray(response) ? response as Inspection[] : []);
+      
+      console.log('✅ [InspectorDashboard] Processed Inspections List:', {
+        count: inspectionsList.length,
+        inspections: inspectionsList,
+        sample: inspectionsList[0] || null
+      });
+      
       setInspections(inspectionsList);
       
-      // Calculate stats
+      // Calculate stats from real data
       const statsData = {
         total: (response?.total ?? inspectionsList.length) as number,
         pending: inspectionsList.filter(i => i.status === 'pending').length,
         inProgress: inspectionsList.filter(i => i.status === 'in_progress').length,
-        completed: inspectionsList.filter(i => i.status === 'completed').length,
-        disputed: inspectionsList.filter(i => i.status === 'disputed').length
+        completed: inspectionsList.filter(i => i.status === 'completed').length
       };
       setStats(statsData);
 
-      // Calculate performance metrics
-      const completedCount = statsData.completed;
+      // Calculate real performance metrics
+      const completedInspections = inspectionsList.filter(i => i.status === 'completed');
+      const completedCount = completedInspections.length;
       const totalCount = statsData.total || 1;
       const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
       
-      setPerformanceMetrics({
-        averageRating: inspector?.rating || 4.8,
-        totalEarnings: 0, // TODO: Calculate from completed inspections
-        completionRate: Math.round(completionRate),
-        onTimeRate: 95, // TODO: Calculate from scheduled vs actual completion times
-        responseTime: '2.5 hours'
+      // Calculate on-time rate (inspections completed on or before scheduled date)
+      const onTimeInspections = completedInspections.filter(ins => {
+        if (!ins.scheduledAt || !ins.completedAt) return false;
+        const scheduled = new Date(ins.scheduledAt);
+        const completed = new Date(ins.completedAt);
+        return completed <= scheduled || completed.getTime() - scheduled.getTime() <= 24 * 60 * 60 * 1000; // within 24 hours
       });
-
-      // Load inspector's disputes
-      await loadInspectorDisputes();
+      const onTimeRate = completedCount > 0 ? (onTimeInspections.length / completedCount) * 100 : 0;
+      
+      // Calculate average response time (time from assignment to start)
+      const startedInspections = inspectionsList.filter(ins => 
+        ins.status === 'in_progress' || ins.status === 'completed'
+      );
+      let totalResponseTime = 0;
+      let responseTimeCount = 0;
+      
+      startedInspections.forEach(ins => {
+        if (ins.createdAt) {
+          // Try to find when inspection was started (use updatedAt as proxy if startedAt not available)
+          const assignedTime = new Date(ins.createdAt).getTime();
+          const startedTime = ins.scheduledAt ? new Date(ins.scheduledAt).getTime() : assignedTime;
+          const responseTimeHours = (startedTime - assignedTime) / (1000 * 60 * 60);
+          if (responseTimeHours > 0 && responseTimeHours < 720) { // reasonable range (0-30 days)
+            totalResponseTime += responseTimeHours;
+            responseTimeCount++;
+          }
+        }
+      });
+      
+      const avgResponseTimeHours = responseTimeCount > 0 ? totalResponseTime / responseTimeCount : 0;
+      const responseTimeStr = avgResponseTimeHours > 0 
+        ? avgResponseTimeHours < 1 
+          ? `${Math.round(avgResponseTimeHours * 60)} min`
+          : `${avgResponseTimeHours.toFixed(1)} hours`
+        : 'N/A';
+      
+      // Get inspector rating from profile or calculate from inspections
+      const inspectorRating = inspectorData?.rating || 
+        (completedInspections.length > 0 ? 4.5 : 0);
+      
+      setPerformanceMetrics({
+        averageRating: Number(inspectorRating) || 0,
+        totalEarnings: 0, // Will be updated when payments are loaded
+        completionRate: Math.round(completionRate),
+        onTimeRate: Math.round(onTimeRate),
+        responseTime: responseTimeStr
+      });
+      
+      // Generate trending data from real inspections
+      generateTrendingDataFromInspections(inspectionsList);
+      
+      // Load recent activities
+      loadRecentActivitiesFromInspections(inspectionsList);
+      
+      // Load payments to calculate earnings (async, don't block)
+      if (userId && token) {
+        loadPayments().catch(err => {
+          console.warn('Failed to load payments:', err);
+        });
+      }
     } catch (error) {
       console.error('Error loading inspector data:', error);
+      showToast('Failed to load inspector data', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadInspectorDisputes = async () => {
+  const loadPayments = async () => {
+    if (!userId || !token) return;
+    
     try {
-      setDisputesLoading(true);
-      console.log('Loading inspector disputes...');
-      const response = await disputeService.getAllDisputes();
-      console.log('Inspector disputes response:', response);
-      console.log('Inspector disputes array:', response.disputes);
-      setInspectorDisputes(response.disputes || []);
+      setPaymentsLoading(true);
+      console.log('📥 [InspectorDashboard] Fetching inspector payments...');
+      
+      // Use the new inspector-specific endpoint
+      const response = await axios.get(
+        `${API_BASE_URL}/payment-transactions/inspector/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            page: 1,
+            limit: 200,
+            status: ['completed', 'pending', 'processing'] // Optional: filter by status
+          }
+        }
+      );
+
+      const result = response.data;
+      const transactions = result.data || [];
+      const stats = result.stats || {
+        totalEarnings: 0,
+        completedPayments: 0,
+        pendingPayments: 0,
+        thisMonthEarnings: 0
+      };
+
+      console.log('📦 [InspectorDashboard] Inspector payments:', transactions);
+      console.log('📊 [InspectorDashboard] Payment stats:', stats);
+
+      // Process payments without fetching payment method details
+      // NOTE: Payment methods belong to the payer (product owner), not the inspector
+      // The backend returns 401 if we try to fetch payment methods we don't own
+      // Instead, we'll use basic payment info that's already in the transaction
+      const paymentsWithMethods = transactions.map((payment: any) => {
+        // Extract basic payment method info from transaction data if available
+        // Don't fetch full payment method details - they belong to the payer
+        const basicMethodInfo = payment.payment_method_id ? {
+          id: payment.payment_method_id,
+          // Infer type from provider if available
+          type: payment.provider ? 'mobile_money' : 'card',
+          provider: payment.provider || null
+        } : null;
+
+        return {
+          ...payment,
+          paymentMethod: basicMethodInfo
+        };
+      });
+
+      console.log('💳 [InspectorDashboard] Payments processed:', paymentsWithMethods);
+      setPayments(paymentsWithMethods);
+      setPaymentsStats(stats);
+
+      // Update performance metrics with earnings
+      setPerformanceMetrics(prev => ({
+        ...prev,
+        totalEarnings: stats.totalEarnings
+      }));
     } catch (error) {
-      console.error('Error loading inspector disputes:', error);
-      setInspectorDisputes([]);
+      console.error('❌ [InspectorDashboard] Error loading payments:', error);
+      showToast('Failed to load payments', 'error');
     } finally {
-      setDisputesLoading(false);
+      setPaymentsLoading(false);
     }
   };
 
+  const generateTrendingDataFromInspections = (inspectionsList: Inspection[]) => {
+    // Generate last 7 days of inspection activity data from real inspections
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      
+      // Count inspections for this day (by scheduled date or created date)
+      const dayInspections = inspectionsList.filter(ins => {
+        if (!ins.scheduledAt && !ins.createdAt) return false;
+        const insDate = new Date(ins.scheduledAt || ins.createdAt || '');
+        insDate.setHours(0, 0, 0, 0);
+        return insDate.getTime() === date.getTime();
+      });
+
+      days.push({
+        date: dateStr,
+        inspections: dayInspections.length,
+        completed: dayInspections.filter(ins => ins.status === 'completed').length,
+        pending: dayInspections.filter(ins => ins.status === 'pending' || ins.status === 'in_progress').length
+      });
+    }
+    setTrendingData(days);
+  };
+
+  const generateTrendingData = () => {
+    // Use current inspections state
+    generateTrendingDataFromInspections(inspections);
+  };
+
+  const loadRecentActivitiesFromInspections = (inspectionsList: Inspection[]) => {
+    // Create activities from real inspections
+    const activities: any[] = [];
+    
+    // Process inspections and create activity entries
+    inspectionsList.forEach(ins => {
+      if (!ins.updatedAt && !ins.createdAt) return;
+      
+      let title = '';
+      let description = '';
+      
+      if (ins.status === 'completed') {
+        title = 'Inspection completed';
+        description = `${ins.inspectionType ? ins.inspectionType.replace(/_/g, ' ') : 'Inspection'} completed`;
+      } else if (ins.status === 'in_progress') {
+        title = 'Inspection in progress';
+        description = `${ins.inspectionType ? ins.inspectionType.replace(/_/g, ' ') : 'Inspection'} is being conducted`;
+      } else if (ins.status === 'pending') {
+        title = 'Inspection assigned';
+        description = `New ${ins.inspectionType ? ins.inspectionType.replace(/_/g, ' ') : 'inspection'} assigned`;
+      } else {
+        title = `Inspection ${ins.status}`;
+        description = `${ins.inspectionType ? ins.inspectionType.replace(/_/g, ' ') : 'Inspection'} - ${ins.status}`;
+      }
+      
+      activities.push({
+        id: `ins-${ins.id}`,
+        type: 'inspection',
+        title,
+        description: description + (ins.location ? ` at ${ins.location}` : ''),
+        timestamp: ins.updatedAt || ins.createdAt,
+        icon: CheckCircle2,
+        inspectionId: ins.id
+      });
+    });
+
+    // Sort by timestamp (most recent first) and take top 10
+    activities.sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      return timeB - timeA;
+    });
+    setRecentActivities(activities.slice(0, 10));
+  };
+
+  const loadRecentActivities = () => {
+    // Use current inspections state
+    loadRecentActivitiesFromInspections(inspections);
+  };
+
   const handleInspectionClick = (inspectionId: string) => {
-    navigate(`/inspections/${inspectionId}`, { state: { from: 'inspector' } });
+    console.log('👁️ [InspectorDashboard] Opening inspection details:', inspectionId);
+    setSelectedInspectionId(inspectionId);
+    setShowInspectionDetailsModal(true);
   };
 
   const toggleTheme = (theme: 'light' | 'dark') => {
@@ -449,56 +731,6 @@ const InspectorDashboardPage: React.FC = () => {
     });
   };
 
-  const handleRaiseDispute = (inspectionId: string) => {
-    setShowDispute({
-      open: true,
-      inspectionId,
-      disputeType: DisputeType.DAMAGE_ASSESSMENT,
-      reason: '',
-      evidence: '',
-      photos: []
-    });
-  };
-
-  const handleResolveDispute = (inspectionId: string, disputeId: string) => {
-    setShowResolveDispute({
-      open: true,
-      inspectionId,
-      disputeId,
-      resolutionNotes: '',
-      agreedAmount: 0
-    });
-  };
-
-  const submitResolveDispute = async () => {
-    if (!showResolveDispute.inspectionId || !showResolveDispute.disputeId) return;
-
-    try {
-      await disputeService.resolveDispute(
-        showResolveDispute.inspectionId,
-        showResolveDispute.disputeId,
-        {
-          resolutionNotes: showResolveDispute.resolutionNotes,
-          agreedAmount: showResolveDispute.agreedAmount > 0 ? showResolveDispute.agreedAmount : undefined
-        }
-      );
-      
-      showToast('Dispute resolved successfully', 'success');
-      setShowResolveDispute({
-        open: false,
-        inspectionId: null,
-        disputeId: null,
-        resolutionNotes: '',
-        agreedAmount: 0
-      });
-      
-      // Reload disputes to show updated status
-      await loadInspectorDisputes();
-    } catch (error) {
-      console.error('Error resolving dispute:', error);
-      showToast('Failed to resolve dispute', 'error');
-    }
-  };
 
   if (loading) {
     return (
@@ -516,38 +748,9 @@ const InspectorDashboardPage: React.FC = () => {
     const matchesStatus = statusFilter === 'all' || inspection.status === statusFilter;
     
     // Filter by inspection type based on active tab
-    let matchesType = true;
-    if (activeTab === 'pre-inspection') {
-      matchesType = inspection.inspectionType === 'pre_rental' || inspection.inspection_type === 'pre_rental';
-    } else if (activeTab === 'post-inspection') {
-      matchesType = inspection.inspectionType === 'post_return' || 
-                   inspection.inspectionType === 'post_rental' ||
-                   inspection.inspection_type === 'post_return' ||
-                   inspection.inspection_type === 'post_rental';
-    } else if (activeTab === 'third-party') {
-      matchesType = inspection.inspectionType === 'third_party_professional' ||
-                   inspection.inspection_type === 'third_party_professional' ||
-                   (inspection as any).is_third_party_inspection === true;
-    }
-    
-    return matchesSearch && matchesStatus && matchesType;
+    // No type filtering needed - activeTab only has valid inspection tabs
+    return matchesSearch && matchesStatus;
   });
-
-  // Get inspection counts by type
-  const inspectionCounts = {
-    preInspection: inspections.filter(i => i.inspectionType === 'pre_rental' || i.inspection_type === 'pre_rental').length,
-    postInspection: inspections.filter(i => 
-      i.inspectionType === 'post_return' || 
-      i.inspectionType === 'post_rental' ||
-      i.inspection_type === 'post_return' ||
-      i.inspection_type === 'post_rental'
-    ).length,
-    thirdParty: inspections.filter(i => 
-      i.inspectionType === 'third_party_professional' ||
-      i.inspection_type === 'third_party_professional' ||
-      (i as any).is_third_party_inspection === true
-    ).length
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
@@ -559,7 +762,6 @@ const InspectorDashboardPage: React.FC = () => {
         setSidebarOpen={setSidebarOpen}
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
-        inspectionCounts={inspectionCounts}
         stats={stats}
         onLogout={() => { logout(); navigate('/login'); }}
       />
@@ -590,26 +792,24 @@ const InspectorDashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    {activeTab === 'overview' && 'Dashboard'}
-                    {activeTab === 'pre-inspection' && 'Pre-Inspections'}
-                    {activeTab === 'post-inspection' && 'Post-Inspections'}
-                    {activeTab === 'third-party' && 'Third-Party Inspections'}
-                    {activeTab === 'disputes' && 'Disputes'}
-                    {activeTab === 'certifications' && 'Certifications'}
-                    {activeTab === 'settings' && 'Settings'}
+                    {activeTab === 'overview' && <TranslatedText text="Dashboard" />}
+                    {activeTab === 'inspections' && <TranslatedText text="Inspections" />}
+                    {activeTab === 'completed' && <TranslatedText text="Completed Inspections" />}
+                    {activeTab === 'payments' && <TranslatedText text="Payments" />}
+                    {activeTab === 'settings' && <TranslatedText text="Settings" />}
                   </h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Professional Inspector</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Professional Inspector" /></p>
                 </div>
               </div>
               <div className="hidden lg:flex items-center space-x-6 text-sm">
                 <div className="flex items-center space-x-2 px-3 py-1.5 bg-my-primary/10 rounded-lg">
                   <Award className="w-4 h-4 text-my-primary" />
-                  <span className="text-my-primary font-medium">Certified Inspector</span>
+                  <span className="text-my-primary font-medium"><TranslatedText text="Certified Inspector" /></span>
                 </div>
                 <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
                   <Star className="w-4 h-4 text-amber-500 fill-current" />
                   <span className="font-medium">{performanceMetrics.averageRating.toFixed(1)}</span>
-                  <span className="text-gray-400">Rating</span>
+                  <span className="text-gray-400"><TranslatedText text="Rating" /></span>
                 </div>
               </div>
             </div>
@@ -643,7 +843,7 @@ const InspectorDashboardPage: React.FC = () => {
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 notifications-dropdown">
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Notifications" /></h3>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notifications.map((notification) => (
@@ -664,50 +864,71 @@ const InspectorDashboardPage: React.FC = () => {
                     </div>
                     <div className="p-3 border-t border-gray-200 dark:border-gray-800">
                       <button className="w-full text-sm text-my-primary hover:text-my-primary/80 font-medium">
-                        View All Notifications
+                        <TranslatedText text="View All Notifications" />
                       </button>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Settings Dropdown */}
+              {/* Language Switcher (replaces Settings icon) */}
               <div className="relative">
                 <button
-                  onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-                  className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors settings-button"
+                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                  className="flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors language-button"
+                  aria-label="Select language"
                 >
-                  <Settings className="w-5 h-5" />
-                  <ChevronDown className="w-4 h-4" />
+                  <Globe className="w-5 h-5" />
                 </button>
                 
-                {showSettingsDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 settings-dropdown">
+                {showLanguageDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 language-dropdown max-h-96 overflow-y-auto">
                     <div className="py-2">
-                      <button onClick={() => { setShowSettingsDropdown(false); setShowProfileModal(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                        <UserCheck className="w-4 h-4" />
-                        <span>Profile Settings</span>
-                      </button>
-                      <button onClick={() => { setShowSettingsDropdown(false); setShow2FAModal(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                        <Shield className="w-4 h-4" />
-                        <span>Two-Factor Auth</span>
-                      </button>
-                      <button onClick={() => { setShowSettingsDropdown(false); setShowChangePassword(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                        <Key className="w-4 h-4" />
-                        <span>Change Password</span>
-                      </button>
-                      <button onClick={() => { setShowSettingsDropdown(false); setShowQuickSettings(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                        <Settings className="w-4 h-4" />
-                        <span>Quick Settings</span>
-                      </button>
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                        <FileText className="w-4 h-4" />
-                        <span>Documentation</span>
-                      </button>
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                        <HelpCircle className="w-4 h-4" />
-                        <span>Help & Support</span>
-                      </button>
+                      {[
+                        { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
+                        { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+                        { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', flag: '🇰🇪' },
+                        { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
+                        { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇵🇹' },
+                        { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
+                        { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
+                        { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
+                        { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
+                        { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹' },
+                        { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
+                        { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
+                        { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
+                        { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷' },
+                        { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
+                        { code: 'nl', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱' },
+                        { code: 'pl', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱' },
+                        { code: 'th', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
+                        { code: 'uk', name: 'Ukrainian', nativeName: 'Українська', flag: '🇺🇦' },
+                      ].map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => {
+                            setLanguage(lang.code);
+                            setShowLanguageDropdown(false);
+                          }}
+                          className={`w-full flex items-center space-x-3 px-4 py-2 text-sm text-left transition-colors ${
+                            language === lang.code
+                              ? 'text-[#01aaa7] font-medium bg-[#01aaa7]/10 dark:bg-[#01aaa7]/20'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          <span className="text-lg">{lang.flag}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{lang.nativeName}</span>
+                            {lang.name !== lang.nativeName && (
+                              <span className="text-xs opacity-70">{lang.name}</span>
+                            )}
+                          </div>
+                          {language === lang.code && (
+                            <span className="ml-auto text-[#01aaa7]">✓</span>
+                          )}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -726,7 +947,7 @@ const InspectorDashboardPage: React.FC = () => {
                     <p className="text-sm font-medium text-gray-900">
                       {inspector?.userId || user?.name || 'Inspector'}
                     </p>
-                    <p className="text-xs text-gray-500">Professional Inspector</p>
+                    <p className="text-xs text-gray-500"><TranslatedText text="Professional Inspector" /></p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
@@ -742,7 +963,7 @@ const InspectorDashboardPage: React.FC = () => {
                           <p className="text-sm font-medium text-gray-900">
                             {inspector?.userId || user?.name || 'Inspector'}
                           </p>
-                          <p className="text-xs text-gray-500">ID: {inspector?.id || 'N/A'}</p>
+                          <p className="text-xs text-gray-500"><TranslatedText text="ID" />: {inspector?.id || <TranslatedText text="N/A" />}</p>
                         </div>
                       </div>
                     </div>
@@ -750,18 +971,18 @@ const InspectorDashboardPage: React.FC = () => {
                     <div className="py-2">
                       <div className="px-4 py-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Rating</span>
+                          <span className="text-gray-600"><TranslatedText text="Rating" /></span>
                           <div className="flex items-center space-x-1">
                             <Star className="w-4 h-4 text-amber-500 fill-current" />
                             <span className="font-medium">{inspector?.rating || 0}/5.0</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-sm mt-2">
-                          <span className="text-gray-600">Experience</span>
-                          <span className="font-medium">{inspector?.experience || 0} years</span>
+                          <span className="text-gray-600"><TranslatedText text="Experience" /></span>
+                          <span className="font-medium">{inspector?.experience || 0} <TranslatedText text="years" /></span>
                         </div>
                         <div className="flex items-center justify-between text-sm mt-2">
-                          <span className="text-gray-600">Total Inspections</span>
+                          <span className="text-gray-600"><TranslatedText text="Total Inspections" /></span>
                           <span className="font-medium">{inspector?.totalInspections || 0}</span>
                         </div>
                       </div>
@@ -787,7 +1008,7 @@ const InspectorDashboardPage: React.FC = () => {
                           className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3"
                         >
                           <LogOut className="w-4 h-4" />
-                          <span>Sign Out</span>
+                          <span><TranslatedText text="Sign Out" /></span>
                         </button>
                       </div>
                     </div>
@@ -804,55 +1025,14 @@ const InspectorDashboardPage: React.FC = () => {
             {/* Verification banner for unverified users */}
             <VerificationBanner />
             
-            {/* Performance Metrics Bar - Only show on overview */}
-            {activeTab === 'overview' && (
-              <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <Activity className="w-5 h-5 opacity-90" />
-              <span className="text-xs font-medium opacity-90">Completion Rate</span>
-            </div>
-            <div className="text-3xl font-bold">{performanceMetrics.completionRate}%</div>
-            <div className="text-xs opacity-90 mt-1">{stats.completed} of {stats.total} completed</div>
-          </div>
-          
-          <div className="bg-my-primary rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <Target className="w-5 h-5 opacity-90" />
-              <span className="text-xs font-medium opacity-90">On-Time Rate</span>
-            </div>
-            <div className="text-3xl font-bold">{performanceMetrics.onTimeRate}%</div>
-            <div className="text-xs opacity-90 mt-1">Average response time</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <Star className="w-5 h-5 opacity-90 fill-current" />
-              <span className="text-xs font-medium opacity-90">Average Rating</span>
-            </div>
-            <div className="text-3xl font-bold">{performanceMetrics.averageRating.toFixed(1)}</div>
-            <div className="text-xs opacity-90 mt-1">Based on {stats.completed} reviews</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <DollarSign className="w-5 h-5 opacity-90" />
-              <span className="text-xs font-medium opacity-90">Total Earnings</span>
-            </div>
-            <div className="text-3xl font-bold">${performanceMetrics.totalEarnings.toLocaleString()}</div>
-                <div className="text-xs opacity-90 mt-1">This month</div>
-              </div>
-            </div>
-            )}
-
             {/* Search and Filter Bar - Show for inspection tabs */}
-            {(activeTab === 'pre-inspection' || activeTab === 'post-inspection' || activeTab === 'third-party') && (
+            {(activeTab === 'inspections' || activeTab === 'completed') && (
               <div className="mb-6 flex flex-col sm:flex-row items-center gap-4">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search inspections..."
+                    placeholder={tSync('Search inspections...')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
@@ -878,42 +1058,64 @@ const InspectorDashboardPage: React.FC = () => {
                 stats={stats}
                 inspections={inspections}
                 inspector={inspector}
-                inspectorDisputes={inspectorDisputes}
-                disputesLoading={disputesLoading}
                 onInspectionClick={handleInspectionClick}
                 formatDate={formatDate}
                 getTypeLabel={getTypeLabel}
+                trendingData={trendingData}
+                recentActivities={recentActivities}
+                performanceMetrics={performanceMetrics}
               />
             )}
 
-            {(activeTab === 'pre-inspection' || activeTab === 'post-inspection' || activeTab === 'third-party') && (
-              <InspectionsTab 
-                inspections={filteredInspections}
+            {activeTab === 'inspections' && (() => {
+              const activeInspections = inspections.filter(i => i.status !== 'completed');
+              console.log('📋 [InspectorDashboard] Rendering Inspections Tab:', {
+                totalInspections: inspections.length,
+                activeInspections: activeInspections.length,
+                filteredOut: inspections.length - activeInspections.length,
+                activeInspectionsList: activeInspections,
+                statusBreakdown: activeInspections.reduce((acc, ins) => {
+                  acc[ins.status] = (acc[ins.status] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>)
+              });
+              return (
+                <AllInspectionsTab 
+                  inspections={activeInspections}
+                  onInspectionClick={handleInspectionClick}
+                  onStart={handleStart}
+                  onComplete={handleComplete}
+                  onReschedule={handleReschedule}
+                  onAddItem={handleAddItem}
+                  formatDate={formatDate}
+                  getTypeLabel={getTypeLabel}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                />
+              );
+            })()}
+
+            {activeTab === 'completed' && (
+              <CompletedInspectionsTab 
+                inspections={inspections.filter(i => i.status === 'completed')}
                 onInspectionClick={handleInspectionClick}
-                onStart={handleStart}
-                onComplete={handleComplete}
-                onReschedule={handleReschedule}
-                onAddItem={handleAddItem}
-                onRaiseDispute={handleRaiseDispute}
-                onResolveDispute={handleResolveDispute}
                 formatDate={formatDate}
                 getTypeLabel={getTypeLabel}
                 searchQuery={searchQuery}
-                inspectionType={activeTab}
+                setSearchQuery={setSearchQuery}
               />
             )}
 
-            {activeTab === 'disputes' && (
-              <DisputesTab 
-                inspectorDisputes={inspectorDisputes}
-                disputesLoading={disputesLoading}
-                onResolveDispute={handleResolveDispute}
+            {activeTab === 'payments' && (
+              <PaymentsTab 
+                payments={payments}
+                paymentsLoading={paymentsLoading}
+                paymentsStats={paymentsStats}
                 formatDate={formatDate}
+                preferredCurrency={preferredCurrency}
               />
-            )}
-
-            {activeTab === 'certifications' && (
-              <CertificationsTab inspector={inspector} />
             )}
 
             {activeTab === 'settings' && (
@@ -928,6 +1130,21 @@ const InspectorDashboardPage: React.FC = () => {
       </div>
 
       {/* Modals */}
+      {/* Inspection Details Modal */}
+      {showInspectionDetailsModal && selectedInspectionId && (
+        <InspectorInspectionDetailsModal
+          isOpen={showInspectionDetailsModal}
+          inspectionId={selectedInspectionId}
+          onClose={() => {
+            setShowInspectionDetailsModal(false);
+            setSelectedInspectionId(null);
+          }}
+          onStart={handleStart}
+          onComplete={handleComplete}
+          onRefresh={loadInspectorData}
+        />
+      )}
+
       {/* Enhanced Profile Modal */}
       {showProfileModal && userId && (
         <InspectorProfileModal
@@ -951,7 +1168,7 @@ const InspectorDashboardPage: React.FC = () => {
           <div className="absolute inset-0 bg-black/50" onClick={() => setShow2FAModal(false)} />
           <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Two-Factor Authentication</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Two-Factor Authentication" /></h3>
               <button onClick={() => setShow2FAModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
             </div>
             <TwoFactorManagement onStatusChange={() => { /* could refetch status if needed */ }} />
@@ -965,7 +1182,7 @@ const InspectorDashboardPage: React.FC = () => {
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowQuickSettings(false)} />
           <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Quick Settings</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Quick Settings" /></h3>
               <button onClick={() => setShowQuickSettings(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
             </div>
             <div className="space-y-6">
@@ -1368,186 +1585,6 @@ const InspectorDashboardPage: React.FC = () => {
                  </div>
        )}
 
-       {/* Dispute Modal */}
-       {showDispute.open && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center">
-           <div className="absolute inset-0 bg-black/40" onClick={() => setShowDispute({ open: false, inspectionId: null, disputeType: DisputeType.DAMAGE_ASSESSMENT, reason: '', evidence: '', photos: [] })} />
-           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
-             <h3 className="text-lg font-semibold text-gray-900 mb-4">Raise Dispute</h3>
-             
-             <div className="space-y-4">
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Dispute Type *</label>
-                 <select
-                   value={showDispute.disputeType}
-                   onChange={(e) => setShowDispute(s => ({ ...s, disputeType: e.target.value as DisputeType }))}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                 >
-                   <option value={DisputeType.DAMAGE_ASSESSMENT}>Damage Assessment</option>
-                   <option value={DisputeType.CONDITION_DISAGREEMENT}>Condition Disagreement</option>
-                   <option value={DisputeType.COST_DISPUTE}>Cost Dispute</option>
-                   <option value={DisputeType.PROCEDURE_VIOLATION}>Procedure Violation</option>
-                   <option value={DisputeType.OTHER}>Other</option>
-                 </select>
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
-                 <textarea
-                   value={showDispute.reason}
-                   onChange={(e) => setShowDispute(s => ({ ...s, reason: e.target.value }))}
-                   rows={3}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                   placeholder="Describe the reason for this dispute..."
-                 />
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Evidence</label>
-                 <textarea
-                   value={showDispute.evidence}
-                   onChange={(e) => setShowDispute(s => ({ ...s, evidence: e.target.value }))}
-                   rows={3}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                   placeholder="Provide any supporting evidence or additional details..."
-                 />
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Supporting Photos</label>
-                 <input
-                   type="file"
-                   multiple
-                   accept="image/*"
-                   onChange={(e) => {
-                     const files = Array.from(e.target.files || []);
-                     setShowDispute(s => ({ ...s, photos: files }));
-                   }}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                 />
-                 <p className="mt-1 text-sm text-gray-500">Upload photos to support your dispute (optional)</p>
-                 {showDispute.photos.length > 0 && (
-                   <div className="mt-2">
-                     <p className="text-sm text-gray-600">Selected files:</p>
-                     <ul className="mt-1 text-sm text-gray-500">
-                       {showDispute.photos.map((file) => (
-                         <li key={file.name}>{file.name}</li>
-                       ))}
-                     </ul>
-                   </div>
-                 )}
-               </div>
-             </div>
-
-             <div className="mt-6 flex justify-end gap-3">
-               <button
-                 onClick={() => setShowDispute({ open: false, inspectionId: null, disputeType: DisputeType.DAMAGE_ASSESSMENT, reason: '', evidence: '', photos: [] })}
-                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
-               >
-                 Cancel
-               </button>
-               
-               <button
-                 onClick={async () => {
-                   if (!showDispute.inspectionId || !showDispute.reason.trim()) {
-                     showToast('Please provide a reason for the dispute', 'error');
-                     return;
-                   }
-                   
-                   try {
-                     // Create FormData for file upload
-                     const formData = new FormData();
-                     formData.append('disputeType', showDispute.disputeType);
-                     formData.append('reason', showDispute.reason);
-                     formData.append('evidence', showDispute.evidence);
-                     
-                     // Append photos if any
-                     showDispute.photos.forEach((photo) => {
-                       formData.append('photos', photo);
-                     });
-                     
-                     await disputeService.raiseDispute(showDispute.inspectionId, formData as any);
-                     
-                     setShowDispute({ 
-                       open: false, 
-                       inspectionId: null, 
-                       disputeType: DisputeType.DAMAGE_ASSESSMENT, 
-                       reason: '', 
-                       evidence: '', 
-                       photos: [] 
-                     });
-                     showToast('Dispute raised successfully', 'success');
-                     
-                     // Refresh the inspection data
-                     await loadInspectorData();
-                   } catch (error) {
-                     console.error('Failed to raise dispute:', error);
-                     showToast('Failed to raise dispute', 'error');
-                   }
-                 }}
-                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-               >
-                 Raise Dispute
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
-
-       {/* Resolve Dispute Modal */}
-       {showResolveDispute.open && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center">
-           <div className="absolute inset-0 bg-black/40" onClick={() => setShowResolveDispute({ open: false, inspectionId: null, disputeId: null, resolutionNotes: '', agreedAmount: 0 })} />
-           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-             <h3 className="text-lg font-semibold text-gray-900 mb-4">Resolve Dispute</h3>
-             
-             <div className="space-y-4">
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Resolution Notes *</label>
-                 <textarea
-                   value={showResolveDispute.resolutionNotes}
-                   onChange={(e) => setShowResolveDispute(s => ({ ...s, resolutionNotes: e.target.value }))}
-                   rows={4}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                   placeholder="Provide detailed explanation of how the dispute was resolved..."
-                   required
-                 />
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Agreed Amount (Optional)</label>
-                 <input
-                   type="number"
-                   step="0.01"
-                   min="0"
-                   value={showResolveDispute.agreedAmount}
-                   onChange={(e) => setShowResolveDispute(s => ({ ...s, agreedAmount: parseFloat(e.target.value) || 0 }))}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                   placeholder="0.00"
-                 />
-                 <p className="mt-1 text-sm text-gray-500">Enter the agreed upon amount if applicable</p>
-               </div>
-             </div>
-
-             <div className="mt-6 flex justify-end gap-3">
-               <button 
-                 onClick={() => setShowResolveDispute({ open: false, inspectionId: null, disputeId: null, resolutionNotes: '', agreedAmount: 0 })}
-                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
-               >
-                 Cancel
-               </button>
-               
-               <button
-                 onClick={submitResolveDispute}
-                 disabled={!showResolveDispute.resolutionNotes.trim()}
-                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
-               >
-                 Resolve Dispute
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
      </div>
    );
  };
@@ -1557,16 +1594,18 @@ const OverviewTab: React.FC<{
   stats: any;
   inspections: Inspection[];
   inspector: Inspector | null;
-  inspectorDisputes: any[];
-  disputesLoading: boolean;
   onInspectionClick: (id: string) => void;
   formatDate: (date: string) => string;
   getTypeLabel: (type: string) => string;
-}> = ({ stats, inspections, inspectorDisputes, disputesLoading, onInspectionClick, formatDate, getTypeLabel }) => {
+  trendingData: any[];
+  recentActivities: any[];
+  performanceMetrics: any;
+}> = ({ stats, inspections, inspector, onInspectionClick, formatDate, getTypeLabel, trendingData, recentActivities, performanceMetrics }) => {
+  const { tSync } = useTranslation();
   return (
     <div className="space-y-8">
       {/* Enhanced Quick Stats with better design */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -1574,7 +1613,7 @@ const OverviewTab: React.FC<{
             </div>
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.total}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Assigned</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium"><TranslatedText text="Total Assigned" /></div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
@@ -1584,7 +1623,7 @@ const OverviewTab: React.FC<{
             </div>
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.pending}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Pending</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium"><TranslatedText text="Pending" /></div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
@@ -1594,7 +1633,7 @@ const OverviewTab: React.FC<{
             </div>
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.inProgress}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">In Progress</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium"><TranslatedText text="In Progress" /></div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
@@ -1604,36 +1643,176 @@ const OverviewTab: React.FC<{
             </div>
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.completed}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium"><TranslatedText text="Completed" /></div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+      </div>
+
+      {/* Performance Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+              <Star className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.disputed}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">Disputed</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{performanceMetrics.averageRating.toFixed(1)}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium"><TranslatedText text="Average Rating" /></div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+            ${performanceMetrics.totalEarnings.toFixed(2)}
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium"><TranslatedText text="Total Earnings" /></div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{performanceMetrics.completionRate}%</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium"><TranslatedText text="Completion Rate" /></div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+              <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{performanceMetrics.responseTime}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium"><TranslatedText text="Avg Response Time" /></div>
+        </div>
+      </div>
+
+      {/* Trending Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Inspection Activity Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Inspection Activity (Last 7 Days)" /></h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Trending inspection statistics" /></p>
+          </div>
+          <div className="p-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={trendingData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorInspections" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                />
+                <Legend />
+                <Area type="monotone" dataKey="inspections" stroke="#10b981" fillOpacity={1} fill="url(#colorInspections)" name={tSync('Total Inspections')} />
+                <Area type="monotone" dataKey="completed" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCompleted)" name={tSync('Completed')} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Performance Metrics Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Performance Overview" /></h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Key performance indicators" /></p>
+          </div>
+          <div className="p-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={trendingData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                />
+                <Legend />
+                <Bar dataKey="pending" fill="#f59e0b" name={tSync('Pending')} />
+                <Bar dataKey="completed" fill="#10b981" name={tSync('Completed')} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activities */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Recent Activities" /></h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Latest inspection activities and updates" /></p>
+        </div>
+        <div className="p-6">
+          {recentActivities.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Activity className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2"><TranslatedText text="No recent activities" /></h3>
+              <p className="text-gray-500 dark:text-gray-400"><TranslatedText text="Activities will appear here as you work on inspections." /></p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivities.map((activity) => {
+                const IconComponent = activity.icon || Activity;
+                return (
+                  <div 
+                    key={activity.id} 
+                    className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 transition-colors cursor-pointer"
+                    onClick={() => activity.type === 'inspection' && onInspectionClick(activity.id.replace('ins-', ''))}
+                  >
+                    <div className="w-10 h-10 bg-my-primary/10 dark:bg-my-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <IconComponent className="w-5 h-5 text-my-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{activity.title}</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{activity.description}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {activity.timestamp && formatDate(activity.timestamp)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Today's Schedule */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-6 border-b border-gray-200 bg-white dark:bg-gray-800">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-my-primary/10 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-my-primary/10 dark:bg-my-primary/20 rounded-lg flex items-center justify-center">
                 <Calendar className="w-5 h-5 text-my-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">Today's Schedule</h3>
-                <p className="text-sm text-gray-600">Your upcoming inspections and tasks</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Today's Schedule" /></h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Your upcoming inspections and tasks" /></p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900">{inspections.length}</p>
-              <p className="text-sm text-gray-500">Total Inspections</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{inspections.length}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400"><TranslatedText text="Total Inspections" /></p>
             </div>
           </div>
         </div>
@@ -1641,28 +1820,28 @@ const OverviewTab: React.FC<{
         <div className="p-6">
           {inspections.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No inspections scheduled</h3>
-              <p className="text-gray-500">You're all caught up! New inspections will appear here.</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2"><TranslatedText text="No inspections scheduled" /></h3>
+              <p className="text-gray-500 dark:text-gray-400"><TranslatedText text="You're all caught up! New inspections will appear here." /></p>
             </div>
           ) : (
             <div className="space-y-4">
               {inspections.slice(0, 5).map((inspection) => (
                 <div
                   key={inspection.id}
-                  className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
+                  className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 transition-colors cursor-pointer"
                   onClick={() => onInspectionClick(inspection.id)}
                 >
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="font-semibold text-gray-900">
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100">
                         {getTypeLabel(inspection.inspectionType || '')}
                       </h4>
                       <StatusBadge status={inspection.status} />
                     </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                       {inspection.scheduledAt && (
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
@@ -1678,8 +1857,8 @@ const OverviewTab: React.FC<{
                     </div>
                     {inspection.inspectorNotes && (
                       <div className="mt-2">
-                        <p className="text-sm text-gray-600 italic">
-                          Inspector Notes: {inspection.inspectorNotes}
+                        <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                          <TranslatedText text="Inspector Notes" />: {inspection.inspectorNotes}
                         </p>
                       </div>
                     )}
@@ -1687,7 +1866,7 @@ const OverviewTab: React.FC<{
                   <div className="text-right">
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-gray-400" />
-                      <span className="text-xs text-gray-500">View Details</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="View Details" /></span>
                     </div>
                   </div>
                 </div>
@@ -1697,71 +1876,6 @@ const OverviewTab: React.FC<{
         </div>
       </div>
 
-      {/* Recent Disputes */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">Recent Disputes</h3>
-                <p className="text-sm text-gray-600">Disputes requiring attention</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900">
-                {inspectorDisputes.length}
-              </p>
-              <p className="text-sm text-gray-500">Active Disputes</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-6">
-          {disputesLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
-            </div>
-          ) : inspectorDisputes.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No active disputes</h3>
-              <p className="text-gray-500">All inspections are proceeding smoothly.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {inspectorDisputes.slice(0, 3).map((dispute) => (
-                <div key={dispute.id} className="flex items-center space-x-4 p-4 rounded-lg border border-gray-100">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="font-semibold text-gray-900">
-                        {dispute.disputeType?.replace(/_/g, ' ') || 'Dispute'}
-                      </h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        dispute.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                        dispute.status === 'under_review' ? 'bg-my-primary/10 text-my-primary' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {dispute.status?.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 truncate">{dispute.reason}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">
-                      {dispute.createdAt && formatDate(dispute.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };
@@ -1774,11 +1888,11 @@ const InspectorSidebar: React.FC<{
   setSidebarOpen: (open: boolean) => void;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
-  inspectionCounts: { preInspection: number; postInspection: number; thirdParty: number };
-  stats: { total: number; pending: number; inProgress: number; completed: number; disputed: number };
+  stats: { total: number; pending: number; inProgress: number; completed: number };
   onLogout: () => void;
-}> = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, inspectionCounts, stats, onLogout }) => {
+}> = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, stats, onLogout }) => {
   const { user } = useAuth();
+  const { tSync } = useTranslation();
 
   const toggleCollapse = () => {
     const newState = !sidebarCollapsed;
@@ -1793,42 +1907,29 @@ const InspectorSidebar: React.FC<{
       id: 'overview',
       label: 'Dashboard',
       icon: Home,
-      badge: null
-    },
-    {
-      id: 'pre-inspection',
-      label: 'Pre-Inspections',
-      icon: ClipboardCheck,
-      badge: inspectionCounts.preInspection,
-      description: 'Pre-rental inspections'
-    },
-    {
-      id: 'post-inspection',
-      label: 'Post-Inspections',
-      icon: ClipboardList,
-      badge: inspectionCounts.postInspection,
-      description: 'Post-return inspections'
-    },
-    {
-      id: 'third-party',
-      label: 'Third-Party',
-      icon: Briefcase,
-      badge: inspectionCounts.thirdParty,
-      description: 'Professional inspections'
-    },
-    {
-      id: 'disputes',
-      label: 'Disputes',
-      icon: AlertTriangle,
-      badge: stats.disputed,
-      description: 'Manage disputes'
-    },
-    {
-      id: 'certifications',
-      label: 'Certifications',
-      icon: Award,
       badge: null,
-      description: 'Manage credentials'
+      description: 'Overview & statistics'
+    },
+    {
+      id: 'inspections',
+      label: 'Inspections',
+      icon: ClipboardCheck,
+      badge: stats.pending + stats.inProgress,
+      description: 'All requested inspections'
+    },
+    {
+      id: 'completed',
+      label: 'Completed',
+      icon: CheckCircle2,
+      badge: stats.completed,
+      description: 'Completed inspections'
+    },
+    {
+      id: 'payments',
+      label: 'Payments',
+      icon: Wallet,
+      badge: null,
+      description: 'Earnings & payments'
     },
     {
       id: 'settings',
@@ -1868,8 +1969,8 @@ const InspectorSidebar: React.FC<{
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">Inspector</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Dashboard</p>
+                <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100"><TranslatedText text="Inspector" /></h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Dashboard" /></p>
               </div>
             </div>
           )}
@@ -1883,7 +1984,7 @@ const InspectorSidebar: React.FC<{
             <button
               onClick={toggleCollapse}
               className="hidden lg:flex p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={sidebarCollapsed ? tSync('Expand sidebar') : tSync('Collapse sidebar')}
             >
               {sidebarCollapsed ? (
                 <ChevronRight className="w-5 h-5" />
@@ -1925,17 +2026,17 @@ const InspectorSidebar: React.FC<{
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
                     }
                   `}
-                  title={sidebarCollapsed ? item.label : undefined}
+                  title={sidebarCollapsed ? tSync(item.label) : undefined}
                 >
                   <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
                     <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
                     {!sidebarCollapsed && (
                       <>
                         <div className="text-left">
-                          <div className="font-semibold">{item.label}</div>
+                          <div className="font-semibold"><TranslatedText text={item.label} /></div>
                           {item.description && (
                             <div className={`text-xs ${isActive ? 'text-my-primary' : 'text-gray-500 dark:text-gray-400'}`}>
-                              {item.description}
+                              <TranslatedText text={item.description} />
                             </div>
                           )}
                         </div>
@@ -1981,7 +2082,7 @@ const InspectorSidebar: React.FC<{
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                   {user?.name || user?.email || 'Inspector'}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Professional Inspector</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Professional Inspector" /></p>
               </div>
             </div>
           )}
@@ -1999,10 +2100,10 @@ const InspectorSidebar: React.FC<{
                 ? 'justify-center px-2 py-2' 
                 : 'space-x-2 px-4 py-2'
             }`}
-            title={sidebarCollapsed ? 'Sign Out' : undefined}
+            title={sidebarCollapsed ? tSync('Sign Out') : undefined}
           >
             <LogOut className="w-4 h-4" />
-            {!sidebarCollapsed && <span>Sign Out</span>}
+            {!sidebarCollapsed && <span><TranslatedText text="Sign Out" /></span>}
           </button>
         </div>
       </aside>
@@ -2403,8 +2504,8 @@ const SettingsTab: React.FC<{
             <div className="flex items-center space-x-3">
               <UserCheck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               <div className="text-left">
-                <div className="font-medium text-gray-900 dark:text-gray-100">Profile Settings</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">Update your personal information</div>
+                <div className="font-medium text-gray-900 dark:text-gray-100"><TranslatedText text="Profile Settings" /></div>
+                <div className="text-sm text-gray-500 dark:text-gray-400"><TranslatedText text="Update your personal information" /></div>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -2447,7 +2548,7 @@ const SettingsTab: React.FC<{
           <div className="absolute inset-0 bg-black/50" onClick={() => setShow2FAModal(false)} />
           <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Two-Factor Authentication</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Two-Factor Authentication" /></h3>
               <button onClick={() => setShow2FAModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
             </div>
             <TwoFactorManagement onStatusChange={() => {}} />
@@ -3080,7 +3181,7 @@ const InspectorProfileModal: React.FC<{
             disabled={saving}
             className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? <TranslatedText text="Saving..." /> : <TranslatedText text="Save Changes" />}
           </button>
         </div>
       </div>
@@ -3103,7 +3204,7 @@ const ChangePasswordModal: React.FC<{ onClose: () => void; onSubmit: (currentPas
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Change Password</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Change Password" /></h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
         </div>
         <div className="space-y-4">

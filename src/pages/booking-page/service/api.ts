@@ -154,9 +154,42 @@ export async function fetchDefaultPaymentMethods(token?: string): Promise<Paymen
 export async function addPaymentMethod(paymentData: any, token: string) {
   // Normalize inputs
   const normalizedType = String(paymentData?.type || '').trim().toLowerCase();
-  const normalizedProvider = String(paymentData?.provider || '').trim().toUpperCase();
+  const rawProvider = String(paymentData?.provider || '').trim();
+  
+  // Map mobile money provider names from database format to validation format
+  // Database has: mtn_momo, airtel_money
+  // Validation expects: MTN, AIRTEL
+  // Backend expects: mtn_momo, airtel_money (lowercase with underscores)
+  let normalizedProvider = rawProvider.toUpperCase();
+  let backendProvider = rawProvider.toLowerCase();
+  
+  // Map mobile money providers
+  const mobileMoneyProviderMap: { [key: string]: { validation: string; backend: string } } = {
+    'mtn_momo': { validation: 'MTN', backend: 'mtn_momo' },
+    'MTN_MOMO': { validation: 'MTN', backend: 'mtn_momo' },
+    'airtel_money': { validation: 'AIRTEL', backend: 'airtel_money' },
+    'AIRTEL_MONEY': { validation: 'AIRTEL', backend: 'airtel_money' },
+    'mtn': { validation: 'MTN', backend: 'mtn_momo' },
+    'MTN': { validation: 'MTN', backend: 'mtn_momo' },
+    'airtel': { validation: 'AIRTEL', backend: 'airtel_money' },
+    'AIRTEL': { validation: 'AIRTEL', backend: 'airtel_money' },
+  };
+  
+  if (normalizedType === 'mobile_money') {
+    const providerKey = rawProvider.toLowerCase();
+    const providerKeyUpper = rawProvider.toUpperCase();
+    if (mobileMoneyProviderMap[providerKey]) {
+      const mapping = mobileMoneyProviderMap[providerKey];
+      normalizedProvider = mapping.validation;
+      backendProvider = mapping.backend;
+    } else if (mobileMoneyProviderMap[providerKeyUpper]) {
+      const mapping = mobileMoneyProviderMap[providerKeyUpper];
+      normalizedProvider = mapping.validation;
+      backendProvider = mapping.backend;
+    }
+  }
 
-  const payload = { ...paymentData, type: normalizedType, provider: normalizedProvider };
+  const payload = { ...paymentData, type: normalizedType, provider: backendProvider };
 
   // Validate provider by type before sending to backend
   const allowedMobileMoneyProviders = ['MTN', 'AIRTEL'];
@@ -164,7 +197,7 @@ export async function addPaymentMethod(paymentData: any, token: string) {
 
   if (normalizedType === 'mobile_money') {
     if (!allowedMobileMoneyProviders.includes(normalizedProvider)) {
-      const msg = `Invalid provider '${normalizedProvider}' for type 'mobile_money'. Allowed: ${allowedMobileMoneyProviders.join(', ')}`;
+      const msg = `Invalid provider '${rawProvider}' for type 'mobile_money'. Allowed: ${allowedMobileMoneyProviders.join(', ')}`;
       const err: any = new Error(msg);
       err.status = 400;
       err.response = { status: 400, data: { success: false, message: msg } };

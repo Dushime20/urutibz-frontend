@@ -6,6 +6,7 @@ import { getMyNotifications } from '../../../features/notifications/api';
 import { fetchUserProfile } from '../service/api';
 import { useMarkReadMutation, useNotificationsQuery } from '../../../features/notifications/queries';
 import Portal from '../../../components/ui/Portal';
+import { LanguageSwitcher } from '../../../components/language-switcher';
 
 type HeaderProps = { 
   onToggleSidebar?: () => void;
@@ -212,6 +213,10 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+            {/* Language Switcher */}
+            <LanguageSwitcher 
+              buttonClassName="p-2 rounded-xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
+            />
             <div className="relative" ref={notifRef} style={{ zIndex: 3000 }}>
               <button
                 onClick={(e) => { e.stopPropagation(); setIsNotifOpen((v) => !v); }}
