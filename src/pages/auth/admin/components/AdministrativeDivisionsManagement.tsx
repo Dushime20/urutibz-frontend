@@ -13,6 +13,8 @@ import {
   deleteAdministrativeDivision,
   toggleAdministrativeDivisionStatus
 } from '../service';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 type DivisionForm = CreateAdministrativeDivisionInput;
 
@@ -47,6 +49,7 @@ const divisionLevels = [
 ];
 
 export default function AdministrativeDivisionsManagement() {
+  const { tSync } = useTranslation();
   const [items, setItems] = useState<AdministrativeDivision[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

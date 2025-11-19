@@ -59,6 +59,8 @@ import { useTwoFactor } from '../../hooks/useTwoFactor';
 import { disputeService } from '../../services/inspectionService';
 import { Inspection, DisputeType } from '../../types/inspection';
 import { formatDateUTC } from '../../utils/dateUtils';
+import { useTranslation } from '../../hooks/useTranslation';
+import { TranslatedText } from '../../components/translated-text';
 
 // TypeScript interfaces for component props
 import type { FormState } from './types';
@@ -72,6 +74,7 @@ const DashboardPage: React.FC = () => {
   const [riskAssessmentTab, setRiskAssessmentTab] = useState<'assessment' | 'compliance' | 'profile'>('assessment');
   const { showToast } = useToast();
   const { user: authUser } = useAuth();
+  const { tSync } = useTranslation();
   const navigate = useNavigate();
   const [realUser, setRealUser] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
@@ -1185,6 +1188,18 @@ const DashboardPage: React.FC = () => {
               setShowProductDetail={setShowProductDetail}
               setEditProductId={setEditProductId}
               setShowEditModal={setShowEditModal}
+              onRefreshListings={async () => {
+                // Refresh listings after removing from market
+                try {
+                  setLoadingListings(true);
+                  const res = await getMyProducts();
+                  setMyListings(res || []);
+                } catch (error) {
+                  console.error('Error refreshing listings:', error);
+                } finally {
+                  setLoadingListings(false);
+                }
+              }}
             />
           )}
 
@@ -1262,47 +1277,47 @@ const DashboardPage: React.FC = () => {
             <div className="fixed inset-0 z-50 flex items-center justify-center">
               <div className="absolute inset-0 bg-black/40" onClick={() => setShowDisputeModal(false)} />
               <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Raise Dispute</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4"><TranslatedText text="Raise Dispute" /></h3>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Dispute Type *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Dispute Type" /> *</label>
                     <select
                       value={disputeForm.disputeType}
                       onChange={(e) => setDisputeForm(prev => ({ ...prev, disputeType: e.target.value as DisputeType }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value={DisputeType.DAMAGE_ASSESSMENT}>Damage Assessment</option>
-                      <option value={DisputeType.COST_DISPUTE}>Cost Dispute</option>
-                      <option value={DisputeType.PROCEDURE_VIOLATION}>Procedure Violation</option>
-                      <option value={DisputeType.OTHER}>Other</option>
+                      <option value={DisputeType.DAMAGE_ASSESSMENT}><TranslatedText text="Damage Assessment" /></option>
+                      <option value={DisputeType.COST_DISPUTE}><TranslatedText text="Cost Dispute" /></option>
+                      <option value={DisputeType.PROCEDURE_VIOLATION}><TranslatedText text="Procedure Violation" /></option>
+                      <option value={DisputeType.OTHER}><TranslatedText text="Other" /></option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Reason" /> *</label>
                     <textarea
                       value={disputeForm.reason}
                       onChange={(e) => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="Describe the reason for this dispute..."
+                      placeholder={tSync("Describe the reason for this dispute...")}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Evidence</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Evidence" /></label>
                     <textarea
                       value={disputeForm.evidence}
                       onChange={(e) => setDisputeForm(prev => ({ ...prev, evidence: e.target.value }))}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="Provide any supporting evidence or additional details..."
+                      placeholder={tSync("Provide any supporting evidence or additional details...")}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Supporting Photos</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Supporting Photos" /></label>
                     <input
                       type="file"
                       multiple
@@ -1313,10 +1328,10 @@ const DashboardPage: React.FC = () => {
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     />
-                    <p className="mt-1 text-sm text-gray-500">Upload photos to support your dispute (optional)</p>
+                    <p className="mt-1 text-sm text-gray-500"><TranslatedText text="Upload photos to support your dispute (optional)" /></p>
                     {disputeForm.photos.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-sm text-gray-600">Selected files:</p>
+                        <p className="text-sm text-gray-600"><TranslatedText text="Selected files" />:</p>
                         <ul className="mt-1 text-sm text-gray-500">
                           {disputeForm.photos.map((file, index) => (
                             <li key={index}>{file.name}</li>
@@ -1332,14 +1347,14 @@ const DashboardPage: React.FC = () => {
                     onClick={() => setShowDisputeModal(false)}
                     className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
                   >
-                    Cancel
+                    <TranslatedText text="Cancel" />
                   </button>
 
                   <button
                     onClick={handleRaiseDispute}
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                   >
-                    Raise Dispute
+                    <TranslatedText text="Raise Dispute" />
                   </button>
                 </div>
               </div>
@@ -1402,9 +1417,9 @@ const DashboardPage: React.FC = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Risk Assessment</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Risk Assessment" /></h2>
                     <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">
-                      Evaluate risk for product-renter combinations and check compliance
+                      <TranslatedText text="Evaluate risk for product-renter combinations and check compliance" />
                     </p>
                   </div>
                 </div>
@@ -1413,9 +1428,9 @@ const DashboardPage: React.FC = () => {
                 <div className="border-b border-gray-200 dark:border-slate-700">
                   <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto whitespace-nowrap">
                     {[
-                      { id: 'assessment', label: 'Risk Assessment', icon: TrendingUp },
-                      { id: 'compliance', label: 'Compliance Check', icon: CheckCircle },
-                      { id: 'profile', label: 'Product Profile', icon: Package }
+                      { id: 'assessment', label: tSync('Risk Assessment'), icon: TrendingUp },
+                      { id: 'compliance', label: tSync('Compliance Check'), icon: CheckCircle },
+                      { id: 'profile', label: tSync('Product Profile'), icon: Package }
                     ].map((tab) => {
                       const Icon = tab.icon;
                       const isActive = riskAssessmentTab === tab.id;
@@ -1495,7 +1510,7 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto dark:bg-slate-900">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">Review Details</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Review Details" /></h3>
                 <button
                   onClick={() => {
                     setShowReviewDetail(false);
@@ -1517,7 +1532,7 @@ const DashboardPage: React.FC = () => {
                       <Star className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-slate-100">{selectedReview.title || (selectedReview.id === 'no-review' ? 'No review yet' : 'Review')}</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-slate-100">{selectedReview.title || (selectedReview.id === 'no-review' ? tSync('No review yet') : tSync('Review'))}</h4>
                       <p className="text-sm text-gray-500 dark:text-slate-400">
                         {selectedReview.createdAt ? formatDateUTC(selectedReview.createdAt) : ''}
                       </p>
@@ -1541,28 +1556,28 @@ const DashboardPage: React.FC = () => {
 
                 {/* Review Comment */}
                 <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800">
-                  <h5 className="font-medium text-gray-900 mb-2 dark:text-slate-100">Review Comment</h5>
-                  <p className="text-gray-700 dark:text-slate-300">{selectedReview.comment || 'This booking has no review yet.'}</p>
+                  <h5 className="font-medium text-gray-900 mb-2 dark:text-slate-100"><TranslatedText text="Review Comment" /></h5>
+                  <p className="text-gray-700 dark:text-slate-300">{selectedReview.comment || tSync('This booking has no review yet.')}</p>
                 </div>
 
                 {/* Detailed Ratings */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-gray-50 rounded-xl dark:bg-slate-800">
                     <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{selectedReview.communicationRating}</div>
-                    <div className="text-sm text-gray-500 dark:text-slate-400">Communication</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Communication" /></div>
                   </div>
                   <div className="text-center p-4 bg-gray-50 rounded-xl dark:bg-slate-800">
                     <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{selectedReview.conditionRating}</div>
-                    <div className="text-sm text-gray-500 dark:text-slate-400">Condition</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Condition" /></div>
                   </div>
                   <div className="text-center p-4 bg-gray-50 rounded-xl dark:bg-slate-800">
                     <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{selectedReview.valueRating}</div>
-                    <div className="text-sm text-gray-500 dark:text-slate-400">Value</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Value" /></div>
                   </div>
                   {selectedReview.deliveryRating && (
                     <div className="text-center p-4 bg-gray-50 rounded-xl dark:bg-slate-800">
                       <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{selectedReview.deliveryRating}</div>
-                      <div className="text-sm text-gray-500 dark:text-slate-400">Delivery</div>
+                      <div className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Delivery" /></div>
                     </div>
                   )}
                 </div>
@@ -1570,20 +1585,20 @@ const DashboardPage: React.FC = () => {
                 {/* AI Analysis */}
                 {selectedReview.aiSentimentScore && (
                   <div className="bg-my-primary/10 rounded-xl p-4 dark:bg-my-primary/20">
-                    <h5 className="font-medium text-gray-900 mb-3 dark:text-slate-100">AI Analysis</h5>
+                    <h5 className="font-medium text-gray-900 mb-3 dark:text-slate-100"><TranslatedText text="AI Analysis" /></h5>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center">
                         <div className="text-lg font-semibold text-my-primary">
                           {parseFloat(selectedReview.aiSentimentScore).toFixed(2)}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-slate-400">Sentiment Score</div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Sentiment Score" /></div>
                       </div>
                       {selectedReview.aiToxicityScore && (
                         <div className="text-center">
                           <div className="text-lg font-semibold text-orange-600">
                             {parseFloat(selectedReview.aiToxicityScore).toFixed(2)}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-slate-400">Toxicity Score</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Toxicity Score" /></div>
                         </div>
                       )}
                       {selectedReview.aiHelpfulnessScore && (
@@ -1591,7 +1606,7 @@ const DashboardPage: React.FC = () => {
                           <div className="text-lg font-semibold text-green-600">
                             {parseFloat(selectedReview.aiHelpfulnessScore).toFixed(2)}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-slate-400">Helpfulness Score</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Helpfulness Score" /></div>
                         </div>
                       )}
                     </div>
@@ -1605,7 +1620,7 @@ const DashboardPage: React.FC = () => {
                       <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                         <span className="text-xs text-white font-bold">R</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-slate-100">Your Response</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Your Response" /></span>
                       {selectedReview.responseDate && (
                         <span className="text-xs text-gray-500">
                           {formatDateUTC(selectedReview.responseDate)}
@@ -1620,26 +1635,26 @@ const DashboardPage: React.FC = () => {
                 <div className="border-t border-gray-200 pt-4 dark:border-slate-700">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500 dark:text-slate-400">Review ID:</span>
+                      <span className="text-gray-500 dark:text-slate-400"><TranslatedText text="Review ID" />:</span>
                       <p className="font-mono text-xs text-gray-700 dark:text-slate-300">{selectedReview.id}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-slate-400">Booking ID:</span>
+                      <span className="text-gray-500 dark:text-slate-400"><TranslatedText text="Booking ID" />:</span>
                       <p className="font-mono text-xs text-gray-700 dark:text-slate-300">{selectedReview.bookingId}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-slate-400">Reviewer ID:</span>
+                      <span className="text-gray-500 dark:text-slate-400"><TranslatedText text="Reviewer ID" />:</span>
                       <p className="font-mono text-xs text-gray-700 dark:text-slate-300">{selectedReview.reviewerId}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-slate-400">Status:</span>
+                      <span className="text-gray-500 dark:text-slate-400"><TranslatedText text="Status" />:</span>
                       <span className={`ml-1 px-2 py-1 rounded-full text-xs ${selectedReview.moderationStatus === 'approved'
                         ? 'bg-success-100 text-success-700'
                         : selectedReview.moderationStatus === 'pending'
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-red-100 text-red-700'
                         }`}>
-                        {selectedReview.moderationStatus}
+                        {tSync(selectedReview.moderationStatus)}
                       </span>
                     </div>
                   </div>

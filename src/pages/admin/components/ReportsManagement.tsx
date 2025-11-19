@@ -21,6 +21,8 @@ import TrendChart from '../../risk-management/components/TrendChart';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 import {
   generateRevenueReport,
   generateUserReport,
@@ -204,6 +206,7 @@ const getDateRange = (preset: DateRangePreset): { startDate: string; endDate: st
 };
 
 const ReportsManagement: React.FC<ReportsManagementProps> = () => {
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<ReportType>('revenue');
   const [isLoading, setIsLoading] = useState(false);
   const [showCustomReportModal, setShowCustomReportModal] = useState(false);
@@ -1474,13 +1477,15 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
       {/* Custom Reports List */}
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h4 className="text-lg font-semibold text-gray-900">Custom Reports</h4>
+          <h4 className="text-lg font-semibold text-gray-900">
+            <TranslatedText text="Custom Reports" />
+          </h4>
           <Button
             onClick={() => setShowCustomReportModal(true)}
             className="flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Create Report
+            <TranslatedText text="Create Report" />
           </Button>
         </div>
         
@@ -1488,7 +1493,9 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
           {customReports.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No custom reports created yet</p>
+              <p className="text-gray-500">
+                <TranslatedText text="No custom reports created yet" />
+              </p>
             </div>
           ) : (
             customReports.map((report) => (
@@ -1539,8 +1546,12 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-gray-900">Reports & Analytics</h3>
-          <p className="text-gray-600">Generate and view comprehensive reports</p>
+          <h3 className="text-2xl font-bold text-gray-900">
+            <TranslatedText text="Reports & Analytics" />
+          </h3>
+          <p className="text-gray-600">
+            <TranslatedText text="Generate and view comprehensive reports" />
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -1549,7 +1560,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
             className="flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
-            Export PDF
+            <TranslatedText text="Export PDF" />
           </Button>
         </div>
       </div>
@@ -1557,7 +1568,9 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
       {/* Date Range Filters - Always Visible */}
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-gray-900">Date Range</h4>
+          <h4 className="text-lg font-semibold text-gray-900">
+            <TranslatedText text="Date Range" />
+          </h4>
           <div className="text-sm text-gray-500">
             {filters.startDate && filters.endDate && (
               <span>
@@ -1577,7 +1590,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Current Month
+            <TranslatedText text="Current Month" />
           </button>
           <button
             onClick={() => handlePresetChange('last_month')}
@@ -1587,7 +1600,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Last Month
+            <TranslatedText text="Last Month" />
           </button>
           <button
             onClick={() => handlePresetChange('last_3_months')}
@@ -1597,7 +1610,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Last 3 Months
+            <TranslatedText text="Last 3 Months" />
           </button>
           <button
             onClick={() => handlePresetChange('last_6_months')}
@@ -1607,7 +1620,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Last 6 Months
+            <TranslatedText text="Last 6 Months" />
           </button>
           <button
             onClick={() => handlePresetChange('last_year')}
@@ -1617,7 +1630,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Last Year
+            <TranslatedText text="Last Year" />
           </button>
           <button
             onClick={() => handlePresetChange('all_time')}
@@ -1627,7 +1640,7 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            All Time
+            <TranslatedText text="All Time" />
           </button>
           <button
             onClick={() => handlePresetChange('custom')}
@@ -1637,14 +1650,16 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Custom Range
+            <TranslatedText text="Custom Range" />
           </button>
         </div>
 
         {/* Custom Date Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <TranslatedText text="Start Date" />
+            </label>
             <input
               type="date"
               value={filters.startDate}
@@ -1653,7 +1668,9 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <TranslatedText text="End Date" />
+            </label>
             <input
               type="date"
               value={filters.endDate}
@@ -1662,17 +1679,29 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Category (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <TranslatedText text="Category (Optional)" />
+            </label>
             <select
               value={filters.category || ''}
               onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              <option value="">All Categories</option>
-              <option value="cars">Cars</option>
-              <option value="bikes">Bikes</option>
-              <option value="boats">Boats</option>
-              <option value="equipment">Equipment</option>
+              <option value="">
+                <TranslatedText text="All Categories" />
+              </option>
+              <option value="cars">
+                <TranslatedText text="Cars" />
+              </option>
+              <option value="bikes">
+                <TranslatedText text="Bikes" />
+              </option>
+              <option value="boats">
+                <TranslatedText text="Boats" />
+              </option>
+              <option value="equipment">
+                <TranslatedText text="Equipment" />
+              </option>
             </select>
           </div>
         </div>
@@ -1682,43 +1711,43 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
       <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-xl overflow-x-auto">
         <TabButton
           icon={TrendingUp}
-          label="Revenue"
+          label={tSync('Revenue')}
           active={activeTab === 'revenue'}
           onClick={() => setActiveTab('revenue')}
         />
         <TabButton
           icon={Users}
-          label="Users"
+          label={tSync('Users')}
           active={activeTab === 'users'}
           onClick={() => setActiveTab('users')}
         />
         <TabButton
           icon={Calendar}
-          label="Bookings"
+          label={tSync('Bookings')}
           active={activeTab === 'bookings'}
           onClick={() => setActiveTab('bookings')}
         />
         <TabButton
           icon={Package}
-          label="Products"
+          label={tSync('Products')}
           active={activeTab === 'products'}
           onClick={() => setActiveTab('products')}
         />
         <TabButton
           icon={CreditCard}
-          label="Transactions"
+          label={tSync('Transactions')}
           active={activeTab === 'transactions'}
           onClick={() => setActiveTab('transactions')}
         />
         <TabButton
           icon={Activity}
-          label="Performance"
+          label={tSync('Performance')}
           active={activeTab === 'performance'}
           onClick={() => setActiveTab('performance')}
         />
         <TabButton
           icon={FileText}
-          label="Custom"
+          label={tSync('Custom')}
           active={activeTab === 'custom'}
           onClick={() => setActiveTab('custom')}
         />
@@ -1728,7 +1757,9 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          <span className="ml-3 text-gray-600">Generating report...</span>
+          <span className="ml-3 text-gray-600">
+            <TranslatedText text="Generating report..." />
+          </span>
         </div>
       )}
 
@@ -1751,7 +1782,9 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
           <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Create Custom Report</h3>
+                <h3 className="text-xl font-bold text-gray-900">
+                  <TranslatedText text="Create Custom Report" />
+                </h3>
                 <button
                   onClick={() => setShowCustomReportModal(false)}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -1762,56 +1795,65 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Report Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <TranslatedText text="Report Name" />
+                  </label>
                   <input
                     type="text"
                     value={customReportForm.name}
                     onChange={(e) => setCustomReportForm(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Enter report name"
+                    placeholder={tSync('Enter report name')}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <TranslatedText text="Description" />
+                  </label>
                   <textarea
                     value={customReportForm.description}
                     onChange={(e) => setCustomReportForm(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Enter report description"
+                    placeholder={tSync('Enter report description')}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <TranslatedText text="Report Type" />
+                    </label>
                     <select
                       value={customReportForm.type}
                       onChange={(e) => setCustomReportForm(prev => ({ ...prev, type: e.target.value as ReportType }))}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     >
-                      <option value="revenue">Revenue</option>
-                      <option value="users">Users</option>
-                      <option value="bookings">Bookings</option>
-                      <option value="products">Products</option>
-                      <option value="transactions">Transactions</option>
-                      <option value="performance">Performance</option>
+                      <option value="revenue"><TranslatedText text="Revenue" /></option>
+                      <option value="users"><TranslatedText text="Users" /></option>
+                      <option value="bookings"><TranslatedText text="Bookings" /></option>
+                      <option value="products"><TranslatedText text="Products" /></option>
+                      <option value="transactions"><TranslatedText text="Transactions" /></option>
+                      <option value="performance"><TranslatedText text="Performance" /></option>
+                      <option value="custom"><TranslatedText text="Custom" /></option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Schedule</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <TranslatedText text="Schedule" />
+                    </label>
                     <select
                       value={customReportForm.schedule}
                       onChange={(e) => setCustomReportForm(prev => ({ ...prev, schedule: e.target.value as any }))}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                      <option value="yearly">Yearly</option>
+                      <option value="daily"><TranslatedText text="Daily" /></option>
+                      <option value="weekly"><TranslatedText text="Weekly" /></option>
+                      <option value="monthly"><TranslatedText text="Monthly" /></option>
+                      <option value="quarterly"><TranslatedText text="Quarterly" /></option>
+                      <option value="yearly"><TranslatedText text="Yearly" /></option>
                     </select>
                   </div>
                 </div>
@@ -1821,13 +1863,13 @@ const ReportsManagement: React.FC<ReportsManagementProps> = () => {
                     variant="outline"
                     onClick={() => setShowCustomReportModal(false)}
                   >
-                    Cancel
+                    <TranslatedText text="Cancel" />
                   </Button>
                   <Button
                     onClick={handleCreateCustomReport}
                     disabled={!customReportForm.name || isLoading}
                   >
-                    {isLoading ? 'Creating...' : 'Create Report'}
+                    {isLoading ? tSync('Creating...') : tSync('Create Report')}
                   </Button>
                 </div>
               </div>

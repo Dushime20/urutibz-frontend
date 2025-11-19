@@ -93,7 +93,7 @@ interface Owner {
 const AdminDashboardPage: React.FC = () => {
   const { formatCurrency, formatDate, settings } = useAdminSettingsContext();
   const { showToast } = useToast();
-  const { tSync } = useTranslation();
+  const { tSync, language, setLanguage } = useTranslation();
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'admin-settings'>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -102,7 +102,7 @@ const AdminDashboardPage: React.FC = () => {
   const [itemSort, setItemSort] = useState<'newest' | 'oldest'>('newest');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [availabilityFilter, setAvailabilityFilter] = useState<string>('all');
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(language || 'en');
   const [products, setProducts] = useState<Product[]>([]);
   const [itemPage, setItemPage] = useState(1);
   const [itemLimit, setItemLimit] = useState(20);
@@ -153,6 +153,10 @@ const AdminDashboardPage: React.FC = () => {
       }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    setSelectedLanguage(language || 'en');
+  }, [language]);
 
   // Handle navigation to users tab from RecentUsersList component
   useEffect(() => {
@@ -281,10 +285,10 @@ const AdminDashboardPage: React.FC = () => {
       }
       setShowNewListingModalAdmin(false);
       setNewListingSubmitting(false);
-      showToast('Listing created successfully!', 'success');
+      showToast(tSync('Listing created successfully!'), 'success');
     } catch (err: any) {
       setNewListingSubmitting(false);
-      showToast(err?.message || 'Failed to create listing', 'error');
+      showToast(err?.message || tSync('Failed to create listing'), 'error');
     }
   };
 
@@ -418,10 +422,10 @@ const AdminDashboardPage: React.FC = () => {
       setIsStartingInspection(true);
       await inspectionService.startInspection(selectedInspection.id, {});
       await refreshSelectedInspection();
-      try { showToast && showToast('Inspection started successfully', 'success'); } catch {}
+      try { showToast && showToast(tSync('Inspection started successfully'), 'success'); } catch {}
     } catch (e) {
       console.error('Failed to start inspection:', e);
-      try { showToast && showToast('Failed to start inspection', 'error'); } catch {}
+      try { showToast && showToast(tSync('Failed to start inspection'), 'error'); } catch {}
     } finally {
       setIsStartingInspection(false);
     }
@@ -432,7 +436,7 @@ const AdminDashboardPage: React.FC = () => {
     // Validate items
     const validItems = completeItems.filter(it => it.itemName.trim() && it.description.trim());
     if (validItems.length === 0) {
-      try { showToast && showToast('Add at least one item with name and description', 'error'); } catch {}
+      try { showToast && showToast(tSync('Add at least one item with name and description'), 'error'); } catch {}
       return;
     }
     try {
@@ -458,10 +462,10 @@ const AdminDashboardPage: React.FC = () => {
       } as any);
       await refreshSelectedInspection();
       setShowCompleteModal(false);
-      try { showToast && showToast('Inspection completed successfully', 'success'); } catch {}
+      try { showToast && showToast(tSync('Inspection completed successfully'), 'success'); } catch {}
     } catch (e) {
       console.error('Failed to complete inspection:', e);
-      try { showToast && showToast('Failed to complete inspection', 'error'); } catch {}
+      try { showToast && showToast(tSync('Failed to complete inspection'), 'error'); } catch {}
     } finally {
       setIsCompletingInspection(false);
     }
@@ -484,14 +488,14 @@ const AdminDashboardPage: React.FC = () => {
       if (newItemForm.repairCost) payload.repairCost = Number(newItemForm.repairCost);
       if (newItemForm.replacementCost) payload.replacementCost = Number(newItemForm.replacementCost);
       await inspectionItemService.addItem(selectedInspection.id, payload);
-      try { showToast && showToast('Item added to inspection', 'success'); } catch {}
+      try { showToast && showToast(tSync('Item added to inspection'), 'success'); } catch {}
       setShowAddItemModal(false);
       // reload details list
       const details = await inspectionService.getInspection(selectedInspection.id);
       setAdminInspectionDetails(details);
     } catch (e) {
       console.error('Failed to add item:', e);
-      try { showToast && showToast('Failed to add item', 'error'); } catch {}
+      try { showToast && showToast(tSync('Failed to add item'), 'error'); } catch {}
     } finally {
       setIsAddingItem(false);
     }
@@ -532,10 +536,10 @@ const AdminDashboardPage: React.FC = () => {
         setVerifiedUsersCount(verifiedCount);
       } catch (err) {
         console.error('Error fetching overview data:', err);
-        setOverviewError('Failed to load overview data');
-        setAnalyticsError('Failed to load analytics data');
-        setRealtimeError('Failed to load real-time metrics');
-        setPricingStatsError('Failed to load pricing statistics');
+        setOverviewError(tSync('Failed to load overview data'));
+        setAnalyticsError(tSync('Failed to load analytics data'));
+        setRealtimeError(tSync('Failed to load real-time metrics'));
+        setPricingStatsError(tSync('Failed to load pricing statistics'));
       } finally {
         setLoadingOverview(false);
         setLoadingAnalytics(false);
@@ -574,9 +578,9 @@ const AdminDashboardPage: React.FC = () => {
           setInspectionSummary(summaryData);
         } catch (err) {
           console.error('Error fetching inspections data:', err);
-          setInspectionsError('Failed to load inspections data');
-          setDisputesError('Failed to load disputes data');
-          setSummaryError('Failed to load summary data');
+          setInspectionsError(tSync('Failed to load inspections data'));
+          setDisputesError(tSync('Failed to load disputes data'));
+          setSummaryError(tSync('Failed to load summary data'));
         } finally {
           setLoadingInspections(false);
           setLoadingDisputes(false);
@@ -627,7 +631,9 @@ const AdminDashboardPage: React.FC = () => {
             : 'text-gray-500 group-hover:text-gray-700'}
         `}
       />
-      <span className="flex-1 text-left">{label}</span>
+      <span className="flex-1 text-left">
+        <TranslatedText text={label} />
+      </span>
 
       {hasNotification && (
         <div className="w-2 h-2 bg-red-500 rounded-full ml-auto animate-pulse"></div>
@@ -686,7 +692,7 @@ const AdminDashboardPage: React.FC = () => {
         setOwners(ownerMap);
       })
       .catch((err) => {
-        setProductsError('Failed to load products. Please try again later.');
+        setProductsError(tSync('Failed to load products. Please try again later.'));
         console.error('Failed to load products:', err);
       })
       .finally(() => setLoadingProducts(false));
@@ -716,6 +722,13 @@ const AdminDashboardPage: React.FC = () => {
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const handleLanguageChange = (lang: string) => {
+    setSelectedLanguage(lang);
+    try {
+      setLanguage?.(lang);
+    } catch {}
+  };
+
   const handleMenuToggle = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -730,7 +743,7 @@ const AdminDashboardPage: React.FC = () => {
         selectedLocation={selectedLocation}
         setSelectedLocation={setSelectedLocation}
         selectedLanguage={selectedLanguage}
-        setSelectedLanguage={setSelectedLanguage}
+        setSelectedLanguage={handleLanguageChange}
         onMenuToggle={handleMenuToggle}
       />
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
@@ -765,7 +778,7 @@ const AdminDashboardPage: React.FC = () => {
                       <>
                         {/* Real-time Metrics Card */}
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Real-Time Metrics</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"><TranslatedText text="Real-Time Metrics" /></h2>
                           {loadingRealtime ? (
                             <SkeletonMetrics />
                           ) : (
@@ -790,36 +803,36 @@ const AdminDashboardPage: React.FC = () => {
                                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
                                     <div className="p-2 rounded-full bg-orange-50 dark:bg-orange-900/20 mb-2"><Cpu className="w-6 h-6 text-orange-600 dark:text-orange-400" aria-label="System Load" /></div>
                                     <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{(realtimeMetrics.systemLoad * 100).toFixed(1)}<span className="text-base font-normal text-gray-400 dark:text-gray-500">%</span></div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">System Load</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><TranslatedText text="System Load" /></div>
                                   </div>
                                   {/* Response Time */}
                                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
                                     <div className="p-2 rounded-full bg-my-primary/10 dark:bg-my-primary/20 mb-2"><Clock className="w-6 h-6 text-my-primary" aria-label="Response Time" /></div>
                                     <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{Math.round(realtimeMetrics.responseTime)}<span className="text-base font-normal text-gray-400 dark:text-gray-500"> ms</span></div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Response Time</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><TranslatedText text="Response Time" /></div>
                                   </div>
                                   {/* Uptime */}
                                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
                                     <div className="p-2 rounded-full bg-green-50 dark:bg-green-900/20 mb-2"><CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" aria-label="Uptime" /></div>
                                     <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{realtimeMetrics.uptime}</div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Uptime</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><TranslatedText text="Uptime" /></div>
                                   </div>
                                   {/* Timestamp */}
                                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 rounded-xl shadow p-4 hover:shadow-lg transition">
                                     <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 mb-2"><Activity className="w-6 h-6 text-gray-500 dark:text-gray-400" aria-label="Timestamp" /></div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">Timestamp</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Timestamp" /></div>
                                     <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">{formatDate(realtimeMetrics.timestamp)}</div>
                                   </div>
                                 </>
                               ) : (
-                                <div className="col-span-6 flex items-center justify-center h-20 text-gray-500 dark:text-gray-400">No real-time metrics available.</div>
+                                <div className="col-span-6 flex items-center justify-center h-20 text-gray-500 dark:text-gray-400"><TranslatedText text="No real-time metrics available." /></div>
                               )}
                             </div>
                           )}
                         </section>
                         {/* End Real-time Metrics Card */}
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Statistics</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"><TranslatedText text="Statistics" /></h2>
                           <div className="mb-6">
                             {loadingOverview ? (
                               <SkeletonAdminStats />
@@ -830,10 +843,10 @@ const AdminDashboardPage: React.FC = () => {
                         </section>
                         {/* Analytics Section */}
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Analytics Overview</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"><TranslatedText text="Analytics Overview" /></h2>
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
-                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Booking Trends</h3>
+                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100"><TranslatedText text="Booking Trends" /></h3>
                               <ResponsiveContainer width="100%" height={320}>
                                 <AreaChart data={normalizedBookingTrends} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
                                   <defs>
@@ -862,7 +875,7 @@ const AdminDashboardPage: React.FC = () => {
                               </ResponsiveContainer>
                             </div>
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
-                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">User Growth</h3>
+                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100"><TranslatedText text="User Growth" /></h3>
                               <ResponsiveContainer width="100%" height={320}>
                                 <AreaChart data={normalizedUserGrowth} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
                                   <defs>
@@ -893,7 +906,7 @@ const AdminDashboardPage: React.FC = () => {
                           </div>
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8">
-                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Top Products</h3>
+                              <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100"><TranslatedText text="Top Products" /></h3>
                               <ResponsiveContainer width="100%" height={320}>
                                 <BarChart data={normalizedTopProducts} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -916,7 +929,7 @@ const AdminDashboardPage: React.FC = () => {
                         </section>
                         {/* Pricing Statistics */}
                         <section className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Pricing Statistics</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"><TranslatedText text="Pricing Statistics" /></h2>
                           {loadingPricingStats ? (
                             <SkeletonPricingStats />
                           ) : pricingStatsError ? (
@@ -928,7 +941,7 @@ const AdminDashboardPage: React.FC = () => {
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Price Records</p>
+                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400"><TranslatedText text="Total Price Records" /></p>
                                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.total_price_records}</p>
                                     </div>
                                     <div className="p-3 rounded-full bg-my-primary/10 dark:bg-my-primary/20">
@@ -943,7 +956,7 @@ const AdminDashboardPage: React.FC = () => {
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Price Records</p>
+                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400"><TranslatedText text="Active Price Records" /></p>
                                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.active_price_records}</p>
                                     </div>
                                     <div className="p-3 rounded-full bg-green-50 dark:bg-green-900/20">
@@ -958,7 +971,7 @@ const AdminDashboardPage: React.FC = () => {
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Countries with Pricing</p>
+                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400"><TranslatedText text="Countries with Pricing" /></p>
                                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.countries_with_pricing}</p>
                                     </div>
                                     <div className="p-3 rounded-full bg-purple-50 dark:bg-purple-900/20">
@@ -973,7 +986,7 @@ const AdminDashboardPage: React.FC = () => {
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Currencies Supported</p>
+                                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400"><TranslatedText text="Currencies Supported" /></p>
                                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pricingStats.currencies_supported}</p>
                                     </div>
                                     <div className="p-3 rounded-full bg-yellow-50 dark:bg-yellow-900/20">
@@ -989,7 +1002,7 @@ const AdminDashboardPage: React.FC = () => {
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                                 {/* Price Range Distribution */}
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                                  <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Price Range Distribution</h3>
+                                  <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100"><TranslatedText text="Price Range Distribution" /></h3>
                                   <div className="space-y-3">
                                     {Object.entries(pricingStats.price_distribution?.by_price_range || {}).map(([range, count]) => (
                                       <div key={range} className="flex items-center justify-between">
@@ -1010,7 +1023,7 @@ const AdminDashboardPage: React.FC = () => {
 
                                 {/* Currency Distribution */}
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                                  <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Currency Distribution</h3>
+                                  <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100"><TranslatedText text="Currency Distribution" /></h3>
                                   <div className="space-y-3">
                                     {Object.entries(pricingStats.price_distribution?.by_currency || {}).map(([currency, count]) => (
                                       <div key={currency} className="flex items-center justify-between">
@@ -1032,40 +1045,40 @@ const AdminDashboardPage: React.FC = () => {
 
                               {/* Discount Analysis */}
                               <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6">
-                                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Discount Analysis</h3>
+                                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100"><TranslatedText text="Discount Analysis" /></h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                   <div className="text-center">
                                     <div className="text-2xl font-bold text-my-primary">{pricingStats.discount_analysis?.products_with_weekly_discount || 0}</div>
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">Weekly Discounts</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Weekly Discounts" /></div>
                                   </div>
                                   <div className="text-center">
                                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">{pricingStats.discount_analysis?.products_with_monthly_discount || 0}</div>
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">Monthly Discounts</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Monthly Discounts" /></div>
                                   </div>
                                   <div className="text-center">
                                     <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{pricingStats.discount_analysis?.products_with_bulk_discount || 0}</div>
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">Bulk Discounts</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Bulk Discounts" /></div>
                                   </div>
                                 </div>
                               </div>
                             </>
                           ) : (
-                            <div className="flex items-center justify-center h-32 text-gray-500">No pricing statistics available.</div>
+                            <div className="flex items-center justify-center h-32 text-gray-500"><TranslatedText text="No pricing statistics available." /></div>
                           )}
                         </section>
                         {/* Recent Activity */}
                         <section>
-                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h2>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"><TranslatedText text="Recent Activity" /></h2>
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Recent Users Card */}
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Users</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Recent Users" /></h3>
                                 <button 
                                   onClick={() => setActiveTab('users')} 
                                   className="text-my-primary text-sm font-medium hover:underline"
                                 >
-                                  View All
+                                  <TranslatedText text="View All" />
                                 </button>
                               </div>
                               <div className="space-y-3">
@@ -1142,7 +1155,7 @@ const AdminDashboardPage: React.FC = () => {
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">Joined: {selectedUser.joinDate || ''}</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400"><TranslatedText text="Joined" />: {selectedUser.joinDate || ''}</div>
                                   </div>
                                 </div>
                               )}
@@ -1151,12 +1164,12 @@ const AdminDashboardPage: React.FC = () => {
                             {/* Recent Bookings Card */}
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
                               <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Bookings</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Recent Bookings" /></h3>
                                 <button 
                                   onClick={() => setActiveTab('bookings')} 
                                   className="text-my-primary text-sm font-medium hover:underline"
                                 >
-                                  View All
+                                  <TranslatedText text="View All" />
                                 </button>
                               </div>
                               <div className="space-y-3">

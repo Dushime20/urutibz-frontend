@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, CheckCircle, Calendar, Package, Filter, Plus, Eye, MoreVertical, UserCircle, Shield, FileText, X, Search } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 import type { AdminUser, UserVerification, VerificationStats } from '../interfaces';
 import { fetchAdminUsers, fetchAdminUserById, moderateAdminUser, fetchAllVerifications, updateVerificationStatus, fetchPendingVerifications, fetchVerificationStats, bulkReviewVerifications, updateUserKycStatus } from '../service';
 import SkeletonTable from './SkeletonTable';
@@ -16,6 +18,7 @@ interface UserManagementProps {
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
+  const { tSync } = useTranslation();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -219,7 +222,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         }
       } catch (err) {
         console.error('Error fetching users:', err);
-        setError('Failed to fetch users');
+        setError(tSync('Failed to fetch users'));
       } finally {
         setLoading(false);
       }
@@ -259,7 +262,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       }
     } catch (err) {
       console.error('Error fetching verifications:', err);
-      setVerificationsError('Failed to fetch verifications');
+      setVerificationsError(tSync('Failed to fetch verifications'));
     } finally {
       setVerificationsLoading(false);
     }
@@ -274,7 +277,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       setPendingVerifications(response || []);
     } catch (err) {
       console.error('Error fetching pending verifications:', err);
-      setPendingVerificationsError('Failed to fetch pending verifications');
+      setPendingVerificationsError(tSync('Failed to fetch pending verifications'));
     } finally {
       setPendingVerificationsLoading(false);
     }
@@ -289,7 +292,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       setVerificationStats(response);
     } catch (err) {
       console.error('Error fetching verification stats:', err);
-      setVerificationStatsError('Failed to fetch verification stats');
+      setVerificationStatsError(tSync('Failed to fetch verification stats'));
     } finally {
       setVerificationStatsLoading(false);
     }
@@ -326,7 +329,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       const token = localStorage.getItem('token');
       await bulkReviewVerifications(selectedVerifications, bulkAction, bulkNotes, token || undefined);
       
-      setBulkSuccess(`Successfully ${bulkAction} ${selectedVerifications.length} verification(s)`);
+      setBulkSuccess(tSync(`Successfully ${bulkAction} ${selectedVerifications.length} verification(s)`));
       setSelectedVerifications([]);
       setBulkNotes('');
       
@@ -341,7 +344,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       }
     } catch (err) {
       console.error('Error performing bulk verification:', err);
-      setBulkError('Failed to perform bulk verification');
+      setBulkError(tSync('Failed to perform bulk verification'));
     } finally {
       setBulkLoading(false);
     }
@@ -357,7 +360,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       const token = localStorage.getItem('token');
       await updateUserKycStatus(kycUpdateUser.id, { kycStatus, notes: kycNotes }, token || undefined);
       
-      setKycMessage({ type: 'success', text: `KYC status updated to ${kycStatus} successfully` });
+      setKycMessage({ type: 'success', text: tSync(`KYC status updated to ${kycStatus} successfully`) });
       setKycUpdateUser(null);
       setKycStatus('verified');
       setKycNotes('');
@@ -372,7 +375,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       // Clear success message after 3 seconds
       setTimeout(() => setKycMessage(null), 3000);
     } catch (err: any) {
-      setKycMessage({ type: 'error', text: err.message || 'Failed to update KYC status' });
+      setKycMessage({ type: 'error', text: err.message || tSync('Failed to update KYC status') });
     } finally {
       setKycUpdating(false);
     }
@@ -457,7 +460,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
   if (users.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <EmptyState icon={<UsersIcon />} title="No users found" message="There are currently no users in the system. New users will appear here as they register." />
+        <EmptyState icon={<UsersIcon />} title={tSync("No users found")} message={tSync("There are currently no users in the system. New users will appear here as they register.")} />
       </div>
     );
   }
@@ -465,10 +468,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">User Management</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100"><TranslatedText text="User Management" /></h3>
         <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Total Users: {totalUsers} | Showing: {filteredUsers.length}
+            <TranslatedText text="Total Users" />: {totalUsers} | <TranslatedText text="Showing" />: {filteredUsers.length}
           </span>
           <button
             onClick={() => setShowUserFilters(!showUserFilters)}
@@ -479,7 +482,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             }`}
           >
             <Filter className="w-4 h-4 mr-2" />
-            Filters
+            <TranslatedText text="Filters" />
             {hasActiveUserFilters && (
               <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
                 {[userFilters.role !== 'all', userFilters.status !== 'all', userFilters.kycStatus !== 'all', userFilters.search, userFilters.dateFrom, userFilters.dateTo].filter(Boolean).length}
@@ -492,7 +495,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
               className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Register User
+              <TranslatedText text="Register User" />
             </button>
           )}
         </div>
@@ -509,7 +512,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Users</span>
+          <span><TranslatedText text="Users" /></span>
         </button>
                  <button
            onClick={() => setActiveTab('verifications')}
@@ -520,7 +523,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            }`}
          >
            <Shield className="w-4 h-4" />
-           <span>Verifications</span>
+           <span><TranslatedText text="Verifications" /></span>
          </button>
          <button
            onClick={() => setActiveTab('pending')}
@@ -531,7 +534,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            }`}
          >
            <Calendar className="w-4 h-4" />
-           <span>Pending</span>
+           <span><TranslatedText text="Pending" /></span>
          </button>
       </div>
 
@@ -549,10 +552,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 onChange={(e) => setUserFilters(prev => ({ ...prev, role: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               >
-                <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
-                <option value="moderator">Moderator</option>
+                <option value="all"><TranslatedText text="All Roles" /></option>
+                <option value="admin"><TranslatedText text="Admin" /></option>
+                <option value="user"><TranslatedText text="User" /></option>
+                <option value="moderator"><TranslatedText text="Moderator" /></option>
               </select>
             </div>
 
@@ -566,11 +569,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 onChange={(e) => setUserFilters(prev => ({ ...prev, status: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="banned">Banned</option>
-                <option value="suspended">Suspended</option>
+                <option value="all"><TranslatedText text="All Status" /></option>
+                <option value="active"><TranslatedText text="Active" /></option>
+                <option value="inactive"><TranslatedText text="Inactive" /></option>
+                <option value="banned"><TranslatedText text="Banned" /></option>
+                <option value="suspended"><TranslatedText text="Suspended" /></option>
               </select>
             </div>
 
@@ -584,17 +587,17 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 onChange={(e) => setUserFilters(prev => ({ ...prev, kycStatus: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
               >
-                <option value="all">All KYC</option>
-                <option value="verified">Verified</option>
-                <option value="pending">Pending</option>
-                <option value="rejected">Rejected</option>
+                <option value="all"><TranslatedText text="All KYC" /></option>
+                <option value="verified"><TranslatedText text="Verified" /></option>
+                <option value="pending"><TranslatedText text="Pending" /></option>
+                <option value="rejected"><TranslatedText text="Rejected" /></option>
               </select>
             </div>
 
             {/* Registration Date From */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Registered From
+                <TranslatedText text="Registered From" />
               </label>
               <input
                 type="date"
@@ -607,7 +610,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             {/* Registration Date To */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Registered To
+                <TranslatedText text="Registered To" />
               </label>
               <input
                 type="date"
@@ -620,13 +623,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             {/* User Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Search Users
+                <TranslatedText text="Search Users" />
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Name or email..."
+                  placeholder={tSync("Name or email...")}
                   value={userFilters.search}
                   onChange={(e) => setUserFilters(prev => ({ ...prev, search: e.target.value }))}
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
@@ -640,7 +643,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             <div className="flex items-center space-x-2">
               {hasActiveUserFilters && (
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {filteredUsers.length} of {totalUsers} users match your filters
+                  {filteredUsers.length} <TranslatedText text="of" /> {totalUsers} <TranslatedText text="users match your filters" />
                 </span>
               )}
             </div>
@@ -651,7 +654,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                   className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Clear Filters
+                  <TranslatedText text="Clear Filters" />
                 </button>
               )}
             </div>
@@ -667,7 +670,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             <div className="bg-my-primary/10 dark:bg-my-primary/20 rounded-2xl p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-my-primary font-medium">Total Users</p>
+                  <p className="text-sm text-my-primary font-medium"><TranslatedText text="Total Users" /></p>
                   <p className="text-2xl font-bold text-my-primary">{stats.total}</p>
                 </div>
                 <Users className="w-8 h-8 text-my-primary" />
@@ -694,7 +697,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Hosts</p>
+                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium"><TranslatedText text="Hosts" /></p>
                   <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{stats.hosts}</p>
                 </div>
                 <Package className="w-8 h-8 text-purple-600 dark:text-purple-400" />
@@ -706,10 +709,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Name
+                <TranslatedText text="Name" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Email
+                <TranslatedText text="Email" />
               </th>
               {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Role
@@ -721,10 +724,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                 KYC Status
               </th> */}
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Joined
+                <TranslatedText text="Joined" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Actions
+                <TranslatedText text="Actions" />
               </th>
             </tr>
           </thead>
@@ -735,13 +738,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                   <div className="text-gray-500 dark:text-gray-400">
                     {hasActiveUserFilters ? (
                       <div>
-                        <p className="text-lg font-medium mb-2">No users match your filters</p>
-                        <p className="text-sm">Try adjusting your filter criteria or clear all filters to see all users.</p>
+                        <p className="text-lg font-medium mb-2"><TranslatedText text="No users match your filters" /></p>
+                        <p className="text-sm"><TranslatedText text="Try adjusting your filter criteria or clear all filters to see all users." /></p>
                       </div>
                     ) : (
                       <div>
-                        <p className="text-lg font-medium mb-2">No users found</p>
-                        <p className="text-sm">There are currently no users in the system.</p>
+                        <p className="text-lg font-medium mb-2"><TranslatedText text="No users found" /></p>
+                        <p className="text-sm"><TranslatedText text="There are currently no users in the system." /></p>
                       </div>
                     )}
                   </div>
@@ -802,9 +805,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                         setKycMessage(null);
                       }}
                       className="text-xs text-my-primary hover:text-my-primary/80 font-medium"
-                      title="Update KYC Status"
+                      title={tSync("Update KYC Status")}
                     >
-                      Update
+                      <TranslatedText text="Update" />
                     </button>
                   </div>
                 </td> */}
@@ -815,8 +818,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                   <button
                     className="p-2 text-gray-400 hover:text-my-primary rounded-lg hover:bg-my-primary/10 transition-colors"
                     onClick={() => setActionMenuOpen(actionMenuOpen === user.id ? null : user.id)}
-                    title="More actions"
-                    aria-label="More actions"
+                    title={tSync("More actions")}
+                    aria-label={tSync("More actions")}
                   >
                     <MoreVertical className="w-5 h-5" />
                   </button>
@@ -856,7 +859,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50"
                       >
-                        Moderate
+                        <TranslatedText text="Moderate" />
                       </button>
                     </div>
                   )}
@@ -872,7 +875,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
         {/* Items per page selector */}
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Users per page:</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Users per page" />:</span>
           <select
             className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm"
             value={itemsPerPage}
@@ -914,7 +917,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                  onClick={fetchVerificationStatsData}
                  className="mt-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline"
                >
-                 Retry
+                 <TranslatedText text="Retry" />
                </button>
              </div>
            ) : verificationStats ? (
@@ -922,7 +925,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
                  <div className="flex items-center justify-between">
                    <div>
-                     <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Users</p>
+                     <p className="text-sm text-blue-600 dark:text-blue-400 font-medium"><TranslatedText text="Total Users" /></p>
                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{verificationStats.totalUsers}</p>
                    </div>
                    <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -961,7 +964,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
                  <div className="flex items-center justify-between">
                    <div>
-                     <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Verifications</p>
+                     <p className="text-sm text-blue-600 dark:text-blue-400 font-medium"><TranslatedText text="Total Verifications" /></p>
                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{verifications.length}</p>
                    </div>
                    <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -1003,7 +1006,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
               <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Verification Rate</p>
+                    <p className="text-sm text-purple-600 dark:text-purple-400 font-medium"><TranslatedText text="Verification Rate" /></p>
                     <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{verificationStats.verificationRate}%</p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-purple-600 dark:text-purple-400" />
@@ -1012,7 +1015,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
               <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Verified Users</p>
+                    <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium"><TranslatedText text="Verified Users" /></p>
                     <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{verificationStats.verifiedUsers}</p>
                   </div>
                   <Users className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
@@ -1021,7 +1024,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
               <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Recent Activity</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400 font-medium"><TranslatedText text="Recent Activity" /></p>
                     <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{verificationStats.recentActivity}</p>
                   </div>
                   <Calendar className="w-8 h-8 text-orange-600 dark:text-orange-400" />
@@ -1033,7 +1036,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           {/* Verification Type Breakdown */}
           {verificationStats && verificationStats.typeBreakdown && Object.keys(verificationStats.typeBreakdown).length > 0 && (
             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Verification Type Breakdown</h4>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4"><TranslatedText text="Verification Type Breakdown" /></h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(verificationStats.typeBreakdown).map(([type, count]) => (
                   <div key={type} className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
@@ -1049,43 +1052,43 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><TranslatedText text="Status" /></label>
                 <select
                   value={verificationFilters.status}
                   onChange={(e) => setVerificationFilters(prev => ({ ...prev, status: e.target.value }))}
                   className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="verified">Verified</option>
-                  <option value="rejected">Rejected</option>
+                  <option value=""><TranslatedText text="All Statuses" /></option>
+                  <option value="pending"><TranslatedText text="Pending" /></option>
+                  <option value="verified"><TranslatedText text="Verified" /></option>
+                  <option value="rejected"><TranslatedText text="Rejected" /></option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Verification Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><TranslatedText text="Verification Type" /></label>
                 <select
                   value={verificationFilters.verification_type}
                   onChange={(e) => setVerificationFilters(prev => ({ ...prev, verification_type: e.target.value }))}
                   className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="">All Types</option>
-                  <option value="National ID">National ID</option>
-                  <option value="Passport">Passport</option>
-                  <option value="Driver License">Driver License</option>
+                  <option value=""><TranslatedText text="All Types" /></option>
+                  <option value="National ID"><TranslatedText text="National ID" /></option>
+                  <option value="Passport"><TranslatedText text="Passport" /></option>
+                  <option value="Driver License"><TranslatedText text="Driver License" /></option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">AI Processing</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><TranslatedText text="AI Processing" /></label>
                 <select
                   value={verificationFilters.ai_processing_status}
                   onChange={(e) => setVerificationFilters(prev => ({ ...prev, ai_processing_status: e.target.value }))}
                   className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="">All Statuses</option>
-                  <option value="queued">Queued</option>
-                  <option value="processing">Processing</option>
-                  <option value="completed">Completed</option>
-                  <option value="failed">Failed</option>
+                  <option value=""><TranslatedText text="All Statuses" /></option>
+                  <option value="queued"><TranslatedText text="Queued" /></option>
+                  <option value="processing"><TranslatedText text="Processing" /></option>
+                  <option value="completed"><TranslatedText text="Completed" /></option>
+                  <option value="failed"><TranslatedText text="Failed" /></option>
                 </select>
               </div>
             </div>
@@ -1097,29 +1100,29 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           ) : verificationsError ? (
             <ErrorState message={verificationsError} onRetry={fetchVerifications} />
           ) : verifications.length === 0 ? (
-            <EmptyState icon={<Shield />} title="No verifications found" message="There are currently no verifications in the system." />
+            <EmptyState icon={<Shield />} title={tSync("No verifications found")} message={tSync("There are currently no verifications in the system.")} />
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      User
+                      <TranslatedText text="User" />
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Type
+                      <TranslatedText text="Type" />
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Status
+                      <TranslatedText text="Status" />
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      AI Score
+                      <TranslatedText text="AI Score" />
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Created
+                      <TranslatedText text="Created" />
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Actions
+                      <TranslatedText text="Actions" />
                     </th>
                   </tr>
                 </thead>
@@ -1191,7 +1194,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
                <div className="flex items-center justify-between">
                  <div>
-                   <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Pending</p>
+                   <p className="text-sm text-blue-600 dark:text-blue-400 font-medium"><TranslatedText text="Total Pending" /></p>
                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{pendingVerifications.length}</p>
                  </div>
                  <Calendar className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -1200,7 +1203,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl p-4">
                <div className="flex items-center justify-between">
                  <div>
-                   <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">AI Processing</p>
+                   <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium"><TranslatedText text="AI Processing" /></p>
                    <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{pendingVerifications.filter(v => v.ai_processing_status === 'queued').length}</p>
                  </div>
                  <Package className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
@@ -1209,7 +1212,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4">
                <div className="flex items-center justify-between">
                  <div>
-                   <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Passport</p>
+                   <p className="text-sm text-purple-600 dark:text-purple-400 font-medium"><TranslatedText text="Passport" /></p>
                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{pendingVerifications.filter(v => v.verification_type === 'passport').length}</p>
                  </div>
                  <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
@@ -1218,7 +1221,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
              <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4">
                <div className="flex items-center justify-between">
                  <div>
-                   <p className="text-sm text-green-600 dark:text-green-400 font-medium">National ID</p>
+                   <p className="text-sm text-green-600 dark:text-green-400 font-medium"><TranslatedText text="National ID" /></p>
                    <p className="text-2xl font-bold text-green-700 dark:text-green-400">{pendingVerifications.filter(v => v.verification_type === 'national_id').length}</p>
                  </div>
                  <Shield className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -1230,9 +1233,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            {pendingVerifications.length > 0 && (
              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
                <div className="flex items-center justify-between mb-4">
-                 <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Bulk Actions</h4>
+                 <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Bulk Actions" /></h4>
                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                   {selectedVerifications.length} of {pendingVerifications.length} selected
+                   {selectedVerifications.length} <TranslatedText text="of" /> {pendingVerifications.length} <TranslatedText text="selected" />
                  </div>
                </div>
                
@@ -1244,7 +1247,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                      onChange={handleSelectAllVerifications}
                      className="rounded border-gray-300 text-my-primary focus:ring-my-primary"
                    />
-                   <span className="text-sm text-gray-700 dark:text-gray-300">Select All</span>
+                   <span className="text-sm text-gray-700 dark:text-gray-300"><TranslatedText text="Select All" /></span>
                  </div>
                  
                  <select
@@ -1252,13 +1255,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                    onChange={(e) => setBulkAction(e.target.value as 'verified' | 'rejected')}
                    className="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm focus:ring-my-primary focus:border-my-primary"
                  >
-                   <option value="verified">Verify</option>
-                   <option value="rejected">Reject</option>
+                   <option value="verified"><TranslatedText text="Verify" /></option>
+                   <option value="rejected"><TranslatedText text="Reject" /></option>
                  </select>
                  
                  <input
                    type="text"
-                   placeholder="Optional notes..."
+                   placeholder={tSync("Optional notes...")}
                    value={bulkNotes}
                    onChange={(e) => setBulkNotes(e.target.value)}
                    className="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm focus:ring-my-primary focus:border-my-primary"
@@ -1269,7 +1272,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                    disabled={selectedVerifications.length === 0 || bulkLoading}
                    className="bg-my-primary hover:bg-my-primary/80 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
                  >
-                   {bulkLoading ? 'Processing...' : `Bulk ${bulkAction === 'verified' ? 'Verify' : 'Reject'}`}
+                   {bulkLoading ? tSync('Processing...') : tSync(`Bulk ${bulkAction === 'verified' ? 'Verify' : 'Reject'}`)}
                  </button>
                </div>
                
@@ -1293,7 +1296,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            ) : pendingVerificationsError ? (
              <ErrorState message={pendingVerificationsError} onRetry={fetchPendingVerificationsData} />
            ) : pendingVerifications.length === 0 ? (
-             <EmptyState icon={<Calendar />} title="No pending verifications" message="There are currently no pending verifications in the system." />
+             <EmptyState icon={<Calendar />} title={tSync("No pending verifications")} message={tSync("There are currently no pending verifications in the system.")} />
            ) : (
              <div className="overflow-x-auto">
                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -1308,22 +1311,22 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                        />
                      </th>
                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                       User
+                       <TranslatedText text="User" />
                      </th>
                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                       Type
+                       <TranslatedText text="Type" />
                      </th>
                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                       AI Status
+                       <TranslatedText text="AI Status" />
                      </th>
                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                       Location
+                       <TranslatedText text="Location" />
                      </th>
                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                       Created
+                       <TranslatedText text="Created" />
                      </th>
                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                       Actions
+                       <TranslatedText text="Actions" />
                      </th>
                    </tr>
                  </thead>
@@ -1388,7 +1391,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
                            onClick={() => openVerificationDetails(verification.id)}
                            className="text-my-primary hover:text-my-primary/80 font-medium"
                          >
-                           View Details
+                           <TranslatedText text="View Details" />
                          </button>
                        </td>
                      </tr>

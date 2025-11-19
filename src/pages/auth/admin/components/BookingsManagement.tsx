@@ -7,12 +7,15 @@ import BookingDetailsModal from './BookingDetailsModal';
 import { 
   type BookingOverridePayload 
 } from '../interfaces';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface BookingsManagementProps {
   // ... keep any existing props ...
 }
 
 const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
+  const { tSync } = useTranslation();
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -163,9 +166,9 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Bookings Management</h2>
+          <h2 className="text-xl font-bold text-gray-900"><TranslatedText text="Bookings Management" /></h2>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">Total Bookings: {totalBookings}</span>
+            <span className="text-sm text-gray-500"><TranslatedText text="Total Bookings" />: {totalBookings}</span>
           </div>
         </div>
         {/* Your existing filters/search UI here */}
@@ -174,32 +177,32 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="mt-4 text-gray-500">Loading bookings...</p>
+            <p className="mt-4 text-gray-500"><TranslatedText text="Loading bookings..." /></p>
           </div>
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Booking Details
+                  <TranslatedText text="Booking Details" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
+                  <TranslatedText text="Customer" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Product
+                  <TranslatedText text="Product" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  <TranslatedText text="Status" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Dates
+                  <TranslatedText text="Dates" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price
+                  <TranslatedText text="Price" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  <TranslatedText text="Actions" />
                 </th>
               </tr>
             </thead>

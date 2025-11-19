@@ -18,8 +18,11 @@ import {
   Building
 } from 'lucide-react';
 import { useAdminSettingsContext } from '../../../contexts/AdminSettingsContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const TransactionsManagement: React.FC = () => {
+  const { tSync } = useTranslation();
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const { formatCurrency, formatDate } = useAdminSettingsContext();
   const [loading, setLoading] = useState(false);
@@ -62,7 +65,7 @@ const TransactionsManagement: React.FC = () => {
           setTotalPages(1);
         }
       } catch (err: any) {
-        setError(err.message || 'Failed to fetch transactions');
+        setError(err.message || tSync('Failed to fetch transactions'));
       } finally {
         setLoading(false);
       }
@@ -112,7 +115,9 @@ const TransactionsManagement: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading transactions...</span>
+          <span className="ml-3 text-gray-600 dark:text-gray-400">
+            <TranslatedText text="Loading transactions..." />
+          </span>
         </div>
       </div>
     );
@@ -123,9 +128,11 @@ const TransactionsManagement: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Transactions</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+            <TranslatedText text="Transactions" />
+          </h3>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Monitor and manage all payment transactions
+            <TranslatedText text="Monitor and manage all payment transactions" />
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -133,7 +140,7 @@ const TransactionsManagement: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search transactions..."
+              placeholder={tSync('Search transactions...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-64"
@@ -144,7 +151,7 @@ const TransactionsManagement: React.FC = () => {
             className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-colors flex items-center"
           >
             <Filter className="w-4 h-4 mr-2" />
-            Filter
+            <TranslatedText text="Filter" />
           </button>
         </div>
       </div>
@@ -155,64 +162,64 @@ const TransactionsManagement: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
+                <TranslatedText text="Status" />
               </label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
-                <option value="all">All Statuses</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="failed">Failed</option>
+                <option value="all"><TranslatedText text="All Statuses" /></option>
+                <option value="completed"><TranslatedText text="Completed" /></option>
+                <option value="pending"><TranslatedText text="Pending" /></option>
+                <option value="failed"><TranslatedText text="Failed" /></option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Type
+                <TranslatedText text="Type" />
               </label>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
-                <option value="all">All Types</option>
-                <option value="booking_payment">Booking Payment</option>
-                <option value="security_deposit">Security Deposit</option>
-                <option value="refund">Refund</option>
-                <option value="platform_fee">Platform Fee</option>
+                <option value="all"><TranslatedText text="All Types" /></option>
+                <option value="booking_payment"><TranslatedText text="Booking Payment" /></option>
+                <option value="security_deposit"><TranslatedText text="Security Deposit" /></option>
+                <option value="refund"><TranslatedText text="Refund" /></option>
+                <option value="platform_fee"><TranslatedText text="Platform Fee" /></option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Date Range
+                <TranslatedText text="Date Range" />
               </label>
               <select
                 value={dateRangeFilter}
                 onChange={(e) => setDateRangeFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
+                <option value="all"><TranslatedText text="All Time" /></option>
+                <option value="today"><TranslatedText text="Today" /></option>
+                <option value="week"><TranslatedText text="This Week" /></option>
+                <option value="month"><TranslatedText text="This Month" /></option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Amount Range
+                <TranslatedText text="Amount Range" />
               </label>
               <select
                 value={amountRangeFilter}
                 onChange={(e) => setAmountRangeFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
-                <option value="all">All Amounts</option>
-                <option value="0-100">$0 - $100</option>
-                <option value="100-500">$100 - $500</option>
-                <option value="500-1000">$500 - $1,000</option>
-                <option value="1000+">$1,000+</option>
+                <option value="all"><TranslatedText text="All Amounts" /></option>
+                <option value="0-100"><TranslatedText text="$0 - $100" /></option>
+                <option value="100-500"><TranslatedText text="$100 - $500" /></option>
+                <option value="500-1000"><TranslatedText text="$500 - $1,000" /></option>
+                <option value="1000+"><TranslatedText text="$1,000+" /></option>
               </select>
             </div>
           </div>
@@ -227,7 +234,7 @@ const TransactionsManagement: React.FC = () => {
               <CreditCard className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Transactions</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Total Transactions" /></p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">{totalTransactions}</p>
             </div>
           </div>
@@ -238,7 +245,7 @@ const TransactionsManagement: React.FC = () => {
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Completed" /></p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">{completedTransactions}</p>
             </div>
           </div>
@@ -249,7 +256,7 @@ const TransactionsManagement: React.FC = () => {
               <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Pending" /></p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">{pendingTransactions}</p>
             </div>
           </div>
@@ -260,7 +267,7 @@ const TransactionsManagement: React.FC = () => {
               <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Total Amount" /></p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalAmount)}</p>
             </div>
           </div>
@@ -281,17 +288,17 @@ const TransactionsManagement: React.FC = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     <div className="flex items-center cursor-pointer hover:text-teal-600 dark:hover:text-teal-400">
-                      Transaction ID
+                      <TranslatedText text="Transaction ID" />
                       <ArrowUpDown className="w-4 h-4 ml-1" />
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provider</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Type" /></th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Status" /></th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Amount" /></th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Provider" /></th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     <div className="flex items-center cursor-pointer hover:text-teal-600 dark:hover:text-teal-400">
-                      Date
+                      <TranslatedText text="Date" />
                       <ArrowUpDown className="w-4 h-4 ml-1" />
                     </div>
                   </th>
@@ -342,12 +349,12 @@ const TransactionsManagement: React.FC = () => {
                       <div className="flex flex-col items-center">
                         <CreditCard className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                          No transactions found
+                          <TranslatedText text="No transactions found" />
                         </h3>
                         <p className="text-gray-500 dark:text-gray-400">
                           {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                            ? 'Try adjusting your filters to see more results.'
-                            : 'Transactions will appear here once they are processed.'}
+                            ? tSync('Try adjusting your filters to see more results.')
+                            : tSync('Transactions will appear here once they are processed.')}
                         </p>
                       </div>
                     </td>
@@ -363,7 +370,7 @@ const TransactionsManagement: React.FC = () => {
       {!loading && !error && transactions.length > 0 && (
         <div className="flex items-center justify-between mt-6 px-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Showing {transactions.length} transactions
+            <TranslatedText text="Showing" /> {transactions.length} <TranslatedText text="transactions" />
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -371,17 +378,17 @@ const TransactionsManagement: React.FC = () => {
               disabled={currentPage === 1}
               className="px-3 py-1 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-800 transition-colors"
             >
-              Previous
+              <TranslatedText text="Previous" />
             </button>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              Page {currentPage} of {totalPages}
+              <TranslatedText text="Page" /> {currentPage} <TranslatedText text="of" /> {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
               className="px-3 py-1 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-800 transition-colors"
             >
-              Next
+              <TranslatedText text="Next" />
             </button>
           </div>
         </div>

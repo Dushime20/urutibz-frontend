@@ -6,6 +6,8 @@ import {
   Shield
 } from 'lucide-react';
 import { useToast } from '../../../contexts/ToastContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface InspectionsManagementProps {
   inspections: any[];
@@ -31,6 +33,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
   onViewDispute
 }) => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<'overview' | 'inspections' | 'disputes'>('overview');
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [selectedDispute, setSelectedDispute] = useState<any>(null);
@@ -46,7 +49,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
 
   const submitResolveDispute = async () => {
     if (!selectedDispute || !resolveForm.resolutionNotes) {
-      showToast('Please provide resolution notes', 'error');
+      showToast(tSync('Please provide resolution notes'), 'error');
       return;
     }
 
@@ -62,10 +65,10 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
       setShowResolveModal(false);
       setSelectedDispute(null);
       setResolveForm({ resolutionNotes: '', agreedAmount: '' });
-      showToast('Dispute resolved successfully', 'success');
+      showToast(tSync('Dispute resolved successfully'), 'success');
     } catch (error) {
       console.error('Failed to resolve dispute:', error);
-      showToast('Failed to resolve dispute', 'error');
+      showToast(tSync('Failed to resolve dispute'), 'error');
     }
   };
 
@@ -113,8 +116,8 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Inspections & Disputes Management</h2>
-            <p className="text-gray-600 dark:text-slate-400">Monitor and manage all inspection activities and resolve disputes</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Inspections & Disputes Management" /></h2>
+            <p className="text-gray-600 dark:text-slate-400"><TranslatedText text="Monitor and manage all inspection activities and resolve disputes" /></p>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
@@ -127,15 +130,15 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
         {!loadingSummary && inspectionSummary && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white dark:bg-slate-700 rounded-lg shadow p-4 border border-gray-200 dark:border-slate-600">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Total Inspections</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="Total Inspections" /></h3>
               <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{inspectionSummary?.totalInspections || 0}</p>
             </div>
             <div className="bg-white dark:bg-slate-700 rounded-lg shadow p-4 border border-gray-200 dark:border-slate-600">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Active Disputes</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="Active Disputes" /></h3>
               <p className="text-3xl font-bold text-red-600 dark:text-red-400">{disputes?.length || 0}</p>
             </div>
             <div className="bg-white dark:bg-slate-700 rounded-lg shadow p-4 border border-gray-200 dark:border-slate-600">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Completed Today</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="Completed Today" /></h3>
               <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{inspectionSummary?.completedToday || 0}</p>
             </div>
           </div>
@@ -154,7 +157,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                   : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600'
               }`}
             >
-              Overview
+              <TranslatedText text="Overview" />
             </button>
             <button
               onClick={() => setActiveTab('inspections')}
@@ -164,7 +167,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                   : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600'
               }`}
             >
-              Inspections ({inspections?.length || 0})
+              <TranslatedText text="Inspections" /> ({inspections?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab('disputes')}
@@ -174,7 +177,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                   : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600'
               }`}
             >
-              Disputes ({disputes?.length || 0})
+              <TranslatedText text="Disputes" /> ({disputes?.length || 0})
             </button>
           </nav>
         </div>
@@ -187,7 +190,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
               <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center">
                   <Activity className="w-5 h-5 mr-2" />
-                  Recent Inspections
+                  <TranslatedText text="Recent Inspections" />
                 </h3>
                 <div className="space-y-3">
                   {inspections.slice(0, 5).map((inspection) => (
@@ -225,7 +228,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
               {/* Active Disputes */}
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-gray-200 dark:border-slate-700">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">Active Disputes</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Active Disputes" /></h3>
                   </div>
                   <div className="p-6">
                     {disputes && disputes.length > 0 ? (
@@ -245,7 +248,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                                   onClick={() => handleResolveDispute(dispute)}
                                   className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 text-sm font-medium"
                                 >
-                                  Resolve
+                                  <TranslatedText text="Resolve" />
                                 </button>
                               )}
                             </div>
@@ -253,7 +256,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-500 dark:text-slate-400 text-center py-4">No active disputes</p>
+                      <p className="text-gray-500 dark:text-slate-400 text-center py-4"><TranslatedText text="No active disputes" /></p>
                     )}
                   </div>
                 </div>
@@ -267,7 +270,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
               {loadingInspections ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 dark:border-emerald-400 mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-slate-400">Loading inspections...</p>
+                  <p className="text-gray-600 dark:text-slate-400"><TranslatedText text="Loading inspections..." /></p>
                 </div>
               ) : inspections && inspections.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -278,19 +281,19 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                           Inspection
                         </th> */}
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Type
+                          <TranslatedText text="Type" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Status
+                          <TranslatedText text="Status" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Scheduled
+                          <TranslatedText text="Scheduled" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Location
+                          <TranslatedText text="Location" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Actions
+                          <TranslatedText text="Actions" />
                         </th>
                       </tr>
                     </thead>
@@ -330,7 +333,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                               className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 flex items-center"
                             >
                               <Eye className="w-4 h-4 mr-1" />
-                              View
+                              <TranslatedText text="View" />
                             </button>
                           </td>
                         </tr>
@@ -341,8 +344,8 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
               ) : (
                 <div className="text-center py-12">
                   <Activity className="w-16 h-16 text-gray-400 dark:text-slate-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">No inspections found</h3>
-                  <p className="text-gray-600 dark:text-slate-400">There are no inspections to display at the moment.</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="No inspections found" /></h3>
+                  <p className="text-gray-600 dark:text-slate-400"><TranslatedText text="There are no inspections to display at the moment." /></p>
                 </div>
               )}
             </div>
@@ -355,7 +358,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
               {loadingDisputes ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 dark:border-emerald-400 mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-slate-400">Loading disputes...</p>
+                  <p className="text-gray-600 dark:text-slate-400"><TranslatedText text="Loading disputes..." /></p>
                 </div>
               ) : disputes && disputes.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -366,19 +369,19 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                           Dispute
                         </th> */}
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Type
+                          <TranslatedText text="Type" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Status
+                          <TranslatedText text="Status" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Raised
+                          <TranslatedText text="Raised" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Reason
+                          <TranslatedText text="Reason" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Actions
+                          <TranslatedText text="Actions" />
                         </th>
                       </tr>
                     </thead>
@@ -407,7 +410,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                                 className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 flex items-center"
                               >
                                 <Eye className="w-4 h-4 mr-1" />
-                                View
+                                <TranslatedText text="View" />
                               </button>
                               {dispute.status === 'open' && (
                                 <button
@@ -415,7 +418,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                                   className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 flex items-center"
                                 >
                                   <Shield className="w-4 h-4 mr-1" />
-                                  Resolve
+                                  <TranslatedText text="Resolve" />
                                 </button>
                               )}
                             </div>
@@ -428,8 +431,8 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
               ) : (
                 <div className="text-center py-12">
                   <AlertTriangle className="w-16 h-16 text-gray-400 dark:text-slate-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">No disputes found</h3>
-                  <p className="text-gray-600 dark:text-slate-400">There are no disputes to display at the moment.</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="No disputes found" /></h3>
+                  <p className="text-gray-600 dark:text-slate-400"><TranslatedText text="There are no disputes to display at the moment." /></p>
                 </div>
               )}
             </div>
@@ -442,23 +445,23 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowResolveModal(false)} />
           <div className="relative bg-white dark:bg-slate-800 rounded-lg shadow-lg w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Resolve Dispute</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4"><TranslatedText text="Resolve Dispute" /></h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Resolution Notes *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"><TranslatedText text="Resolution Notes" /> *</label>
                 <textarea
                   value={resolveForm.resolutionNotes}
                   onChange={(e) => setResolveForm(s => ({ ...s, resolutionNotes: e.target.value }))}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
-                  placeholder="Provide detailed explanation of how the dispute was resolved..."
+                  placeholder={tSync("Provide detailed explanation of how the dispute was resolved...")}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Agreed Amount (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"><TranslatedText text="Agreed Amount (Optional)" /></label>
                 <input
                   type="number"
                   step="0.01"
@@ -468,7 +471,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                   placeholder="0.00"
                 />
-                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Enter the agreed upon amount if applicable</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Enter the agreed upon amount if applicable" /></p>
               </div>
             </div>
 
@@ -477,7 +480,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                 onClick={() => setShowResolveModal(false)}
                 className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
               >
-                Cancel
+                <TranslatedText text="Cancel" />
               </button>
               
               <button
@@ -485,7 +488,7 @@ const InspectionsManagement: React.FC<InspectionsManagementProps> = ({
                 disabled={!resolveForm.resolutionNotes}
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Resolve Dispute
+                <TranslatedText text="Resolve Dispute" />
               </button>
             </div>
           </div>

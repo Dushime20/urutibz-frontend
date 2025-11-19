@@ -15,6 +15,8 @@ import { useToast } from '../../../contexts/ToastContext';
 import { CreateHandoverSessionRequest } from '../../../types/handoverReturn';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import { fetchUserBookings, getProductById } from '../../my-account/service/api';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface HandoverSessionFormProps {
   onSessionCreated?: (sessionId: string) => void;
@@ -26,6 +28,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
   className = '' 
 }) => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const { session, loading, error, createSession } = useHandoverSession();
   const [bookings, setBookings] = useState<any[]>([]);
   const [bookingSearch, setBookingSearch] = useState('');
@@ -144,7 +147,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      showToast('Geolocation is not supported by this browser', 'error');
+      showToast(tSync('Geolocation is not supported by this browser'), 'error');
       return;
     }
 
@@ -158,15 +161,15 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             address: `${position.coords.latitude}, ${position.coords.longitude}`,
-            city: 'Current Location',
-            country: 'Unknown'
+            city: tSync('Current Location'),
+            country: tSync('Unknown')
           }
         }));
-        showToast('Location captured successfully', 'success');
+        showToast(tSync('Location captured successfully'), 'success');
       },
       (error) => {
         console.error('Error getting location:', error);
-        showToast('Failed to get current location', 'error');
+        showToast(tSync('Failed to get current location'), 'error');
         setLocationPermission(false);
       }
     );
@@ -177,22 +180,22 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
     
     if (!formData.bookingId.trim() || !formData.productId.trim() || 
         !formData.renterId.trim() || !formData.ownerId.trim()) {
-      showToast('Please fill in all required fields', 'error');
+      showToast(tSync('Please fill in all required fields'), 'error');
       return;
     }
 
     if (!formData.handoverType || !formData.scheduledDateTime) {
-      showToast('Please select handover type and scheduled date/time', 'error');
+      showToast(tSync('Please select handover type and scheduled date/time'), 'error');
       return;
     }
 
     if (!formData.location.address.trim()) {
-      showToast('Please provide handover location', 'error');
+      showToast(tSync('Please provide handover location'), 'error');
       return;
     }
 
     if (!currentUserId || String(formData.ownerId) !== String(currentUserId)) {
-      showToast('You can only create handover sessions for your own items (owner role).', 'error');
+      showToast(tSync('You can only create handover sessions for your own items (owner role).'), 'error');
       return;
     }
 
@@ -232,9 +235,9 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Create Handover Session</h2>
+              <h2 className="text-lg font-semibold text-gray-900"><TranslatedText text="Create Handover Session" /></h2>
               <p className="text-sm text-gray-600 mt-1">
-                Start a new handover session for product delivery
+                <TranslatedText text="Start a new handover session for product delivery" />
               </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -247,7 +250,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {ownerBookings.length === 0 && (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-800">
-              You have no bookings where you are the owner. Handover sessions can only be created for your own items.
+              <TranslatedText text="You have no bookings where you are the owner. Handover sessions can only be created for your own items." />
             </div>
           )}
           {/* Basic Information */}
@@ -255,7 +258,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
           <div>
             <label htmlFor="booking" className="block text-sm font-medium text-gray-700 mb-2">
               <FileText className="w-4 h-4 inline mr-2" />
-              Booking *
+              <TranslatedText text="Booking" /> *
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <select
@@ -265,7 +268,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
                 required
                 disabled={loading || ownerBookings.length === 0}
               >
-                <option value="">Select booking</option>
+                <option value=""><TranslatedText text="Select booking" /></option>
                 {filteredBookings.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.productName || b.title}
@@ -274,7 +277,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
               </select>
               <input
                 type="text"
-                placeholder="Search your bookings..."
+                placeholder={tSync("Search your bookings...")}
                 className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 md:col-span-1 md:justify-self-end"
                 value={bookingSearch}
                 onChange={(e) => setBookingSearch(e.target.value)}
@@ -282,7 +285,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
               />
             </div>
             {formData.bookingId && (
-              <p className="text-xs text-gray-500 mt-2">Linked product, renter and owner were auto-filled from the booking.</p>
+              <p className="text-xs text-gray-500 mt-2"><TranslatedText text="Linked product, renter and owner were auto-filled from the booking." /></p>
             )}
           </div>
 
@@ -295,7 +298,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="handoverType" className="block text-sm font-medium text-gray-700 mb-2">
-                Handover Type *
+                <TranslatedText text="Handover Type" /> *
               </label>
               <select
                 id="handoverType"
@@ -306,14 +309,14 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
                 disabled={loading}
                 required
               >
-                <option value="pickup">Pickup</option>
-                <option value="delivery">Delivery</option>
-                <option value="meetup">Meetup</option>
+                <option value="pickup"><TranslatedText text="Pickup" /></option>
+                <option value="delivery"><TranslatedText text="Delivery" /></option>
+                <option value="meetup"><TranslatedText text="Meetup" /></option>
               </select>
             </div>
             <div>
               <label htmlFor="scheduledDateTime" className="block text-sm font-medium text-gray-700 mb-2">
-                Scheduled Date & Time *
+                <TranslatedText text="Scheduled Date & Time" /> *
               </label>
               <input
                 type="datetime-local"
@@ -331,7 +334,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
           {/* Location Information */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-900">Handover Location</h3>
+              <h3 className="text-sm font-medium text-gray-900"><TranslatedText text="Handover Location" /></h3>
               <button
                 type="button"
                 onClick={getCurrentLocation}
@@ -339,14 +342,14 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
                 className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <MapPin className="w-4 h-4 mr-1" />
-                {locationPermission ? 'Location Captured' : 'Get Current Location'}
+                {locationPermission ? tSync('Location Captured') : tSync('Get Current Location')}
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="handoverLocation.address" className="block text-sm font-medium text-gray-700 mb-2">
-                  Address *
+                  <TranslatedText text="Address" /> *
                 </label>
                 <input
                   type="text"
@@ -355,14 +358,14 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
                 value={formData.location.address}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="Enter handover address"
+                  placeholder={tSync("Enter handover address")}
                   disabled={loading}
                   required
                 />
               </div>
               <div>
                 <label htmlFor="handoverLocation.city" className="block text-sm font-medium text-gray-700 mb-2">
-                  City
+                  <TranslatedText text="City" />
                 </label>
                 <input
                   type="text"
@@ -371,7 +374,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
                 value={formData.location.city}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="Enter city"
+                  placeholder={tSync("Enter city")}
                   disabled={loading}
                 />
               </div>
@@ -379,7 +382,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
 
             <div>
               <label htmlFor="handoverLocation.country" className="block text-sm font-medium text-gray-700 mb-2">
-                Country
+                <TranslatedText text="Country" />
               </label>
               <input
                 type="text"
@@ -388,7 +391,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
                 value={formData.location.country}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter country"
+                placeholder={tSync("Enter country")}
                 disabled={loading}
               />
             </div>
@@ -397,7 +400,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
           {/* Notes */}
           <div>
             <label htmlFor="handoverNotes" className="block text-sm font-medium text-gray-700 mb-2">
-              Handover Notes
+              <TranslatedText text="Handover Notes" />
             </label>
             <textarea
               id="handoverNotes"
@@ -406,7 +409,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
               onChange={handleInputChange}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              placeholder="Add any additional notes for the handover..."
+              placeholder={tSync("Add any additional notes for the handover...")}
               disabled={loading}
             />
           </div>
@@ -418,7 +421,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
               <div className="flex">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">Error</h3>
+                  <h3 className="text-sm font-medium text-red-800"><TranslatedText text="Error" /></h3>
                   <p className="text-sm text-red-700 mt-1">{error}</p>
                 </div>
               </div>
@@ -433,7 +436,7 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
               disabled={loading}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Clear
+              <TranslatedText text="Clear" />
             </button>
             <button
               type="submit"
@@ -443,12 +446,12 @@ const HandoverSessionForm: React.FC<HandoverSessionFormProps> = ({
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  <TranslatedText text="Creating..." />
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Create Handover Session
+                  <TranslatedText text="Create Handover Session" />
                 </>
               )}
             </button>

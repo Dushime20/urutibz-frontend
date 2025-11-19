@@ -15,6 +15,8 @@ import {
   FileText} from 'lucide-react';
 import { MessagingService } from '../service/messagingService';
 import handoverReturnService from '../../../services/handoverReturnService';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 // Local lightweight types to avoid external dependency
 type Chat = {
   id: string;
@@ -58,6 +60,7 @@ interface MessagingManagementProps {
 }
 
 const MessagingManagement: React.FC<MessagingManagementProps> = () => {
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<'overview' | 'chats' | 'templates' | 'ai-features' | 'handover-return'>('overview');
   const [hrView, setHrView] = useState<'all' | 'handover' | 'return'>('all');
   const [hrMessages, setHrMessages] = useState<any[]>([]);
@@ -248,7 +251,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
         <div className="flex items-center justify-center h-32">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-my-primary mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading messaging data...</p>
+            <p className="text-gray-500">
+              <TranslatedText text="Loading messaging data..." />
+            </p>
           </div>
         </div>
       </div>
@@ -260,13 +265,15 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
         <div className="text-center py-12">
           <AlertTriangle className="mx-auto w-12 h-12 text-red-500 mb-4" />
-          <p className="text-lg text-red-600 mb-2">Error loading messaging data</p>
+          <p className="text-lg text-red-600 mb-2">
+            <TranslatedText text="Error loading messaging data" />
+          </p>
           <p className="text-gray-500 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="bg-my-primary hover:bg-my-primary/80 text-white px-4 py-2 rounded-lg transition-colors"
           >
-            Try Again
+            <TranslatedText text="Try Again" />
           </button>
         </div>
       </div>
@@ -277,11 +284,13 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">Messaging Management</h3>
+        <h3 className="text-xl font-bold text-gray-900">
+          <TranslatedText text="Messaging Management" />
+        </h3>
         <div className="flex items-center space-x-3">
           <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
             <Filter className="w-4 h-4 mr-2" />
-            Filter
+            <TranslatedText text="Filter" />
           </button>
         </div>
       </div>
@@ -290,11 +299,11 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
           {[ 
-            { id: 'overview', label: 'Overview', icon: TrendingUp },
-            { id: 'chats', label: 'Chats', icon: MessageSquare },
-            { id: 'templates', label: 'Templates', icon: FileText },
-            { id: 'ai-features', label: 'AI Features', icon: Bot },
-            { id: 'handover-return', label: 'Handover & Return', icon: MessageSquare }
+            { id: 'overview', label: tSync('Overview'), icon: TrendingUp },
+            { id: 'chats', label: tSync('Chats'), icon: MessageSquare },
+            { id: 'templates', label: tSync('Templates'), icon: FileText },
+            { id: 'ai-features', label: tSync('AI Features'), icon: Bot },
+            { id: 'handover-return', label: tSync('Handover & Return'), icon: MessageSquare }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -321,7 +330,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
               <div className="bg-white rounded-xl shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Messages</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      <TranslatedText text="Total Messages" />
+                    </p>
                     <p className="text-2xl font-bold text-gray-900">{messageStats?.totalMessages || 0}</p>
                   </div>
                   <div className="p-3 bg-my-primary/10 rounded-full">
@@ -333,7 +344,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
               <div className="bg-white rounded-xl shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Active Chats</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      <TranslatedText text="Active Chats" />
+                    </p>
                     <p className="text-2xl font-bold text-gray-900">{messageStats?.activeChats || 0}</p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-full">
@@ -345,7 +358,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
               <div className="bg-white rounded-xl shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Avg Response Time</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      <TranslatedText text="Avg Response Time" />
+                    </p>
                     <p className="text-2xl font-bold text-gray-900">{messageStats?.averageResponseTime || 0}m</p>
                   </div>
                   <div className="p-3 bg-blue-100 rounded-full">
@@ -357,7 +372,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
               <div className="bg-white rounded-xl shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Messages Today</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      <TranslatedText text="Messages Today" />
+                    </p>
                     <p className="text-2xl font-bold text-gray-900">{messageStats?.messagesToday || 0}</p>
                   </div>
                   <div className="p-3 bg-purple-100 rounded-full">
@@ -370,7 +387,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
             {/* Charts and Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Chat Categories</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <TranslatedText text="Chat Categories" />
+                </h3>
                 <div className="space-y-3">
                   {messageStats?.topChatCategories?.map((category: { category: string; count: number; percentage: number }, index: number) => (
                     <div key={index} className="flex items-center justify-between">
@@ -390,7 +409,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
               </div>
 
               <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Distribution</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <TranslatedText text="Sentiment Distribution" />
+                </h3>
                 <div className="space-y-3">
                   {messageStats?.sentimentDistribution?.map((sentiment: { emotion: string; count: number; percentage: number }, index: number) => (
                     <div key={index} className="flex items-center justify-between">
@@ -412,7 +433,9 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
 
             {/* Recent Activity */}
             <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <TranslatedText text="Recent Activity" />
+              </h3>
               <div className="space-y-3">
                 {chats.slice(0, 5).map((chat) => (
                   <div key={chat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -422,10 +445,10 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {chat.participantNames[chat.participants[0]] || 'Unknown User'}
+                          {chat.participantNames[chat.participants[0]] || tSync('Unknown User')}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {chat.lastMessage?.content?.substring(0, 50) || 'No messages yet'}...
+                          {(chat.lastMessage?.content?.substring(0, 50) || tSync('No messages yet'))}...
                         </p>
                       </div>
                     </div>
@@ -455,7 +478,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                   <Search className="w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search chats..."
+                    placeholder={tSync('Search chats...')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="flex-1 border-none outline-none text-sm"
@@ -472,7 +495,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                      {tSync(filter.charAt(0).toUpperCase() + filter.slice(1))}
                     </button>
                   ))}
                 </div>
@@ -489,14 +512,14 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-gray-900">
-                        {chat.participantNames[chat.participants[0]] || 'Unknown User'}
+                        {chat.participantNames[chat.participants[0]] || tSync('Unknown User')}
                       </span>
                       <span className="text-xs text-gray-500">
                         {new Date(chat.updatedAt).toLocaleTimeString()}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 truncate">
-                      {chat.lastMessage?.content || 'No messages yet'}
+                      {chat.lastMessage?.content || tSync('No messages yet')}
                     </p>
                     {Number((chat.unreadCount as number) || 0) > 0 && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-my-primary text-white mt-2">
@@ -517,7 +540,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-medium text-gray-900">
-                          {selectedChat.participantNames[selectedChat.participants[0]] || 'Unknown User'}
+                          {selectedChat.participantNames[selectedChat.participants[0]] || tSync('Unknown User')}
                         </h3>
                         <p className="text-sm text-gray-600">
                           {selectedChat.type} • {selectedChat.participants.length} participants
@@ -527,14 +550,14 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                         <button
                           onClick={() => handleDetectConflict(selectedChat.id)}
                           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
-                          title="Detect Conflict"
+                          title={tSync('Detect Conflict')}
                         >
                           <AlertTriangle className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleGenerateSuggestions(selectedChat.id, 'Generate response suggestions')}
-                          className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full"
-                          title="AI Suggestions"
+                          onClick={() => handleGenerateSuggestions(selectedChat.id, tSync('Generate response suggestions'))}
+                          className="p-2 text-gray-400 hover:text-blue-500 hover.bg-blue-50 rounded-full"
+                          title={tSync('AI Suggestions')}
                         >
                           <Bot className="w-4 h-4" />
                         </button>
@@ -575,7 +598,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder="Type a message..."
+                        placeholder={tSync('Type a message...')}
                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-transparent"
                       />
                       <button
@@ -592,7 +615,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                 <div className="flex items-center justify-center h-96 text-gray-500">
                   <div className="text-center">
                     <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p>Select a chat to start messaging</p>
+                    <p><TranslatedText text="Select a chat to start messaging" /></p>
                   </div>
                 </div>
               )}
@@ -605,15 +628,19 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
             {/* Template Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Message Templates</h3>
-                <p className="text-sm text-gray-600">Manage pre-built message templates for common scenarios</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  <TranslatedText text="Message Templates" />
+                </h3>
+                <p className="text-sm text-gray-600">
+                  <TranslatedText text="Manage pre-built message templates for common scenarios" />
+                </p>
               </div>
               <button
                 onClick={() => setShowTemplateModal(true)}
                 className="bg-my-primary hover:bg-my-primary/80 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New Template
+                <TranslatedText text="New Template" />
               </button>
             </div>
 
@@ -664,7 +691,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>Used {template.usageCount} times</span>
+                    <span><TranslatedText text="Used" /> {template.usageCount} <TranslatedText text="times" /></span>
                     <span>{new Date(template.updatedAt).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -676,13 +703,13 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
         {activeTab === 'ai-features' && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">AI-Powered Features</h3>
-              <p className="text-sm text-gray-600">Leverage artificial intelligence to improve messaging efficiency and user experience</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4"><TranslatedText text="AI-Powered Features" /></h3>
+              <p className="text-sm text-gray-600"><TranslatedText text="Leverage artificial intelligence to improve messaging efficiency and user experience" /></p>
             </div>
 
             {/* AI Suggestions */}
             <div className="bg-white rounded-xl shadow p-6">
-              <h4 className="font-medium text-gray-900 mb-4">Response Suggestions</h4>
+              <h4 className="font-medium text-gray-900 mb-4"><TranslatedText text="Response Suggestions" /></h4>
               <div className="space-y-3">
                 {aiSuggestions.map((suggestion, index) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg">
@@ -690,41 +717,41 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                   </div>
                 ))}
                 {aiSuggestions.length === 0 && (
-                  <p className="text-gray-500 text-sm">No suggestions generated yet. Select a chat and use the AI suggestions button.</p>
+                  <p className="text-gray-500 text-sm"><TranslatedText text="No suggestions generated yet. Select a chat and use the AI suggestions button." /></p>
                 )}
               </div>
             </div>
 
             {/* Sentiment Analysis */}
             <div className="bg-white rounded-xl shadow p-6">
-              <h4 className="font-medium text-gray-900 mb-4">Sentiment Analysis</h4>
+              <h4 className="font-medium text-gray-900 mb-4"><TranslatedText text="Sentiment Analysis" /></h4>
               {sentimentAnalysis ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Emotion:</span>
+                    <span className="text-sm text-gray-600"><TranslatedText text="Emotion" />:</span>
                     <span className="font-medium text-gray-900 capitalize">{sentimentAnalysis.emotion}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Confidence:</span>
+                    <span className="text-sm text-gray-600"><TranslatedText text="Confidence" />:</span>
                     <span className="font-medium text-gray-900">{(sentimentAnalysis.confidence * 100).toFixed(1)}%</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Score:</span>
+                    <span className="text-sm text-gray-600"><TranslatedText text="Score" />:</span>
                     <span className="font-medium text-gray-900">{sentimentAnalysis.score.toFixed(2)}</span>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">No sentiment analysis performed yet. Select a message and use the sentiment analysis feature.</p>
+                <p className="text-gray-500 text-sm"><TranslatedText text="No sentiment analysis performed yet. Select a message and use the sentiment analysis feature." /></p>
               )}
             </div>
 
             {/* Conflict Detection */}
             <div className="bg-white rounded-xl shadow p-6">
-              <h4 className="font-medium text-gray-900 mb-4">Conflict Detection</h4>
+              <h4 className="font-medium text-gray-900 mb-4"><TranslatedText text="Conflict Detection" /></h4>
               {conflictDetection ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Risk Level:</span>
+                    <span className="text-sm text-gray-600"><TranslatedText text="Risk Level" />:</span>
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                       conflictDetection.level === 'critical' ? 'bg-red-100 text-red-800' :
                       conflictDetection.level === 'high' ? 'bg-orange-100 text-orange-800' :
@@ -735,12 +762,12 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Confidence:</span>
+                    <span className="text-sm text-gray-600"><TranslatedText text="Confidence" />:</span>
                     <span className="font-medium text-gray-900">{(conflictDetection.confidence * 100).toFixed(1)}%</span>
                   </div>
                   {conflictDetection.indicators.length > 0 && (
                     <div>
-                      <span className="text-sm text-gray-600">Indicators:</span>
+                      <span className="text-sm text-gray-600"><TranslatedText text="Indicators" />:</span>
                       <div className="mt-2 space-y-1">
                         {conflictDetection.indicators.map((indicator: string, index: number) => (
                           <div key={index} className="text-sm text-gray-700 bg-red-50 p-2 rounded">
@@ -752,7 +779,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">No conflict detection performed yet. Select a chat and use the conflict detection feature.</p>
+                <p className="text-gray-500 text-sm"><TranslatedText text="No conflict detection performed yet. Select a chat and use the conflict detection feature." /></p>
               )}
             </div>
           </div>
@@ -761,7 +788,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
         {activeTab === 'handover-return' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Handover & Return Messages</h3>
+              <h3 className="text-lg font-semibold text-gray-900"><TranslatedText text="Handover & Return Messages" /></h3>
               <div className="flex items-center gap-2">
                 {(['all','handover','return'] as const).map(v => (
                   <button
@@ -769,21 +796,21 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                     onClick={() => setHrView(v)}
                     className={`px-3 py-1 text-xs rounded-full ${hrView === v ? 'bg-my-primary text-white' : 'bg-gray-100 text-gray-700'}`}
                   >
-                    {v.charAt(0).toUpperCase()+v.slice(1)}
+                    {v === 'all' ? <TranslatedText text="All" /> : v === 'handover' ? <TranslatedText text="Handover" /> : <TranslatedText text="Return" />}
                   </button>
                 ))}
                 <button
                   onClick={loadHandoverReturnMessages}
                   className="px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-700"
                 >
-                  Refresh
+                  <TranslatedText text="Refresh" />
                 </button>
               </div>
             </div>
 
             <div className="bg-white rounded-xl border">
               {hrLoading && (
-                <div className="p-4 text-sm text-gray-500">Loading…</div>
+                <div className="p-4 text-sm text-gray-500"><TranslatedText text="Loading…" /></div>
               )}
               {hrError && (
                 <div className="p-4 text-sm text-red-600">{hrError}</div>
@@ -791,7 +818,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
               {!hrLoading && !hrError && (
                 <div className="divide-y">
                   {hrMessages.length === 0 ? (
-                    <div className="p-4 text-sm text-gray-500">No messages found.</div>
+                    <div className="p-4 text-sm text-gray-500"><TranslatedText text="No messages found." /></div>
                   ) : (
                     hrMessages.map((m) => (
                       <div key={m.id} className="p-4">
@@ -802,8 +829,8 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                               : 'px-2 py-0.5 rounded-full bg-teal-700 text-white ring-1 ring-teal-800'}`}>
                               {(m.sessiontype || 'handover').toUpperCase()}
                             </span>
-                            <span>Booking: {m.bookingId?.slice(0,8)}…</span>
-                            <span>Sender: {m.senderType || m.senderId?.slice(0,6)}</span>
+                            <span><TranslatedText text="Booking" />: {m.bookingId?.slice(0,8)}…</span>
+                            <span><TranslatedText text="Sender" />: {m.senderType || m.senderId?.slice(0,6)}</span>
                           </div>
                           <span>{new Date(m.timestamp).toLocaleString()}</span>
                         </div>
@@ -823,11 +850,11 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingTemplate ? 'Edit Template' : 'New Template'}
+              {editingTemplate ? <TranslatedText text="Edit Template" /> : <TranslatedText text="New Template" />}
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Name" /></label>
                 <input
                   type="text"
                   value={templateForm.name}
@@ -836,20 +863,20 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Category" /></label>
                 <select
                   value={templateForm.category}
                   onChange={(e) => setTemplateForm(prev => ({ ...prev, category: e.target.value as any }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-transparent"
                 >
-                  <option value="general">General</option>
-                  <option value="booking">Booking</option>
-                  <option value="support">Support</option>
-                  <option value="custom">Custom</option>
+                  <option value="general"><TranslatedText text="General" /></option>
+                  <option value="booking"><TranslatedText text="Booking" /></option>
+                  <option value="support"><TranslatedText text="Support" /></option>
+                  <option value="custom"><TranslatedText text="Custom" /></option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Language" /></label>
                 <select
                   value={templateForm.language}
                   onChange={(e) => setTemplateForm(prev => ({ ...prev, language: e.target.value }))}
@@ -861,7 +888,7 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Content" /></label>
                 <textarea
                   value={templateForm.content}
                   onChange={(e) => setTemplateForm(prev => ({ ...prev, content: e.target.value }))}
@@ -879,14 +906,14 @@ const MessagingManagement: React.FC<MessagingManagementProps> = () => {
                 }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
-                Cancel
+                <TranslatedText text="Cancel" />
               </button>
               <button
                 onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
                 disabled={!templateForm.name.trim() || !templateForm.content.trim()}
                 className="px-4 py-2 bg-my-primary text-white rounded-lg hover:bg-my-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {editingTemplate ? 'Update' : 'Create'}
+                {editingTemplate ? <TranslatedText text="Update" /> : <TranslatedText text="Create" />}
               </button>
             </div>
           </div>

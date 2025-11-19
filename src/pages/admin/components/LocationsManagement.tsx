@@ -17,6 +17,8 @@ import {
   Calendar,
   Building
 } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface Location {
   id: string;
@@ -40,6 +42,7 @@ interface LocationsManagementProps {
 }
 
 const LocationsManagement: React.FC<LocationsManagementProps> = () => {
+  const { tSync } = useTranslation();
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -159,7 +162,9 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading locations...</span>
+          <span className="ml-3 text-gray-600 dark:text-gray-400">
+            <TranslatedText text="Loading locations..." />
+          </span>
         </div>
       </div>
     );
@@ -170,9 +175,11 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
       {/* Header */}
     <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Locations</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+            <TranslatedText text="Locations" />
+          </h3>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage platform locations and regional settings
+            <TranslatedText text="Manage platform locations and regional settings" />
           </p>
         </div>
       <div className="flex items-center space-x-3">
@@ -181,14 +188,14 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
             className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-colors flex items-center"
           >
           <Filter className="w-4 h-4 mr-2" />
-          Filter
+          <TranslatedText text="Filter" />
         </button>
           <button 
             onClick={() => setShowAddModal(true)}
             className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center"
           >
           <Plus className="w-4 h-4 mr-2" />
-          Add Location
+          <TranslatedText text="Add Location" />
         </button>
       </div>
     </div>
@@ -199,13 +206,13 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Search Locations
+                <TranslatedText text="Search Locations" />
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by name, city, or country..."
+                  placeholder={tSync('Search by name, city, or country...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -214,33 +221,33 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
+                <TranslatedText text="Status" />
               </label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="inactive">Inactive</option>
+                <option value="all"><TranslatedText text="All Status" /></option>
+                <option value="active"><TranslatedText text="Active" /></option>
+                <option value="pending"><TranslatedText text="Pending" /></option>
+                <option value="inactive"><TranslatedText text="Inactive" /></option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Country
+                <TranslatedText text="Country" />
               </label>
               <select
                 value={countryFilter}
                 onChange={(e) => setCountryFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
-                <option value="all">All Countries</option>
-                <option value="Rwanda">Rwanda</option>
-                <option value="Uganda">Uganda</option>
-                <option value="Kenya">Kenya</option>
-                <option value="Tanzania">Tanzania</option>
+                <option value="all"><TranslatedText text="All Countries" /></option>
+                <option value="Rwanda"><TranslatedText text="Rwanda" /></option>
+                <option value="Uganda"><TranslatedText text="Uganda" /></option>
+                <option value="Kenya"><TranslatedText text="Kenya" /></option>
+                <option value="Tanzania"><TranslatedText text="Tanzania" /></option>
               </select>
             </div>
           </div>
@@ -255,7 +262,7 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
               <Globe className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Locations</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Total Locations" /></p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">{locations.length}</p>
             </div>
           </div>
@@ -266,7 +273,7 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Active" /></p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {locations.filter(l => l.status === 'active').length}
               </p>
@@ -279,7 +286,7 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
               <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Pending" /></p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {locations.filter(l => l.status === 'pending').length}
               </p>
@@ -292,7 +299,7 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
               <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Inactive</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Inactive" /></p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {locations.filter(l => l.status === 'inactive').length}
               </p>
@@ -308,22 +315,22 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Location
+                  <TranslatedText text="Location" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Status
+                  <TranslatedText text="Status" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Users
+                  <TranslatedText text="Users" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Items
+                  <TranslatedText text="Items" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Created
+                  <TranslatedText text="Created" />
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Actions
+                  <TranslatedText text="Actions" />
                 </th>
               </tr>
             </thead>
@@ -406,12 +413,12 @@ const LocationsManagement: React.FC<LocationsManagementProps> = () => {
         <div className="text-center py-12">
           <Globe className="mx-auto w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            No locations found
+            <TranslatedText text="No locations found" />
           </h3>
           <p className="text-gray-500 dark:text-gray-400">
             {searchTerm || statusFilter !== 'all' || countryFilter !== 'all'
-              ? 'Try adjusting your filters to see more results.'
-              : 'Get started by adding your first location.'}
+              ? tSync('Try adjusting your filters to see more results.')
+              : tSync('Get started by adding your first location.')}
           </p>
         </div>
       )}

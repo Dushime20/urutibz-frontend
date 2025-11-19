@@ -1,5 +1,7 @@
 import React from 'react';
 import { ArrowUpRight, Camera } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface RecentBooking {
   id: string | number;
@@ -19,10 +21,12 @@ interface RecentBookingsListProps {
   recentBookings: RecentBooking[];
 }
 
-const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings }) => (
+const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings }) => {
+  const { tSync } = useTranslation();
+  return (
   <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mt-4">
     <div className="flex items-center justify-between mb-6">
-      <h3 className="text-lg font-bold text-gray-900">Recent Bookings</h3>
+      <h3 className="text-lg font-bold text-gray-900"><TranslatedText text="Recent Bookings" /></h3>
       <button 
         onClick={() => {
           // This will be handled by the parent component
@@ -31,7 +35,7 @@ const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings 
         }}
         className="text-sm text-my-primary hover:text-my-primary/80 font-medium flex items-center group"
       >
-        View all
+        <TranslatedText text="View all" />
         <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
       </button>
     </div>
@@ -39,7 +43,7 @@ const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings 
       {recentBookings.length === 0 ? (
         <div className="text-center py-8">
           <Camera className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">No recent bookings found</p>
+          <p className="text-gray-500 text-sm"><TranslatedText text="No recent bookings found" /></p>
         </div>
       ) : (
         recentBookings.map((booking) => (
@@ -71,7 +75,7 @@ const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings 
                   ? 'bg-green-100 text-green-700' 
                   : 'bg-gray-100 text-gray-700'
               }`}>
-                {booking.status}
+                {tSync(booking.status)}
               </span>
             </div>
           </div>
@@ -79,6 +83,7 @@ const RecentBookingsList: React.FC<RecentBookingsListProps> = ({ recentBookings 
       )}
     </div>
   </div>
-);
+  );
+};
 
 export default RecentBookingsList; 

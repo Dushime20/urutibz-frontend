@@ -3,8 +3,11 @@ import { fetchCountries, createCountry, fetchCountryById, updateCountry, deleteC
 import type { Country, CreateCountryInput } from '../interfaces';
 import { Loader, Plus, Check, X, MoreVertical, Eye, Globe, MapPin, Clock, CreditCard, Phone, Flag, Edit, Trash, AlertTriangle } from 'lucide-react';
 import { useToast } from '../../../contexts/ToastContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const CountriesManagement: React.FC = () => {
+  const { tSync } = useTranslation();
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

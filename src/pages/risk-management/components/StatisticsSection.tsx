@@ -17,9 +17,12 @@ import { useRiskManagementStats } from '../hooks/useRiskManagementStats';
 import { useRiskManagementTrends } from '../hooks/useRiskManagementTrends';
 import TrendChart from './TrendChart';
 import { useToast } from '../../../contexts/ToastContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const StatisticsSection: React.FC = () => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [viewMode, setViewMode] = useState<'overview' | 'detailed' | 'trends'>('overview');
   const { stats, loading, error, refetch, lastUpdated } = useRiskManagementStats();
@@ -27,7 +30,7 @@ const StatisticsSection: React.FC = () => {
 
   const handleExport = () => {
     if (!stats) {
-      showToast('No data available to export', 'error');
+      showToast(tSync('No data available to export'), 'error');
       return;
     }
 
@@ -47,7 +50,7 @@ const StatisticsSection: React.FC = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showToast('Statistics exported successfully', 'success');
+    showToast(tSync('Statistics exported successfully'), 'success');
   };
 
   const getRiskLevelColor = (level: string) => {
@@ -79,8 +82,8 @@ const StatisticsSection: React.FC = () => {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <RefreshCw className="w-12 h-12 text-gray-400 dark:text-slate-500 animate-spin mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Loading Statistics</h3>
-            <p className="text-gray-600 dark:text-slate-400">Fetching risk management data...</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="Loading Statistics" /></h3>
+            <p className="text-gray-600 dark:text-slate-400"><TranslatedText text="Fetching risk management data..." /></p>
           </div>
         </div>
       </div>
@@ -92,7 +95,7 @@ const StatisticsSection: React.FC = () => {
       <div className="p-6">
         <div className="text-center py-12">
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">Failed to Load Statistics</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2"><TranslatedText text="Failed to Load Statistics" /></h3>
           <p className="text-gray-600 dark:text-slate-400 mb-4">{error}</p>
           <button
             onClick={refetch}

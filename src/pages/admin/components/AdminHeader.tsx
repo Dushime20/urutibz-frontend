@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Bell, Shield, User, LogOut, ChevronDown, UserCircle, RefreshCw, Upload, X, AlertCircle, Lock, Smartphone, Menu } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Bell, Shield, User, LogOut, ChevronDown, UserCircle, RefreshCw, Upload, X, AlertCircle, Lock, Smartphone, Menu, Globe } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { adminService, type AdminUserProfile } from '../service';
 import { TwoFactorManagement, TwoFactorVerification } from '../../../components/2fa';
@@ -7,6 +7,7 @@ import ChangePasswordModal from '../../my-account/components/ChangePasswordModal
 // import { useNavigate } from 'react-router-dom';
 // import { useToast } from '../../../contexts/ToastContext';
 import Portal from '../../../components/ui/Portal';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface AdminHeaderProps {
   selectedLocation: string;
@@ -17,6 +18,7 @@ interface AdminHeaderProps {
 }
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelectedLocation, selectedLanguage, setSelectedLanguage, onMenuToggle }) => {
+  const { language, setLanguage } = useTranslation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,10 +31,37 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [show2FAVerify, setShow2FAVerify] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   // const navigate = useNavigate();
   // const { showToast } = useToast();
-  const profileButtonRef = React.useRef<HTMLButtonElement | null>(null);
-  const profileMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const profileButtonRef = useRef<HTMLButtonElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const languageButtonRef = useRef<HTMLButtonElement | null>(null);
+  const languageDropdownRef = useRef<HTMLDivElement | null>(null);
+  const languageOptions = [
+    { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
+    { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+    { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', flag: '🇰🇪' },
+    { code: 'rw', name: 'Kinyarwanda', nativeName: 'Kinyarwanda', flag: '🇷🇼' },
+    { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
+    { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇵🇹' },
+    { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
+    { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
+    { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
+    { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
+    { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹' },
+    { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
+    { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
+    { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
+    { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷' },
+    { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
+    { code: 'nl', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱' },
+    { code: 'pl', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱' },
+    { code: 'th', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
+    { code: 'uk', name: 'Ukrainian', nativeName: 'Українська', flag: '🇺🇦' }
+  ];
+  const activeLanguage =
+    languageOptions.find((option) => option.code === selectedLanguage) || languageOptions[0];
 
     // Fetch current user data
   const fetchCurrentUser = async () => {
@@ -106,6 +135,20 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
     document.addEventListener('mousedown', handleDocumentMouseDown);
     return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
   }, [profileOpen]);
+
+  useEffect(() => {
+    if (!showLanguageDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      const withinButton = languageButtonRef.current?.contains(target ?? null) ?? false;
+      const withinDropdown = languageDropdownRef.current?.contains(target ?? null) ?? false;
+      if (!withinButton && !withinDropdown) {
+        setShowLanguageDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLanguageDropdown]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -234,16 +277,52 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 <option value="Kampala">🇺🇬 Kampala</option>
                 <option value="Nairobi">🇰🇪 Nairobi</option>
               </select>
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                className="bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
-              >
-                <option value="en">🇺🇸 English</option>
-                <option value="rw">🇷🇼 Kinyarwanda</option>
-                <option value="fr">🇫🇷 Français</option>
-                <option value="sw">🇹🇿 Kiswahili</option>
-              </select>
+              <div className="relative">
+                <button
+                  ref={languageButtonRef}
+                  onClick={() => setShowLanguageDropdown((open) => !open)}
+                  className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
+                >
+                  <span className="text-base">{activeLanguage?.flag}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">
+                    {activeLanguage?.nativeName || selectedLanguage.toUpperCase()}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                </button>
+                {showLanguageDropdown && (
+                  <div
+                    ref={languageDropdownRef}
+                    className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-30"
+                  >
+                    <div className="py-1 max-h-72 overflow-y-auto">
+                      {languageOptions.map((option) => (
+                        <button
+                          key={option.code}
+                          onClick={() => {
+                            setLanguage(option.code); // Update global language context
+                            setSelectedLanguage(option.code); // Update local state (prop)
+                            setShowLanguageDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 text-sm text-left transition-colors ${
+                            selectedLanguage === option.code
+                              ? 'bg-my-primary/10 text-my-primary font-semibold'
+                              : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          <span className="text-lg">{option.flag}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{option.nativeName}</span>
+                            {option.name !== option.nativeName && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{option.name}</span>
+                            )}
+                          </div>
+                          {selectedLanguage === option.code && <span className="ml-auto text-my-primary">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-label="Search" />

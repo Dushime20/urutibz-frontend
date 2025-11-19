@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { adminService, AdminUserProfile } from '../service/adminService';
 import { useToast } from '../../../contexts/ToastContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 // Form validation schema
 const schema = z.object({
@@ -48,6 +50,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const AdminProfilePage: React.FC = () => {
+  const { tSync } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -116,7 +119,7 @@ const AdminProfilePage: React.FC = () => {
         setAvatarUrl(profile.profileImageUrl || null);
       } catch (error) {
         console.error('Error loading profile:', error);
-        showToast('Failed to load profile data', 'error');
+        showToast(tSync('Failed to load profile data'), 'error');
       } finally {
         setLoading(false);
       }
@@ -151,10 +154,10 @@ const AdminProfilePage: React.FC = () => {
       
       const updatedProfile = await adminService.updateUserProfile(profileData.id, payload);
       setProfileData(updatedProfile);
-      showToast('Profile updated successfully!', 'success');
+      showToast(tSync('Profile updated successfully!'), 'success');
     } catch (error) {
       console.error('Error updating profile:', error);
-      showToast('Failed to update profile', 'error');
+      showToast(tSync('Failed to update profile'), 'error');
     } finally {
       setSaving(false);
     }
@@ -173,10 +176,10 @@ const AdminProfilePage: React.FC = () => {
       // Update profile data with new avatar URL
       setProfileData(prev => prev ? { ...prev, profileImageUrl: uploadedAvatar.profileImageUrl } : null);
       
-      showToast('Avatar updated successfully!', 'success');
+      showToast(tSync('Avatar updated successfully!'), 'success');
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      showToast('Failed to upload avatar', 'error');
+      showToast(tSync('Failed to upload avatar'), 'error');
     } finally {
       setSaving(false);
     }
@@ -192,10 +195,10 @@ const AdminProfilePage: React.FC = () => {
         preferred_currency: newCurrency 
       });
       setProfileData(updatedProfile);
-      showToast('Currency preference updated!', 'success');
+      showToast(tSync('Currency preference updated!'), 'success');
     } catch (error) {
       console.error('Error updating currency:', error);
-      showToast('Failed to update currency preference', 'error');
+      showToast(tSync('Failed to update currency preference'), 'error');
     } finally {
       setSaving(false);
     }
@@ -243,10 +246,10 @@ const AdminProfilePage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Admin Profile
+                <TranslatedText text="Admin Profile" />
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Manage your personal information and preferences
+                <TranslatedText text="Manage your personal information and preferences" />
               </p>
             </div>
           </div>
@@ -259,7 +262,7 @@ const AdminProfilePage: React.FC = () => {
             <div className="flex items-center space-x-2 mb-6">
               <User className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Personal Information
+                <TranslatedText text="Personal Information" />
               </h2>
             </div>
             
@@ -267,14 +270,14 @@ const AdminProfilePage: React.FC = () => {
               {/* First Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  First Name *
+                  <TranslatedText text="First Name" /> *
                 </label>
                 <input
                   {...register('firstName')}
                   className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                     errors.firstName ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Enter your first name"
+                  placeholder={tSync('Enter your first name')}
                 />
                 {errors.firstName && (
                   <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>
@@ -284,14 +287,14 @@ const AdminProfilePage: React.FC = () => {
               {/* Last Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Last Name *
+                  <TranslatedText text="Last Name" /> *
                 </label>
                 <input
                   {...register('lastName')}
                   className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                     errors.lastName ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Enter your last name"
+                  placeholder={tSync('Enter your last name')}
                 />
                 {errors.lastName && (
                   <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
@@ -301,7 +304,7 @@ const AdminProfilePage: React.FC = () => {
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email Address *
+                  <TranslatedText text="Email Address" /> *
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -311,7 +314,7 @@ const AdminProfilePage: React.FC = () => {
                     className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Enter your email"
+                    placeholder={tSync('Enter your email')}
                   />
                 </div>
                 {errors.email && (
@@ -322,7 +325,7 @@ const AdminProfilePage: React.FC = () => {
               {/* Date of Birth */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Date of Birth
+                  <TranslatedText text="Date of Birth" />
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -337,29 +340,29 @@ const AdminProfilePage: React.FC = () => {
               {/* Gender */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Gender
+                  <TranslatedText text="Gender" />
                 </label>
                 <select
                   {...register('gender')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
+                  <option value="">{tSync('Select gender')}</option>
+                  <option value="male">{tSync('Male')}</option>
+                  <option value="female">{tSync('Female')}</option>
+                  <option value="other">{tSync('Other')}</option>
                 </select>
               </div>
 
               {/* Bio */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Bio
+                  <TranslatedText text="Bio" />
                 </label>
                 <textarea
                   {...register('bio')}
                   rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Tell us about yourself..."
+                  placeholder={tSync('Tell us about yourself...')}
                 />
                 {errors.bio && (
                   <p className="text-red-500 text-sm mt-1">{errors.bio.message}</p>
@@ -373,7 +376,7 @@ const AdminProfilePage: React.FC = () => {
             <div className="flex items-center space-x-2 mb-6">
               <MapPin className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Address Information
+                <TranslatedText text="Address Information" />
               </h2>
             </div>
             
@@ -381,72 +384,72 @@ const AdminProfilePage: React.FC = () => {
               {/* Province */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Province
+                  <TranslatedText text="Province" />
                 </label>
                 <input
                   {...register('province')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Enter province"
+                  placeholder={tSync('Enter province')}
                 />
               </div>
 
               {/* District */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  District
+                  <TranslatedText text="District" />
                 </label>
                 <input
                   {...register('district')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Enter district"
+                  placeholder={tSync('Enter district')}
                 />
               </div>
 
               {/* Sector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Sector
+                  <TranslatedText text="Sector" />
                 </label>
                 <input
                   {...register('sector')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Enter sector"
+                  placeholder={tSync('Enter sector')}
                 />
               </div>
 
               {/* Cell */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Cell
+                  <TranslatedText text="Cell" />
                 </label>
                 <input
                   {...register('cell')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Enter cell"
+                  placeholder={tSync('Enter cell')}
                 />
               </div>
 
               {/* Village */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Village
+                  <TranslatedText text="Village" />
                 </label>
                 <input
                   {...register('village')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Enter village"
+                  placeholder={tSync('Enter village')}
                 />
               </div>
 
               {/* Address Line */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Address Line
+                  <TranslatedText text="Address Line" />
                 </label>
                 <input
                   {...register('addressLine')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Enter street address"
+                  placeholder={tSync('Enter street address')}
                 />
               </div>
             </div>
@@ -457,7 +460,7 @@ const AdminProfilePage: React.FC = () => {
             <div className="flex items-center space-x-2 mb-6">
               <Shield className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Account Information
+                <TranslatedText text="Account Information" />
               </h2>
             </div>
             
@@ -465,12 +468,12 @@ const AdminProfilePage: React.FC = () => {
               {/* Account Status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Account Status
+                  <TranslatedText text="Account Status" />
                 </label>
                 <div className="px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                   <span className={`font-medium ${profileData?.status === 'active' ? 'text-green-600 dark:text-green-400' : 
                     profileData?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {profileData?.status || 'Unknown'}
+                    {tSync(profileData?.status || 'Unknown')}
                   </span>
                 </div>
               </div>
@@ -478,11 +481,11 @@ const AdminProfilePage: React.FC = () => {
               {/* Email Verification */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email Verification
+                  <TranslatedText text="Email Verification" />
                 </label>
                 <div className="px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                   <span className={profileData?.emailVerified ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                    {profileData?.emailVerified ? '✓ Verified' : '✗ Not Verified'}
+                    {profileData?.emailVerified ? tSync('✓ Verified') : tSync('✗ Not Verified')}
                   </span>
                 </div>
               </div>
@@ -490,11 +493,11 @@ const AdminProfilePage: React.FC = () => {
               {/* Phone Verification */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Phone Verification
+                  <TranslatedText text="Phone Verification" />
                 </label>
                 <div className="px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                   <span className={profileData?.phoneVerified ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                    {profileData?.phoneVerified ? '✓ Verified' : '✗ Not Verified'}
+                    {profileData?.phoneVerified ? tSync('✓ Verified') : tSync('✗ Not Verified')}
                   </span>
                 </div>
               </div>
@@ -502,11 +505,11 @@ const AdminProfilePage: React.FC = () => {
               {/* Member Since */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Member Since
+                  <TranslatedText text="Member Since" />
                 </label>
                 <div className="px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                   <span className="text-gray-900 dark:text-gray-100">
-                    {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : 'Unknown'}
+                    {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : tSync('Unknown')}
                   </span>
                 </div>
               </div>
@@ -519,7 +522,7 @@ const AdminProfilePage: React.FC = () => {
               <div className="flex items-center space-x-2 mb-6">
                 <CheckCircle className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  KYC Verification Progress
+                  <TranslatedText text="KYC Verification Progress" />
                 </h2>
               </div>
               
@@ -527,7 +530,7 @@ const AdminProfilePage: React.FC = () => {
                 {/* Overall Progress */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300"><TranslatedText text="Overall Progress" /></span>
                     <span className="text-sm font-bold text-teal-600 dark:text-teal-400">
                       {Math.round(profileData.kycProgress.completionRate * 100)}%
                     </span>
@@ -546,19 +549,19 @@ const AdminProfilePage: React.FC = () => {
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                       {profileData.kycProgress.verified.length}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Verified</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Verified" /></div>
                   </div>
                   <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
                     <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                       {profileData.kycProgress.pending.length}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Pending</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Pending" /></div>
                   </div>
                   <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
                     <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                       {profileData.kycProgress.rejected.length}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Rejected</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Rejected" /></div>
                   </div>
                 </div>
 
@@ -571,7 +574,7 @@ const AdminProfilePage: React.FC = () => {
             <div className="flex items-center space-x-2 mb-6">
               <Globe className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Preferences
+                <TranslatedText text="Preferences" />
               </h2>
             </div>
             
@@ -579,7 +582,7 @@ const AdminProfilePage: React.FC = () => {
               {/* Preferred Currency */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Preferred Currency
+                  <TranslatedText text="Preferred Currency" />
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -591,13 +594,13 @@ const AdminProfilePage: React.FC = () => {
                     }}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
-                    <option value="USD">USD - US Dollar</option>
-                    <option value="EUR">EUR - Euro</option>
-                    <option value="GBP">GBP - British Pound</option>
-                    <option value="RWF">RWF - Rwandan Franc</option>
-                    <option value="KES">KES - Kenyan Shilling</option>
-                    <option value="UGX">UGX - Ugandan Shilling</option>
-                    <option value="TZS">TZS - Tanzanian Shilling</option>
+                    <option value="USD">{tSync('USD - US Dollar')}</option>
+                    <option value="EUR">{tSync('EUR - Euro')}</option>
+                    <option value="GBP">{tSync('GBP - British Pound')}</option>
+                    <option value="RWF">{tSync('RWF - Rwandan Franc')}</option>
+                    <option value="KES">{tSync('KES - Kenyan Shilling')}</option>
+                    <option value="UGX">{tSync('UGX - Ugandan Shilling')}</option>
+                    <option value="TZS">{tSync('TZS - Tanzanian Shilling')}</option>
                   </select>
                 </div>
               </div>
@@ -609,7 +612,7 @@ const AdminProfilePage: React.FC = () => {
             <div className="flex items-center space-x-2 mb-6">
               <Navigation className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Location Coordinates
+                <TranslatedText text="Location Coordinates" />
               </h2>
             </div>
             
@@ -617,28 +620,28 @@ const AdminProfilePage: React.FC = () => {
               {/* Latitude */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Latitude
+                  <TranslatedText text="Latitude" />
                 </label>
                 <input
                   {...register('location.lat', { valueAsNumber: true })}
                   type="number"
                   step="any"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Enter latitude"
+                  placeholder={tSync('Enter latitude')}
                 />
               </div>
 
               {/* Longitude */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Longitude
+                  <TranslatedText text="Longitude" />
                 </label>
                 <input
                   {...register('location.lng', { valueAsNumber: true })}
                   type="number"
                   step="any"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="Enter longitude"
+                  placeholder={tSync('Enter longitude')}
                 />
               </div>
             </div>
@@ -652,7 +655,7 @@ const AdminProfilePage: React.FC = () => {
               className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Reset</span>
+              <span><TranslatedText text="Reset" /></span>
             </button>
             <button
               type="submit"
@@ -662,12 +665,12 @@ const AdminProfilePage: React.FC = () => {
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saving...</span>
+                  <span>{tSync('Saving...')}</span>
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>Save Changes</span>
+                  <span><TranslatedText text="Save Changes" /></span>
                 </>
               )}
             </button>

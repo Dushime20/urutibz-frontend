@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useComplianceCheck } from '../hooks/useComplianceCheck';
 import { useToast } from '../../../contexts/ToastContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface ComplianceCheckerProps {
   onComplianceChecked?: (compliance: any) => void;
@@ -25,6 +27,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
   className = '' 
 }) => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const { compliance, loading, error, checkCompliance, getBookingCompliance, clearCompliance } = useComplianceCheck();
   const [formData, setFormData] = useState({
     bookingId: '',
@@ -150,7 +153,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
     e.preventDefault();
     
     if (!formData.bookingId.trim() || !formData.productId.trim() || !formData.renterId.trim()) {
-      showToast('Please enter Booking ID and select Product', 'error');
+      showToast(tSync('Please enter Booking ID and select Product'), 'error');
       return;
     }
 
@@ -172,7 +175,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
 
   const handleGetCompliance = async () => {
     if (!formData.bookingId.trim()) {
-      showToast('Please enter a Booking ID', 'error');
+      showToast(tSync('Please enter a Booking ID'), 'error');
       return;
     }
 
@@ -244,7 +247,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showToast('Compliance report exported successfully', 'success');
+    showToast(tSync('Compliance report exported successfully'), 'success');
   };
 
   return (
@@ -255,8 +258,8 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
           <div className="flex items-center space-x-3">
             <Shield className="w-6 h-6 text-teal-600" />
             <div>
-              <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-slate-100">Compliance Checker</h2>
-              <p className="text-sm text-gray-600 dark:text-slate-400">Check booking compliance status</p>
+              <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Compliance Checker" /></h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Check booking compliance status" /></p>
             </div>
           </div>
           {compliance && (
@@ -266,14 +269,14 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export
+                <TranslatedText text="Export" />
               </button>
               <button
                 onClick={handleClear}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
               >
                 <XCircle className="w-4 h-4 mr-2" />
-                Clear
+                <TranslatedText text="Clear" />
               </button>
             </div>
           )}
@@ -287,7 +290,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
             <div className="relative">
               <label htmlFor="booking" className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 <FileText className="w-4 h-4 inline mr-2" />
-                Booking
+                <TranslatedText text="Booking" />
               </label>
               <input
                 type="text"
@@ -307,7 +310,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
-                placeholder="Search booking by reference/code"
+                placeholder={tSync("Search booking by reference/code")}
                 disabled={loading}
                 autoComplete="off"
               />
@@ -326,20 +329,20 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
                         setShowBookingOptions(false);
                       }}
                     >
-                      <div className="font-medium dark:text-slate-100">{b.name || 'Unnamed booking'}</div>
-                      <div className="text-xs text-gray-500 truncate dark:text-slate-400">ID: {b.id || b.bookingId}</div>
+                      <div className="font-medium dark:text-slate-100">{b.name || tSync('Unnamed booking')}</div>
+                      <div className="text-xs text-gray-500 truncate dark:text-slate-400"><TranslatedText text="ID" />: {b.id || b.bookingId}</div>
                     </li>
                   ))}
                 </ul>
               )}
               {formData.bookingId && (
-                <div className="mt-1 text-xs text-gray-500">Selected Booking ID: {formData.bookingId}</div>
+                <div className="mt-1 text-xs text-gray-500"><TranslatedText text="Selected Booking ID" />: {formData.bookingId}</div>
               )}
             </div>
             <div className="relative">
               <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 <Package className="w-4 h-4 inline mr-2" />
-                Product
+                <TranslatedText text="Product" />
               </label>
               <input
                 type="text"
@@ -359,7 +362,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
-                placeholder="Search product by name"
+                placeholder={tSync("Search product by name")}
                 disabled={loading}
                 autoComplete="off"
               />
@@ -378,14 +381,14 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
                         setShowProductOptions(false);
                       }}
                     >
-                      <div className="font-medium dark:text-slate-100">{p.name || p.productName || p.title || 'Unnamed product'}</div>
-                      <div className="text-xs text-gray-500 truncate dark:text-slate-400">ID: {p.id || p.productId}</div>
+                      <div className="font-medium dark:text-slate-100">{p.name || p.productName || p.title || tSync('Unnamed product')}</div>
+                      <div className="text-xs text-gray-500 truncate dark:text-slate-400"><TranslatedText text="ID" />: {p.id || p.productId}</div>
                     </li>
                   ))}
                 </ul>
               )}
               {formData.productId && (
-                <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">Selected Product ID: {formData.productId}</div>
+                <div className="mt-1 text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Selected Product ID" />: {formData.productId}</div>
               )}
             </div>
           </div>
@@ -401,7 +404,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
                   className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
                   disabled={loading}
                 />
-                <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Force Check</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Force Check" /></span>
               </label>
             </div>
           </div>
@@ -414,7 +417,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
             >
               <Clock className="w-4 h-4 mr-2" />
-              Get Status
+              <TranslatedText text="Get Status" />
             </button>
             <button
               type="submit"
@@ -424,12 +427,12 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Checking...
+                  <TranslatedText text="Checking..." />
                 </>
               ) : (
                 <>
                   <Search className="w-4 h-4 mr-2" />
-                  Check Compliance
+                  <TranslatedText text="Check Compliance" />
                 </>
               )}
             </button>
@@ -443,7 +446,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
             <div className="flex">
               <AlertTriangle className="w-5 h-5 text-red-400" />
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Compliance Check Failed</h3>
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-300"><TranslatedText text="Compliance Check Failed" /></h3>
                 <p className="text-sm text-red-700 mt-1 dark:text-red-300/80">{error}</p>
               </div>
             </div>
@@ -455,7 +458,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
           <div className="mt-6 space-y-6">
             {/* Compliance Status */}
             <div className="bg-gray-50 rounded-lg p-6 dark:bg-slate-800">
-              <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-slate-100">Compliance Status</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-slate-100"><TranslatedText text="Compliance Status" /></h3>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   {compliance.isCompliant ? (
@@ -465,10 +468,10 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
                   )}
                   <div>
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${getComplianceStatusColor(compliance.status)}`}>
-                      {compliance.status.replace('_', ' ').toUpperCase()}
+                      {tSync(compliance.status.replace('_', ' '))}
                     </div>
                     <div className="text-sm text-gray-600 mt-1 dark:text-slate-400">
-                      {compliance.isCompliant ? 'Fully Compliant' : 'Non-Compliant'}
+                      {compliance.isCompliant ? tSync('Fully Compliant') : tSync('Non-Compliant')}
                     </div>
                   </div>
                 </div>
@@ -476,7 +479,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
                   <div className={`text-3xl font-bold ${getComplianceScoreColor(compliance.complianceScore)}`}>
                     {compliance.complianceScore}%
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-slate-400">Compliance Score</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Compliance Score" /></div>
                 </div>
               </div>
               <div className="mt-4 w-full bg-gray-200 rounded-full h-2 dark:bg-slate-700">
@@ -494,12 +497,12 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
             {/* Missing Requirements */}
             {compliance.missingRequirements.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-lg p-6 dark:bg-slate-900 dark:border-slate-700">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-slate-100">Missing Requirements</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-slate-100"><TranslatedText text="Missing Requirements" /></h3>
                 <div className="space-y-2">
                   {compliance.missingRequirements.map((requirement, index) => (
                     <div key={index} className="flex items-center space-x-3 p-3 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-900/30">
                       <XCircle className="w-5 h-5 text-red-600" />
-                      <span className="text-sm text-red-800 dark:text-red-300">{requirement.replace('_', ' ')}</span>
+                      <span className="text-sm text-red-800 dark:text-red-300">{tSync(requirement.replace('_', ' '))}</span>
                     </div>
                   ))}
                 </div>
@@ -509,17 +512,17 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
             {/* Enforcement Actions */}
             {compliance.enforcementActions.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-lg p-6 dark:bg-slate-900 dark:border-slate-700">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-slate-100">Required Enforcement Actions</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4 dark:text-slate-100"><TranslatedText text="Required Enforcement Actions" /></h3>
                 <div className="space-y-3">
                   {compliance.enforcementActions.map((action, index) => (
                     <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md dark:bg-yellow-900/20 dark:border-yellow-900/30">
                       <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="text-sm font-medium text-yellow-800 dark:text-yellow-300">{action.actionType}</div>
+                        <div className="text-sm font-medium text-yellow-800 dark:text-yellow-300">{tSync(action.actionType)}</div>
                         <div className="text-sm text-yellow-700 mt-1 dark:text-yellow-300/80">{action.description}</div>
                         {action.executedAt && (
                           <div className="text-xs text-yellow-600 mt-1">
-                            Executed: {new Date(action.executedAt).toLocaleString()}
+                            <TranslatedText text="Executed" />: {new Date(action.executedAt).toLocaleString()}
                           </div>
                         )}
                       </div>
@@ -534,7 +537,7 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Clock className="w-5 h-5 text-gray-400 dark:text-slate-500" />
-                  <span className="text-sm text-gray-600 dark:text-slate-400">Last Checked</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Last Checked" /></span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-slate-100">
                   {new Date(compliance.lastCheckedAt).toLocaleString()}

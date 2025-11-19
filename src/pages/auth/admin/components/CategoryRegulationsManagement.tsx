@@ -13,6 +13,8 @@ import {
 	fetchCategoryRegulationStats,
 	checkCompliance
 } from '../service';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 type RegulationForm = CreateCategoryRegulationInput;
 
@@ -31,6 +33,7 @@ const emptyForm: RegulationForm = {
 };
 
 export default function CategoryRegulationsManagement() {
+	const { tSync } = useTranslation();
 	const [items, setItems] = useState<CategoryRegulation[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);

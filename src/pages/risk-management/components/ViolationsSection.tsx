@@ -23,9 +23,12 @@ import ViolationDetailsModal from './ViolationDetailsModal';
 import ConfirmationDialog from './ConfirmationDialog';
 import { useToast } from '../../../contexts/ToastContext';
 import { formatDateUTC } from '../../../utils/dateUtils';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const ViolationsSection: React.FC = () => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<'all' | 'open' | 'investigating' | 'resolved'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -50,13 +53,13 @@ const ViolationsSection: React.FC = () => {
   const deleteViolationMutation = useMutation({
     mutationFn: riskManagementService.deleteViolation,
     onSuccess: () => {
-      showToast('Violation deleted successfully', 'success');
+      showToast(tSync('Violation deleted successfully'), 'success');
       queryClient.invalidateQueries({ queryKey: ['violations'] });
     },
     onError: (error: any) => {
       console.error('Error deleting violation:', error);
       showToast(
-        error.response?.data?.message || 'Failed to delete violation. Please try again.',
+        error.response?.data?.message || tSync('Failed to delete violation. Please try again.'),
         'error'
       );
     }

@@ -7,12 +7,15 @@ import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
 import VerificationDetailsModal from './VerificationDetailsModal';
 import { Users as UsersIcon } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface UserManagementProps {
   Button: React.FC<any>;
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
+  const { tSync } = useTranslation();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +116,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         }
       } catch (err) {
         console.error('Error fetching users:', err);
-        setError('Failed to fetch users');
+        setError(tSync('Failed to fetch users'));
       } finally {
         setLoading(false);
       }
@@ -356,7 +359,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
   if (users.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <EmptyState icon={<UsersIcon />} title="No users found" message="There are currently no users in the system. New users will appear here as they register." />
+        <EmptyState icon={<UsersIcon />} title={tSync("No users found")} message={tSync("There are currently no users in the system. New users will appear here as they register.")} />
       </div>
     );
   }
@@ -364,16 +367,16 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">User Management</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100"><TranslatedText text="User Management" /></h3>
         <div className="flex items-center space-x-3">
           <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center">
             <Filter className="w-4 h-4 mr-2" />
-            Filter
+            <TranslatedText text="Filter" />
           </Button>
           {activeTab === 'users' && (
             <Button className="bg-my-primary hover:bg-my-primary/80 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
               <Plus className="w-4 h-4 mr-2" />
-              Add User
+              <TranslatedText text="Add User" />
             </Button>
           )}
         </div>
@@ -390,7 +393,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Users</span>
+          <span><TranslatedText text="Users" /></span>
         </button>
                  <button
            onClick={() => setActiveTab('verifications')}
@@ -401,7 +404,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            }`}
          >
            <Shield className="w-4 h-4" />
-           <span>Verifications</span>
+           <span><TranslatedText text="Verifications" /></span>
          </button>
          <button
            onClick={() => setActiveTab('pending')}
@@ -412,7 +415,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
            }`}
          >
            <Calendar className="w-4 h-4" />
-           <span>Pending</span>
+           <span><TranslatedText text="Pending" /></span>
          </button>
       </div>
 
@@ -424,7 +427,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         <div className="bg-my-primary/10 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-my-primary font-medium">Total Users</p>
+              <p className="text-sm text-my-primary font-medium"><TranslatedText text="Total Users" /></p>
               <p className="text-2xl font-bold text-my-primary">{stats.total}</p>
             </div>
             <Users className="w-8 h-8 text-my-primary" />
@@ -433,7 +436,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         <div className="bg-green-50 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-600 font-medium">Verified</p>
+              <p className="text-sm text-green-600 font-medium"><TranslatedText text="Verified" /></p>
               <p className="text-2xl font-bold text-green-700">{stats.verified}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-600" />
@@ -442,7 +445,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         <div className="bg-yellow-50 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-yellow-600 font-medium">Pending</p>
+              <p className="text-sm text-yellow-600 font-medium"><TranslatedText text="Pending" /></p>
               <p className="text-2xl font-bold text-yellow-700">{stats.pending}</p>
             </div>
             <Calendar className="w-8 h-8 text-yellow-600" />
@@ -451,7 +454,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
         <div className="bg-purple-50 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-purple-600 font-medium">Hosts</p>
+              <p className="text-sm text-purple-600 font-medium"><TranslatedText text="Hosts" /></p>
               <p className="text-2xl font-bold text-purple-700">{stats.hosts}</p>
             </div>
             <Package className="w-8 h-8 text-purple-600" />
@@ -463,25 +466,25 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
+                <TranslatedText text="Name" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
+                <TranslatedText text="Email" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
+                <TranslatedText text="Role" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+                <TranslatedText text="Status" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                KYC Status
+                <TranslatedText text="KYC Status" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Joined
+                <TranslatedText text="Joined" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                <TranslatedText text="Actions" />
               </th>
             </tr>
           </thead>

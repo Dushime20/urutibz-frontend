@@ -8,9 +8,12 @@ import StatisticsSection from './components/StatisticsSection';
 import RiskAssessmentForm from './components/RiskAssessmentForm';
 import ComplianceChecker from './components/ComplianceChecker';
 import ProductRiskProfile from './components/ProductRiskProfile';
+import { useTranslation } from '../../hooks/useTranslation';
+import { TranslatedText } from '../../components/translated-text';
 
 const RiskManagementPage: React.FC = () => {
   const { user } = useAuth();
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>('profiles');
 
   // Check if user has admin privileges
@@ -106,14 +109,14 @@ const RiskManagementPage: React.FC = () => {
           <div className="py-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Risk Management</h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Risk Management" /></h1>
                 <p className="mt-2 text-gray-600 dark:text-slate-400">
-                  Comprehensive risk management and compliance monitoring system
+                  <TranslatedText text="Comprehensive risk management and compliance monitoring system" />
                 </p>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="text-sm text-gray-500 dark:text-slate-400">
-                  Role: <span className="font-medium capitalize text-gray-900 dark:text-slate-100">{user?.role}</span>
+                  <TranslatedText text="Role" />: <span className="font-medium capitalize text-gray-900 dark:text-slate-100">{user?.role}</span>
                 </div>
               </div>
             </div>
@@ -145,7 +148,7 @@ const RiskManagementPage: React.FC = () => {
                         isActive ? 'text-teal-500 dark:text-teal-400' : 'text-gray-400 dark:text-slate-500 group-hover:text-gray-500 dark:group-hover:text-slate-400'
                       }`}
                     />
-                    {tab.label}
+                    <TranslatedText text={tab.label} />
                   </button>
                 );
               })}
@@ -155,7 +158,7 @@ const RiskManagementPage: React.FC = () => {
           {/* Tab Description */}
           <div className="mt-4">
             <p className="text-sm text-gray-600 dark:text-slate-400">
-              {tabs.find(tab => tab.id === activeTab)?.description}
+              <TranslatedText text={tabs.find(tab => tab.id === activeTab)?.description || ''} />
             </p>
           </div>
         </div>

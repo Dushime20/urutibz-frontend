@@ -1,5 +1,6 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface Product {
   title: string;
@@ -22,7 +23,7 @@ const ProductCategoriesChart: React.FC<ProductCategoriesChartProps> = ({ topProd
 
   return (
     <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow">
-      <h3 className="font-medium text-gray-800 dark:text-gray-100 mb-4">Product Categories</h3>
+      <h3 className="font-medium text-gray-800 dark:text-gray-100 mb-4"><TranslatedText text="Product Categories" /></h3>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie

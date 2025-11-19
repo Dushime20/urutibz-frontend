@@ -3,8 +3,11 @@ import { Calendar, MapPin, Clock, CheckCircle, XCircle, AlertCircle, Eye, ArrowR
 import { useReturnSession } from '../../../hooks/useReturnSession';
 import { useAuth } from '../../../contexts/AuthContext';
 import { ReturnSession } from '../../../types/handoverReturn';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const ReturnSessionsList: React.FC = () => {
+  const { tSync } = useTranslation();
   const { user } = useAuth();
   const { sessions, meta, loading, error, getSessionsByUser } = useReturnSession();
   const [currentPage, setCurrentPage] = useState(1);
@@ -76,7 +79,7 @@ const ReturnSessionsList: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="text-center">
           <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Sessions</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2"><TranslatedText text="Error Loading Sessions" /></h3>
           <p className="text-gray-500">{error}</p>
         </div>
       </div>
@@ -89,14 +92,14 @@ const ReturnSessionsList: React.FC = () => {
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Return Sessions</h2>
+            <h2 className="text-lg font-semibold text-gray-900"><TranslatedText text="Return Sessions" /></h2>
             <p className="text-sm text-gray-500 mt-1">
-              {meta?.total || 0} total sessions
+              {meta?.total || 0} <TranslatedText text="total sessions" />
             </p>
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-500">
-              Page {currentPage} of {meta?.pages || 1}
+              <TranslatedText text="Page" /> {currentPage} <TranslatedText text="of" /> {meta?.pages || 1}
             </span>
           </div>
         </div>
@@ -107,8 +110,8 @@ const ReturnSessionsList: React.FC = () => {
         {sessions.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <ArrowRightLeft className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Return Sessions Found</h3>
-            <p className="text-gray-500">You don't have any return sessions yet.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2"><TranslatedText text="No Return Sessions Found" /></h3>
+            <p className="text-gray-500"><TranslatedText text="You don't have any return sessions yet." /></p>
           </div>
         ) : (
           sessions.map((session: ReturnSession) => (
@@ -119,10 +122,10 @@ const ReturnSessionsList: React.FC = () => {
                     {getStatusIcon(session.status)}
                     <div>
                       <h3 className="text-sm font-medium text-gray-900">
-                        Return #{session.id.slice(0, 8)}
+                        <TranslatedText text="Return" /> #{session.id.slice(0, 8)}
                       </h3>
                       <p className="text-xs text-gray-500">
-                        Booking: {session.bookingId.slice(0, 8)}...
+                        <TranslatedText text="Booking" />: {session.bookingId.slice(0, 8)}...
                       </p>
                     </div>
                   </div>
@@ -138,14 +141,14 @@ const ReturnSessionsList: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <MapPin className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-600 capitalize">
-                        {session.returnType}
+                        {tSync(session.returnType)}
                       </span>
                     </div>
                     
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-600">
-                        {session.estimatedDurationMinutes} min
+                        {session.estimatedDurationMinutes} <TranslatedText text="min" />
                       </span>
                     </div>
                   </div>
@@ -159,14 +162,14 @@ const ReturnSessionsList: React.FC = () => {
 
                   {session.handoverSessionId && (
                     <div className="mt-2 text-sm text-gray-500">
-                      <span className="font-medium">Handover Session:</span> {session.handoverSessionId.slice(0, 8)}...
+                      <span className="font-medium"><TranslatedText text="Handover Session" />:</span> {session.handoverSessionId.slice(0, 8)}...
                     </div>
                   )}
                 </div>
                 
                 <div className="flex items-center space-x-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}>
-                    {session.status.replace('_', ' ')}
+                    {tSync(session.status.replace('_', ' '))}
                   </span>
                   
                   <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -178,7 +181,7 @@ const ReturnSessionsList: React.FC = () => {
               {session.returnCode && (
                 <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Return Code:</span>
+                    <span className="text-sm font-medium text-gray-700"><TranslatedText text="Return Code" />:</span>
                     <span className="text-lg font-mono font-bold text-gray-900">
                       {session.returnCode}
                     </span>
@@ -189,7 +192,7 @@ const ReturnSessionsList: React.FC = () => {
               {session.conditionComparison && (
                 <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Condition Change:</span>
+                    <span className="text-sm font-medium text-gray-700"><TranslatedText text="Condition Change" />:</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       session.conditionComparison.overallConditionChange === 'same' 
                         ? 'bg-green-100 text-green-800'
@@ -197,7 +200,7 @@ const ReturnSessionsList: React.FC = () => {
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {session.conditionComparison.overallConditionChange}
+                      {tSync(session.conditionComparison.overallConditionChange)}
                     </span>
                   </div>
                 </div>
@@ -212,7 +215,7 @@ const ReturnSessionsList: React.FC = () => {
         <div className="px-6 py-4 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, meta.total)} of {meta.total} results
+              <TranslatedText text="Showing" /> {((currentPage - 1) * limit) + 1} <TranslatedText text="to" /> {Math.min(currentPage * limit, meta.total)} <TranslatedText text="of" /> {meta.total} <TranslatedText text="results" />
             </div>
             
             <div className="flex items-center space-x-2">
@@ -221,7 +224,7 @@ const ReturnSessionsList: React.FC = () => {
                 disabled={currentPage === 1}
                 className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                Previous
+                <TranslatedText text="Previous" />
               </button>
               
               <span className="px-3 py-1 text-sm text-gray-700">
@@ -233,7 +236,7 @@ const ReturnSessionsList: React.FC = () => {
                 disabled={currentPage === meta.pages}
                 className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                Next
+                <TranslatedText text="Next" />
               </button>
             </div>
           </div>

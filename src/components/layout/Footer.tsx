@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CurrencySelector, LanguageSelector } from '../ui/DesignSystem';
+import { CurrencySelector } from '../ui/DesignSystem';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TranslatedText } from '../translated-text';
@@ -14,17 +14,38 @@ const currencies = [
 ];
 
 const languages = [
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'rw', label: 'Kinyarwanda', flag: '🇷🇼' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'sw', label: 'Swahili', flag: '🇰🇪' },
+  { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
+  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+  { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', flag: '🇰🇪' },
+  { code: 'rw', name: 'Kinyarwanda', nativeName: 'Kinyarwanda', flag: '🇷🇼' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇵🇹' },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
+  { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹' },
+  { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
+  { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
+  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷' },
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'nl', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱' },
+  { code: 'pl', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱' },
+  { code: 'th', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
+  { code: 'uk', name: 'Ukrainian', nativeName: 'Українська', flag: '🇺🇦' }
 ];
 
 const Footer: React.FC = () => {
   const { settings } = useAdminSettingsContext();
-  const { tSync } = useTranslation();
+  const { tSync, language, setLanguage } = useTranslation();
   const platform = settings?.platform;
   const business = settings?.business;
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLanguage = e.target.value;
+    setLanguage(newLanguage);
+  };
   return (
     <footer className="bg-[#0b0d0f] text-white">
       <div className=" mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20 py-12">
@@ -104,11 +125,18 @@ const Footer: React.FC = () => {
                 aria-label={tSync('Select Currency')}
               />
               {/* Language selector */}
-              <LanguageSelector 
-                languages={languages} 
+              <select
+                value={language}
+                onChange={handleLanguageChange}
                 className="bg-white text-platform-dark-grey rounded-platform px-2 py-1 text-sm border border-white/20 focus:outline-none"
                 aria-label={tSync('Select Language')}
-              />
+              >
+                {languages.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.nativeName}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

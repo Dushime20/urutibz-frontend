@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { 
   LayoutGrid, 
   Users, 
@@ -27,6 +27,8 @@ import type { AuthContextType } from '../../../context/AuthContext';
 import { ToastContext } from '../../../contexts/ToastContext';
 import type { ToastContextType } from '../../../contexts/ToastContext';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -51,10 +53,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const { logout } = useContext<AuthContextType>(AuthContext);
   const { showToast } = useContext<ToastContextType>(ToastContext);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { tSync } = useTranslation();
 
   const handleLogout = () => {
     logout();
-    showToast('Logged out successfully', 'success');
+    showToast(tSync('Logged out successfully'), 'success');
     navigate('/login');
   };
 
@@ -177,7 +180,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             >
               <div className="flex items-center">
                 <group.icon className="w-5 h-5 mr-3 text-gray-600" />
-                <span className="font-medium text-gray-800 dark:text-gray-200">{group.label}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">
+                  <TranslatedText text={group.label} />
+                </span>
               </div>
               <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openGroups[group.key] ? 'rotate-180' : ''}`} />
             </button>
@@ -187,7 +192,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   <AdminNavigationItem
                     key={item.tab}
                     icon={item.icon}
-                    label={item.label}
+                    label={tSync(item.label)}
                     active={activeTab === item.tab}
                     onClick={() => setActiveTab(item.tab)}
                     hasNotification={item.hasNotification}
@@ -205,7 +210,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         <button 
           onClick={() => {
             toggleDarkMode();
-            showToast(`Switched to ${!isDarkMode ? 'dark' : 'light'} mode`, 'info');
+            showToast(tSync(!isDarkMode ? 'Switched to dark mode' : 'Switched to light mode'), 'info');
           }}
           className="w-full flex items-center px-4 py-2 rounded-lg text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
@@ -215,7 +220,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <Moon className="w-5 h-5 mr-3 text-gray-600" />
           )}
           <span className="flex-1">
-            {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+            <TranslatedText text={isDarkMode ? 'Light Mode' : 'Dark Mode'} />
           </span>
         </button>
 
@@ -225,7 +230,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           className="w-full flex items-center px-4 py-2 rounded-lg text-left text-red-600 hover:bg-red-50 transition-colors mt-2"
         >
           <LogOut className="w-5 h-5 mr-3 text-red-500" />
-          <span className="flex-1">Logout</span>
+          <span className="flex-1">
+            <TranslatedText text="Logout" />
+          </span>
         </button>
       </div>
     </div>

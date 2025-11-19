@@ -15,6 +15,8 @@ import {
 import { useProductRiskProfile } from '../hooks/useProductRiskProfile';
 import { useToast } from '../../../contexts/ToastContext';
 import { formatDateUTC } from '../../../utils/dateUtils';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface ProductRiskProfileProps {
   onProfileLoaded?: (profile: any) => void;
@@ -26,6 +28,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
   className = '' 
 }) => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const { profile, loading, error, getProfile, clearProfile } = useProductRiskProfile();
   const [productId, setProductId] = useState('');
   // Product autocomplete (no React Query)
@@ -83,7 +86,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
     e.preventDefault();
     
     if (!productId.trim()) {
-      showToast('Please enter a Product ID', 'error');
+      showToast(tSync('Please enter a Product ID'), 'error');
       return;
     }
 
@@ -162,7 +165,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showToast('Product risk profile exported successfully', 'success');
+    showToast(tSync('Product risk profile exported successfully'), 'success');
   };
 
   return (
@@ -173,8 +176,8 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
           <div className="flex items-center space-x-3">
             <Shield className="w-6 h-6 text-teal-600" />
             <div>
-              <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-slate-100">Product Risk Profile</h2>
-              <p className="text-sm text-gray-600 dark:text-slate-400">View product-specific risk information</p>
+              <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Product Risk Profile" /></h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="View product-specific risk information" /></p>
             </div>
           </div>
           {profile && (
@@ -184,14 +187,14 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export
+                <TranslatedText text="Export" />
               </button>
               <button
                 onClick={handleClear}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
               >
                 <XCircle className="w-4 h-4 mr-2" />
-                Clear
+                <TranslatedText text="Clear" />
               </button>
             </div>
           )}
@@ -204,7 +207,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
           <div>
             <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
               <Package className="w-4 h-4 inline mr-2" />
-              Product
+              <TranslatedText text="Product" />
             </label>
             <div className="flex gap-2 sm:space-x-3">
               <div className="relative flex-1">
@@ -226,7 +229,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                     }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
-                  placeholder="Search product by name"
+                  placeholder={tSync("Search product by name")}
                   disabled={loading}
                   autoComplete="off"
                 />
@@ -245,14 +248,14 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                           setShowProductOptions(false);
                         }}
                       >
-                        <div className="font-medium dark:text-slate-100">{p.name || p.productName || p.title || 'Unnamed product'}</div>
-                        <div className="text-xs text-gray-500 truncate dark:text-slate-400">ID: {p.id || p.productId}</div>
+                        <div className="font-medium dark:text-slate-100">{p.name || p.productName || p.title || tSync('Unnamed product')}</div>
+                        <div className="text-xs text-gray-500 truncate dark:text-slate-400"><TranslatedText text="ID" />: {p.id || p.productId}</div>
                       </li>
                     ))}
                   </ul>
                 )}
                 {productId && (
-                  <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">Selected Product ID: {productId}</div>
+                  <div className="mt-1 text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Selected Product ID" />: {productId}</div>
                 )}
               </div>
               <button
@@ -263,12 +266,12 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                 {loading ? (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Loading...
+                    <TranslatedText text="Loading..." />
                   </>
                 ) : (
                   <>
                     <Search className="w-4 h-4 mr-2" />
-                    Get Profile
+                    <TranslatedText text="Get Profile" />
                   </>
                 )}
               </button>
@@ -282,7 +285,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
             <div className="flex">
               <AlertTriangle className="w-5 h-5 text-red-400" />
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Failed to Load Profile</h3>
+                <h3 className="text-sm font-medium text-red-800"><TranslatedText text="Failed to Load Profile" /></h3>
                 <p className="text-sm text-red-700 mt-1">{error}</p>
               </div>
             </div>
@@ -294,21 +297,21 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
           <div className="mt-6 space-y-6">
             {/* Product Information */}
             <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Product Information</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Product Information" /></h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm text-gray-600">Product Name</div>
+                  <div className="text-sm text-gray-600"><TranslatedText text="Product Name" /></div>
                   <div className="text-lg font-medium text-gray-900">{profile.productName}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Category</div>
+                  <div className="text-sm text-gray-600"><TranslatedText text="Category" /></div>
                   <div className="text-lg font-medium text-gray-900">{profile.categoryName}</div>
                 </div>
                 {/* Product ID intentionally hidden per requirement */}
                 <div>
-                  <div className="text-sm text-gray-600">Risk Level</div>
+                  <div className="text-sm text-gray-600"><TranslatedText text="Risk Level" /></div>
                   <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getRiskLevelColor(profile.riskLevel)}`}>
-                    {profile.riskLevel.toUpperCase()}
+                    {tSync(profile.riskLevel)}
                   </div>
                 </div>
               </div>
@@ -316,25 +319,25 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
 
             {/* Mandatory Requirements */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Mandatory Requirements</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Mandatory Requirements" /></h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${profile.mandatoryRequirements.insurance ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-sm text-gray-700">Insurance Required</span>
+                  <span className="text-sm text-gray-700"><TranslatedText text="Insurance Required" /></span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${profile.mandatoryRequirements.inspection ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-sm text-gray-700">Inspection Required</span>
+                  <span className="text-sm text-gray-700"><TranslatedText text="Inspection Required" /></span>
                 </div>
                 <div className="col-span-2">
                   <div className="text-sm text-gray-700">
-                    Minimum Coverage: ${profile.mandatoryRequirements.minCoverage?.toLocaleString() || '0'}
+                    <TranslatedText text="Minimum Coverage" />: ${profile.mandatoryRequirements.minCoverage?.toLocaleString() || '0'}
                   </div>
                   <div className="text-sm text-gray-700 mt-1">
-                    Inspection Types: {profile.mandatoryRequirements.inspectionTypes?.join(', ') || 'None specified'}
+                    <TranslatedText text="Inspection Types" />: {profile.mandatoryRequirements.inspectionTypes?.join(', ') || tSync('None specified')}
                   </div>
                   <div className="text-sm text-gray-700 mt-1">
-                    Compliance Deadline: {profile.mandatoryRequirements.complianceDeadlineHours} hours
+                    <TranslatedText text="Compliance Deadline" />: {profile.mandatoryRequirements.complianceDeadlineHours} <TranslatedText text="hours" />
                   </div>
                 </div>
               </div>
@@ -343,7 +346,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
             {/* Risk Factors */}
             {profile.riskFactors.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Risk Factors</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Risk Factors" /></h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {profile.riskFactors.map((factor, index) => (
                     <div key={index} className="flex items-center space-x-3 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -358,7 +361,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
             {/* Mitigation Strategies */}
             {profile.mitigationStrategies.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Mitigation Strategies</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Mitigation Strategies" /></h3>
                 <div className="space-y-2">
                   {profile.mitigationStrategies.map((strategy, index) => (
                     <div key={index} className="flex items-start space-x-3 p-3 bg-green-50 border border-green-200 rounded-md">
@@ -372,23 +375,23 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
 
             {/* Enforcement Settings */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Enforcement Settings</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Enforcement Settings" /></h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <div className="text-sm text-gray-600">Enforcement Level</div>
+                  <div className="text-sm text-gray-600"><TranslatedText text="Enforcement Level" /></div>
                   <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getEnforcementLevelColor(profile.enforcementLevel)}`}>
-                    {profile.enforcementLevel.replace('_', ' ').toUpperCase()}
+                    {tSync(profile.enforcementLevel.replace('_', ' '))}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Auto Enforcement</div>
+                  <div className="text-sm text-gray-600"><TranslatedText text="Auto Enforcement" /></div>
                   <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${profile.autoEnforcement ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                    {profile.autoEnforcement ? 'ENABLED' : 'DISABLED'}
+                    {profile.autoEnforcement ? tSync('ENABLED') : tSync('DISABLED')}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Grace Period</div>
-                  <div className="text-lg font-medium text-gray-900">{profile.gracePeriodHours} hours</div>
+                  <div className="text-sm text-gray-600"><TranslatedText text="Grace Period" /></div>
+                  <div className="text-lg font-medium text-gray-900">{profile.gracePeriodHours} <TranslatedText text="hours" /></div>
                 </div>
               </div>
             </div>
@@ -399,18 +402,18 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                 <div className="flex items-center space-x-3">
                   <Calendar className="w-5 h-5 text-gray-400" />
                   <div>
-                    <div className="text-sm text-gray-600">Created</div>
+                    <div className="text-sm text-gray-600"><TranslatedText text="Created" /></div>
                     <div className="text-sm font-medium text-gray-900">
-                      {profile.createdAt ? formatDateUTC(profile.createdAt) : 'Unknown'}
+                      {profile.createdAt ? formatDateUTC(profile.createdAt) : tSync('Unknown')}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Settings className="w-5 h-5 text-gray-400" />
                   <div>
-                    <div className="text-sm text-gray-600">Last Updated</div>
+                    <div className="text-sm text-gray-600"><TranslatedText text="Last Updated" /></div>
                     <div className="text-sm font-medium text-gray-900">
-                      {profile.updatedAt ? formatDateUTC(profile.updatedAt) : 'Unknown'}
+                      {profile.updatedAt ? formatDateUTC(profile.updatedAt) : tSync('Unknown')}
                     </div>
                   </div>
                 </div>

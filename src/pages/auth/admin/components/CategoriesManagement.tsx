@@ -3,8 +3,11 @@ import { fetchCategories, createCategory, updateCategory, deleteCategory } from 
 import type { Category, CreateCategoryInput } from '../interfaces';
 import { Loader, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useToast } from '../../../contexts/ToastContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const CategoriesManagement: React.FC = () => {
+  const { tSync } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +48,7 @@ const CategoriesManagement: React.FC = () => {
       const data = await fetchCategories();
       setCategories(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load categories');
+      setError(err.message || tSync('Failed to load categories'));
     } finally {
       setLoading(false);
     }
@@ -66,9 +69,9 @@ const CategoriesManagement: React.FC = () => {
         slug: ''
       });
       await loadCategories(); // Refresh the list
-      showToast('Category created successfully!', 'success');
+      showToast(tSync('Category created successfully!'), 'success');
     } catch (err: any) {
-      setError(err.message || 'Failed to create category');
+      setError(err.message || tSync('Failed to create category'));
     } finally {
       setCreating(false);
     }
@@ -97,7 +100,7 @@ const CategoriesManagement: React.FC = () => {
       setShowEditModal(false);
       setEditingCategory(null);
       await loadCategories();
-      showToast('Category updated successfully!', 'success');
+      showToast(tSync('Category updated successfully!'), 'success');
     } catch (err: any) {
       setError(err.message || 'Failed to update category');
     } finally {
@@ -134,13 +137,13 @@ const CategoriesManagement: React.FC = () => {
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">Categories</h3>
+        <h3 className="text-xl font-bold text-gray-900"><TranslatedText text="Categories" /></h3>
         <button
           onClick={() => setShowCreateForm(true)}
           className="bg-my-primary hover:bg-my-primary/80 text-white px-4 py-2 rounded-xl transition-colors flex items-center"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Category
+          <TranslatedText text="Add Category" />
         </button>
       </div>
 

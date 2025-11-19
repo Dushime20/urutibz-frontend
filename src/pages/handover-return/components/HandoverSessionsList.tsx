@@ -6,8 +6,11 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { handoverReturnService } from '../../../services/handoverReturnService';
 import { HandoverSession, ReturnSession } from '../../../types/handoverReturn';
 import SessionDetailModal from './SessionDetailModal';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const HandoverSessionsList: React.FC = () => {
+  const { tSync } = useTranslation();
   const { user, isAdmin } = useAuth() as any;
   const { sessions: handoverSessions, meta: handoverMeta, loading: handoverLoading, error: handoverError, getSessionsByUser: getHandoverSessions } = useHandoverSession();
   const { sessions: returnSessions, meta: returnMeta, loading: returnLoading, error: returnError, getSessionsByUser: getReturnSessions } = useReturnSession();
@@ -41,7 +44,7 @@ const HandoverSessionsList: React.FC = () => {
           const meta = res?.meta ?? { total: normalized.length, pages: 1, page: 1, limit };
           setAdminMeta(meta);
         } catch (e: any) {
-          setAdminError(e?.message || 'Failed to load sessions');
+          setAdminError(e?.message || tSync('Failed to load sessions'));
           setAdminSessions([]);
           setAdminMeta({ total: 0, pages: 1 });
         } finally {
@@ -172,7 +175,7 @@ const HandoverSessionsList: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
         <div className="text-center">
           <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">Error Loading Sessions</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100"><TranslatedText text="Error Loading Sessions" /></h3>
           <p className="text-gray-500 dark:text-slate-400">{error}</p>
         </div>
       </div>
@@ -185,14 +188,14 @@ const HandoverSessionsList: React.FC = () => {
       <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">My Sessions</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="My Sessions" /></h2>
             <p className="text-sm text-gray-500 mt-1 dark:text-slate-400">
-              {currentMeta?.total || 0} total sessions
+              {currentMeta?.total || 0} <TranslatedText text="total sessions" />
             </p>
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-500 dark:text-slate-400">
-              Page {currentPage} of {currentMeta?.pages || 1}
+              <TranslatedText text="Page" /> {currentPage} <TranslatedText text="of" /> {currentMeta?.pages || 1}
             </span>
           </div>
         </div>
@@ -200,9 +203,9 @@ const HandoverSessionsList: React.FC = () => {
         {/* Session Type Tabs */}
         <div className="flex space-x-1 overflow-x-auto whitespace-nowrap bg-gray-100 p-1 rounded-lg dark:bg-slate-800">
           {[
-            { id: 'all', label: 'All Sessions', icon: Calendar },
-            { id: 'handover', label: 'Handover', icon: Package },
-            { id: 'return', label: 'Return', icon: ArrowRightLeft }
+            { id: 'all', label: tSync('All Sessions'), icon: Calendar },
+            { id: 'handover', label: tSync('Handover'), icon: Package },
+            { id: 'return', label: tSync('Return'), icon: ArrowRightLeft }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -230,8 +233,8 @@ const HandoverSessionsList: React.FC = () => {
         {currentSessions.length === 0 ? (
           <div className="px-4 sm:px-6 py-12 text-center">
             <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100">No Sessions Found</h3>
-            <p className="text-gray-500 dark:text-slate-400">You don't have any {activeTab === 'all' ? '' : activeTab} sessions yet.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2 dark:text-slate-100"><TranslatedText text="No Sessions Found" /></h3>
+            <p className="text-gray-500 dark:text-slate-400"><TranslatedText text="You don't have any" /> {activeTab === 'all' ? '' : tSync(activeTab)} <TranslatedText text="sessions yet." /></p>
           </div>
         ) : (
           currentSessions.map((session: any) => (
@@ -249,10 +252,10 @@ const HandoverSessionsList: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-900 dark:text-slate-100">
-                        {session.type === 'handover' ? 'Handover' : 'Return'} #{session.id.slice(0, 8)}
+                        {session.type === 'handover' ? tSync('Handover') : tSync('Return')} #{session.id.slice(0, 8)}
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-slate-400">
-                        Booking: {session.bookingId.slice(0, 8)}...
+                        <TranslatedText text="Booking" />: {session.bookingId.slice(0, 8)}...
                       </p>
                     </div>
                   </div>
@@ -268,14 +271,14 @@ const HandoverSessionsList: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <MapPin className="w-4 h-4 text-gray-400 dark:text-slate-500" />
                       <span className="text-gray-600 capitalize dark:text-slate-400">
-                        {session.type === 'handover' ? session.handoverType : session.returnType}
+                        {tSync(session.type === 'handover' ? session.handoverType : session.returnType)}
                       </span>
                     </div>
                     
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-gray-400 dark:text-slate-500" />
                       <span className="text-gray-600 dark:text-slate-400">
-                        {session.estimatedDurationMinutes} min
+                        {session.estimatedDurationMinutes} <TranslatedText text="min" />
                       </span>
                     </div>
                   </div>
@@ -290,21 +293,21 @@ const HandoverSessionsList: React.FC = () => {
                 
                 <div className="flex items-center space-x-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}>
-                    {session.status.replace('_', ' ')}
+                    {tSync(session.status.replace('_', ' '))}
                   </span>
                   
                   <div className="flex items-center space-x-1">
                     <button 
                       onClick={() => handleViewSession(session.id, session.type)}
                       className="p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-500 dark:hover:text-slate-300"
-                      title="View Details"
+                      title={tSync("View Details")}
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handleViewSession(session.id, session.type)}
                       className="p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-500 dark:hover:text-slate-300"
-                      title="Edit Session"
+                      title={tSync("Edit Session")}
                     >
                       <Edit className="w-4 h-4" />
                     </button>
@@ -316,7 +319,7 @@ const HandoverSessionsList: React.FC = () => {
                 <div className="mt-3 p-3 bg-gray-50 rounded-lg dark:bg-slate-800">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                      {session.type === 'handover' ? 'Handover' : 'Return'} Code:
+                      {session.type === 'handover' ? tSync('Handover') : tSync('Return')} <TranslatedText text="Code" />:
                     </span>
                     <span className="text-lg font-mono font-bold text-gray-900 dark:text-slate-100">
                       {session.type === 'handover' ? session.handoverCode : session.returnCode}
@@ -334,7 +337,7 @@ const HandoverSessionsList: React.FC = () => {
         <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500 dark:text-slate-400">
-              Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, currentMeta.total)} of {currentMeta.total} results
+              <TranslatedText text="Showing" /> {((currentPage - 1) * limit) + 1} <TranslatedText text="to" /> {Math.min(currentPage * limit, currentMeta.total)} <TranslatedText text="of" /> {currentMeta.total} <TranslatedText text="results" />
             </div>
             
             <div className="flex items-center space-x-2">
@@ -343,7 +346,7 @@ const HandoverSessionsList: React.FC = () => {
                 disabled={currentPage === 1}
                 className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-800"
               >
-                Previous
+                <TranslatedText text="Previous" />
               </button>
               
               <span className="px-3 py-1 text-sm text-gray-700 dark:text-slate-300">
@@ -355,7 +358,7 @@ const HandoverSessionsList: React.FC = () => {
                 disabled={currentPage === currentMeta.pages}
                 className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-800"
               >
-                Next
+                <TranslatedText text="Next" />
               </button>
             </div>
           </div>

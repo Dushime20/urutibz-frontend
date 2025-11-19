@@ -39,6 +39,8 @@ import type { AuthContextType } from '../../../context/AuthContext';
 import { ToastContext } from '../../../contexts/ToastContext';
 import type { ToastContextType } from '../../../contexts/ToastContext';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface AdminNavigationItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -69,6 +71,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const { logout } = useContext<AuthContextType>(AuthContext);
   const { showToast } = useContext<ToastContextType>(ToastContext);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { tSync } = useTranslation();
 
   // Close mobile menu when a navigation item is clicked
   const handleNavClick = (tab: AdminSidebarProps['activeTab']) => {
@@ -80,12 +83,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const handleToggleDarkMode = () => {
     toggleDarkMode();
-    showToast(`Switched to ${!isDarkMode ? 'dark' : 'light'} mode`, 'info');
+    showToast(
+      tSync(!isDarkMode ? 'Switched to dark mode' : 'Switched to light mode'),
+      'info'
+    );
   };
 
   const handleLogout = () => {
     logout();
-    showToast('Logged out successfully', 'success');
+    showToast(tSync('Logged out successfully'), 'success');
     navigate('/login');
   };
 
@@ -256,8 +262,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">Admin Panel</h2>
-                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">Dashboard</p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
+                  <TranslatedText text="Admin Panel" />
+                </h2>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
+                  <TranslatedText text="Dashboard" />
+                </p>
               </div>
             )}
           </div>
@@ -285,7 +295,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 >
                   <div className="flex items-center">
                     <group.icon className="w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" />
-                    <span className="font-medium text-gray-800 dark:text-gray-200">{group.label}</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">
+                      <TranslatedText text={group.label} />
+                    </span>
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${openGroups[group.key] ? 'rotate-180' : ''}`} />
                 </button>
@@ -309,7 +321,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 {/* Show group icon when collapsed - always visible */}
                 <button
                   onClick={() => toggleGroup(group.key)}
-                  title={group.label}
+                  title={tSync(group.label)}
                   className={`w-full flex items-center justify-center px-2 py-2.5 rounded-lg transition-all duration-200 group relative ${
                     openGroups[group.key]
                       ? 'bg-gray-100 dark:bg-gray-800'
@@ -318,7 +330,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 >
                   <group.icon className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0" />
                   <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-                    {group.label}
+                    {tSync(group.label)}
                   </div>
                 </button>
                 {/* Show items when group is open */}
@@ -330,7 +342,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         <button
                           key={item.tab}
                           onClick={() => handleNavClick(item.tab)}
-                          title={item.label}
+                          title={tSync(item.label)}
                           className={`w-full flex items-center justify-center px-2 py-2 rounded-lg transition-all duration-200 group relative ${
                             isActive
                               ? 'text-gray-900 dark:text-gray-100'
@@ -342,7 +354,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                             isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-slate-400'
                           }`} />
                           <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-                            {item.label}
+                            {tSync(item.label)}
                           </div>
                         </button>
                       );
@@ -360,7 +372,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {/* Dark Mode Toggle */}
         <button 
           onClick={handleToggleDarkMode}
-          title={isCollapsed ? (isDarkMode ? 'Light Mode' : 'Dark Mode') : ''}
+          title={
+            isCollapsed
+              ? tSync(isDarkMode ? 'Light Mode' : 'Dark Mode')
+              : ''
+          }
           className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group relative`}
         >
           {isDarkMode ? (
@@ -370,12 +386,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           )}
           {!isCollapsed && (
             <span className="flex-1 ml-3 text-gray-700 dark:text-gray-200">
-              {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+              <TranslatedText text={isDarkMode ? 'Light Mode' : 'Dark Mode'} />
             </span>
           )}
           {isCollapsed && (
             <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-              {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+              {tSync(isDarkMode ? 'Light Mode' : 'Dark Mode')}
             </div>
           )}
         </button>
@@ -383,16 +399,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {/* Logout Button */}
         <button
           onClick={handleLogout}
-          title={isCollapsed ? 'Logout' : ''}
+          title={isCollapsed ? tSync('Logout') : ''}
           className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-2.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mt-2 group relative`}
         >
           <LogOut className="w-5 h-5 text-red-500 flex-shrink-0" />
           {!isCollapsed && (
-            <span className="flex-1 ml-3">Logout</span>
+            <span className="flex-1 ml-3">
+              <TranslatedText text="Logout" />
+            </span>
           )}
           {isCollapsed && (
             <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-              Logout
+              {tSync('Logout')}
             </div>
           )}
         </button>

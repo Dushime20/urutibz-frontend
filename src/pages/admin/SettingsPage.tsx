@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { useAdminSettings } from '../../hooks/useAdminSettings';
 import { useToast } from '../../contexts/ToastContext';
+import { useTranslation } from '../../hooks/useTranslation';
+import { TranslatedText } from '../../components/translated-text';
 import { 
   Palette, 
   Building, 
@@ -43,6 +45,7 @@ interface SettingsTab {
 
 const SettingsPage: React.FC = () => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const { isDarkMode } = useDarkMode();
   
   const {
@@ -89,58 +92,58 @@ const SettingsPage: React.FC = () => {
   const settingsTabs: SettingsTab[] = [
     {
       id: 'theme',
-      label: 'Theme & Appearance',
+      label: tSync('Theme & Appearance'),
       icon: Palette,
-      description: 'Customize colors, fonts, and visual appearance',
+      description: tSync('Customize colors, fonts, and visual appearance'),
       component: ThemeSettingsForm,
     },
     {
       id: 'business',
-      label: 'Business Settings',
+      label: tSync('Business Settings'),
       icon: Building,
-      description: 'Company information and business rules',
+      description: tSync('Company information and business rules'),
       component: BusinessSettingsForm,
     },
     {
       id: 'system',
-      label: 'System Settings',
+      label: tSync('System Settings'),
       icon: Server,
-      description: 'Server configuration and performance',
+      description: tSync('Server configuration and performance'),
       component: SystemSettingsForm,
     },
     {
       id: 'security',
-      label: 'Security',
+      label: tSync('Security'),
       icon: Shield,
-      description: 'Authentication and security policies',
+      description: tSync('Authentication and security policies'),
       component: SecuritySettingsForm,
     },
     {
       id: 'notifications',
-      label: 'Notifications',
+      label: tSync('Notifications'),
       icon: Bell,
-      description: 'Email, SMS, and push notification settings',
+      description: tSync('Email, SMS, and push notification settings'),
       component: NotificationSettingsForm,
     },
     {
       id: 'platform',
-      label: 'Platform',
+      label: tSync('Platform'),
       icon: Globe,
-      description: 'Site configuration and user settings',
+      description: tSync('Site configuration and user settings'),
       component: PlatformSettingsForm,
     },
     {
       id: 'backup',
-      label: 'Backup & Recovery',
+      label: tSync('Backup & Recovery'),
       icon: Database,
-      description: 'Data backup and recovery settings',
+      description: tSync('Data backup and recovery settings'),
       component: BackupSettingsForm,
     },
     {
       id: 'analytics',
-      label: 'Analytics',
+      label: tSync('Analytics'),
       icon: BarChart3,
-      description: 'Tracking and analytics configuration',
+      description: tSync('Tracking and analytics configuration'),
       component: AnalyticsSettingsForm,
     },
   ];
@@ -156,15 +159,16 @@ const SettingsPage: React.FC = () => {
       setHasUnsavedChanges(false);
       await updateSettings(updates, section);
       setLastSaved(new Date());
-      showToast(`${section.charAt(0).toUpperCase() + section.slice(1)} settings updated successfully`, 'success');
+      const sectionLabel = settingsTabs.find(tab => tab.id === section)?.label || section;
+      showToast(`${sectionLabel} ${tSync('settings updated successfully')}`, 'success');
     } catch (error: any) {
-      showToast(error.message || 'Failed to update settings', 'error');
+      showToast(error.message || tSync('Failed to update settings'), 'error');
     }
   };
 
   // Handle settings reset
   const handleResetSettings = async () => {
-    if (!confirm('Are you sure you want to reset all settings to defaults? This action cannot be undone.')) {
+    if (!confirm(tSync('Are you sure you want to reset all settings to defaults? This action cannot be undone.'))) {
       return;
     }
 
@@ -172,9 +176,9 @@ const SettingsPage: React.FC = () => {
       await resetSettings();
       setHasUnsavedChanges(false);
       setLastSaved(new Date());
-      showToast('Settings reset to defaults successfully', 'success');
+      showToast(tSync('Settings reset to defaults successfully'), 'success');
     } catch (error: any) {
-      showToast(error.message || 'Failed to reset settings', 'error');
+      showToast(error.message || tSync('Failed to reset settings'), 'error');
     }
   };
 
@@ -191,9 +195,9 @@ const SettingsPage: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('Settings exported successfully', 'success');
+      showToast(tSync('Settings exported successfully'), 'success');
     } catch (error: any) {
-      showToast(error.message || 'Failed to export settings', 'error');
+      showToast(error.message || tSync('Failed to export settings'), 'error');
     }
   };
 
@@ -208,16 +212,16 @@ const SettingsPage: React.FC = () => {
         const content = e.target?.result as string;
         JSON.parse(content);
         
-        if (!confirm('Are you sure you want to import these settings? This will overwrite your current settings.')) {
+        if (!confirm(tSync('Are you sure you want to import these settings? This will overwrite your current settings.'))) {
           return;
         }
 
         await importSettings({ file, validateOnly: false });
         setHasUnsavedChanges(false);
         setLastSaved(new Date());
-        showToast('Settings imported successfully', 'success');
+        showToast(tSync('Settings imported successfully'), 'success');
       } catch (error: any) {
-        showToast(error.message || 'Failed to import settings', 'error');
+        showToast(error.message || tSync('Failed to import settings'), 'error');
       }
     };
     reader.readAsText(file);
@@ -227,9 +231,9 @@ const SettingsPage: React.FC = () => {
   const handleTriggerBackup = async () => {
     try {
       const backupData = await triggerBackup();
-      showToast(`Backup created successfully: ${backupData.filename}`, 'success');
+      showToast(`${tSync('Backup created successfully')}: ${backupData.filename}`, 'success');
     } catch (error: any) {
-      showToast(error.message || 'Failed to create backup', 'error');
+      showToast(error.message || tSync('Failed to create backup'), 'error');
     }
   };
 
@@ -237,21 +241,21 @@ const SettingsPage: React.FC = () => {
   const handleClearCache = async () => {
     try {
       await clearCache();
-      showToast('System cache cleared successfully', 'success');
+      showToast(tSync('System cache cleared successfully'), 'success');
     } catch (error: any) {
-      showToast(error.message || 'Failed to clear cache', 'error');
+      showToast(error.message || tSync('Failed to clear cache'), 'error');
     }
   };
 
   // Handle local storage clear
   const handleClearLocalStorage = () => {
-    const confirmed = confirm('This will clear all app data stored in your browser (including saved sessions). Continue?');
+    const confirmed = confirm(tSync('This will clear all app data stored in your browser (including saved sessions). Continue?'));
     if (!confirmed) return;
     try {
       localStorage.clear();
-      showToast('Local storage cleared. You may need to sign in again.', 'success');
+      showToast(tSync('Local storage cleared. You may need to sign in again.'), 'success');
     } catch (err: any) {
-      showToast(err?.message || 'Failed to clear local storage', 'error');
+      showToast(err?.message || tSync('Failed to clear local storage'), 'error');
     }
   };
 
@@ -261,7 +265,7 @@ const SettingsPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-teal-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading settings...</p>
+          <p className="text-gray-600 dark:text-gray-400"><TranslatedText text="Loading settings..." /></p>
         </div>
       </div>
     );
@@ -273,7 +277,9 @@ const SettingsPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Failed to Load Settings</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <TranslatedText text="Failed to Load Settings" />
+          </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
           <button
             onClick={() => {
@@ -282,7 +288,7 @@ const SettingsPage: React.FC = () => {
             }}
             className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
-            Try Again
+            <TranslatedText text="Try Again" />
           </button>
         </div>
       </div>
@@ -299,9 +305,11 @@ const SettingsPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Settings</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <TranslatedText text="Admin Settings" />
+              </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Configure your platform settings and preferences
+                <TranslatedText text="Configure your platform settings and preferences" />
               </p>
             </div>
             
@@ -313,7 +321,7 @@ const SettingsPage: React.FC = () => {
                 className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
+                <TranslatedText text="Refresh" />
               </button>
               
               <button
@@ -322,12 +330,12 @@ const SettingsPage: React.FC = () => {
                 className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export
+                <TranslatedText text="Export" />
               </button>
               
               <label className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center cursor-pointer disabled:opacity-50">
                 <Upload className="w-4 h-4 mr-2" />
-                Import
+                <TranslatedText text="Import" />
                 <input
                   type="file"
                   accept=".json"
@@ -343,7 +351,7 @@ const SettingsPage: React.FC = () => {
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center disabled:opacity-50"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Reset
+                <TranslatedText text="Reset" />
               </button>
             </div>
           </div>
@@ -356,7 +364,9 @@ const SettingsPage: React.FC = () => {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Server className="w-4 h-4 text-my-primary" />
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Settings Categories</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                <TranslatedText text="Settings Categories" />
+              </h3>
             </div>
           </div>
           <nav className="flex gap-4 border-b border-gray-200 dark:border-gray-700 pb-3">
@@ -389,21 +399,23 @@ const SettingsPage: React.FC = () => {
             {isSaving && (
               <div className="flex items-center text-my-primary">
                 <Clock className="w-4 h-4 mr-2 animate-spin" />
-                <span className="text-sm">Saving...</span>
+                <span className="text-sm">{tSync('Saving...')}</span>
               </div>
             )}
             
             {lastSaved && !isSaving && (
               <div className="flex items-center text-green-600 dark:text-green-400">
                 <CheckCircle className="w-4 h-4 mr-2" />
-                <span className="text-sm">Last saved: {lastSaved.toLocaleTimeString()}</span>
+                <span className="text-sm">
+                  {tSync('Last saved')}: {lastSaved.toLocaleTimeString()}
+                </span>
               </div>
             )}
             
             {!isSaving && !lastSaved && (
               <div className="flex items-center text-gray-500 dark:text-gray-400">
                 <Clock className="w-4 h-4 mr-2" />
-                <span className="text-sm">No recent saves</span>
+                <span className="text-sm">{tSync('No recent saves')}</span>
               </div>
             )}
           </div>
@@ -415,16 +427,16 @@ const SettingsPage: React.FC = () => {
               className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-colors text-sm flex items-center"
             >
               <HardDrive className="w-4 h-4 mr-2" />
-              Clear Cache
+              <TranslatedText text="Clear Cache" />
             </button>
 
             <button
               onClick={handleClearLocalStorage}
               className="bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-800/50 text-orange-700 dark:text-orange-300 px-4 py-2 rounded-lg transition-colors text-sm flex items-center"
-              title="Clears all local browser data for this app"
+              title={tSync('Clears all local browser data for this app')}
             >
               <HardDrive className="w-4 h-4 mr-2" />
-              Clear Local Storage
+              <TranslatedText text="Clear Local Storage" />
             </button>
             
             <button
@@ -433,7 +445,7 @@ const SettingsPage: React.FC = () => {
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors text-sm flex items-center disabled:opacity-50"
             >
               <Database className={`w-4 h-4 mr-2 ${isBackingUp ? 'animate-spin' : ''}`} />
-              {isBackingUp ? 'Backing up...' : 'Create Backup'}
+              {isBackingUp ? tSync('Backing up...') : tSync('Create Backup')}
             </button>
           </div>
         </div>
@@ -448,7 +460,7 @@ const SettingsPage: React.FC = () => {
                   <div className="flex items-center">
                     <AlertCircle className="w-5 h-5 text-red-500 mr-3" />
                     <div>
-                      <h4 className="text-red-800 dark:text-red-200 font-medium">Error</h4>
+                      <h4 className="text-red-800 dark:text-red-200 font-medium"><TranslatedText text="Error" /></h4>
                       <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
                     </div>
                   </div>
@@ -469,7 +481,7 @@ const SettingsPage: React.FC = () => {
                   <div className="flex items-center">
                     <AlertCircle className="w-5 h-5 text-yellow-500 mr-3" />
                     <div>
-                      <h4 className="text-yellow-800 dark:text-yellow-200 font-medium">Validation Errors</h4>
+                      <h4 className="text-yellow-800 dark:text-yellow-200 font-medium"><TranslatedText text="Validation Errors" /></h4>
                       <ul className="text-yellow-600 dark:text-yellow-400 text-sm mt-1">
                         {validationErrors.map((error, index) => (
                           <li key={index}>• {error.message}</li>

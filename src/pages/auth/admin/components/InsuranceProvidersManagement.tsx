@@ -10,6 +10,8 @@ import {
 } from '../service';
 import { fetchCountries } from '../service';
 import type { Country, CreateInsuranceProviderInput, InsuranceProvider } from '../interfaces';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const emptyForm: CreateInsuranceProviderInput = {
   country_id: '',
@@ -35,6 +37,7 @@ const emptyForm: CreateInsuranceProviderInput = {
 };
 
 export default function InsuranceProvidersManagement() {
+  const { tSync } = useTranslation();
   const [items, setItems] = useState<InsuranceProvider[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);

@@ -12,6 +12,8 @@ import {
 import { useRiskAssessment } from '../hooks/useRiskAssessment';
 import { useToast } from '../../../contexts/ToastContext';
 import ErrorBoundary from '../../../components/ErrorBoundary';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface RiskAssessmentFormProps {
   onAssessmentComplete?: (assessment: any) => void;
@@ -23,6 +25,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
   className = '' 
 }) => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const { assessment, loading, error, assessRisk, clearAssessment } = useRiskAssessment();
   const [formData, setFormData] = useState({
     productId: '',
@@ -126,7 +129,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
     e.preventDefault();
     
     if (!formData.productId.trim() || !formData.renterId.trim()) {
-      showToast('Please select both Product and Renter', 'error');
+      showToast(tSync('Please select both Product and Renter'), 'error');
       return;
     }
 
@@ -161,10 +164,10 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
   };
 
   const getRiskLevel = (score: number) => {
-    if (score >= 80) return 'Critical';
-    if (score >= 60) return 'High';
-    if (score >= 40) return 'Medium';
-    return 'Low';
+    if (score >= 80) return tSync('Critical');
+    if (score >= 60) return tSync('High');
+    if (score >= 40) return tSync('Medium');
+    return tSync('Low');
   };
 
   const getComplianceStatusColor = (status: string) => {
@@ -191,8 +194,8 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
           <div className="flex items-center space-x-3">
             <Shield className="w-6 h-6 text-teal-600" />
             <div>
-              <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-slate-100">Risk Assessment</h2>
-              <p className="text-sm text-gray-600 dark:text-slate-400">Evaluate risk for product-renter combination</p>
+              <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Risk Assessment" /></h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Evaluate risk for product-renter combination" /></p>
             </div>
           </div>
           {assessment && (
@@ -201,7 +204,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
               className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
             >
               <XCircle className="w-4 h-4 mr-2" />
-              Clear
+              <TranslatedText text="Clear" />
             </button>
           )}
         </div>
@@ -215,7 +218,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
             <div className="relative">
               <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 <Package className="w-4 h-4 inline mr-2" />
-                Product
+                <TranslatedText text="Product" />
               </label>
               <input
                 type="text"
@@ -236,7 +239,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
-                placeholder="Search product by name"
+                placeholder={tSync("Search product by name")}
                 disabled={loading}
                 autoComplete="off"
               />
@@ -255,8 +258,8 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
                         setShowProductOptions(false);
                       }}
                     >
-                      <div className="font-medium dark:text-slate-100">{p.name || p.productName || p.title || 'Unnamed product'}</div>
-                      <div className="text-xs text-gray-500 truncate dark:text-slate-400">ID: {p.id || p.productId}</div>
+                      <div className="font-medium dark:text-slate-100">{p.name || p.productName || p.title || tSync('Unnamed product')}</div>
+                      <div className="text-xs text-gray-500 truncate dark:text-slate-400"><TranslatedText text="ID" />: {p.id || p.productId}</div>
                     </li>
                   ))}
                   {filterProducts(productQuery).length > productOptions.length && (
@@ -269,13 +272,13 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
                         setProductOptions(all.slice(0, 200));
                       }}
                     >
-                      Show all results ({filterProducts(productQuery).length})
+                      <TranslatedText text="Show all results" /> ({filterProducts(productQuery).length})
                     </li>
                   )}
                 </ul>
               )}
               {formData.productId && (
-                <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">Selected Product ID: {formData.productId}</div>
+                <div className="mt-1 text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Selected Product ID" />: {formData.productId}</div>
               )}
             </div>
 
@@ -291,12 +294,12 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Assessing...
+                  <TranslatedText text="Assessing..." />
                 </>
               ) : (
                 <>
                   <Search className="w-4 h-4 mr-2" />
-                  Assess Risk
+                  <TranslatedText text="Assess Risk" />
                 </>
               )}
             </button>
@@ -309,7 +312,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
             <div className="flex">
               <AlertTriangle className="w-5 h-5 text-red-400" />
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Assessment Failed</h3>
+                <h3 className="text-sm font-medium text-red-800"><TranslatedText text="Assessment Failed" /></h3>
                 <p className="text-sm text-red-700 mt-1">{error}</p>
               </div>
             </div>
@@ -321,14 +324,14 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
           <div className="mt-6 space-y-6">
             {/* Overall Risk Score */}
             <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Overall Risk Assessment</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Overall Risk Assessment" /></h3>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-3xl font-bold text-gray-900">{assessment.overallRiskScore}</div>
-                  <div className="text-sm text-gray-600">Risk Score (0-100)</div>
+                  <div className="text-sm text-gray-600"><TranslatedText text="Risk Score" /> (0-100)</div>
                 </div>
                 <div className={`px-4 py-2 rounded-full text-sm font-medium ${getRiskLevelColor(assessment.overallRiskScore)}`}>
-                  {getRiskLevel(assessment.overallRiskScore)} Risk
+                  {getRiskLevel(assessment.overallRiskScore)} <TranslatedText text="Risk" />
                 </div>
               </div>
               <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
@@ -347,25 +350,25 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-white border border-gray-200 rounded-lg">
                 <div className="text-2xl font-bold text-gray-900">{assessment.riskFactors.productRisk}</div>
-                <div className="text-sm text-gray-600">Product Risk</div>
+                <div className="text-sm text-gray-600"><TranslatedText text="Product Risk" /></div>
               </div>
               <div className="text-center p-4 bg-white border border-gray-200 rounded-lg">
                 <div className="text-2xl font-bold text-gray-900">{assessment.riskFactors.renterRisk}</div>
-                <div className="text-sm text-gray-600">Renter Risk</div>
+                <div className="text-sm text-gray-600"><TranslatedText text="Renter Risk" /></div>
               </div>
               <div className="text-center p-4 bg-white border border-gray-200 rounded-lg">
                 <div className="text-2xl font-bold text-gray-900">{assessment.riskFactors.bookingRisk}</div>
-                <div className="text-sm text-gray-600">Booking Risk</div>
+                <div className="text-sm text-gray-600"><TranslatedText text="Booking Risk" /></div>
               </div>
               <div className="text-center p-4 bg-white border border-gray-200 rounded-lg">
                 <div className="text-2xl font-bold text-gray-900">{assessment.riskFactors.seasonalRisk}</div>
-                <div className="text-sm text-gray-600">Seasonal Risk</div>
+                <div className="text-sm text-gray-600"><TranslatedText text="Seasonal Risk" /></div>
               </div>
             </div>
 
             {/* Compliance Status */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Compliance Status</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Compliance Status" /></h3>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   {assessment.complianceStatus === 'compliant' ? (
@@ -374,33 +377,33 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
                     <XCircle className="w-6 h-6 text-red-600" />
                   )}
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getComplianceStatusColor(assessment.complianceStatus)}`}>
-                    {assessment.complianceStatus.replace('_', ' ').toUpperCase()}
+                    {tSync(assessment.complianceStatus.replace('_', ' '))}
                   </span>
                 </div>
                 <div className="text-sm text-gray-600">
-                  Assessed: {formatDateUTC(assessment.assessmentDate)}
+                  <TranslatedText text="Assessed" />: {formatDateUTC(assessment.assessmentDate)}
                 </div>
               </div>
             </div>
 
             {/* Mandatory Requirements */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Mandatory Requirements</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Mandatory Requirements" /></h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${assessment.mandatoryRequirements.insurance ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-sm text-gray-700">Insurance Required</span>
+                  <span className="text-sm text-gray-700"><TranslatedText text="Insurance Required" /></span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${assessment.mandatoryRequirements.inspection ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-sm text-gray-700">Inspection Required</span>
+                  <span className="text-sm text-gray-700"><TranslatedText text="Inspection Required" /></span>
                 </div>
                 <div className="col-span-2">
                   <div className="text-sm text-gray-700">
-                    Minimum Coverage: ${assessment.mandatoryRequirements.minCoverage?.toLocaleString() || '0'}
+                    <TranslatedText text="Minimum Coverage" />: ${assessment.mandatoryRequirements.minCoverage?.toLocaleString() || '0'}
                   </div>
                   <div className="text-sm text-gray-700 mt-1">
-                    Inspection Types: {assessment.mandatoryRequirements.inspectionTypes?.join(', ') || 'None specified'}
+                    <TranslatedText text="Inspection Types" />: {assessment.mandatoryRequirements.inspectionTypes?.join(', ') || tSync('None specified')}
                   </div>
                 </div>
               </div>
@@ -409,7 +412,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
             {/* Recommendations */}
             {assessment.recommendations.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Recommendations</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4"><TranslatedText text="Recommendations" /></h3>
                 <ul className="space-y-2">
                   {assessment.recommendations.map((recommendation, index) => (
                     <li key={index} className="flex items-start space-x-3">

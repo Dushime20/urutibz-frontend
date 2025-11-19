@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Filter, 
-  Calendar, 
-  MapPin, 
   Clock,
-  Eye,
-  Edit,
   Play,
   CheckCircle,
   AlertTriangle,
@@ -15,7 +11,6 @@ import {
 } from 'lucide-react';
 import { Inspection, InspectionFilters, InspectionStats, InspectionStatus, InspectionType } from '../../types/inspection';
 import { inspectionService } from '../../services/inspectionService';
-import StatusBadge from '../../components/inspections/StatusBadge';
 import QuickStatsCard from '../../components/inspections/QuickStatsCard';
 import InspectionFiltersPanel from '../../components/inspections/InspectionFiltersPanel';
 import InspectionTable from '../../components/inspections/InspectionTable';
@@ -47,8 +42,8 @@ const InspectionsDashboardPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await inspectionService.getInspections(filters, page, limit);
-      setInspections(response.inspections);
-      setTotal(response.total);
+      setInspections(response.data ?? []);
+      setTotal(response.total ?? (response.data?.length ?? 0));
     } catch (error) {
       console.error('Error loading inspections:', error);
     } finally {

@@ -5,6 +5,8 @@ import { useHandoverSession } from '../../../hooks/useHandoverSession';
 import { useReturnSession } from '../../../hooks/useReturnSession';
 import { useToast } from '../../../contexts/ToastContext';
 import { HandoverSession, ReturnSession, CompleteHandoverRequest, CompleteReturnRequest } from '../../../types/handoverReturn';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface SessionDetailModalProps {
   isOpen: boolean;
@@ -20,6 +22,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
   sessionType
 }) => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const { session: handoverSession, getSession: getHandoverSession, updateSession: updateHandoverSession, completeSession: completeHandoverSession, loading: handoverLoading } = useHandoverSession();
   const { session: returnSession, getSession: getReturnSession, updateSession: updateReturnSession, completeSession: completeReturnSession, loading: returnLoading } = useReturnSession();
   const [isEditing, setIsEditing] = useState(false);
@@ -165,10 +168,10 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
         await updateReturnSession(sessionId, updateData);
       }
 
-      showToast('Session updated successfully', 'success');
+      showToast(tSync('Session updated successfully'), 'success');
       setIsEditing(false);
     } catch (error: any) {
-      showToast(error.message || 'Failed to update session', 'error');
+      showToast(error.message || tSync('Failed to update session'), 'error');
     } finally {
       setSaving(false);
     }
@@ -233,7 +236,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
         await completeReturnSession(completeData as CompleteReturnRequest);
       }
 
-      showToast('Session completed successfully', 'success');
+      showToast(tSync('Session completed successfully'), 'success');
       setShowCompleteForm(false);
       // Refresh session data
       if (sessionType === 'handover') {
@@ -242,7 +245,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
         getReturnSession(sessionId);
       }
     } catch (error: any) {
-      showToast(error.message || 'Failed to complete session', 'error');
+      showToast(error.message || tSync('Failed to complete session'), 'error');
     } finally {
       setCompleting(false);
     }
@@ -293,10 +296,10 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               )}
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100">
-                  {sessionType === 'handover' ? 'Handover' : 'Return'} Session Details
+                  {sessionType === 'handover' ? <TranslatedText text="Handover" /> : <TranslatedText text="Return" />} <TranslatedText text="Session Details" />
                 </h2>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 break-all">
-                  Session #{session?.id?.slice(0, 8)}...
+                  <TranslatedText text="Session" /> #{session?.id?.slice(0, 8)}...
                 </p>
               </div>
             </div>
@@ -307,7 +310,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                   className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  Complete Session
+                  <TranslatedText text="Complete Session" />
                 </button>
               )}
               <button
@@ -315,7 +318,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-slate-700 text-sm font-medium rounded-md text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 <Edit className="w-4 h-4 mr-2" />
-                {isEditing ? 'Cancel' : 'Edit'}
+                {isEditing ? <TranslatedText text="Cancel" /> : <TranslatedText text="Edit" />}
               </button>
               <button
                 onClick={onClose}
@@ -340,31 +343,31 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                   <div className="flex items-center space-x-3">
                     {getStatusIcon(session.status)}
                     <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(session.status)}`}>
-                      {session.status.replace('_', ' ').toUpperCase()}
+                      {tSync(session.status.replace('_', ' '))}
                     </span>
                   </div>
                   <div className="text-xs sm:text-sm text-gray-500 dark:text-slate-400">
-                    Created: {formatDate(session.createdAt)}
+                    <TranslatedText text="Created" />: {formatDate(session.createdAt)}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Booking</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Booking" /></label>
                     <p className="text-sm text-gray-900 dark:text-slate-100 break-words">
                       {friendly.bookingName || '—'}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">{session.bookingId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Product</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Product" /></label>
                     <p className="text-sm text-gray-900 dark:text-slate-100 break-words">
                       {friendly.productName || '—'}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">{session.productId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Owner</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Owner" /></label>
                     <p className="text-sm text-gray-900 dark:text-slate-100 break-words">
                       {friendly.ownerName || '—'}
                     </p>
@@ -374,7 +377,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                     <p className="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">{session.ownerId}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Renter</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Renter" /></label>
                     <p className="text-sm text-gray-900 dark:text-slate-100 break-words">
                       {friendly.renterName || '—'}
                     </p>
@@ -385,11 +388,11 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
               {/* Session Details */}
               <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 sm:p-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4">Session Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4"><TranslatedText text="Session Details" /></h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Scheduled Date & Time</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Scheduled Date & Time" /></label>
                     {isEditing ? (
                       <input
                         type="datetime-local"
@@ -404,7 +407,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
                   <div>
                     <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                      {sessionType === 'handover' ? 'Handover' : 'Return'} Type
+                      {sessionType === 'handover' ? <TranslatedText text="Handover" /> : <TranslatedText text="Return" />} <TranslatedText text="Type" />
                     </label>
                     <p className="text-sm text-gray-900 dark:text-slate-100 capitalize">
                       {sessionType === 'handover' ? session.handoverType : session.returnType}
@@ -412,7 +415,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Estimated Duration</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Estimated Duration" /></label>
                     {isEditing ? (
                       <input
                         type="number"
@@ -421,13 +424,13 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:text-slate-100"
                       />
                     ) : (
-                      <p className="text-sm text-gray-900 dark:text-slate-100">{session.estimatedDurationMinutes} minutes</p>
+                      <p className="text-sm text-gray-900 dark:text-slate-100">{session.estimatedDurationMinutes} <TranslatedText text="minutes" /></p>
                     )}
                   </div>
 
                   <div>
                     <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                      {sessionType === 'handover' ? 'Handover' : 'Return'} Code
+                      {sessionType === 'handover' ? <TranslatedText text="Handover" /> : <TranslatedText text="Return" />} <TranslatedText text="Code" />
                     </label>
                     <p className="text-lg font-mono font-bold text-gray-900 dark:text-slate-100">
                       {sessionType === 'handover' ? session.handoverCode : session.returnCode}
@@ -436,12 +439,12 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 </div>
 
                 <div className="mt-3 sm:mt-4">
-                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Location</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Location" /></label>
                   {isEditing ? (
                     <div className="mt-1 space-y-2">
                       <input
                         type="text"
-                        placeholder="Address"
+                        placeholder={tSync("Address")}
                         value={editForm.location?.address || ''}
                         onChange={(e) => setEditForm({
                           ...editForm, 
@@ -451,7 +454,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                       />
                       <input
                         type="text"
-                        placeholder="Instructions"
+                        placeholder={tSync("Instructions")}
                         value={editForm.location?.instructions || ''}
                         onChange={(e) => setEditForm({
                           ...editForm, 
@@ -471,18 +474,18 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 </div>
 
                 <div className="mt-3 sm:mt-4">
-                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Notes</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300"><TranslatedText text="Notes" /></label>
                   {isEditing ? (
                     <textarea
                       rows={3}
                       value={editForm.notes}
                       onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:text-slate-100"
-                      placeholder="Add notes about this session..."
+                      placeholder={tSync("Add notes about this session...")}
                     />
                   ) : (
                     <p className="text-sm text-gray-900 dark:text-slate-100 mt-1 break-words">
-                      {session.notes || 'No notes added'}
+                      {session.notes || tSync('No notes added')}
                     </p>
                   )}
                 </div>
@@ -491,7 +494,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               {/* Return Session Specific Fields */}
               {sessionType === 'return' && session.handoverSessionId && (
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-lg p-3 sm:p-4">
-                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-2">Related Handover Session</h3>
+                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-2"><TranslatedText text="Related Handover Session" /></h3>
                   <p className="text-sm text-blue-800 dark:text-blue-300 font-mono break-all">{session.handoverSessionId}</p>
                 </div>
               )}
@@ -499,14 +502,14 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               {/* Condition Report (for handover sessions) */}
               {sessionType === 'handover' && session.conditionReport && (
                 <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/40 rounded-lg p-3 sm:p-4">
-                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 mb-2">Condition Report</h3>
+                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 mb-2"><TranslatedText text="Condition Report" /></h3>
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 text-sm">
                     <div>
-                      <span className="font-medium text-green-800 dark:text-green-300">Overall Condition:</span>
+                      <span className="font-medium text-green-800 dark:text-green-300"><TranslatedText text="Overall Condition" />:</span>
                       <span className="ml-2 capitalize text-green-700 dark:text-green-300/90">{session.conditionReport.overallCondition}</span>
                     </div>
                     <div>
-                      <span className="font-medium text-green-800 dark:text-green-300">Cleanliness:</span>
+                      <span className="font-medium text-green-800 dark:text-green-300"><TranslatedText text="Cleanliness" />:</span>
                       <span className="ml-2 capitalize text-green-700 dark:text-green-300/90">{session.conditionReport.cleanliness}</span>
                     </div>
                   </div>
@@ -516,9 +519,9 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               {/* Condition Comparison (for return sessions) */}
               {sessionType === 'return' && session.conditionComparison && (
                 <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/40 rounded-lg p-3 sm:p-4">
-                  <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-300 mb-2">Condition Comparison</h3>
+                  <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-300 mb-2"><TranslatedText text="Condition Comparison" /></h3>
                   <div className="text-sm">
-                    <span className="font-medium text-orange-800 dark:text-orange-300">Overall Change:</span>
+                    <span className="font-medium text-orange-800 dark:text-orange-300"><TranslatedText text="Overall Change" />:</span>
                     <span className="ml-2 capitalize text-orange-700 dark:text-orange-300/90">{session.conditionComparison.overallConditionChange}</span>
                   </div>
                 </div>
@@ -531,14 +534,14 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                     onClick={handleCancel}
                     className="px-4 py-2 border border-gray-300 dark:border-slate-700 text-sm font-medium rounded-md text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700"
                   >
-                    Cancel
+                    <TranslatedText text="Cancel" />
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={saving}
                     className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {saving ? 'Saving...' : 'Save Changes'}
+                    {saving ? <TranslatedText text="Saving..." /> : <TranslatedText text="Save Changes" />}
                   </button>
                 </div>
               )}
@@ -546,23 +549,23 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               {/* Complete Session Form */}
               {showCompleteForm && (
                 <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/40 rounded-lg p-3 sm:p-4 mt-6">
-                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 mb-3 sm:mb-4">Complete Session</h3>
+                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-300 mb-3 sm:mb-4"><TranslatedText text="Complete Session" /></h3>
                   
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                        Final Condition
+                        <TranslatedText text="Final Condition" />
                       </label>
                       <select
                         value={completeForm.finalCondition}
                         onChange={(e) => setCompleteForm({...completeForm, finalCondition: e.target.value})}
                         className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                       >
-                        <option value="excellent">Excellent</option>
-                        <option value="good">Good</option>
-                        <option value="fair">Fair</option>
-                        <option value="poor">Poor</option>
-                        <option value="damaged">Damaged</option>
+                        <option value="excellent"><TranslatedText text="Excellent" /></option>
+                        <option value="good"><TranslatedText text="Good" /></option>
+                        <option value="fair"><TranslatedText text="Fair" /></option>
+                        <option value="poor"><TranslatedText text="Poor" /></option>
+                        <option value="damaged"><TranslatedText text="Damaged" /></option>
                       </select>
                     </div>
 
@@ -570,7 +573,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                       <>
                         <div>
                           <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                            Overall Condition
+                            <TranslatedText text="Overall Condition" />
                           </label>
                           <select
                             value={completeForm.conditionReport?.overallCondition || 'good'}
@@ -583,17 +586,17 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                             })}
                             className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                           >
-                            <option value="excellent">Excellent</option>
-                            <option value="good">Good</option>
-                            <option value="fair">Fair</option>
-                            <option value="poor">Poor</option>
-                            <option value="damaged">Damaged</option>
+                            <option value="excellent"><TranslatedText text="Excellent" /></option>
+                            <option value="good"><TranslatedText text="Good" /></option>
+                            <option value="fair"><TranslatedText text="Fair" /></option>
+                            <option value="poor"><TranslatedText text="Poor" /></option>
+                            <option value="damaged"><TranslatedText text="Damaged" /></option>
                           </select>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                            Cleanliness
+                            <TranslatedText text="Cleanliness" />
                           </label>
                           <select
                             value={completeForm.conditionReport?.cleanliness || 'clean'}
@@ -606,17 +609,17 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                             })}
                             className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                           >
-                            <option value="very_clean">Very Clean</option>
-                            <option value="clean">Clean</option>
-                            <option value="acceptable">Acceptable</option>
-                            <option value="dirty">Dirty</option>
-                            <option value="very_dirty">Very Dirty</option>
+                            <option value="very_clean"><TranslatedText text="Very Clean" /></option>
+                            <option value="clean"><TranslatedText text="Clean" /></option>
+                            <option value="acceptable"><TranslatedText text="Acceptable" /></option>
+                            <option value="dirty"><TranslatedText text="Dirty" /></option>
+                            <option value="very_dirty"><TranslatedText text="Very Dirty" /></option>
                           </select>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                            Damage Notes
+                            <TranslatedText text="Damage Notes" />
                           </label>
                           <textarea
                             rows={2}
@@ -629,7 +632,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                               }
                             })}
                             className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
-                            placeholder="Describe any damage or issues..."
+                            placeholder={tSync("Describe any damage or issues...")}
                           />
                         </div>
                       </>
@@ -639,7 +642,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                       <>
                         <div>
                           <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                            Overall Condition Change
+                            <TranslatedText text="Overall Condition Change" />
                           </label>
                           <select
                             value={completeForm.conditionComparison?.overallConditionChange || 'no_change'}
@@ -652,17 +655,17 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                             })}
                             className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                           >
-                            <option value="improved">Improved</option>
-                            <option value="no_change">No Change</option>
-                            <option value="slightly_worse">Slightly Worse</option>
-                            <option value="significantly_worse">Significantly Worse</option>
-                            <option value="damaged">Damaged</option>
+                            <option value="improved"><TranslatedText text="Improved" /></option>
+                            <option value="no_change"><TranslatedText text="No Change" /></option>
+                            <option value="slightly_worse"><TranslatedText text="Slightly Worse" /></option>
+                            <option value="significantly_worse"><TranslatedText text="Significantly Worse" /></option>
+                            <option value="damaged"><TranslatedText text="Damaged" /></option>
                           </select>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                            Cleanliness Change
+                            <TranslatedText text="Cleanliness Change" />
                           </label>
                           <select
                             value={completeForm.conditionComparison?.cleanlinessChange || 'no_change'}
@@ -675,17 +678,17 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                             })}
                             className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
                           >
-                            <option value="improved">Improved</option>
-                            <option value="no_change">No Change</option>
-                            <option value="slightly_worse">Slightly Worse</option>
-                            <option value="significantly_worse">Significantly Worse</option>
-                            <option value="much_worse">Much Worse</option>
+                            <option value="improved"><TranslatedText text="Improved" /></option>
+                            <option value="no_change"><TranslatedText text="No Change" /></option>
+                            <option value="slightly_worse"><TranslatedText text="Slightly Worse" /></option>
+                            <option value="significantly_worse"><TranslatedText text="Significantly Worse" /></option>
+                            <option value="much_worse"><TranslatedText text="Much Worse" /></option>
                           </select>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                            Condition Change Notes
+                            <TranslatedText text="Condition Change Notes" />
                           </label>
                           <textarea
                             rows={2}
@@ -698,7 +701,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                               }
                             })}
                             className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
-                            placeholder="Describe any changes in condition since handover..."
+                            placeholder={tSync("Describe any changes in condition since handover...")}
                           />
                         </div>
                       </>
@@ -706,14 +709,14 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
                     <div>
                       <label className="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
-                        Completion Notes
+                        <TranslatedText text="Completion Notes" />
                       </label>
                       <textarea
                         rows={3}
                         value={completeForm.completionNotes}
                         onChange={(e) => setCompleteForm({...completeForm, completionNotes: e.target.value})}
                         className="block w-full px-3 py-2 border border-green-300 dark:border-green-900/40 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:text-slate-100"
-                        placeholder="Add any notes about the session completion..."
+                        placeholder={tSync("Add any notes about the session completion...")}
                       />
                     </div>
 
@@ -722,14 +725,14 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                         onClick={handleCancelComplete}
                         className="px-4 py-2 border border-green-300 dark:border-green-900/40 text-sm font-medium rounded-md text-green-700 dark:text-green-300 bg-white dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-slate-700"
                       >
-                        Cancel
+                        <TranslatedText text="Cancel" />
                       </button>
                       <button
                         onClick={handleCompleteSession}
                         disabled={completing}
                         className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {completing ? 'Completing...' : 'Complete Session'}
+                        {completing ? <TranslatedText text="Completing..." /> : <TranslatedText text="Complete Session" />}
                       </button>
                     </div>
                   </div>
@@ -738,7 +741,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-slate-400">Session not found</p>
+              <p className="text-gray-500 dark:text-slate-400"><TranslatedText text="Session not found" /></p>
             </div>
           )}
         </div>

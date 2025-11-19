@@ -16,6 +16,8 @@ import { CreateReturnSessionRequest } from '../../../types/handoverReturn';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import { fetchUserBookings, getProductById } from '../../my-account/service/api';
 import handoverReturnService from '../../../services/handoverReturnService';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface ReturnSessionFormProps {
   onSessionCreated?: (sessionId: string) => void;
@@ -27,6 +29,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
   className = '' 
 }) => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const { session, loading, error, createSession } = useReturnSession();
   const [bookings, setBookings] = useState<any[]>([]);
   const [bookingSearch, setBookingSearch] = useState('');
@@ -163,7 +166,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      showToast('Geolocation is not supported by this browser', 'error');
+      showToast(tSync('Geolocation is not supported by this browser'), 'error');
       return;
     }
 
@@ -177,15 +180,15 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             address: `${position.coords.latitude}, ${position.coords.longitude}`,
-            city: 'Current Location',
-            country: 'Unknown'
+            city: tSync('Current Location'),
+            country: tSync('Unknown')
           }
         }));
-        showToast('Location captured successfully', 'success');
+        showToast(tSync('Location captured successfully'), 'success');
       },
       (error) => {
         console.error('Error getting location:', error);
-        showToast('Failed to get current location', 'error');
+        showToast(tSync('Failed to get current location'), 'error');
         setLocationPermission(false);
       }
     );
@@ -197,22 +200,22 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
     if (!formData.bookingId.trim() || !formData.productId.trim() || 
         !formData.renterId.trim() || !formData.ownerId.trim() ||
         !formData.handoverSessionId.trim()) {
-      showToast('Please fill in all required fields', 'error');
+      showToast(tSync('Please fill in all required fields'), 'error');
       return;
     }
 
     if (!formData.returnType || !formData.scheduledDateTime) {
-      showToast('Please select return type and scheduled date/time', 'error');
+      showToast(tSync('Please select return type and scheduled date/time'), 'error');
       return;
     }
 
     if (!formData.location.address.trim()) {
-      showToast('Please provide return location', 'error');
+      showToast(tSync('Please provide return location'), 'error');
       return;
     }
 
     if (!currentUserId || String(formData.ownerId) !== String(currentUserId)) {
-      showToast('You can only create return sessions for your own items (owner role).', 'error');
+      showToast(tSync('You can only create return sessions for your own items (owner role).'), 'error');
       return;
     }
 
@@ -253,9 +256,9 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Create Return Session</h2>
+              <h2 className="text-lg font-semibold text-gray-900"><TranslatedText text="Create Return Session" /></h2>
               <p className="text-sm text-gray-600 mt-1">
-                Start a new return session for product return
+                <TranslatedText text="Start a new return session for product return" />
               </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -270,7 +273,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
           <div>
             <label htmlFor="booking" className="block text-sm font-medium text-gray-700 mb-2">
               <FileText className="w-4 h-4 inline mr-2" />
-              Booking *
+              <TranslatedText text="Booking" /> *
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <select
@@ -280,7 +283,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
                 required
                 disabled={loading || ownerBookings.length === 0}
               >
-                <option value="">Select booking</option>
+                <option value=""><TranslatedText text="Select booking" /></option>
                 {filteredBookings.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.productName}
@@ -289,7 +292,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
               </select>
               <input
                 type="text"
-                placeholder="Search your bookings..."
+                placeholder={tSync("Search your bookings...")}
                 className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 md:col-span-1 md:justify-self-end"
                 value={bookingSearch}
                 onChange={(e) => setBookingSearch(e.target.value)}
@@ -297,7 +300,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
               />
             </div>
             {ownerBookings.length === 0 && (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 mt-2">You have no bookings where you are the owner. Return sessions can only be created for your own items.</p>
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 mt-2"><TranslatedText text="You have no bookings where you are the owner. Return sessions can only be created for your own items." /></p>
             )}
           </div>
 
@@ -310,7 +313,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="returnType" className="block text-sm font-medium text-gray-700 mb-2">
-                Return Type *
+                <TranslatedText text="Return Type" /> *
               </label>
               <select
                 id="returnType"
@@ -321,14 +324,14 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
                 disabled={loading}
                 required
               >
-                <option value="pickup">Pickup</option>
-                <option value="delivery">Delivery</option>
-                <option value="meetup">Meetup</option>
+                <option value="pickup"><TranslatedText text="Pickup" /></option>
+                <option value="delivery"><TranslatedText text="Delivery" /></option>
+                <option value="meetup"><TranslatedText text="Meetup" /></option>
               </select>
             </div>
             <div>
               <label htmlFor="scheduledDateTime" className="block text-sm font-medium text-gray-700 mb-2">
-                Scheduled Date & Time *
+                <TranslatedText text="Scheduled Date & Time" /> *
               </label>
               <input
                 type="datetime-local"
@@ -345,7 +348,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Linked Handover Session *
+              <TranslatedText text="Linked Handover Session" /> *
             </label>
             <select
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
@@ -354,10 +357,10 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
               disabled={loading || !formData.bookingId || handoverOptions.length === 0}
               required
             >
-              <option value="">{handoverOptions.length ? 'Select handover session' : 'No handover sessions for this booking'}</option>
+              <option value="">{handoverOptions.length ? tSync('Select handover session') : tSync('No handover sessions for this booking')}</option>
               {handoverOptions.map((s:any) => (
                 <option key={s.id} value={s.id}>
-                  {s.status} • {new Date(s.updatedAt || s.createdAt).toLocaleString()}
+                  {tSync(s.status)} • {new Date(s.updatedAt || s.createdAt).toLocaleString()}
                 </option>
               ))}
             </select>
@@ -366,7 +369,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
           {/* Location Information */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-900">Return Location</h3>
+              <h3 className="text-sm font-medium text-gray-900"><TranslatedText text="Return Location" /></h3>
               <button
                 type="button"
                 onClick={getCurrentLocation}
@@ -374,14 +377,14 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
                 className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <MapPin className="w-4 h-4 mr-1" />
-                {locationPermission ? 'Location Captured' : 'Get Current Location'}
+                {locationPermission ? tSync('Location Captured') : tSync('Get Current Location')}
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="returnLocation.address" className="block text-sm font-medium text-gray-700 mb-2">
-                  Address *
+                  <TranslatedText text="Address" /> *
                 </label>
                 <input
                   type="text"
@@ -390,14 +393,14 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
                 value={formData.location.address}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="Enter return address"
+                  placeholder={tSync("Enter return address")}
                   disabled={loading}
                   required
                 />
               </div>
               <div>
                 <label htmlFor="returnLocation.city" className="block text-sm font-medium text-gray-700 mb-2">
-                  City
+                  <TranslatedText text="City" />
                 </label>
                 <input
                   type="text"
@@ -406,7 +409,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
                 value={formData.location.city}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="Enter city"
+                  placeholder={tSync("Enter city")}
                   disabled={loading}
                 />
               </div>
@@ -414,7 +417,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
 
             <div>
               <label htmlFor="returnLocation.country" className="block text-sm font-medium text-gray-700 mb-2">
-                Country
+                <TranslatedText text="Country" />
               </label>
               <input
                 type="text"
@@ -423,7 +426,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
                 value={formData.location.country}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Enter country"
+                placeholder={tSync("Enter country")}
                 disabled={loading}
               />
             </div>
@@ -432,7 +435,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
           {/* Notes */}
           <div>
             <label htmlFor="returnNotes" className="block text-sm font-medium text-gray-700 mb-2">
-              Return Notes
+              <TranslatedText text="Return Notes" />
             </label>
             <textarea
               id="returnNotes"
@@ -441,7 +444,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
               onChange={handleInputChange}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              placeholder="Add any additional notes for the return..."
+              placeholder={tSync("Add any additional notes for the return...")}
               disabled={loading}
             />
           </div>
@@ -453,7 +456,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
               <div className="flex">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">Error</h3>
+                  <h3 className="text-sm font-medium text-red-800"><TranslatedText text="Error" /></h3>
                   <p className="text-sm text-red-700 mt-1">{error}</p>
                 </div>
               </div>
@@ -468,7 +471,7 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
               disabled={loading}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Clear
+              <TranslatedText text="Clear" />
             </button>
             <button
               type="submit"
@@ -478,12 +481,12 @@ const ReturnSessionForm: React.FC<ReturnSessionFormProps> = ({
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  <TranslatedText text="Creating..." />
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Create Return Session
+                  <TranslatedText text="Create Return Session" />
                 </>
               )}
             </button>

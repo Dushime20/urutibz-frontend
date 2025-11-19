@@ -26,12 +26,15 @@ import {
   type ModelPerformanceMetrics,
   type InteractionTypesResponse
 } from '../service/ai';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface AIAnalyticsDashboardProps {
   token?: string;
 }
 
 const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) => {
+  const { tSync } = useTranslation();
   const [userBehavior, setUserBehavior] = useState<UserBehaviorAnalytics | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationAnalytics | null>(null);
   const [modelPerformance, setModelPerformance] = useState<ModelPerformanceMetrics | null>(null);
@@ -75,7 +78,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       setModelPerformance(performanceData);
       setInteractionTypes(typesData);
     } catch (err: any) {
-      setError(err.message || 'Failed to load AI analytics');
+      setError(err.message || tSync('Failed to load AI analytics'));
     } finally {
       setLoading(false);
     }
@@ -107,7 +110,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="w-8 h-8 animate-spin text-my-primary" />
-          <span className="ml-3 text-gray-600">Loading AI Analytics...</span>
+          <span className="ml-3 text-gray-600"><TranslatedText text="Loading AI Analytics..." /></span>
         </div>
       </div>
     );
@@ -122,7 +125,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
             onClick={loadAnalytics}
             className="px-4 py-2 bg-my-primary text-white rounded-lg hover:bg-my-primary/90"
           >
-            Retry
+            <TranslatedText text="Retry" />
           </button>
         </div>
       </div>
@@ -166,30 +169,30 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard
           icon={Activity}
-          title="Total Interactions"
+          title={tSync("Total Interactions")}
           value={userBehavior?.totalInteractions?.toLocaleString() || '0'}
-          subtitle="All time"
+          subtitle={tSync("All time")}
           color="bg-blue-500"
         />
         <StatCard
           icon={Users}
-          title="Unique Users"
+          title={tSync("Unique Users")}
           value={userBehavior?.uniqueUsers?.toLocaleString() || '0'}
-          subtitle="Active users"
+          subtitle={tSync("Active users")}
           color="bg-green-500"
         />
         <StatCard
           icon={MousePointer}
-          title="Top Action"
-          value={userBehavior?.topActions && userBehavior.topActions.length > 0 ? userBehavior.topActions[0].action : 'N/A'}
-          subtitle={userBehavior?.topActions && userBehavior.topActions.length > 0 ? `${userBehavior.topActions[0].count} times` : 'No data'}
+          title={tSync("Top Action")}
+          value={userBehavior?.topActions && userBehavior.topActions.length > 0 ? userBehavior.topActions[0].action : tSync('N/A')}
+          subtitle={userBehavior?.topActions && userBehavior.topActions.length > 0 ? `${userBehavior.topActions[0].count} ${tSync('times')}` : tSync('No data')}
           color="bg-purple-500"
         />
         <StatCard
           icon={Target}
-          title="Top Target"
-          value={userBehavior?.topTargets && userBehavior.topTargets.length > 0 ? userBehavior.topTargets[0].target : 'N/A'}
-          subtitle={userBehavior?.topTargets && userBehavior.topTargets.length > 0 ? `${userBehavior.topTargets[0].count} interactions` : 'No data'}
+          title={tSync("Top Target")}
+          value={userBehavior?.topTargets && userBehavior.topTargets.length > 0 ? userBehavior.topTargets[0].target : tSync('N/A')}
+          subtitle={userBehavior?.topTargets && userBehavior.topTargets.length > 0 ? `${userBehavior.topTargets[0].count} ${tSync('interactions')}` : tSync('No data')}
           color="bg-orange-500"
         />
       </div>
@@ -199,7 +202,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
         <div className="bg-white border border-gray-100 rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <Eye className="w-5 h-5 mr-2 text-blue-500" />
-            Interactions by Type
+            <TranslatedText text="Interactions by Type" />
           </h3>
           <div className="space-y-3">
             {userBehavior?.interactionsByType && Object.keys(userBehavior.interactionsByType).length > 0 ? Object.entries(userBehavior.interactionsByType).map(([type, count]) => (
@@ -208,7 +211,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
                 <span className="font-semibold">{count.toLocaleString()}</span>
               </div>
             )) : (
-              <div className="text-gray-500 text-center py-4">No interaction data available</div>
+              <div className="text-gray-500 text-center py-4"><TranslatedText text="No interaction data available" /></div>
             )}
           </div>
         </div>
@@ -216,7 +219,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
         <div className="bg-white border border-gray-100 rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <Target className="w-5 h-5 mr-2 text-orange-500" />
-            Interactions by Target
+            <TranslatedText text="Interactions by Target" />
           </h3>
           <div className="space-y-3">
             {userBehavior?.interactionsByTarget && Object.keys(userBehavior.interactionsByTarget).length > 0 ? Object.entries(userBehavior.interactionsByTarget).map(([target, count]) => (
@@ -225,7 +228,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
                 <span className="font-semibold">{count.toLocaleString()}</span>
               </div>
             )) : (
-              <div className="text-gray-500 text-center py-4">No target data available</div>
+              <div className="text-gray-500 text-center py-4"><TranslatedText text="No target data available" /></div>
             )}
           </div>
         </div>
@@ -240,7 +243,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="bg-white border border-gray-100 rounded-xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Start Date</label>
+            <label className="block text-sm text-gray-600 mb-1"><TranslatedText text="Start Date" /></label>
             <input
               type="date"
               value={recFilters.startDate || ''}
@@ -249,7 +252,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">End Date</label>
+            <label className="block text-sm text-gray-600 mb-1"><TranslatedText text="End Date" /></label>
             <input
               type="date"
               value={recFilters.endDate || ''}
@@ -258,23 +261,23 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Recommendation Type</label>
+            <label className="block text-sm text-gray-600 mb-1"><TranslatedText text="Recommendation Type" /></label>
             <select
               value={recFilters.recommendationType || ''}
               onChange={(e) => setRecFilters(prev => ({ ...prev, recommendationType: e.target.value || undefined }))}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
             >
-              <option value="">All</option>
-              <option value="similar_products">Similar Products</option>
-              <option value="category_suggestions">Category Suggestions</option>
-              <option value="trending_items">Trending Items</option>
-              <option value="personalized">Personalized</option>
+              <option value=""><TranslatedText text="All" /></option>
+              <option value="similar_products"><TranslatedText text="Similar Products" /></option>
+              <option value="category_suggestions"><TranslatedText text="Category Suggestions" /></option>
+              <option value="trending_items"><TranslatedText text="Trending Items" /></option>
+              <option value="personalized"><TranslatedText text="Personalized" /></option>
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">User ID (optional)</label>
+            <label className="block text-sm text-gray-600 mb-1"><TranslatedText text="User ID (optional)" /></label>
             <input
-              placeholder="Filter by userId"
+              placeholder={tSync("Filter by userId")}
               value={recFilters.userId || ''}
               onChange={(e) => setRecFilters(prev => ({ ...prev, userId: e.target.value || undefined }))}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary"
@@ -289,14 +292,14 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
             })}
             className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
           >
-            Reset
+            <TranslatedText text="Reset" />
           </button>
         </div>
       </div>
 
       {recLoading && (
         <div className="flex items-center text-sm text-gray-600">
-          <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Updating recommendations...
+          <RefreshCw className="w-4 h-4 animate-spin mr-2" /> <TranslatedText text="Updating recommendations..." />
         </div>
       )}
 
@@ -304,30 +307,30 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard
           icon={Target}
-          title="Total Recommendations"
+          title={tSync("Total Recommendations")}
           value={recommendations?.totalRecommendations?.toLocaleString() || '0'}
-          subtitle="All time"
+          subtitle={tSync("All time")}
           color="bg-blue-500"
         />
         <StatCard
           icon={CheckCircle}
-          title="Accepted"
+          title={tSync("Accepted")}
           value={recommendations?.acceptedRecommendations?.toLocaleString() || '0'}
-          subtitle="Successfully accepted"
+          subtitle={tSync("Successfully accepted")}
           color="bg-green-500"
         />
         <StatCard
           icon={XCircle}
-          title="Rejection Rate"
+          title={tSync("Rejection Rate")}
           value={`${((recommendations?.rejectionRate || 0) * 100).toFixed(1)}%`}
-          subtitle="Recommendations rejected"
+          subtitle={tSync("Recommendations rejected")}
           color="bg-red-500"
         />
         <StatCard
           icon={TrendingUp}
-          title="Top Type"
-          value={recommendations?.topRecommendationTypes && recommendations.topRecommendationTypes.length > 0 ? recommendations.topRecommendationTypes[0].type.replace('_', ' ') : 'N/A'}
-          subtitle={recommendations?.topRecommendationTypes && recommendations.topRecommendationTypes.length > 0 ? `${((recommendations.topRecommendationTypes[0].acceptanceRate || 0) * 100).toFixed(1)}% acceptance` : 'No data'}
+          title={tSync("Top Type")}
+          value={recommendations?.topRecommendationTypes && recommendations.topRecommendationTypes.length > 0 ? recommendations.topRecommendationTypes[0].type.replace('_', ' ') : tSync('N/A')}
+          subtitle={recommendations?.topRecommendationTypes && recommendations.topRecommendationTypes.length > 0 ? `${((recommendations.topRecommendationTypes[0].acceptanceRate || 0) * 100).toFixed(1)}% ${tSync('acceptance')}` : tSync('No data')}
           color="bg-purple-500"
         />
       </div>
@@ -336,7 +339,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="bg-white border border-gray-100 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <BarChart3 className="w-5 h-5 mr-2 text-purple-500" />
-          Recommendations by Type
+          <TranslatedText text="Recommendations by Type" />
         </h3>
         <div className="space-y-3">
           {recommendations?.topRecommendationTypes && recommendations.topRecommendationTypes.length > 0 ? recommendations.topRecommendationTypes.map((recType) => (
@@ -345,30 +348,30 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
               <div className="flex items-center space-x-3">
                 <span className="font-semibold">{recType.count}</span>
                 <span className="text-sm text-gray-500">
-                  {((recType.acceptanceRate || 0) * 100).toFixed(1)}% acceptance
+                  {((recType.acceptanceRate || 0) * 100).toFixed(1)}% {tSync('acceptance')}
                 </span>
               </div>
             </div>
           )) : (
-            <div className="text-gray-500 text-center py-4">No recommendation data available</div>
+            <div className="text-gray-500 text-center py-4"><TranslatedText text="No recommendation data available" /></div>
           )}
         </div>
       </div>
 
       {/* User Engagement List */}
       <div className="bg-white border border-gray-100 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">User Engagement</h3>
+        <h3 className="text-lg font-semibold mb-4"><TranslatedText text="User Engagement" /></h3>
         {recommendations?.userEngagement && recommendations.userEngagement.length > 0 ? (
           <div className="space-y-2">
             {recommendations.userEngagement.slice(0, 10).map((u) => (
               <div key={u.userId} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                 <div className="text-gray-900 font-medium">{u.userId}</div>
-                <div className="text-sm text-gray-600">{u.accepted}/{u.recommendations} accepted</div>
+                <div className="text-sm text-gray-600">{u.accepted}/{u.recommendations} <TranslatedText text="accepted" /></div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-gray-500 text-center py-4">No user engagement data</div>
+          <div className="text-gray-500 text-center py-4"><TranslatedText text="No user engagement data" /></div>
         )}
       </div>
     </div>
@@ -380,27 +383,27 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="bg-white border border-gray-100 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <Brain className="w-5 h-5 mr-2 text-purple-500" />
-          Model Information
+          <TranslatedText text="Model Information" />
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <span className="text-gray-600">Model Type:</span>
+            <span className="text-gray-600"><TranslatedText text="Model Type" />:</span>
             <span className="ml-2 font-semibold capitalize">{modelPerformance?.modelType.replace('_', ' ')}</span>
           </div>
           <div>
-            <span className="text-gray-600">Version:</span>
-            <span className="ml-2 font-semibold">{modelPerformance?.version || 'N/A'}</span>
+            <span className="text-gray-600"><TranslatedText text="Version" />:</span>
+            <span className="ml-2 font-semibold">{modelPerformance?.version || tSync('N/A')}</span>
           </div>
           <div>
-            <span className="text-gray-600">Last Updated:</span>
+            <span className="text-gray-600"><TranslatedText text="Last Updated" />:</span>
             <span className="ml-2 font-semibold">
-              {modelPerformance?.lastUpdated ? new Date(modelPerformance.lastUpdated).toLocaleDateString() : 'N/A'}
+              {modelPerformance?.lastUpdated ? new Date(modelPerformance.lastUpdated).toLocaleDateString() : tSync('N/A')}
             </span>
           </div>
           <div>
-            <span className="text-gray-600">Training Data:</span>
+            <span className="text-gray-600"><TranslatedText text="Training Data" />:</span>
             <span className="ml-2 font-semibold">
-              {modelPerformance?.trainingDataSize ? `${(modelPerformance.trainingDataSize / 1000).toFixed(1)}K samples` : 'N/A'}
+              {modelPerformance?.trainingDataSize ? `${(modelPerformance.trainingDataSize / 1000).toFixed(1)}K ${tSync('samples')}` : tSync('N/A')}
             </span>
           </div>
         </div>
@@ -411,23 +414,23 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
         <div className="bg-white border border-gray-100 rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <Target className="w-5 h-5 mr-2 text-green-500" />
-            Accuracy Metrics
+            <TranslatedText text="Accuracy Metrics" />
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Accuracy:</span>
+              <span className="text-gray-600"><TranslatedText text="Accuracy" />:</span>
               <span className="font-semibold">{((modelPerformance?.accuracy || 0) * 100).toFixed(1)}%</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Precision:</span>
+              <span className="text-gray-600"><TranslatedText text="Precision" />:</span>
               <span className="font-semibold">{((modelPerformance?.precision || 0) * 100).toFixed(1)}%</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Recall:</span>
+              <span className="text-gray-600"><TranslatedText text="Recall" />:</span>
               <span className="font-semibold">{((modelPerformance?.recall || 0) * 100).toFixed(1)}%</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">F1 Score:</span>
+              <span className="text-gray-600"><TranslatedText text="F1 Score" />:</span>
               <span className="font-semibold">{((modelPerformance?.f1Score || 0) * 100).toFixed(1)}%</span>
             </div>
           </div>
@@ -436,16 +439,16 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
         <div className="bg-white border border-gray-100 rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <Activity className="w-5 h-5 mr-2 text-blue-500" />
-            Performance Metrics
+            <TranslatedText text="Performance Metrics" />
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Latency:</span>
+              <span className="text-gray-600"><TranslatedText text="Latency" />:</span>
               <span className="font-semibold">{modelPerformance?.latency || 0}ms</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Throughput:</span>
-              <span className="font-semibold">{modelPerformance?.throughput || 0} req/s</span>
+              <span className="text-gray-600"><TranslatedText text="Throughput" />:</span>
+              <span className="font-semibold">{modelPerformance?.throughput || 0} <TranslatedText text="req/s" /></span>
             </div>
           </div>
         </div>
@@ -459,23 +462,23 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           icon={MousePointer}
-          title="Action Types"
+          title={tSync("Action Types")}
           value={interactionTypes?.actionTypes.length || 0}
-          subtitle="Available actions"
+          subtitle={tSync("Available actions")}
           color="bg-blue-500"
         />
         <StatCard
           icon={Target}
-          title="Target Types"
+          title={tSync("Target Types")}
           value={interactionTypes?.targetTypes.length || 0}
-          subtitle="Available targets"
+          subtitle={tSync("Available targets")}
           color="bg-green-500"
         />
         <StatCard
           icon={Activity}
-          title="Device Types"
+          title={tSync("Device Types")}
           value={interactionTypes?.deviceTypes.length || 0}
-          subtitle="Supported devices"
+          subtitle={tSync("Supported devices")}
           color="bg-purple-500"
         />
       </div>
@@ -484,7 +487,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="bg-white border border-gray-100 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <MousePointer className="w-5 h-5 mr-2 text-blue-500" />
-          Available Action Types
+          <TranslatedText text="Available Action Types" />
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {interactionTypes?.actionTypes.map((actionType) => (
@@ -492,7 +495,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
               <span className="text-sm font-medium text-blue-800 capitalize">{actionType}</span>
             </div>
           )) || (
-            <div className="text-gray-500 text-center py-4">No action types available</div>
+            <div className="text-gray-500 text-center py-4"><TranslatedText text="No action types available" /></div>
           )}
         </div>
       </div>
@@ -501,7 +504,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="bg-white border border-gray-100 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <Target className="w-5 h-5 mr-2 text-green-500" />
-          Available Target Types
+          <TranslatedText text="Available Target Types" />
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {interactionTypes?.targetTypes.map((targetType) => (
@@ -509,7 +512,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
               <span className="text-sm font-medium text-green-800 capitalize">{targetType.replace('_', ' ')}</span>
             </div>
           )) || (
-            <div className="text-gray-500 text-center py-4">No target types available</div>
+            <div className="text-gray-500 text-center py-4"><TranslatedText text="No target types available" /></div>
           )}
         </div>
       </div>
@@ -518,7 +521,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
       <div className="bg-white border border-gray-100 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <Activity className="w-5 h-5 mr-2 text-purple-500" />
-          Supported Device Types
+          <TranslatedText text="Supported Device Types" />
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {interactionTypes?.deviceTypes.map((deviceType) => (
@@ -526,7 +529,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
               <span className="text-sm font-medium text-purple-800 capitalize">{deviceType}</span>
             </div>
           )) || (
-            <div className="text-gray-500 text-center py-4">No device types available</div>
+            <div className="text-gray-500 text-center py-4"><TranslatedText text="No device types available" /></div>
           )}
         </div>
       </div>
@@ -536,13 +539,13 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">AI Analytics Dashboard</h3>
+        <h3 className="text-xl font-bold text-gray-900"><TranslatedText text="AI Analytics Dashboard" /></h3>
         <button 
           onClick={loadAnalytics}
           className="inline-flex items-center px-3 py-2 rounded-lg bg-my-primary text-white hover:bg-my-primary/90"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
+          <TranslatedText text="Refresh" />
         </button>
       </div>
 
@@ -557,7 +560,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
           }`}
         >
           <Eye className="w-4 h-4 inline mr-2" />
-          User Behavior
+          <TranslatedText text="User Behavior" />
         </button>
         <button
           onClick={() => setActiveTab('recommendations')}
@@ -568,7 +571,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
           }`}
         >
           <Target className="w-4 h-4 inline mr-2" />
-          Recommendations
+          <TranslatedText text="Recommendations" />
         </button>
                  <button
            onClick={() => setActiveTab('performance')}
@@ -579,7 +582,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
            }`}
          >
            <Brain className="w-4 h-4 inline mr-2" />
-           Model Performance
+           <TranslatedText text="Model Performance" />
          </button>
          <button
            onClick={() => setActiveTab('types')}
@@ -590,7 +593,7 @@ const AIAnalyticsDashboard: React.FC<AIAnalyticsDashboardProps> = ({ token }) =>
            }`}
          >
            <Filter className="w-4 h-4 inline mr-2" />
-           Interaction Types
+           <TranslatedText text="Interaction Types" />
          </button>
       </div>
 

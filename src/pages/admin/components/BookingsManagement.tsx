@@ -3,6 +3,8 @@ import { format } from 'date-fns';
 import { type AdminBooking, fetchAdminBookings, overrideBooking } from '../service';
 import { adminCancelBooking, processRefund } from '../../my-account/service/api';
 import { Eye, MoreVertical, Edit, RefreshCw, Filter, X, Search, AlertTriangle, DollarSign } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 import BookingDetailsModal from './BookingDetailsModal';
 import Pagination from '../../../components/ui/Pagination';
 
@@ -11,6 +13,7 @@ interface BookingsManagementProps {
 }
 
 const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
+  const { tSync } = useTranslation();
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -419,10 +422,10 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
       <div className="p-6 border-b border-gray-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Bookings Management</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Bookings Management" /></h2>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-500 dark:text-slate-400">
-              Total Bookings: {totalBookings} | Showing: {filteredBookings.length}
+              <TranslatedText text="Total Bookings" />: {totalBookings} | <TranslatedText text="Showing" />: {filteredBookings.length}
             </span>
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -433,7 +436,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
               }`}
             >
               <Filter className="w-4 h-4 mr-2" />
-              Filters
+              <TranslatedText text="Filters" />
               {hasActiveFilters && (
                 <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
                   {[statusFilter !== 'all', paymentStatusFilter !== 'all', dateRangeFilter.start, dateRangeFilter.end, customerSearch, productSearch].filter(Boolean).length}
@@ -450,44 +453,44 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
               {/* Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Status
+                  <TranslatedText text="Status" />
                 </label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="all"><TranslatedText text="All Status" /></option>
+                  <option value="pending"><TranslatedText text="Pending" /></option>
+                  <option value="confirmed"><TranslatedText text="Confirmed" /></option>
+                  <option value="in_progress"><TranslatedText text="In Progress" /></option>
+                  <option value="completed"><TranslatedText text="Completed" /></option>
+                  <option value="cancelled"><TranslatedText text="Cancelled" /></option>
                 </select>
               </div>
 
               {/* Payment Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Payment Status
+                  <TranslatedText text="Payment Status" />
                 </label>
                 <select
                   value={paymentStatusFilter}
                   onChange={(e) => setPaymentStatusFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
                 >
-                  <option value="all">All Payment</option>
-                  <option value="paid">Paid</option>
-                  <option value="pending">Pending</option>
-                  <option value="failed">Failed</option>
-                  <option value="refunded">Refunded</option>
+                  <option value="all"><TranslatedText text="All Payment" /></option>
+                  <option value="paid"><TranslatedText text="Paid" /></option>
+                  <option value="pending"><TranslatedText text="Pending" /></option>
+                  <option value="failed"><TranslatedText text="Failed" /></option>
+                  <option value="refunded"><TranslatedText text="Refunded" /></option>
                 </select>
               </div>
 
               {/* Start Date Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Start Date From
+                  <TranslatedText text="Start Date From" />
                 </label>
                 <input
                   type="date"
@@ -500,7 +503,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
               {/* End Date Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  End Date To
+                  <TranslatedText text="End Date To" />
                 </label>
                 <input
                   type="date"
@@ -513,13 +516,13 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
               {/* Customer Search */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Customer Search
+                  <TranslatedText text="Customer Search" />
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Name or email..."
+                    placeholder={tSync("Name or email...")}
                     value={customerSearch}
                     onChange={(e) => setCustomerSearch(e.target.value)}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
@@ -530,13 +533,13 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
               {/* Product Search */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Product Search
+                  <TranslatedText text="Product Search" />
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Product name..."
+                    placeholder={tSync("Product name...")}
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-my-primary focus:border-my-primary"
@@ -550,7 +553,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
               <div className="flex items-center space-x-2">
                 {hasActiveFilters && (
                   <span className="text-sm text-gray-600 dark:text-slate-400">
-                    {filteredBookings.length} of {totalBookings} bookings match your filters
+                    {filteredBookings.length} <TranslatedText text="of" /> {totalBookings} <TranslatedText text="bookings match your filters" />
                   </span>
                 )}
               </div>
@@ -561,7 +564,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                     className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                   >
                     <X className="w-4 h-4 mr-2" />
-                    Clear Filters
+                    <TranslatedText text="Clear Filters" />
                   </button>
                 )}
               </div>
@@ -573,29 +576,29 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-my-primary dark:border-teal-500 mx-auto"></div>
-            <p className="mt-4 text-gray-500 dark:text-slate-400">Loading bookings...</p>
+            <p className="mt-4 text-gray-500 dark:text-slate-400"><TranslatedText text="Loading bookings..." /></p>
           </div>
         ) : (
           <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
             <thead className="bg-gray-50 dark:bg-slate-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Customer
+                  <TranslatedText text="Customer" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Product
+                  <TranslatedText text="Product" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Status
+                  <TranslatedText text="Status" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Dates
+                  <TranslatedText text="Dates" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Price
+                  <TranslatedText text="Price" />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Actions
+                  <TranslatedText text="Actions" />
                 </th>
               </tr>
             </thead>
@@ -606,13 +609,13 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                     <div className="text-gray-500 dark:text-slate-400">
                       {hasActiveFilters ? (
                         <div>
-                          <p className="text-lg font-medium mb-2">No bookings match your filters</p>
-                          <p className="text-sm">Try adjusting your filter criteria or clear all filters to see all bookings.</p>
+                          <p className="text-lg font-medium mb-2"><TranslatedText text="No bookings match your filters" /></p>
+                          <p className="text-sm"><TranslatedText text="Try adjusting your filter criteria or clear all filters to see all bookings." /></p>
                         </div>
                       ) : (
                         <div>
-                          <p className="text-lg font-medium mb-2">No bookings found</p>
-                          <p className="text-sm">There are currently no bookings in the system.</p>
+                          <p className="text-lg font-medium mb-2"><TranslatedText text="No bookings found" /></p>
+                          <p className="text-sm"><TranslatedText text="There are currently no bookings in the system." /></p>
                         </div>
                       )}
                     </div>
@@ -642,7 +645,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                       {booking.status}
                     </span>
                     <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                      Payment: {booking.payment_status}
+                      <TranslatedText text="Payment" />: {booking.payment_status}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -650,7 +653,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                       {format(new Date(booking.start_date), 'MMM d, yyyy')}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-slate-400">
-                      {booking.total_days} days
+                      {booking.total_days} <TranslatedText text="days" />
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -663,7 +666,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                       <button 
                         onClick={() => setActionMenuOpen(actionMenuOpen === booking.id ? null : booking.id)}
                         className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
-                        title="More Actions"
+                        title={tSync("More Actions")}
                       >
                         <MoreVertical className="w-5 h-5" />
                       </button>
@@ -677,7 +680,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                               }}
                               className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-600 flex items-center"
                             >
-                              <Eye className="w-4 h-4 mr-2" /> View Details
+                              <Eye className="w-4 h-4 mr-2" /> <TranslatedText text="View Details" />
                             </button>
                             <button
                               onClick={() => {
@@ -687,7 +690,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                               }}
                               className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-600 flex items-center"
                             >
-                              <Edit className="w-4 h-4 mr-2" /> Edit Booking
+                              <Edit className="w-4 h-4 mr-2" /> <TranslatedText text="Edit Booking" />
                             </button>
                             <button
                               onClick={() => {
@@ -697,19 +700,19 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
                               }}
                               className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-600 flex items-center"
                             >
-                              <RefreshCw className="w-4 h-4 mr-2" /> Override Status
+                              <RefreshCw className="w-4 h-4 mr-2" /> <TranslatedText text="Override Status" />
                             </button>
                             <button
                               onClick={() => handleOpenAdminCancelModal(booking)}
                               className="block w-full text-left px-4 py-2 text-sm text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/20 flex items-center"
                             >
-                              <AlertTriangle className="w-4 h-4 mr-2" /> Force Cancel
+                              <AlertTriangle className="w-4 h-4 mr-2" /> <TranslatedText text="Force Cancel" />
                             </button>
                             <button
                               onClick={() => handleOpenRefundModal(booking)}
                               className="block w-full text-left px-4 py-2 text-sm text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/20 flex items-center"
                             >
-                              <DollarSign className="w-4 h-4 mr-2" /> Process Refund
+                              <DollarSign className="w-4 h-4 mr-2" /> <TranslatedText text="Process Refund" />
                             </button>
                           </div>
                         </div>
@@ -727,7 +730,7 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
         {/* Items per page selector */}
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Bookings per page:</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Bookings per page" />:</span>
           <select
             className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm"
             value={itemsPerPage}
@@ -758,20 +761,20 @@ const BookingsManagement: React.FC<BookingsManagementProps> = (props) => {
       {overrideModalOpen && bookingToOverride && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-[500px] p-6 border border-gray-200 dark:border-slate-700">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-slate-100">Override Booking Status</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-slate-100"><TranslatedText text="Override Booking Status" /></h2>
             
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                Booking: {bookingToOverride.booking_number}
+                <TranslatedText text="Booking" />: {bookingToOverride.booking_number}
               </label>
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                Current Status: {bookingToOverride.status}
+                <TranslatedText text="Current Status" />: {bookingToOverride.status}
               </label>
             </div>
 
             <div className="mb-4">
               <label htmlFor="override-status" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                New Status
+                <TranslatedText text="New Status" />
               </label>
               <select
                 id="override-status"

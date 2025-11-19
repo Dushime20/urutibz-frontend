@@ -57,9 +57,9 @@ const ModerationDashboardPage: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: <Shield className="w-5 h-5" /> },
-    { id: 'actions', label: 'All Actions', icon: <AlertTriangle className="w-5 h-4" /> },
-    { id: 'history', label: 'Product History', icon: <Clock className="w-5 h-5" /> }
+    { id: 'overview', label: tSync('Overview'), icon: <Shield className="w-5 h-5" /> },
+    { id: 'actions', label: tSync('All Actions'), icon: <AlertTriangle className="w-5 h-4" /> },
+    { id: 'history', label: tSync('Product History'), icon: <Clock className="w-5 h-5" /> }
   ];
 
   return (
@@ -171,22 +171,26 @@ const ModerationDashboardPage: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Recent Moderation Activity
+                    <TranslatedText text="Recent Moderation Activity" />
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Latest moderation actions across the platform
+                    <TranslatedText text="Latest moderation actions across the platform" />
                   </p>
                 </div>
                 <div className="p-6">
                   {loadingActions ? (
                     <div className="text-center py-8">
                       <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400">Loading recent actions...</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        <TranslatedText text="Loading recent actions..." />
+                      </p>
                     </div>
                   ) : recentActions.length === 0 ? (
                     <div className="text-center py-8">
                       <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400">No recent moderation actions found.</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        <TranslatedText text="No recent moderation actions found." />
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -197,13 +201,13 @@ const ModerationDashboardPage: React.FC = () => {
                           </div>
                           <div className="ml-3">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {action.actionType} on {new Date(action.timestamp).toLocaleDateString()}
+                              {action.actionType} {tSync('on')} {new Date(action.timestamp).toLocaleDateString()}
                             </p>
                             <p className="text-xs text-gray-600 dark:text-gray-400">
                               {action.contentType} - {action.contentId}
                             </p>
                             <p className="text-xs text-gray-600 dark:text-gray-400">
-                              Status: {action.status}
+                              {tSync('Status')}: {action.status}
                             </p>
                           </div>
                         </div>
@@ -217,10 +221,10 @@ const ModerationDashboardPage: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Quick Actions
+                    <TranslatedText text="Quick Actions" />
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Common moderation tasks
+                    <TranslatedText text="Common moderation tasks" />
                   </p>
                 </div>
                 <div className="p-6">
@@ -231,9 +235,11 @@ const ModerationDashboardPage: React.FC = () => {
                     >
                       <AlertTriangle className="w-8 h-8 text-blue-600 dark:text-blue-400 mr-4" />
                       <div className="text-left">
-                        <h4 className="font-medium text-blue-900 dark:text-blue-100">View All Actions</h4>
+                        <h4 className="font-medium text-blue-900 dark:text-blue-100">
+                          <TranslatedText text="View All Actions" />
+                        </h4>
                         <p className="text-sm text-blue-700 dark:text-blue-300">
-                          Browse through all moderation actions
+                          <TranslatedText text="Browse through all moderation actions" />
                         </p>
                       </div>
                     </button>
@@ -244,9 +250,11 @@ const ModerationDashboardPage: React.FC = () => {
                     >
                       <Clock className="w-8 h-8 text-green-600 dark:text-green-400 mr-4" />
                       <div className="text-left">
-                        <h4 className="font-medium text-green-900 dark:text-green-100">Product History</h4>
+                        <h4 className="font-medium text-green-900 dark:text-green-100">
+                          <TranslatedText text="Product History" />
+                        </h4>
                         <p className="text-sm text-green-700 dark:text-green-300">
-                          Check moderation history for specific products
+                          <TranslatedText text="Check moderation history for specific products" />
                         </p>
                       </div>
                     </button>
@@ -264,16 +272,16 @@ const ModerationDashboardPage: React.FC = () => {
             <div className="space-y-6">
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Product Moderation History
+                  <TranslatedText text="Product Moderation History" />
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Enter a product ID to view its moderation history, or use the Items Management page to view history for specific products.
+                  <TranslatedText text="Enter a product ID to view its moderation history, or use the Items Management page to view history for specific products." />
                 </p>
                 
                 <div className="flex space-x-4">
                   <input
                     type="text"
-                    placeholder="Enter Product ID"
+                    placeholder={tSync('Enter Product ID')}
                     className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:ring-2 focus:ring-my-primary focus:border-transparent"
                     value={selectedProductId || ''}
                     onChange={(e) => setSelectedProductId(e.target.value)}
@@ -283,7 +291,7 @@ const ModerationDashboardPage: React.FC = () => {
                     disabled={!selectedProductId}
                     className="bg-my-primary hover:bg-my-primary/90 disabled:bg-gray-300 text-white px-6 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
                   >
-                    View History
+                    <TranslatedText text="View History" />
                   </button>
                 </div>
               </div>

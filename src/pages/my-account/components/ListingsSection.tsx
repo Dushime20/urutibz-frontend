@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SkeletonMyListings from '../../../components/ui/SkeletonMyListings';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { TranslatedText } from '../../../components/translated-text';
+import RemoveFromMarketModal from './RemoveFromMarketModal';
 
 interface Props {
   loading: boolean;
@@ -16,6 +17,7 @@ interface Props {
   setShowProductDetail: (open: boolean) => void;
   setEditProductId: (id: string | null) => void;
   setShowEditModal: (open: boolean) => void;
+  onRefreshListings?: () => void;
 }
 
 const ListingsSection: React.FC<Props> = ({
@@ -31,8 +33,11 @@ const ListingsSection: React.FC<Props> = ({
   setShowProductDetail,
   setEditProductId,
   setShowEditModal,
+  onRefreshListings,
 }) => {
   const { tSync } = useTranslation();
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [selectedProductForRemove, setSelectedProductForRemove] = useState<{ id: string; title: string } | null>(null);
   if (loading) {
     return <SkeletonMyListings />;
   }
@@ -89,6 +94,7 @@ const ListingsSection: React.FC<Props> = ({
                     <button onClick={() => { setSelectedProductId(listing.id); setShowProductDetail(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800"><TranslatedText text="View" /></button>
                     <button onClick={() => { setEditProductId(listing.id); setShowEditModal(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800"><TranslatedText text="Edit" /></button>
                     <button onClick={() => { onRequestInspection(listing.id); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800"><TranslatedText text="Request Inspection" /></button>
+                    <button onClick={() => { setSelectedProductForRemove({ id: listing.id, title: listing.title || listing.name || '' }); setShowRemoveModal(true); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-orange-600 dark:text-orange-400"><TranslatedText text="Remove from Market" /></button>
                     <button onClick={() => { setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-red-900/20"><TranslatedText text="Delete" /></button>
                   </div>
                 )}
@@ -97,6 +103,22 @@ const ListingsSection: React.FC<Props> = ({
           </div>
         ))}
       </div>
+
+      {/* Remove from Market Modal */}
+      {selectedProductForRemove && (
+        <RemoveFromMarketModal
+          isOpen={showRemoveModal}
+          onClose={() => {
+            setShowRemoveModal(false);
+            setSelectedProductForRemove(null);
+          }}
+          productId={selectedProductForRemove.id}
+          productTitle={selectedProductForRemove.title}
+          onSuccess={() => {
+            onRefreshListings?.();
+          }}
+        />
+      )}
     </div>
   );
 };

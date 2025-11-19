@@ -14,8 +14,11 @@ import ReturnSessionForm from './components/ReturnSessionForm';
 import HandoverSessionsList from './components/HandoverSessionsList';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import handoverReturnService from '../../services/handoverReturnService';
+import { useTranslation } from '../../hooks/useTranslation';
+import { TranslatedText } from '../../components/translated-text';
 
 const HandoverReturnPage: React.FC = () => {
+  const { tSync } = useTranslation();
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createType, setCreateType] = useState<'handover' | 'return'>('handover');
@@ -26,15 +29,15 @@ const HandoverReturnPage: React.FC = () => {
   const tabs = [
     {
       id: 'sessions',
-      label: 'My Sessions',
+      label: tSync('My Sessions'),
       icon: List,
-      description: 'View all your handover sessions'
+      description: tSync('View all your handover sessions')
     },
     {
       id: 'stats',
-      label: 'Statistics',
+      label: tSync('Statistics'),
       icon: BarChart3,
-      description: 'View handover and return analytics'
+      description: tSync('View handover and return analytics')
     }
   ];
 
@@ -46,66 +49,66 @@ const HandoverReturnPage: React.FC = () => {
         return (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Statistics Dashboard</h3>
-              <p className="text-sm text-gray-600 dark:text-slate-400">Handover and return analytics</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Statistics Dashboard" /></h3>
+              <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Handover and return analytics" /></p>
             </div>
             {statsError && <div className="text-sm text-red-600 mb-4">{statsError}</div>}
             {statsLoading ? (
-              <div className="text-sm text-gray-500 dark:text-slate-400">Loading stats…</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="Loading stats…" /></div>
             ) : stats ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Total Handovers</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Total Handovers" /></div>
                     <div className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalHandovers}</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Total Returns</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Total Returns" /></div>
                     <div className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{stats.totalReturns}</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Dispute Rate</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Dispute Rate" /></div>
                     <div className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{stats.disputeRate}%</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Handover Success</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Handover Success" /></div>
                     <div className="text-xl font-semibold text-teal-600">{stats.handoverSuccessRate}%</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Return On-Time</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400"><TranslatedText text="Return On-Time" /></div>
                     <div className="text-xl font-semibold text-teal-600">{stats.returnOnTimeRate}%</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500">Avg Handover Time</div>
-                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageHandoverTime} min</div>
+                    <div className="text-xs text-gray-500"><TranslatedText text="Avg Handover Time" /></div>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageHandoverTime} <TranslatedText text="min" /></div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                    <div className="text-xs text-gray-500">Avg Return Processing</div>
-                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageReturnProcessingTime} min</div>
+                    <div className="text-xs text-gray-500"><TranslatedText text="Avg Return Processing" /></div>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{stats.averageReturnProcessingTime} <TranslatedText text="min" /></div>
                   </div>
                 </div>
                 {(stats.statusDistribution || stats.typeDistribution) && (
                   <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {stats.statusDistribution && (
                       <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                        <div className="text-sm font-medium text-gray-900 mb-2 dark:text-slate-100">Status Distribution</div>
+                        <div className="text-sm font-medium text-gray-900 mb-2 dark:text-slate-100"><TranslatedText text="Status Distribution" /></div>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(stats.statusDistribution).map(([k, v]: any) => (
-                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">{k}: {v}</span>
+                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">{tSync(k)}: {v}</span>
                           ))}
                         </div>
                       </div>
                     )}
                     {stats.typeDistribution && (
                       <div className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
-                        <div className="text-sm font-medium text-gray-900 mb-2 dark:text-slate-100">Type Distribution</div>
+                        <div className="text-sm font-medium text-gray-900 mb-2 dark:text-slate-100"><TranslatedText text="Type Distribution" /></div>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(stats.typeDistribution).map(([k, v]: any) => (
-                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">{k}: {v}</span>
+                            <span key={k} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">{tSync(k)}: {v}</span>
                           ))}
                         </div>
                       </div>
@@ -114,7 +117,7 @@ const HandoverReturnPage: React.FC = () => {
                 )}
               </>
             ) : (
-              <div className="text-sm text-gray-500 dark:text-slate-400">No stats available.</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400"><TranslatedText text="No stats available." /></div>
             )}
           </div>
         );
@@ -131,7 +134,7 @@ const HandoverReturnPage: React.FC = () => {
         const res = await handoverReturnService.getHandoverReturnStats();
         setStats(res?.data || null);
       } catch (e: any) {
-        setStatsError(e?.message || 'Failed to load stats');
+        setStatsError(e?.message || tSync('Failed to load stats'));
       } finally {
         setStatsLoading(false);
       }
@@ -147,9 +150,9 @@ const HandoverReturnPage: React.FC = () => {
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">Handover & Return</h1>
+                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Handover & Return" /></h1>
                 <p className="text-gray-600 mt-1 sm:mt-2 dark:text-slate-400">
-                  Manage product handover and return sessions with comprehensive tracking
+                  <TranslatedText text="Manage product handover and return sessions with comprehensive tracking" />
                 </p>
               </div>
               <div className="flex items-center gap-2 sm:space-x-3">
@@ -162,7 +165,7 @@ const HandoverReturnPage: React.FC = () => {
                     className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
                   >
                     <Package className="w-4 h-4 mr-2" />
-                    New Handover
+                    <TranslatedText text="New Handover" />
                   </button>
                   <button
                     onClick={() => {
@@ -172,7 +175,7 @@ const HandoverReturnPage: React.FC = () => {
                     className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
                   >
                     <ArrowRightLeft className="w-4 h-4 mr-2" />
-                    New Return
+                    <TranslatedText text="New Return" />
                   </button>
                 </div>
                 <Package className="w-6 h-6 sm:w-8 sm:h-8 text-teal-600" />
@@ -220,8 +223,8 @@ const HandoverReturnPage: React.FC = () => {
                   <Package className="w-8 h-8 text-teal-600" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">Handover Sessions</h3>
-                  <p className="text-sm text-gray-600 dark:text-slate-400">Manage product handovers</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Handover Sessions" /></h3>
+                  <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Manage product handovers" /></p>
                 </div>
               </div>
             </div>
@@ -232,8 +235,8 @@ const HandoverReturnPage: React.FC = () => {
                   <ArrowRightLeft className="w-8 h-8 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">Return Sessions</h3>
-                  <p className="text-sm text-gray-600 dark:text-slate-400">Manage product returns</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Return Sessions" /></h3>
+                  <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Manage product returns" /></p>
                 </div>
               </div>
             </div>
@@ -244,8 +247,8 @@ const HandoverReturnPage: React.FC = () => {
                   <TrendingUp className="w-8 h-8 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">Success Rate</h3>
-                  <p className="text-sm text-gray-600 dark:text-slate-400">Track completion rates</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Success Rate" /></h3>
+                  <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="Track completion rates" /></p>
                 </div>
               </div>
             </div>
@@ -260,7 +263,7 @@ const HandoverReturnPage: React.FC = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {createType === 'handover' ? 'Create Handover Session' : 'Create Return Session'}
+                  {createType === 'handover' ? <TranslatedText text="Create Handover Session" /> : <TranslatedText text="Create Return Session" />}
                 </h2>
                 <button
                   onClick={() => setShowCreateModal(false)}

@@ -1,14 +1,16 @@
 import React from 'react';
-import { 
-  Users, 
-  Package, 
-  ShoppingCart, 
-  DollarSign, 
-  AlertTriangle 
+import {
+  Users,
+  Package,
+  ShoppingCart,
+  DollarSign,
+  ShieldCheck
 } from 'lucide-react';
 import { fetchAdminStats } from '../service';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import type { AdminStats } from '../interfaces';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 // Define props interface
 interface AdminStatCardsProps {
@@ -17,7 +19,7 @@ interface AdminStatCardsProps {
 }
 
 const AdminStatCards: React.FC<AdminStatCardsProps> = ({ adminStats, verifiedUsers }) => {
-  console.log('admins stats',adminStats)
+  const { tSync } = useTranslation();
   const statCards = [
     {
       icon: Users,
@@ -42,6 +44,12 @@ const AdminStatCards: React.FC<AdminStatCardsProps> = ({ adminStats, verifiedUse
       title: 'Total Revenue',
       value: `$${(adminStats?.totalRevenue || 0).toLocaleString()}`,
       color: 'text-yellow-500 bg-yellow-100'
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Verified Users',
+      value: verifiedUsers || 0,
+      color: 'text-emerald-500 bg-emerald-100'
     }
   ];
 
@@ -56,7 +64,9 @@ const AdminStatCards: React.FC<AdminStatCardsProps> = ({ adminStats, verifiedUse
             <card.icon className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{card.title}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              <TranslatedText text={card.title} />
+            </p>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{card.value}</h2>
           </div>
         </div>

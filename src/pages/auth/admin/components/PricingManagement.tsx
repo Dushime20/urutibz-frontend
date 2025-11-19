@@ -8,9 +8,12 @@ import { usePricing } from '../hooks/usePricing';
 import PricingService from '../service/pricingService';
 import { fetchPricingStats, fetchCountries } from '../service';
 import type { ProductPrice, CreateProductPriceRequest, UpdateProductPriceRequest, PriceFilters, RentalPriceCalculationRequest, RentalPriceCalculationResponse, PriceComparisonResponse } from '../types/pricing';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const PricingManagement: React.FC = () => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const {
     prices,
     pagination,

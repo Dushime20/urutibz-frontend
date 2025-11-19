@@ -10,9 +10,12 @@ import EditRiskProfileModal from './EditRiskProfileModal';
 import ConfirmationDialog from './ConfirmationDialog';
 import { useToast } from '../../../contexts/ToastContext';
 import { formatDateUTC } from '../../../utils/dateUtils';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const RiskProfilesSection: React.FC = () => {
   const { showToast } = useToast();
+  const { tSync } = useTranslation();
   const queryClient = useQueryClient();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,11 +52,11 @@ const RiskProfilesSection: React.FC = () => {
   const deleteProfileMutation = useMutation({
     mutationFn: (id: string) => riskManagementService.deleteRiskProfile(id),
     onSuccess: () => {
-      showToast('Risk profile deleted successfully', 'success');
+      showToast(tSync('Risk profile deleted successfully'), 'success');
       queryClient.invalidateQueries({ queryKey: ['riskProfiles'] });
     },
     onError: (error: any) => {
-      showToast(error.response?.data?.message || 'Failed to delete risk profile', 'error');
+      showToast(error.response?.data?.message || tSync('Failed to delete risk profile'), 'error');
     }
   });
 

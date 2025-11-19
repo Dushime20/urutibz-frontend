@@ -14,6 +14,8 @@ import {
 } from '../service';
 import type { CreatePaymentProviderInput, PaymentProvider, PaymentProviderStats, FeeCalculationResult, Country, CountryPaymentProvidersResponse } from '../interfaces';
 import { Dialog } from '@headlessui/react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const emptyForm: CreatePaymentProviderInput = {
   country_id: '',
@@ -39,6 +41,7 @@ const emptyForm: CreatePaymentProviderInput = {
 };
 
 export default function PaymentProvidersManagement() {
+  const { tSync } = useTranslation();
   const [providers, setProviders] = useState<PaymentProvider[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);

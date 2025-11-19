@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { fetchRecentPaymentTransactions } from '../service';
 import { Loader } from 'lucide-react';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface RecentTransactionsListProps {
   limit?: number;
@@ -22,6 +24,7 @@ const statusColor = (status: string) => {
 };
 
 const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit = 5 }) => {
+  const { tSync } = useTranslation();
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +41,7 @@ const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit =
         setTransactions(res.data);
       })
       .catch((err) => {
-        setError(err.message || 'Failed to fetch transactions');
+        setError(err.message || tSync('Failed to fetch transactions'));
       })
       .finally(() => setLoading(false));
   }, [limit]);
@@ -46,26 +49,26 @@ const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit =
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold dark:text-gray-100">Recent Transactions</h3>
+        <h3 className="text-lg font-bold dark:text-gray-100"><TranslatedText text="Recent Transactions" /></h3>
       </div>
       {loading ? (
         <div className="flex items-center justify-center py-8 text-my-primary">
-          <Loader className="animate-spin w-6 h-6 mr-2" /> Loading...
+          <Loader className="animate-spin w-6 h-6 mr-2" /> <TranslatedText text="Loading..." />
         </div>
       ) : error ? (
         <div className="text-red-500 text-center py-8">{error}</div>
       ) : transactions.length === 0 ? (
-        <div className="text-gray-500 text-center py-8">No recent transactions found.</div>
+        <div className="text-gray-500 text-center py-8"><TranslatedText text="No recent transactions found." /></div>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Type</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Amount</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Provider</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"><TranslatedText text="Type" /></th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"><TranslatedText text="Status" /></th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"><TranslatedText text="Amount" /></th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"><TranslatedText text="Provider" /></th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"><TranslatedText text="Date" /></th>
               </tr>
             </thead>
             <TransitionGroup component="tbody">
@@ -79,7 +82,7 @@ const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit =
                        {txn.transaction_type ? txn.transaction_type.replace(/_/g, ' ') : '-'}
                      </td>
                     <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor(txn.status)}`}>{txn.status}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor(txn.status)}`}>{tSync(txn.status)}</span>
                     </td>
                                          <td className="px-4 py-2 font-bold text-gray-900 dark:text-gray-100">
                        {typeof txn.amount === 'string' ? parseFloat(txn.amount).toLocaleString() : txn.amount.toLocaleString()} {txn.currency}
@@ -95,9 +98,9 @@ const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit =
           </table>
           {/* Pagination */}
           <div className="flex justify-end mt-2 gap-2">
-            <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Prev</button>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Page {page}</span>
-            <button onClick={() => setPage(p => p+1)} disabled={page*txnsPerPage >= transactions.length} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50">Next</button>
+            <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50"><TranslatedText text="Prev" /></button>
+            <span className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Page" /> {page}</span>
+            <button onClick={() => setPage(p => p+1)} disabled={page*txnsPerPage >= transactions.length} className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50"><TranslatedText text="Next" /></button>
           </div>
         </div>
       )}
@@ -106,15 +109,15 @@ const RecentTransactionsList: React.FC<RecentTransactionsListProps> = ({ limit =
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
-              <h4 className="text-lg font-bold">Transaction Details</h4>
+              <h4 className="text-lg font-bold"><TranslatedText text="Transaction Details" /></h4>
               <button onClick={() => setSelectedTxn(null)} className="text-gray-400 hover:text-my-primary">&times;</button>
             </div>
-            <div className="mb-2 text-sm"><b>Type:</b> {selectedTxn.transaction_type ? selectedTxn.transaction_type.replace(/_/g, ' ') : '-'}</div>
-            <div className="mb-2 text-sm"><b>Status:</b> <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor(selectedTxn.status)}`}>{selectedTxn.status}</span></div>
-            <div className="mb-2 text-sm"><b>Amount:</b> {typeof selectedTxn.amount === 'string' ? parseFloat(selectedTxn.amount).toLocaleString() : selectedTxn.amount.toLocaleString()} {selectedTxn.currency}</div>
-            <div className="mb-2 text-sm"><b>Provider:</b> {selectedTxn.provider || '-'}</div>
-            <div className="mb-2 text-sm"><b>Date:</b> {selectedTxn.created_at ? new Date(selectedTxn.created_at).toLocaleString() : '-'}</div>
-            <div className="mb-2 text-sm"><b>Txn ID:</b> {selectedTxn.id}</div>
+            <div className="mb-2 text-sm"><b><TranslatedText text="Type" />:</b> {selectedTxn.transaction_type ? selectedTxn.transaction_type.replace(/_/g, ' ') : '-'}</div>
+            <div className="mb-2 text-sm"><b><TranslatedText text="Status" />:</b> <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor(selectedTxn.status)}`}>{tSync(selectedTxn.status)}</span></div>
+            <div className="mb-2 text-sm"><b><TranslatedText text="Amount" />:</b> {typeof selectedTxn.amount === 'string' ? parseFloat(selectedTxn.amount).toLocaleString() : selectedTxn.amount.toLocaleString()} {selectedTxn.currency}</div>
+            <div className="mb-2 text-sm"><b><TranslatedText text="Provider" />:</b> {selectedTxn.provider || '-'}</div>
+            <div className="mb-2 text-sm"><b><TranslatedText text="Date" />:</b> {selectedTxn.created_at ? new Date(selectedTxn.created_at).toLocaleString() : '-'}</div>
+            <div className="mb-2 text-sm"><b><TranslatedText text="Txn ID" />:</b> {selectedTxn.id}</div>
           </div>
         </div>
       )}

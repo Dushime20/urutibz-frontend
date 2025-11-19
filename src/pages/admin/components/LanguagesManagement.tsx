@@ -66,7 +66,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
         }
       } catch (e: any) {
         if (!mounted) return;
-        setError(e?.message || 'Failed to load countries');
+        setError(e?.message || tSync('Failed to load countries'));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -115,7 +115,9 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading languages...</span>
+          <span className="ml-3 text-gray-600 dark:text-gray-400">
+            <TranslatedText text="Loading languages..." />
+          </span>
         </div>
       </div>
     );
@@ -126,9 +128,11 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Languages</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+            <TranslatedText text="Languages" />
+          </h3>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage platform languages and localization settings
+            <TranslatedText text="Manage platform languages and localization settings" />
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -137,7 +141,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by code or country..."
+              placeholder={tSync('Search by code or country...')}
               className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
             />
           </div>
@@ -146,11 +150,11 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
             className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-colors flex items-center"
           >
             <Filter className="w-4 h-4 mr-2" />
-            Filter
+            <TranslatedText text="Filter" />
           </button>
           <button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center">
             <Plus className="w-4 h-4 mr-2" />
-            Add Language
+            <TranslatedText text="Add Language" />
           </button>
         </div>
       </div>
@@ -159,8 +163,12 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
       <div className="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Default Platform Language</div>
-            <div className="text-gray-900 dark:text-white font-semibold">{defaultLang ? defaultLang.toUpperCase() : 'Not set'}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              <TranslatedText text="Default Platform Language" />
+            </div>
+            <div className="text-gray-900 dark:text-white font-semibold">
+              {defaultLang ? defaultLang.toUpperCase() : tSync('Not set')}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <select
@@ -168,7 +176,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
               onChange={(e) => setDefaultLang(e.target.value)}
               className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
             >
-              <option value="">Select language</option>
+              <option value="">{tSync('Select language')}</option>
               {languages.map(l => (
                 <option key={l.code} value={l.code}>{l.code.toUpperCase()}</option>
               ))}
@@ -179,9 +187,9 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                 setSaveMsg(null);
                 try {
                   await updateAdminSettings({ platform: { defaultLanguage: defaultLang } } as Partial<AdminSettings>);
-                  setSaveMsg('Default language saved');
+                  setSaveMsg(tSync('Default language saved'));
                 } catch (e: any) {
-                  setSaveMsg(e?.message || 'Failed to save default language');
+                  setSaveMsg(e?.message || tSync('Failed to save default language'));
                 } finally {
                   setSavingDefault(false);
                   setTimeout(() => setSaveMsg(null), 3000);
@@ -190,7 +198,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
               disabled={!defaultLang || savingDefault}
               className="px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 text-sm transition-colors"
             >
-              {savingDefault ? 'Saving…' : 'Save'}
+              {savingDefault ? tSync('Saving…') : tSync('Save')}
             </button>
           </div>
         </div>
@@ -203,8 +211,12 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
       <div className="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Supported Languages</div>
-            <div className="text-gray-900 dark:text-white font-semibold">{editableLanguages.length} configured</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              <TranslatedText text="Supported Languages" />
+            </div>
+            <div className="text-gray-900 dark:text-white font-semibold">
+              {editableLanguages.length} {tSync('configured')}
+            </div>
           </div>
           <button
             onClick={async () => {
@@ -212,9 +224,9 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
               setSaveMsg(null);
               try {
                 await updateAdminSettings({ platform: { supportedLanguages: editableLanguages } } as Partial<AdminSettings>);
-                setSaveMsg('Supported languages saved');
+                setSaveMsg(tSync('Supported languages saved'));
               } catch (e: any) {
-                setSaveMsg(e?.message || 'Failed to save supported languages');
+                setSaveMsg(e?.message || tSync('Failed to save supported languages'));
               } finally {
                 setSavingAll(false);
                 setTimeout(() => setSaveMsg(null), 3000);
@@ -223,7 +235,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
             disabled={savingAll}
             className="px-4 py-2 rounded-xl bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 text-sm transition-colors"
           >
-            {savingAll ? 'Saving…' : 'Save All'}
+            {savingAll ? tSync('Saving…') : tSync('Save All')}
           </button>
         </div>
 
@@ -231,11 +243,21 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Enabled</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Code</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Label</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Native Name</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Flag</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  <TranslatedText text="Enabled" />
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  <TranslatedText text="Code" />
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  <TranslatedText text="Label" />
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  <TranslatedText text="Native Name" />
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  <TranslatedText text="Flag" />
+                </th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -268,7 +290,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                   <td className="px-4 py-2">
                     <input
                       className="w-36 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                      placeholder="e.g. 🇺🇸"
+                      placeholder={tSync('e.g. 🇺🇸')}
                       value={l.flag || ''}
                       onChange={(e) => setEditableLanguages(prev => prev.map((x,i) => i===idx ? { ...x, flag: e.target.value } : x))}
                     />
@@ -277,13 +299,17 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                     <button
                       onClick={() => setEditableLanguages(prev => prev.filter((_, i) => i !== idx))}
                       className="text-sm text-red-600 dark:text-red-400 hover:underline"
-                    >Remove</button>
+                    >
+                      <TranslatedText text="Remove" />
+                    </button>
                   </td>
                 </tr>
               ))}
               {editableLanguages.length === 0 && (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={6}>No languages configured.</td>
+                  <td className="px-4 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={6}>
+                    <TranslatedText text="No languages configured." />
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -294,7 +320,9 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
           <button
             onClick={() => setEditableLanguages(prev => [...prev, { code: '', label: '', nativeName: '', flag: '', enabled: true }])}
             className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
-          >Add Row</button>
+          >
+            <TranslatedText text="Add Row" />
+          </button>
         </div>
       </div>
 
@@ -312,7 +340,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                   <Globe className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 </div>
                 <div className="ml-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Countries</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Total Countries" /></div>
                   <div className="text-xl font-bold text-gray-900 dark:text-white">{countries.length}</div>
                 </div>
               </div>
@@ -323,7 +351,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                   <Languages className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="ml-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Languages Detected</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Languages Detected" /></div>
                   <div className="text-xl font-bold text-gray-900 dark:text-white">{languages.length}</div>
                 </div>
               </div>
@@ -334,7 +362,7 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                   <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="ml-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Most Common</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400"><TranslatedText text="Most Common" /></div>
                   <div className="text-lg font-semibold text-gray-900 dark:text-white">
                     {languages[0] ? `${languages[0].code.toUpperCase()} (${languages[0].countriesCount} countries)` : '—'}
                   </div>
@@ -348,9 +376,15 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Code</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Countries</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Examples</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                    <TranslatedText text="Code" />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                    <TranslatedText text="Countries" />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                    <TranslatedText text="Examples" />
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -365,7 +399,9 @@ const LanguagesManagement: React.FC<LanguagesManagementProps> = () => {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td className="px-6 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={3}>No languages match your search.</td>
+                <td className="px-6 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={3}>
+                  <TranslatedText text="No languages match your search." />
+                </td>
                   </tr>
                 )}
               </tbody>

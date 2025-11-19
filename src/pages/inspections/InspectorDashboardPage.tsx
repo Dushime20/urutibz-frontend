@@ -776,7 +776,7 @@ const InspectorDashboardPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-40">
           <div className="px-4 sm:px-6 lg:px-8">
             {/* Top Bar */}
-            <div className="flex items-center justify-between py-4">
+            <div className="flex items-center justify-between py-1">
             <div className="flex items-center space-x-4">
               {/* Mobile menu button */}
               <button
@@ -787,9 +787,7 @@ const InspectorDashboardPage: React.FC = () => {
               </button>
               
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-my-primary rounded-xl flex items-center justify-center shadow-lg shadow-my-primary/20">
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
+              
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                     {activeTab === 'overview' && <TranslatedText text="Dashboard" />}
@@ -801,17 +799,7 @@ const InspectorDashboardPage: React.FC = () => {
                   <p className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Professional Inspector" /></p>
                 </div>
               </div>
-              <div className="hidden lg:flex items-center space-x-6 text-sm">
-                <div className="flex items-center space-x-2 px-3 py-1.5 bg-my-primary/10 rounded-lg">
-                  <Award className="w-4 h-4 text-my-primary" />
-                  <span className="text-my-primary font-medium"><TranslatedText text="Certified Inspector" /></span>
-                </div>
-                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                  <Star className="w-4 h-4 text-amber-500 fill-current" />
-                  <span className="font-medium">{performanceMetrics.averageRating.toFixed(1)}</span>
-                  <span className="text-gray-400"><TranslatedText text="Rating" /></span>
-                </div>
-              </div>
+             
             </div>
             
             {/* Right side actions */}
@@ -1907,36 +1895,36 @@ const InspectorSidebar: React.FC<{
       id: 'overview',
       label: 'Dashboard',
       icon: Home,
-      badge: null,
-      description: 'Overview & statistics'
+      badge: null
+      
     },
     {
       id: 'inspections',
       label: 'Inspections',
       icon: ClipboardCheck,
-      badge: stats.pending + stats.inProgress,
-      description: 'All requested inspections'
+      badge: stats.pending + stats.inProgress
+      
     },
     {
       id: 'completed',
       label: 'Completed',
       icon: CheckCircle2,
-      badge: stats.completed,
-      description: 'Completed inspections'
+      badge: stats.completed
+      
     },
     {
       id: 'payments',
       label: 'Payments',
       icon: Wallet,
-      badge: null,
-      description: 'Earnings & payments'
+      badge: null
+      
     },
     {
       id: 'settings',
       label: 'Settings',
       icon: Settings,
-      badge: null,
-      description: 'Account settings'
+      badge: null
+      
     }
   ];
 
@@ -2034,11 +2022,6 @@ const InspectorSidebar: React.FC<{
                       <>
                         <div className="text-left">
                           <div className="font-semibold"><TranslatedText text={item.label} /></div>
-                          {item.description && (
-                            <div className={`text-xs ${isActive ? 'text-my-primary' : 'text-gray-500 dark:text-gray-400'}`}>
-                              <TranslatedText text={item.description} />
-                            </div>
-                          )}
                         </div>
                       </>
                     )}

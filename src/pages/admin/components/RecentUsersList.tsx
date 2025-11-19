@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { CheckCircle, MoreHorizontal, ArrowUpRight } from 'lucide-react';
+import { TranslatedText } from '../../../components/translated-text';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface RecentUser {
   id: string | number;
@@ -19,10 +20,15 @@ interface RecentUsersListProps {
   Button: React.FC<any>;
 }
 
-const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }) => (
+const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }) => {
+  const { tSync } = useTranslation();
+
+  return (
   <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mt-4">
     <div className="flex items-center justify-between mb-6">
-      <h3 className="text-lg font-bold text-gray-900">Recent Users</h3>
+      <h3 className="text-lg font-bold text-gray-900">
+        <TranslatedText text="Recent Users" />
+      </h3>
       <button 
         onClick={() => {
           // This will be handled by the parent component
@@ -31,7 +37,7 @@ const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }
         }}
         className="text-sm text-my-primary hover:text-my-primary/80 font-medium flex items-center group"
       >
-        View all
+        <TranslatedText text="View all" />
         <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
       </button>
     </div>
@@ -39,7 +45,9 @@ const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }
       {recentUsers.length === 0 ? (
         <div className="text-center py-8">
           <CheckCircle className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">No recent users found</p>
+          <p className="text-gray-500 text-sm">
+            <TranslatedText text="No recent users found" />
+          </p>
         </div>
       ) : (
         recentUsers.map((user) => (
@@ -80,7 +88,7 @@ const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }
                     ? 'bg-green-100 text-green-700' 
                     : 'bg-yellow-100 text-yellow-700'
                 }`}>
-                  {user.status}
+                  {tSync(user.status)}
                 </span>
               </div>
             </div>
@@ -92,6 +100,7 @@ const RecentUsersList: React.FC<RecentUsersListProps> = ({ recentUsers, Button }
       )}
     </div>
   </div>
-);
+  );
+};
 
 export default RecentUsersList; 

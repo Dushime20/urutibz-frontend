@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { fetchPaymentMethods } from '../service';
 import type { PaymentMethod } from '../interfaces';
 import { Loader } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 
 const PaymentMethodsManagement: React.FC = () => {
+  const { tSync } = useTranslation();
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,10 +23,10 @@ const PaymentMethodsManagement: React.FC = () => {
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-      <h3 className="text-xl font-bold mb-6">Payment Methods</h3>
+      <h3 className="text-xl font-bold mb-6"><TranslatedText text="Payment Methods" /></h3>
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader className="animate-spin w-6 h-6 mr-2 text-my-primary" /> Loading...
+          <Loader className="animate-spin w-6 h-6 mr-2 text-my-primary" /> <TranslatedText text="Loading..." />
         </div>
       ) : error ? (
         <div className="text-red-500 text-center py-8">{error}</div>
@@ -32,13 +35,13 @@ const PaymentMethodsManagement: React.FC = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap">Type</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap">Provider</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap">Phone/Card</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap">Currency</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap">Default</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap">Verified</th>
-                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap">Created At</th>
+                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap"><TranslatedText text="Type" /></th>
+                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap"><TranslatedText text="Provider" /></th>
+                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap"><TranslatedText text="Phone/Card" /></th>
+                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap"><TranslatedText text="Currency" /></th>
+                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap"><TranslatedText text="Default" /></th>
+                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap"><TranslatedText text="Verified" /></th>
+                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 whitespace-nowrap"><TranslatedText text="Created At" /></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">

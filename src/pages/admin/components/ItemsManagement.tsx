@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Filter, MoreHorizontal, X, Package, Check, Shield } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { TranslatedText } from '../../../components/translated-text';
 import type { Product, Owner, ItemCategory } from '../types';
 import { fetchProductImages, getProductById, fetchUserById } from '../service';
 import { fetchProductAvailability } from '../service';
@@ -51,6 +53,7 @@ const AdminProductDetailModal: React.FC<{
   productPrices: { [productId: string]: ProductPrice[] };
   productAvailability: { [productId: string]: ProductAvailability[] };
 }> = ({ open, onClose, productId, onApproved, productPrices, productAvailability }) => {
+  const { tSync } = useTranslation();
   const [product, setProduct] = useState<any>(null);
   const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -297,7 +300,7 @@ const AdminProductDetailModal: React.FC<{
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {product?.title || product?.name || 'Product Details'}
+              {product?.title || product?.name || tSync('Product Details')}
             </h2>
             <div className={`inline-block px-2 py-1 rounded text-xs font-semibold mt-2 ${
               product?.status === 'active' 
@@ -515,7 +518,7 @@ const AdminProductDetailModal: React.FC<{
 
             {/* Availability Information */}
             <div>
-              <div className="text-xs text-gray-500 uppercase mb-3">Availability Status</div>
+              <div className="text-xs text-gray-500 uppercase mb-3"><TranslatedText text="Availability Status" /></div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 {(() => {
                   const currentUnavailableDates = productAvailability[productId]
@@ -525,7 +528,7 @@ const AdminProductDetailModal: React.FC<{
                   if (currentUnavailableDates.length > 0) {
                     return (
                       <div className="space-y-3">
-                        <div className="text-red-600 font-medium">Currently Booked ({currentUnavailableDates.length} dates)</div>
+                        <div className="text-red-600 font-medium"><TranslatedText text="Currently Booked" /> ({currentUnavailableDates.length} <TranslatedText text="dates" />)</div>
                         <div className="space-y-2 max-h-40 overflow-y-auto">
                           {currentUnavailableDates.map((availability, index) => (
                             <div key={index} className="text-sm text-gray-600 flex items-center justify-between bg-white p-2 rounded">
@@ -549,7 +552,7 @@ const AdminProductDetailModal: React.FC<{
                       </div>
                     );
                   } else {
-                    return <span className="text-green-600 font-medium">Available for booking</span>;
+                    return <span className="text-green-600 font-medium"><TranslatedText text="Available for booking" /></span>;
                   }
                 })()}
               </div>
@@ -558,12 +561,12 @@ const AdminProductDetailModal: React.FC<{
             {/* Additional Product Details */}
             {(product?.features || product?.specifications || product?.tags) && (
               <div>
-                <div className="text-xs text-gray-500 uppercase mb-3">Additional Details</div>
+                <div className="text-xs text-gray-500 uppercase mb-3"><TranslatedText text="Additional Details" /></div>
                 <div className="space-y-6">
                   {/* Features */}
                   {product?.features && (
                     <div>
-                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Features</div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"><TranslatedText text="Features" /></div>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
                         {(() => {
                           try {
@@ -728,8 +731,8 @@ const AdminProductDetailModal: React.FC<{
                     onChange={e => setModerationAction(e.target.value as any)}
                     disabled={moderationSuccess}
                   >
-                    <option value="approve">Approve</option>
-                    <option value="reject">Reject</option>
+                    <option value="approve"><TranslatedText text="Approve" /></option>
+                    <option value="reject"><TranslatedText text="Reject" /></option>
                     <option value="flag">Flag</option>
                     <option value="quarantine">Quarantine</option>
                   </select>
@@ -809,6 +812,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   onPageChange,
   onLimitChange
 }) => {
+  const { tSync } = useTranslation();
   // Derive pagination state if parent didn't pass explicit flags
   const computedTotalPages = (typeof totalPages === 'number' && totalPages > 0)
     ? totalPages
@@ -1174,10 +1178,10 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
               defaultValue="all"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="draft">Draft</option>
-              <option value="pending">Pending</option>
+              <option value="all"><TranslatedText text="All Status" /></option>
+              <option value="active"><TranslatedText text="Active" /></option>
+              <option value="draft"><TranslatedText text="Draft" /></option>
+              <option value="pending"><TranslatedText text="Pending" /></option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
               <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
@@ -1205,8 +1209,8 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
               defaultValue="newest"
             >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
+              <option value="newest"><TranslatedText text="Newest" /></option>
+              <option value="oldest"><TranslatedText text="Oldest" /></option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
               <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
@@ -1221,7 +1225,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             className="bg-red-100 hover:bg-red-200 border border-red-200 text-red-700 px-4 py-2 rounded-xl transition-colors flex items-center"
           >
             <X className="w-4 h-4 mr-2" />
-            Reset Filters
+            <TranslatedText text="Reset Filters" />
           </Button>
           <Button 
             onClick={() => {
@@ -1236,7 +1240,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             className="bg-my-primary hover:bg-my-primary/90 text-white px-6 py-2 rounded-xl transition-colors flex items-center shadow-sm"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Item
+            <TranslatedText text="Add Item" />
           </Button>
         </div>
       </div>
@@ -1264,20 +1268,20 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-blue-700">
               <Filter className="w-4 h-4" />
-              <span>Active filters:</span>
+              <span><TranslatedText text="Active filters" />:</span>
               {itemFilter !== 'all' && (
                 <span className="px-2 py-1 bg-blue-100 rounded-full text-xs">
-                  Category: {categories.find(c => c.id === itemFilter)?.name || itemFilter}
+                  <TranslatedText text="Category" />: {categories.find(c => c.id === itemFilter)?.name || itemFilter}
                 </span>
               )}
               {selectedLocation !== 'all' && (
                 <span className="px-2 py-1 bg-blue-100 rounded-full text-xs">
-                  Location: {selectedLocation}
+                  <TranslatedText text="Location" />: {selectedLocation}
                 </span>
               )}
               {availabilityFilter !== 'all' && (
                 <span className="px-2 py-1 bg-blue-100 rounded-full text-xs">
-                  Availability: {availabilityFilter === 'available' ? 'Available' : 'Booked'}
+                  <TranslatedText text="Availability" />: {availabilityFilter === 'available' ? tSync('Available') : tSync('Booked')}
                 </span>
               )}
             </div>
@@ -1289,7 +1293,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               }}
               className="text-sm text-blue-600 hover:text-blue-800 underline"
             >
-              Clear all filters
+              <TranslatedText text="Clear all filters" />
             </button>
           </div>
         </div>
@@ -1306,7 +1310,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                 Owner
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
+                <TranslatedText text="Status" />
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Price
@@ -1428,7 +1432,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                               }}
                               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             >
-                              View Details
+                              <TranslatedText text="View Details" />
                             </button>
                             <button
                               onClick={() => {
@@ -1447,7 +1451,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                               }}
                               className="block w-full text-left px-4 py-2 text-sm text-my-primary hover:bg-my-primary/10"
                             >
-                              Edit
+                              <TranslatedText text="Edit" />
                             </button>
                           </div>
                         )}
