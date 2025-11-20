@@ -11,10 +11,11 @@ import { useTranslation } from '../hooks/useTranslation';
 import { TranslatedText } from '../components/translated-text';
 import { formatPrice, getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { getProductById, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
+import { getProductById, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites, fetchAvailableProducts } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
 import { fetchProductReviews } from './my-account/service/api';
 import { UserProfileService } from './admin/service/userProfileService';
+import ProductSwiper from '../components/products/ProductSwiper';
 
 
 
@@ -59,6 +60,14 @@ const ItemDetailsPage: React.FC = () => {
   const [locationLoading, setLocationLoading] = useState(false);
   const [productInteractions, setProductInteractions] = useState<any[]>([]);
   const [productReviews, setProductReviews] = useState<any[]>([]);
+  
+  // Related products state
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [relatedProductImages, setRelatedProductImages] = useState<Record<string, string[]>>({});
+  const [relatedProductPrices, setRelatedProductPrices] = useState<Record<string, any>>({});
+  const [relatedItemLocations, setRelatedItemLocations] = useState<Record<string, { city: string | null; country: string | null }>>({});
+  const [relatedLocationsLoading, setRelatedLocationsLoading] = useState<Record<string, boolean>>({});
+  const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     // Fetch latest KYC status from authoritative API using localStorage user.id
@@ -256,12 +265,167 @@ const ItemDetailsPage: React.FC = () => {
             return productId === id;
           });
           setIsFavorited(isFav);
+          
+          // Build favorite map for related products
+          const map: Record<string, boolean> = {};
+          favs.forEach((f: any) => {
+            const productId = f?.product_id || f?.productId || f?.id;
+            if (typeof productId === 'string') map[productId] = true;
+          });
+          setFavoriteMap(map);
         }
       } catch {
         // ignore favorites loading errors silently
       }
     })();
   }, [id, isAuthenticated]);
+
+  // Fetch related products
+  useEffect(() => {
+    if (!item?.id) return;
+    
+    let isMounted = true;
+    const fetchRelated = async () => {
+      try {
+        const token = localStorage.getItem('token') || undefined;
+        const result = await fetchAvailableProducts(token, true);
+        const allProducts = result.data || [];
+        
+        // Filter out current product and get related products (same category or random)
+        const filtered = allProducts
+          .filter((p: any) => p.id !== item.id)
+          .filter((p: any) => {
+            // Prefer same category, but include others if not enough
+            if (item.category_id) {
+              return String(p.category_id || p.categoryId) === String(item.category_id);
+            }
+            return true;
+          })
+          .slice(0, 12); // Limit to 12 products
+        
+        if (isMounted) {
+          setRelatedProducts(filtered);
+          
+          // Fetch images for related products
+          const imagesMap: Record<string, string[]> = {};
+          await Promise.all(
+            filtered.map(async (product: any) => {
+              try {
+                const imgs = await getProductImagesByProductId(product.id);
+                const normalized: string[] = [];
+                if (Array.isArray(imgs)) {
+                  imgs.forEach((img: any) => {
+                    if (img && img.image_url) {
+                      normalized.push(img.image_url);
+                    }
+                  });
+                }
+                imagesMap[product.id] = normalized.length ? normalized : [];
+              } catch {
+                imagesMap[product.id] = [];
+              }
+            })
+          );
+          
+          // Fetch prices for related products
+          const pricesMap: Record<string, any> = {};
+          await Promise.all(
+            filtered.map(async (product: any) => {
+              try {
+                const result = await fetchProductPricesByProductId(product.id);
+                if (result.success && result.data && result.data.length > 0) {
+                  pricesMap[product.id] = result.data[0];
+                }
+              } catch {
+                // ignore
+              }
+            })
+          );
+          
+          // Fetch locations for related products (first 8 only to reduce API load)
+          const locationsMap: Record<string, { city: string | null; country: string | null }> = {};
+          const loadingMap: Record<string, boolean> = {};
+          const productsToProcess = filtered.slice(0, 8);
+          
+          productsToProcess.forEach(product => {
+            loadingMap[product.id] = true;
+          });
+          setRelatedLocationsLoading(loadingMap);
+          
+          await Promise.all(
+            productsToProcess.map(async (product: any) => {
+              let lat: number | undefined;
+              let lng: number | undefined;
+              
+              const locationSources = [product.location, product.geometry];
+              for (const source of locationSources) {
+                if (!source) continue;
+                
+                if (typeof source === 'string') {
+                  const coords = wkbHexToLatLng(source);
+                  if (coords) {
+                    lat = coords.lat;
+                    lng = coords.lng;
+                    break;
+                  }
+                } else if (source && typeof source === 'object') {
+                  lat = (source as any).lat ?? (source as any).latitude ?? (source as any).y;
+                  lng = (source as any).lng ?? (source as any).longitude ?? (source as any).x;
+                  
+                  if ((source as any).coordinates && Array.isArray((source as any).coordinates)) {
+                    const coords = (source as any).coordinates;
+                    if (coords.length >= 2) {
+                      lng = coords[0];
+                      lat = coords[1];
+                    }
+                  }
+                  
+                  if (lat != null && lng != null) break;
+                }
+              }
+              
+              if (lat != null && lng != null) {
+                try {
+                  const { city, country } = await getCityFromCoordinates(lat, lng);
+                  locationsMap[product.id] = { city, country };
+                } catch {
+                  locationsMap[product.id] = { city: null, country: null };
+                }
+              } else {
+                locationsMap[product.id] = { city: null, country: null };
+              }
+              
+              if (isMounted) {
+                setRelatedLocationsLoading(prev => {
+                  const updated = { ...prev };
+                  delete updated[product.id];
+                  return updated;
+                });
+              }
+            })
+          );
+          
+          if (isMounted) {
+            setRelatedProductImages(imagesMap);
+            setRelatedProductPrices(pricesMap);
+            setRelatedItemLocations(locationsMap);
+            setRelatedLocationsLoading({});
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch related products:', error);
+        if (isMounted) {
+          setRelatedProducts([]);
+        }
+      }
+    };
+    
+    fetchRelated();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [item?.id]);
 
   if (loading) {
     return <div><TranslatedText text="Loading..." /></div>;
@@ -850,6 +1014,52 @@ const ItemDetailsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* More items to explore section */}
+      {relatedProducts.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
+              <TranslatedText text="More items to explore" />
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
+              <TranslatedText text="Discover similar products you might like" />
+            </p>
+          </div>
+          <ProductSwiper
+            title=""
+            products={relatedProducts}
+            productImages={relatedProductImages}
+            itemLocations={relatedItemLocations}
+            productPrices={relatedProductPrices}
+            favoriteMap={favoriteMap}
+            locationsLoading={relatedLocationsLoading}
+            onFavoriteToggle={async (productId, isFavorite) => {
+              const token = localStorage.getItem('token') || undefined;
+              if (!token || !isAuthenticated) return;
+              const currentlyFav = isFavorite;
+              setFavoriteMap(prev => ({ ...prev, [productId]: !currentlyFav }));
+              try {
+                if (currentlyFav) {
+                  await removeUserFavorite(productId, token);
+                } else {
+                  await addUserFavorite(productId, token);
+                }
+              } catch {
+                setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
+              }
+            }}
+            onProductClick={(productId) => {
+              navigate(`/it/${productId}`);
+            }}
+            formatCurrency={formatCurrency}
+            tSync={tSync}
+            slidesPerView={4}
+            autoplay={true}
+            showNavigation={true}
+          />
+        </div>
+      )}
 
       {/* Authentication Modal */}
       {showAuthModal && (

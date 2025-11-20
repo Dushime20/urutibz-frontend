@@ -197,7 +197,6 @@ const DashboardPage: React.FC = () => {
   const [bookingReviewCounts, setBookingReviewCounts] = useState<{ [bookingId: string]: number }>({});
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingWallet, setLoadingWallet] = useState(false);
-  // Notifications moved to MyAccountHeader
 
   // 2FA state
   const [show2FAModal, setShow2FAModal] = useState(false);

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -18,7 +18,12 @@ import {
   Filter,
   Headphones,
   Phone,
-  Sparkles
+  Sparkles,
+  LayoutGrid,
+  Tag,
+  ArrowRight,
+  Camera,
+  Package
 } from 'lucide-react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
@@ -28,6 +33,12 @@ import { TranslatedText } from '../translated-text';
 import RealtimeNotifications from '../RealtimeNotifications';
 import axios from '../../lib/http';
 import { API_BASE_URL } from '../../pages/admin/service/config';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay } from 'swiper/modules';
+// @ts-ignore - CSS import for Swiper
+import 'swiper/css';
+import { fetchAvailableProducts } from '../../pages/admin/service';
+import { getProductImagesByProductId } from '../../pages/my-account/service/api';
 
 type HeaderCategory = { id: string; label: string };
 
@@ -52,6 +63,77 @@ const tickerMessages = [
   'Enterprise SLA: 30-min global support, 24/7/365'
 ];
 
+type CategoryShowcase = {
+  tagline: string;
+  description: string;
+  highlights: { title: string; description: string }[];
+  miniTags: string[];
+  cta: string;
+};
+
+const CATEGORY_STORIES: Record<string, CategoryShowcase> = {
+  'camera-equipment': {
+    tagline: 'Pro-Grade Imaging Gear',
+    description: 'Mirrorless bodies, prime lenses, lighting kits, and accessory bundles trusted by agencies worldwide.',
+    highlights: [
+      { title: 'Hybrid Shooters', description: 'Full-frame cameras that seamlessly move from video to stills.' },
+      { title: 'Studio-Ready Lighting', description: 'Softboxes, RGB panels, and modifiers for any set.' },
+      { title: 'On-the-Go Kits', description: 'Curated bundles for travel creators and event teams.' }
+    ],
+    miniTags: ['Cine Lenses', 'Gimbals', 'Sound Kits', 'Live Streaming'],
+    cta: 'Explore pro camera rentals'
+  },
+  mobility: {
+    tagline: 'Move Anything, Anywhere',
+    description: 'Electrified fleets, last-mile delivery solutions, and premium transport for your next project.',
+    highlights: [
+      { title: 'EV Fleets', description: 'Sustainable vehicles for corporate roadshows and shoots.' },
+      { title: 'Specialty Transport', description: 'From refrigerated vans to luxury shuttles.' },
+      { title: 'Smart Logistics', description: 'Telematics, driver services, and insurance ready out of the box.' }
+    ],
+    miniTags: ['EV Vans', 'Luxury SUVs', 'Cargo Bikes', 'Driver Services'],
+    cta: 'Reserve mobility solutions'
+  },
+  events: {
+    tagline: 'Flagship-Ready Experiences',
+    description: 'Everything you need for conferences, pop-ups, and large-scale brand activations.',
+    highlights: [
+      { title: 'Immersive Booths', description: 'Modular builds, LED walls, and digital signage.' },
+      { title: 'Hospitality Suites', description: 'Premium furnishings, bars, and lounge experiences.' },
+      { title: 'On-Site Services', description: 'Staffing, logistics, and 24/7 support teams.' }
+    ],
+    miniTags: ['Modular Stages', 'Registration Tech', 'Corporate Gifting', 'Hybrid Streaming'],
+    cta: 'Plan an unforgettable event'
+  }
+};
+
+const getCategoryKey = (label: string) =>
+  label
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const buildDefaultShowcase = (name?: string): CategoryShowcase => ({
+  tagline: `Discover ${name || 'our top categories'}`,
+  description: `Handpicked suppliers, flexible terms, and enterprise-grade support for ${name || 'every use case'}.`,
+  highlights: [
+    { title: 'Curated Collections', description: 'Trusted suppliers vetted for quality, compliance, and readiness.' },
+    { title: 'Flexible Terms', description: 'Short-term activations or long-term programs, scaled to your needs.' },
+    { title: 'Global Reach', description: 'Deploy assets across cities with unified logistics.' }
+  ],
+  miniTags: ['Trending', 'Eco-friendly', 'Enterprise-ready', 'Top Rated'],
+  cta: 'Browse all listings'
+});
+
+const resolveCategoryShowcase = (category?: HeaderCategory | null): CategoryShowcase => {
+  if (!category) {
+    return buildDefaultShowcase();
+  }
+  const key = getCategoryKey(category.label);
+  return CATEGORY_STORIES[key] ?? buildDefaultShowcase(category.label);
+};
+
 const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -60,20 +142,28 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
   const [topCategories, setTopCategories] = useState<HeaderCategory[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [categoryProducts, setCategoryProducts] = useState<any[]>([]);
+  const [categoryProductImages, setCategoryProductImages] = useState<Record<string, string[]>>({});
+  const [loadingCategoryProducts, setLoadingCategoryProducts] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<Array<{ type: 'product' | 'category'; name: string; id?: string }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allCategories, setAllCategories] = useState<any[]>([]);
   const searchTimeoutRef = useRef<number | null>(null);
   const autoSearchTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const imageSearchInputRef = useRef<HTMLInputElement>(null);
   const [tickerIndex, setTickerIndex] = useState(0);
 
   const roleDestination =
@@ -117,12 +207,28 @@ const Header: React.FC = () => {
           : [];
         const cats: HeaderCategory[] = rows.map((c: any) => ({ id: c.id || c.slug || c.name, label: c.name }));
         setTopCategories(cats.slice(0, 12));
+        setAllCategories(rows);
       } catch {
         setTopCategories([]);
+        setAllCategories([]);
+      }
+    })();
+    
+    // Fetch products for search suggestions
+    (async () => {
+      try {
+        const token = localStorage.getItem('token') || undefined;
+        const result = await fetchAvailableProducts(token, true);
+        const products = result.data || [];
+        // Limit to first 100 products for performance
+        setAllProducts(products.slice(0, 100));
+      } catch {
+        setAllProducts([]);
       }
     })();
     const p = new URLSearchParams(location.search);
-    setQ(p.get('q') || '');
+    const urlQuery = p.get('q') || '';
+    setQ(urlQuery);
     setCategory(p.get('category') || 'all');
     setCheckIn(p.get('checkIn') || '');
     setCheckOut(p.get('checkOut') || '');
@@ -132,59 +238,62 @@ const Header: React.FC = () => {
     setRadiusKm(Number(p.get('radiusKm') || 25));
     setPriceMin(p.get('priceMin') || '');
     setPriceMax(p.get('priceMax') || '');
+    
+    // Clear suggestions when URL changes - they'll be regenerated on focus/type
+    if (urlQuery.length < 2) {
+      setSearchSuggestions([]);
+    }
   }, [location.search]);
 
-  const generateSearchSuggestions = useCallback((query: string): string[] => {
+  const generateSearchSuggestions = useCallback((query: string): Array<{ type: 'product' | 'category'; name: string; id?: string }> => {
     if (!query || query.length < 2) return [];
 
-    const suggestions = [
-      'camera rental',
-      'car rental',
-      'laptop rental',
-      'drone rental',
-      'event equipment',
-      'photography gear',
-      'outdoor gear',
-      'tools rental',
-      'party supplies',
-      'fitness equipment',
-      'travel gear',
-      'home appliances',
-      'Canon camera',
-      'Nikon lens',
-      'DJI drone',
-      'MacBook Pro',
-      'iPhone rental',
-      'iPad rental',
-      'Sony camera',
-      'GoPro',
-      'wedding photography',
-      'corporate events',
-      'birthday party',
-      'conference equipment',
-      'trade show booth',
-      'exhibition setup',
-      'near me',
-      'downtown',
-      'city center',
-      'airport pickup',
-      'daily rental',
-      'weekly rental',
-      'monthly rental',
-      'long term'
-    ];
-
-    return suggestions
-      .filter(
-        (suggestion) =>
-          suggestion.toLowerCase().includes(query.toLowerCase()) ||
-          query
-            .toLowerCase()
-            .split(' ')
-            .some((word) => suggestion.toLowerCase().includes(word))
+    const queryLower = query.toLowerCase();
+    const queryWords = queryLower.split(' ').filter(w => w.length > 0);
+    
+    const suggestions: Array<{ type: 'product' | 'category'; name: string; id?: string }> = [];
+    
+    // Search in product names
+    const productMatches = allProducts
+      .filter((product: any) => {
+        const productName = (product.title || product.name || '').toString().toLowerCase();
+        return productName.includes(queryLower) ||
+               queryWords.some((word) => productName.includes(word));
+      })
+      .slice(0, 5)
+      .map((product: any) => ({
+        type: 'product' as const,
+        name: product.title || product.name || 'Product',
+        id: product.id
+      }));
+    
+    suggestions.push(...productMatches);
+    
+    // Search in category names
+    const categoryMatches = allCategories
+      .filter((category: any) => {
+        const categoryName = (category.name || category.label || '').toString().toLowerCase();
+        return categoryName.includes(queryLower) ||
+               queryWords.some((word) => categoryName.includes(word));
+      })
+      .slice(0, 3)
+      .map((category: any) => ({
+        type: 'category' as const,
+        name: category.name || category.label || 'Category',
+        id: category.id || category.slug
+      }));
+    
+    suggestions.push(...categoryMatches);
+    
+    // Remove duplicates and limit to 8 suggestions
+    const uniqueSuggestions = suggestions
+      .filter((suggestion, index, self) => 
+        index === self.findIndex((s) => s.name.toLowerCase() === suggestion.name.toLowerCase())
       )
       .slice(0, 8);
-  }, []);
+    
+    return uniqueSuggestions;
+  }, [allProducts, allCategories]);
 
   const buildSearchParams = useCallback(
     (overrides?: Partial<{ q: string; category: string; priceMin: string; priceMax: string; checkIn: string; checkOut: string; nearMe: boolean; lat: string; lng: string; radiusKm: number }>) => {
@@ -220,7 +329,7 @@ const Header: React.FC = () => {
   );
 
   const performAutoSearch = useCallback(
-    (overrides?: Parameters<typeof buildSearchParams>[0]) => {
+    (overrides?: Parameters<typeof buildSearchParams>[0], keepSuggestionsOpen: boolean = false) => {
       const { params, effective } = buildSearchParams(overrides);
       const queryString = params.toString();
       const recentValue = overrides?.q ?? effective.q;
@@ -230,7 +339,10 @@ const Header: React.FC = () => {
         localStorage.setItem('recentSearches', JSON.stringify(newRecentSearches));
       }
       navigate(`/items${queryString ? `?${queryString}` : ''}`);
-      setShowSuggestions(false);
+      // Only close suggestions if explicitly requested
+      if (!keepSuggestionsOpen) {
+        setShowSuggestions(false);
+      }
     },
     [buildSearchParams, navigate, recentSearches]
   );
@@ -267,18 +379,19 @@ const Header: React.FC = () => {
           setIsSearching(true);
           setSearchSuggestions(generateSearchSuggestions(query));
           setShowSuggestions(true);
-
-          autoSearchTimeoutRef.current = window.setTimeout(() => {
-            performAutoSearch();
-          }, 1000);
+          // Removed auto-search - users will manually trigger search or click suggestions
+        } else if (query.length === 0) {
+          setSearchSuggestions([]);
+          setShowSuggestions(false);
         } else {
+          // For single character, keep suggestions hidden
           setSearchSuggestions([]);
           setShowSuggestions(false);
         }
         setIsSearching(false);
       }, 300);
     },
-    [generateSearchSuggestions, performAutoSearch]
+    [generateSearchSuggestions]
   );
 
   useEffect(() => {
@@ -300,14 +413,78 @@ const Header: React.FC = () => {
     debouncedSearch(value);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setQ(suggestion);
-    setShowSuggestions(false);
-    performAutoSearch({ q: suggestion });
+  const handleSuggestionClick = (e: React.MouseEvent, suggestion: string | { type: 'product' | 'category'; name: string; id?: string }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (typeof suggestion === 'string') {
+      setQ(suggestion);
+      setShowSuggestions(false);
+      // Navigate to search results
+      performAutoSearch({ q: suggestion }, false);
+    } else {
+      if (suggestion.type === 'category' && suggestion.id) {
+        setQ(suggestion.name);
+        setCategory(suggestion.id);
+        setShowSuggestions(false);
+        performAutoSearch({ q: suggestion.name, category: suggestion.id }, false);
+      } else if (suggestion.type === 'product' && suggestion.id) {
+        // For products, navigate directly to product page
+        setShowSuggestions(false);
+        navigate(`/it/${suggestion.id}`);
+      } else {
+        setQ(suggestion.name);
+        setShowSuggestions(false);
+        performAutoSearch({ q: suggestion.name }, false);
+      }
+    }
   };
 
   const submitSearch = () => {
-    performAutoSearchOnQuery();
+    if (q.length >= 2) {
+      performAutoSearchOnQuery();
+      // After navigation, refocus input to allow continued searching
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          // Show suggestions again for the current query
+          setSearchSuggestions(generateSearchSuggestions(q));
+          setShowSuggestions(true);
+        }
+      }, 300);
+    } else {
+      performAutoSearchOnQuery();
+    }
+  };
+
+  const handleImageSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Create a FileReader to read the image
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // Here you would typically send the image to your backend for image search
+      // For now, we'll navigate to a search page with the image data
+      // You can implement actual image search API call here
+      const imageData = reader.result;
+      // Example: navigate to search with image parameter
+      // navigate(`/items?imageSearch=${encodeURIComponent(imageData as string)}`);
+      
+      // For now, show a toast or handle the image search
+      console.log('Image search triggered with file:', file.name);
+      // You can implement your image search logic here
+    };
+    reader.readAsDataURL(file);
+    
+    // Reset the input so the same file can be selected again
+    if (imageSearchInputRef.current) {
+      imageSearchInputRef.current.value = '';
+    }
+  };
+
+  const triggerImageSearch = () => {
+    imageSearchInputRef.current?.click();
   };
 
   useEffect(() => {
@@ -380,6 +557,103 @@ const Header: React.FC = () => {
       });
   }, [topCategories]);
 
+  useEffect(() => {
+    if (isCategoriesOpen && normalizedCategories.length > 0) {
+      setActiveCategoryId((prev) => prev ?? normalizedCategories[0].id);
+    }
+  }, [isCategoriesOpen, normalizedCategories]);
+
+  useEffect(() => {
+    if (!isCategoriesOpen) {
+      setActiveCategoryId(null);
+      setCategoryProducts([]);
+      setCategoryProductImages({});
+    }
+  }, [isCategoriesOpen]);
+
+  // Fetch products when category is hovered
+  useEffect(() => {
+    if (!activeCategoryId || !isCategoriesOpen) {
+      setCategoryProducts([]);
+      setCategoryProductImages({});
+      return;
+    }
+
+    let isMounted = true;
+    const fetchCategoryProducts = async () => {
+      try {
+        setLoadingCategoryProducts(true);
+        const token = localStorage.getItem('token') || undefined;
+        
+        // Fetch all products
+        const result = await fetchAvailableProducts(token, true);
+        const allProducts = result.data || [];
+        
+        // Filter products by category
+        const filtered = allProducts.filter((p: any) => {
+          const categoryId = p.category_id || p.categoryId;
+          return categoryId && String(categoryId) === String(activeCategoryId);
+        }).slice(0, 12); // Limit to 12 products
+        
+        if (isMounted) {
+          setCategoryProducts(filtered);
+          
+          // Fetch images for products
+          const imagesMap: Record<string, string[]> = {};
+          await Promise.all(
+            filtered.map(async (product: any) => {
+              try {
+                const imgs = await getProductImagesByProductId(product.id);
+                const normalized: string[] = [];
+                if (Array.isArray(imgs)) {
+                  imgs.forEach((img: any) => {
+                    if (img && img.image_url) {
+                      normalized.push(img.image_url);
+                    }
+                  });
+                }
+                imagesMap[product.id] = normalized.length ? normalized : [];
+              } catch {
+                imagesMap[product.id] = [];
+              }
+            })
+          );
+          
+          if (isMounted) {
+            setCategoryProductImages(imagesMap);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch category products:', error);
+        if (isMounted) {
+          setCategoryProducts([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingCategoryProducts(false);
+        }
+      }
+    };
+
+    fetchCategoryProducts();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [activeCategoryId, isCategoriesOpen]);
+
+  const activeCategory = useMemo(
+    () => normalizedCategories.find((c) => c.id === activeCategoryId) || null,
+    [normalizedCategories, activeCategoryId]
+  );
+
+  const currentShowcase = useMemo(
+    () => resolveCategoryShowcase(activeCategory),
+    [activeCategory]
+  );
+
+  const spotlightLink = activeCategory ? `/items?category=${encodeURIComponent(activeCategory.id)}` : '/items';
+
   const displayCurrency = ((settings?.platform as any)?.defaultCurrency) || 'USD';
 
   return (
@@ -410,100 +684,194 @@ const Header: React.FC = () => {
 
       <div className="relative">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center gap-4 py-3 lg:py-4">
-            <div className="flex items-center gap-4 lg:gap-6">
-              <Link to="/" className="flex items-center gap-3">
-                <img
-                  src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'}
-                  alt={settings?.business?.companyName || settings?.platform?.siteName || 'UrutiBz'}
-                  className="h-12 lg:h-14 object-contain"
-                />
-                
-              </Link>
+          <div className="py-3 lg:py-4">
+            <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-6">
+              {/* Logo section - Order 1 on mobile */}
+              <div className="flex items-center gap-4 lg:gap-6 justify-between lg:justify-start order-1">
+                <Link to="/" className="flex items-center gap-3">
+                  <img
+                    src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'}
+                    alt={settings?.business?.companyName || settings?.platform?.siteName || 'UrutiBz'}
+                    className="h-12 lg:h-14 object-contain text-2xl"
+                  />
+                </Link>
 
-              <nav className="hidden xl:flex items-center gap-6">
-                <div className="relative">
+                {/* Menu button and controls - visible on mobile */}
+                <div className="flex items-center gap-2 lg:hidden">
+                  {isAuthenticated && (
+                    <RealtimeNotifications />
+                  )}
                   <button
-                    onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-200 hover:text-teal-600"
+                    onClick={toggleDarkMode}
+                    className="inline-flex p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
+                    aria-label={tSync('Toggle theme')}
                   >
-                    <TranslatedText text="Browse categories" />
-                    <ChevronDown className="w-4 h-4" />
+                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   </button>
-                {isCategoriesOpen && normalizedCategories.length > 0 && (
-                  <div className="absolute left-0 mt-2 w-72 max-h-[420px] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-3 px-4 z-30">
-                    {normalizedCategories.map((c) => (
-                      <Link
-                        key={c.id}
-                        to={`/items?category=${encodeURIComponent(c.id)}`}
-                        onClick={() => setIsCategoriesOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-100 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors"
-                      >
-                        <span className="inline-flex h-2 w-2 rounded-full bg-teal-500" />
-                        {c.label}
-                      </Link>
-                    ))}
+                  <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="p-2 rounded-full border border-gray-200 dark:border-gray-700"
+                    aria-label="Toggle menu"
+                  >
+                    {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Search section - Order 2 on mobile (between logo and menu) */}
+              <div className="order-2 w-full px-0 flex justify-center relative">
+                <div className="w-full max-w-4xl mx-auto flex items-stretch bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden focus-within:border-teal-500 dark:focus-within:border-teal-500 transition-colors relative">
+                  {/* Search input */}
+                  <div className="flex-1 flex items-center pr-5">
+                    {/* Hidden file input for image search */}
+                    <input
+                      ref={imageSearchInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSearch}
+                      className="hidden"
+                      aria-label={tSync('Search by image')}
+                    />
+                    {/* Camera icon button */}
+                    <button
+                      type="button"
+                      onClick={triggerImageSearch}
+                      className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 rounded"
+                      aria-label={tSync('Search by image')}
+                      title={tSync('Search by image')}
+                    >
+                      <Camera className="w-5 h-5" />
+                    </button>
+                    <input
+                      ref={searchInputRef}
+                      value={q}
+                      onChange={(e) => handleSearchInputChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          submitSearch();
+                        } else if (e.key === 'Escape') {
+                          setShowSuggestions(false);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (q.length >= 2) {
+                          setSearchSuggestions(generateSearchSuggestions(q));
+                        }
+                        setShowSuggestions(q.length >= 2 || recentSearches.length > 0);
+                      }}
+                      onBlur={(e) => {
+                        // Don't close suggestions if clicking on a suggestion
+                        const relatedTarget = e.relatedTarget as Node;
+                        if (suggestionsRef.current && relatedTarget && suggestionsRef.current.contains(relatedTarget)) {
+                          return;
+                        }
+                        // Delay closing to allow mouseDown/click events to fire on suggestions
+                        setTimeout(() => {
+                          // Only close if the input is not focused and user didn't click on suggestions
+                          if (document.activeElement !== searchInputRef.current && 
+                              (!suggestionsRef.current || !suggestionsRef.current.contains(document.activeElement))) {
+                            setShowSuggestions(false);
+                          }
+                        }, 300);
+                      }}
+                      placeholder={tSync('Search inventory, suppliers, SKU...')}
+                      className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  {/* Search button */}
+                  <button
+                    onClick={submitSearch}
+                    className="h-14 w-20 bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
+                    aria-label={tSync('Search')}
+                  >
+                    <Search className={`w-6 h-6 ${isSearching ? 'animate-pulse' : ''}`} />
+                  </button>
+                </div>
+                
+                {/* Search Suggestions Dropdown */}
+                {showSuggestions && (
+                  <div
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto"
+                  >
+                    {recentSearches.length > 0 && !q && (
+                      <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                          <Clock className="h-3 w-3" />
+                          <TranslatedText text="Recent Searches" />
+                        </div>
+                        {recentSearches.map((search, index) => (
+                          <button
+                            key={index}
+                            onMouseDown={(e) => handleSuggestionClick(e, search)}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            {search}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {!q && (
+                      <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                          <TrendingUp className="h-3 w-3" />
+                          <TranslatedText text="Trending Searches" />
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {trendingSearches.slice(0, 6).map((search, index) => (
+                            <button
+                              key={index}
+                              onMouseDown={(e) => handleSuggestionClick(e, search)}
+                              className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                              {search}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {q.length >= 2 && searchSuggestions.length > 0 && (
+                      <div className="p-3">
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                          <TranslatedText text="Suggestions" />
+                        </div>
+                        {searchSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onMouseDown={(e) => handleSuggestionClick(e, suggestion)}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            {suggestion.type === 'product' ? (
+                              <>
+                                <Package className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                                <span className="flex-1">{suggestion.name}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Product</span>
+                              </>
+                            ) : (
+                              <>
+                                <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                <span className="flex-1">{suggestion.name}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Category</span>
+                              </>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {q.length >= 2 && searchSuggestions.length === 0 && (
+                      <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <TranslatedText text="No suggestions for" /> "{q}"
+                      </div>
+                    )}
                   </div>
                 )}
-                </div>
-                {primaryNavLinks.map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={`text-sm font-medium ${
-                      location.pathname.startsWith(item.to)
-                        ? 'text-teal-600'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-teal-600'
-                    }`}
-                  >
-                    {tSync(item.label)}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-
-            {/* Center search bar */}
-            <div className="hidden md:flex flex-1 min-w-[280px]">
-              <div className="flex items-stretch flex-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
-                <div className="relative">
-                  <select
-                    value={category}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="h-full rounded-l-full bg-gray-50 dark:bg-gray-900/40 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 border-r border-gray-200 dark:border-gray-700 focus:outline-none"
-                  >
-                    <option value="all">{tSync('All')}</option>
-                    {topCategories.slice(0, 8).map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <ChevronDown className="w-4 h-4" />
-                  </span>
-                </div>
-                <div className="flex items-center flex-1 px-4">
-                  <Search className={`w-4 h-4 mr-3 ${isSearching ? 'text-teal-500 animate-pulse' : 'text-slate-400'}`} />
-                  <input
-                    ref={searchInputRef}
-                    value={q}
-                    onChange={(e) => handleSearchInputChange(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && submitSearch()}
-                    onFocus={() => setShowSuggestions(q.length >= 2 || recentSearches.length > 0)}
-                    placeholder={tSync('Search inventory, suppliers, SKU...')}
-                    className="flex-1 bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
-                  />
-                </div>
-                <button
-                  onClick={submitSearch}
-                  className="px-5 rounded-r-full bg-teal-600 text-white text-sm font-semibold hover:bg-teal-500 focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
-                >
-                  <TranslatedText text="Search" />
-                </button>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 lg:gap-3 ml-auto">
+              {/* Right section - Hidden on mobile, visible on desktop */}
+              <div className="hidden lg:flex items-center gap-2 lg:gap-3 justify-end order-3">
               <button
                 onClick={toggleDarkMode}
                 className="inline-flex p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
@@ -516,16 +884,8 @@ const Header: React.FC = () => {
                 <LanguageSwitcher buttonClassName="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-200 hover:text-teal-600 rounded-lg" />
               </div>
 
-              <Link
-                to="/create-listing"
-                className="hidden lg:inline-flex items-center gap-2 px-4 py-2 rounded-full border border-teal-500 text-teal-600 font-semibold hover:bg-teal-50"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <TranslatedText text="List inventory" />
-              </Link>
-
               {isAuthenticated ? (
-                <div className="flex items-center gap-3">
+                <div className="hidden md:flex items-center gap-3">
                   <RealtimeNotifications />
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -559,18 +919,14 @@ const Header: React.FC = () => {
                         <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
                       </div>
                       <div className="py-2">
-                        {/* <Link to="/profile" className="block px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-800">
-                          <TranslatedText text="Profile" />
-                        </Link> */}
+                       
                         <Link
                           to={roleDestination}
                           className="block px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-800"
                         >
                           <TranslatedText text={roleLinkLabel} />
                         </Link>
-                        {/* <Link to="/my-rentals" className="block px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-800">
-                          <TranslatedText text="Orders & inspections" />
-                        </Link> */}
+                      
                       </div>
                       <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
                         <button
@@ -595,120 +951,182 @@ const Header: React.FC = () => {
                   )}
                 </div>
               )}
+              </div>
+            </div>
+          </div>
+        </div>
 
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden p-2 rounded-full border border-gray-200 dark:border-gray-700"
-                aria-label="Toggle menu"
-              >
-                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
+        <div className="hidden lg:flex items-center justify-center gap-6 m-2 border-gray-100 dark:border-gray-800 pt-3 mt-4 text-base lg:text-lg font-semibold text-slate-600 dark:text-slate-200 relative">
+          {/* Category Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsCategoriesOpen((prev) => !prev)}
+              className={`group inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition-all ${
+                isCategoriesOpen
+                  ? 'text-white border-teal-500 bg-teal-600 shadow-[0_15px_35px_-25px_rgba(13,148,136,0.8)]'
+                  : 'text-slate-600 dark:text-slate-200 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:text-teal-600 hover:border-teal-200'
+              }`}
+              aria-haspopup="true"
+              aria-expanded={isCategoriesOpen}
+            >
+              <span className={`flex h-7 w-7 items-center justify-center rounded-xl transition-all ${
+                isCategoriesOpen
+                  ? 'bg-white/20 text-white shadow-inner shadow-teal-900/30'
+                  : 'bg-teal-50 text-teal-500 group-hover:text-teal-600 group-hover:bg-teal-50'
+              }`}>
+                <LayoutGrid className="w-4 h-4" />
+              </span>
+              <span className="tracking-tight">{tSync('Discover')}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isCategoriesOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-teal-500'}`} />
+            </button>
+            <div
+              className={`absolute left-0 top-full mt-3 w-[min(90vw,920px)] max-w-5xl rounded-3xl border border-slate-200/70 dark:border-slate-700/60 bg-white/95 dark:bg-gray-900/95 shadow-2xl shadow-slate-900/10 backdrop-blur-xl p-5 transition-all duration-200 origin-top z-50 ${
+                normalizedCategories.length && isCategoriesOpen
+                  ? 'opacity-100 translate-y-0 pointer-events-auto'
+                  : 'opacity-0 -translate-y-2 pointer-events-none'
+              }`}
+            >
+              {normalizedCategories.length > 0 && (
+                <div className="flex flex-col gap-6 lg:flex-row">
+                  <div className="w-full lg:w-72 max-h-[360px] overflow-y-auto pr-3 border-r border-slate-100 dark:border-slate-800/70">
+                    <p className="px-3 pb-1 text-[11px] uppercase tracking-[0.4em] text-slate-400 dark:text-slate-500">
+                      {tSync('Browse by category')}
+                    </p>
+                    {normalizedCategories.map((cat) => {
+                      const isActive = activeCategory?.id === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          onMouseEnter={() => setActiveCategoryId(cat.id)}
+                          onFocus={() => setActiveCategoryId(cat.id)}
+                          onClick={() => {
+                            navigate(`/items?category=${encodeURIComponent(cat.id)}`);
+                            setIsCategoriesOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2.5 rounded-2xl flex items-center justify-between gap-2 text-sm font-medium transition-all ${
+                            isActive
+                              ? 'bg-gradient-to-r from-emerald-50 via-white to-transparent text-teal-700 dark:from-emerald-900/30 dark:via-gray-900 dark:to-transparent shadow-sm'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/70'
+                          }`}
+                        >
+                          <span className="truncate">{cat.label}</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform ${isActive ? 'rotate-90 text-teal-500' : 'text-slate-400'}`} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex-1 bg-gradient-to-br from-slate-50 via-white to-emerald-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800/80 rounded-3xl p-6 border border-slate-100 dark:border-gray-800 overflow-hidden relative">
+                    <div className="absolute inset-y-0 right-0 w-1/2 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.35),_transparent_60%)]" />
+                    <div className="relative h-full flex flex-col">
+                      <div className="mb-4">
+                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 dark:bg-gray-900/60 text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-600 dark:text-emerald-300 shadow-sm">
+                          <Sparkles className="w-3 h-3" />
+                          {activeCategory?.label || tSync('Spotlight')}
+                        </span>
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight mt-2">
+                          {tSync('Featured Products')}
+                        </h3>
+                      </div>
+                      
+                      {loadingCategoryProducts ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-2"></div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">{tSync('Loading products...')}</p>
+                          </div>
+                        </div>
+                      ) : categoryProducts.length > 0 ? (
+                        <div className="flex-1 overflow-hidden">
+                          <Swiper
+                            modules={[Autoplay]}
+                            spaceBetween={16}
+                            slidesPerView={2}
+                            autoplay={{
+                              delay: 3000,
+                              disableOnInteraction: false
+                            }}
+                            className="h-full"
+                          >
+                            {categoryProducts.map((product) => (
+                              <SwiperSlide key={product.id}>
+                                <Link
+                                  to={`/it/${product.id}`}
+                                  onClick={() => setIsCategoriesOpen(false)}
+                                  className="block group"
+                                >
+                                  <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-slate-700 h-full flex flex-col">
+                                    {/* Product Image */}
+                                    <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-slate-700">
+                                      {categoryProductImages[product.id]?.[0] ? (
+                                        <img
+                                          src={categoryProductImages[product.id][0]}
+                                          alt={product.title || product.name || 'Product'}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-slate-500">
+                                          <Package className="w-12 h-12" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Product Name */}
+                                    <div className="p-3">
+                                      <h4 className="font-medium text-sm text-gray-900 dark:text-slate-100 line-clamp-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                                        {product.title || product.name || tSync('Product')}
+                                      </h4>
+                                    </div>
+                                  </div>
+                                </Link>
+                              </SwiperSlide>
+                            ))}
+                          </Swiper>
+                        </div>
+                      ) : activeCategoryId ? (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{tSync('No products found in this category')}</p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{tSync('Hover over a category to see products')}</p>
+                        </div>
+                      )}
+                      
+                      {categoryProducts.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                          <Link
+                            to={activeCategoryId ? `/items?category=${encodeURIComponent(activeCategoryId)}` : '/items'}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition w-full justify-center"
+                            onClick={() => setIsCategoriesOpen(false)}
+                          >
+                            {tSync('View All Products')}
+                            <ArrowRight className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Slim filter rail */}
-          {/* <div className="hidden lg:flex items-center gap-3 border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
-            <button
-              type="button"
-              onClick={detectLocation}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:border-teal-400"
+          {primaryNavLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className="hover:text-teal-600 transition-colors"
             >
-              <MapPin className="w-3.5 h-3.5 text-teal-500" />
-              {nearMe && lat && lng ? tSync('Near you') : tSync('Use location')}
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-300"
-            >
-              <Calendar className="w-3.5 h-3.5 text-teal-500" />
-              {checkIn || checkOut ? `${checkIn || 'Start'} → ${checkOut || 'End'}` : tSync('Dates')}
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-300"
-            >
-              <Filter className="w-3.5 h-3.5 text-teal-500" />
-              <TranslatedText text="Filters" />
-            </button>
-            {quickFilterPresets.map((preset) => (
-              <button
-                key={preset.value}
-                onClick={() => performQuickSearch({ q: preset.query })}
-                className="px-3 py-1.5 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:border-teal-400"
-              >
-                {tSync(preset.label)}
-              </button>
-            ))}
-          </div> */}
-        </div>
-
-        {showSuggestions && (
-          <div
-            ref={suggestionsRef}
-            className="hidden md:block absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-4xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto"
+              {tSync(link.label)}
+            </Link>
+          ))}
+          <Link
+            to="/create-listing"
+            className="hover:text-teal-600 transition-colors inline-flex items-center gap-1.5"
           >
-            {recentSearches.length > 0 && !q && (
-              <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                  <Clock className="h-3 w-3" />
-                  <TranslatedText text="Recent Searches" />
-                </div>
-                {recentSearches.map((search, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(search)}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    {search}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {!q && (
-              <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                  <TrendingUp className="h-3 w-3" />
-                  <TranslatedText text="Trending Searches" />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {trendingSearches.slice(0, 6).map((search, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(search)}
-                      className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      {search}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {q.length >= 2 && searchSuggestions.length > 0 && (
-              <div className="p-3">
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                  <TranslatedText text="Suggestions" />
-                </div>
-                {searchSuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {q.length >= 2 && searchSuggestions.length === 0 && (
-              <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
-                <TranslatedText text="No suggestions for" /> "{q}"
-              </div>
-            )}
-          </div>
-        )}
+            <PlusCircle className="w-4 h-4" />
+            <TranslatedText text="List inventory" />
+          </Link>
+        </div>
 
         {isMenuOpen && (
           <div className="md:hidden border-t border-gray-200 dark:border-gray-600 py-4 px-4">
@@ -734,26 +1152,66 @@ const Header: React.FC = () => {
 
               <Link
                 to="/create-listing"
-                className="block px-3 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-sky-500 text-white text-center font-semibold"
+                className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-teal-600 dark:text-teal-300 text-center font-semibold hover:border-teal-500 dark:hover:border-teal-500"
               >
                 <TranslatedText text="List inventory" />
               </Link>
 
               {isAuthenticated ? (
-                <>
-                  <Link
-                    to={user?.role === 'admin' ? '/admin' : '/dashboard'}
-                    className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+                <div className="space-y-2">
+                  {/* Profile Dropdown Button */}
+                  <button
+                    onClick={() => setIsMobileProfileOpen(!isMobileProfileOpen)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-teal-500"
                   >
-                    {user?.role === 'admin' ? <TranslatedText text="Admin Console" /> : <TranslatedText text="My Account" />}
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-teal-500 flex items-center justify-center text-white">
+                        <User className="w-5 h-5" />
+                      </div>
+                    )}
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isMobileProfileOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Profile Dropdown Menu */}
+                  {isMobileProfileOpen && (
+                    <div className="ml-4 space-y-2 border-l-2 border-teal-500 pl-4">
+                  <Link
+                        to={roleDestination}
+                        onClick={() => {
+                          setIsMobileProfileOpen(false);
+                          setIsMenuOpen(false);
+                        }}
+                        className="block px-3 py-2 rounded-lg bg-slate-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700"
+                      >
+                        <TranslatedText text={roleLinkLabel} />
                   </Link>
+                      <button
+                        onClick={() => {
+                          setIsMobileProfileOpen(false);
+                          setIsMenuOpen(false);
+                          logout();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+                      >
+                        <TranslatedText text="Sign out" />
+                      </button>
+                    </div>
+                  )}
+
                   <Link
                     to="/favorites"
+                    onClick={() => setIsMenuOpen(false)}
                     className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
                   >
                     <TranslatedText text="Favorites" />
                   </Link>
-                </>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <Link
@@ -775,10 +1233,9 @@ const Header: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+</div>      
     </header>
   );
 };
 
 export default Header;
-

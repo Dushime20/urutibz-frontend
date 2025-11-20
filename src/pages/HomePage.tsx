@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Heart, TrendingUp, AlertCircle, RefreshCw, Package, Wifi, WifiOff, Search, X, ShieldCheck, Sparkles, Handshake, Globe, Briefcase, Users } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
@@ -9,6 +9,8 @@ import { fetchAvailableProducts, fetchProductPricesByProductId, addUserFavorite,
 import { getProductImagesByProductId } from './my-account/service/api';
 import { logInteraction } from './admin/service/ai';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
+import ProductSwiper from '../components/products/ProductSwiper';
+import ProductCard from '../components/products/ProductCard';
 
 
 // Utility to format currency display
@@ -456,6 +458,53 @@ const HomePage: React.FC = () => {
     return () => { isMounted = false; };
   }, [products]);
 
+  // Categorize products into sections
+  const categorizedProducts = useMemo(() => {
+    if (products.length === 0) {
+      return {
+        popular: [],
+        new: [],
+        topRanking: [],
+        all: []
+      };
+    }
+
+    // Sort products by different criteria
+    const sortedByRating = [...products].sort((a, b) => {
+      const ratingA = parseFloat(a.average_rating || '0');
+      const ratingB = parseFloat(b.average_rating || '0');
+      return ratingB - ratingA;
+    });
+
+    const sortedByViews = [...products].sort((a, b) => {
+      const viewsA = a.view_count || 0;
+      const viewsB = b.view_count || 0;
+      return viewsB - viewsA;
+    });
+
+    const sortedByDate = [...products].sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.updated_at || 0).getTime();
+      const dateB = new Date(b.createdAt || b.updated_at || 0).getTime();
+      return dateB - dateA;
+    });
+
+    // Popular: Based on views and interactions
+    const popular = sortedByViews.slice(0, 12);
+
+    // New: Recently added products
+    const newProducts = sortedByDate.slice(0, 12);
+
+    // Top Ranking: Highest rated products
+    const topRanking = sortedByRating.slice(0, 12);
+
+    return {
+      popular,
+      new: newProducts,
+      topRanking,
+      all: products
+    };
+  }, [products]);
+
   // Apply comprehensive search filter for the visible grid
   const filtered = products.filter(p => {
     const title = (p.title || p.name || '').toString().toLowerCase();
@@ -727,6 +776,301 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
+         {/* Products Sections */}
+         <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 space-y-12">
+          {/* Search Results Header (only show if searching) */}
+          {searchQuery && (
+            <div className="mb-4 sm:mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100">
+                  <TranslatedText text="Search Results" /> "{searchQuery}"
+                </h2>
+                <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                  <Search className="w-3 h-3" />
+                  {filtered.length} <TranslatedText text="results" />
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchCategory('');
+                  setSearchPriceMin('');
+                  setSearchPriceMax('');
+                  setSearchCheckIn('');
+                  setSearchCheckOut('');
+                  setSearchNearMe(false);
+                  setSearchLat('');
+                  setSearchLng('');
+                  setSearchRadiusKm(25);
+                  setVisibleCount(100);
+                  showToast(tSync('Search cleared'), 'info');
+                }}
+                className="text-sm text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                title={tSync('Clear Search')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Show search results if searching */}
+          {searchQuery ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {filtered.slice(0, visibleCount).map((item, index) => (
+                <ProductCard
+                  key={item.id}
+                  product={item}
+                  productImages={productImages}
+                  itemLocations={itemLocations}
+                  productPrices={productPrices}
+                  favoriteMap={favoriteMap}
+                  locationsLoading={locationsLoading}
+                  onFavoriteToggle={async (productId, isFavorite) => {
+                    const token = localStorage.getItem('token') || undefined;
+                    if (!token) return;
+                    const currentlyFav = isFavorite;
+                    setFavoriteMap(prev => ({ ...prev, [productId]: !currentlyFav }));
+                    try {
+                      if (currentlyFav) {
+                        await removeUserFavorite(productId, token);
+                      } else {
+                        await addUserFavorite(productId, token);
+                      }
+                    } catch {
+                      setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
+                    }
+                  }}
+                  onProductClick={(productId, idx) => {
+                    const token = localStorage.getItem('token') || undefined;
+                    const userStr = localStorage.getItem('user');
+                    const userId = userStr ? (() => { try { return JSON.parse(userStr)?.id; } catch { return undefined; } })() : undefined;
+                    void logInteraction({
+                      userId,
+                      sessionId: localStorage.getItem('sessionId') || undefined,
+                      actionType: 'click' as const,
+                      targetType: 'product' as const,
+                      targetId: productId,
+                      pageUrl: `/it/${productId}`,
+                      referrerUrl: document.referrer || '/homepage',
+                      userAgent: navigator.userAgent,
+                      deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' as const : 'desktop' as const,
+                      metadata: { source: 'search_results', position: idx }
+                    }, token);
+                  }}
+                  index={index}
+                  formatCurrency={formatCurrency}
+                  tSync={tSync}
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Popular Products Section */}
+              <ProductSwiper
+                title={tSync('Popular Products')}
+                products={categorizedProducts.popular}
+                productImages={productImages}
+                itemLocations={itemLocations}
+                productPrices={productPrices}
+                favoriteMap={favoriteMap}
+                locationsLoading={locationsLoading}
+                onFavoriteToggle={async (productId, isFavorite) => {
+                  const token = localStorage.getItem('token') || undefined;
+                  if (!token) return;
+                  const currentlyFav = isFavorite;
+                  setFavoriteMap(prev => ({ ...prev, [productId]: !currentlyFav }));
+                  try {
+                    if (currentlyFav) {
+                      await removeUserFavorite(productId, token);
+                    } else {
+                      await addUserFavorite(productId, token);
+                    }
+                  } catch {
+                    setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
+                  }
+                }}
+                onProductClick={(productId, idx) => {
+                  const token = localStorage.getItem('token') || undefined;
+                  void logInteraction({
+                    actionType: 'click' as const,
+                    targetType: 'product' as const,
+                    targetId: productId,
+                    pageUrl: `/it/${productId}`,
+                    referrerUrl: '/homepage',
+                    userAgent: navigator.userAgent,
+                    deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' as const : 'desktop' as const,
+                    metadata: { source: 'popular_section', position: idx }
+                  }, token);
+                }}
+                formatCurrency={formatCurrency}
+                tSync={tSync}
+                slidesPerView={4}
+                autoplay={true}
+              />
+
+              {/* New Products Section */}
+              <ProductSwiper
+                title={tSync('New Products')}
+                products={categorizedProducts.new}
+                productImages={productImages}
+                itemLocations={itemLocations}
+                productPrices={productPrices}
+                favoriteMap={favoriteMap}
+                locationsLoading={locationsLoading}
+                onFavoriteToggle={async (productId, isFavorite) => {
+                  const token = localStorage.getItem('token') || undefined;
+                  if (!token) return;
+                  const currentlyFav = isFavorite;
+                  setFavoriteMap(prev => ({ ...prev, [productId]: !currentlyFav }));
+                  try {
+                    if (currentlyFav) {
+                      await removeUserFavorite(productId, token);
+                    } else {
+                      await addUserFavorite(productId, token);
+                    }
+                  } catch {
+                    setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
+                  }
+                }}
+                onProductClick={(productId, idx) => {
+                  const token = localStorage.getItem('token') || undefined;
+                  void logInteraction({
+                    actionType: 'click' as const,
+                    targetType: 'product' as const,
+                    targetId: productId,
+                    pageUrl: `/it/${productId}`,
+                    referrerUrl: '/homepage',
+                    userAgent: navigator.userAgent,
+                    deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' as const : 'desktop' as const,
+                    metadata: { source: 'new_section', position: idx }
+                  }, token);
+                }}
+                formatCurrency={formatCurrency}
+                tSync={tSync}
+                slidesPerView={4}
+                autoplay={true}
+              />
+
+              {/* Top Ranking Section */}
+              <ProductSwiper
+                title={tSync('Top Ranking')}
+                products={categorizedProducts.topRanking}
+                productImages={productImages}
+                itemLocations={itemLocations}
+                productPrices={productPrices}
+                favoriteMap={favoriteMap}
+                locationsLoading={locationsLoading}
+                onFavoriteToggle={async (productId, isFavorite) => {
+                  const token = localStorage.getItem('token') || undefined;
+                  if (!token) return;
+                  const currentlyFav = isFavorite;
+                  setFavoriteMap(prev => ({ ...prev, [productId]: !currentlyFav }));
+                  try {
+                    if (currentlyFav) {
+                      await removeUserFavorite(productId, token);
+                    } else {
+                      await addUserFavorite(productId, token);
+                    }
+                  } catch {
+                    setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
+                  }
+                }}
+                onProductClick={(productId, idx) => {
+                  const token = localStorage.getItem('token') || undefined;
+                  void logInteraction({
+                    actionType: 'click' as const,
+                    targetType: 'product' as const,
+                    targetId: productId,
+                    pageUrl: `/it/${productId}`,
+                    referrerUrl: '/homepage',
+                    userAgent: navigator.userAgent,
+                    deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' as const : 'desktop' as const,
+                    metadata: { source: 'top_ranking_section', position: idx }
+                  }, token);
+                }}
+                formatCurrency={formatCurrency}
+                tSync={tSync}
+                slidesPerView={4}
+                autoplay={true}
+              />
+
+              {/* All Products Section */}
+              <div className="w-full">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
+                    <TranslatedText text="All Products" />
+                  </h2>
+                  <Link to="/items" className="text-sm text-my-primary dark:text-teal-400 hover:underline">
+                    <TranslatedText text="View All" />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                  {filtered.slice(0, visibleCount).map((item, index) => (
+                    <ProductCard
+                      key={item.id}
+                      product={item}
+                      productImages={productImages}
+                      itemLocations={itemLocations}
+                      productPrices={productPrices}
+                      favoriteMap={favoriteMap}
+                      locationsLoading={locationsLoading}
+                      onFavoriteToggle={async (productId, isFavorite) => {
+                        const token = localStorage.getItem('token') || undefined;
+                        if (!token) return;
+                        const currentlyFav = isFavorite;
+                        setFavoriteMap(prev => ({ ...prev, [productId]: !currentlyFav }));
+                        try {
+                          if (currentlyFav) {
+                            await removeUserFavorite(productId, token);
+                          } else {
+                            await addUserFavorite(productId, token);
+                          }
+                        } catch {
+                          setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
+                        }
+                      }}
+                      onProductClick={(productId, idx) => {
+                        const token = localStorage.getItem('token') || undefined;
+                        void logInteraction({
+                          actionType: 'click' as const,
+                          targetType: 'product' as const,
+                          targetId: productId,
+                          pageUrl: `/it/${productId}`,
+                          referrerUrl: '/homepage',
+                          userAgent: navigator.userAgent,
+                          deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' as const : 'desktop' as const,
+                          metadata: { source: 'all_products_section', position: idx }
+                        }, token);
+                      }}
+                      index={index}
+                      formatCurrency={formatCurrency}
+                      tSync={tSync}
+                    />
+                  ))}
+                </div>
+
+                {/* Load More Button */}
+                {filtered.length > visibleCount && (
+                  <div className="flex justify-center mt-8">
+                    <button
+                      onClick={() => setVisibleCount(prev => Math.min(prev + 15, filtered.length))}
+                      className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary transition-colors"
+                    >
+                      <Package className="w-4 h-4 mr-2" />
+                      <TranslatedText text="Load More" /> ({filtered.length - visibleCount} remaining)
+                    </button>
+                  </div>
+                )}
+
+                {/* Show total count */}
+                <div className="text-center mt-4 text-sm text-gray-600 dark:text-slate-400">
+                  <TranslatedText text="Showing" /> {Math.min(visibleCount, filtered.length)} <TranslatedText text="of" /> {filtered.length} <TranslatedText text="products" />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Enterprise trust and quick actions */}
         <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20">
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-lg space-y-6">
@@ -897,262 +1241,7 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* Results grid */}
-        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20">
-          {/* Section header */}
-          <div className="mb-4 sm:mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100">
-                {searchQuery ? <><TranslatedText text="Search Results" /> "{searchQuery}"</> : <TranslatedText text="Popular Listings" />}
-              </h2>
-              {searchQuery ? (
-                <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                  <Search className="w-3 h-3" />
-                  {filtered.length} <TranslatedText text="results" />
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-my-primary/10 text-my-primary dark:bg-my-primary/20 dark:text-teal-400">
-                  <TrendingUp className="w-3 h-3" />
-                  <TranslatedText text="AI Trending" />
-                </span>
-              )}
-              {loading && (
-                <span className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                  <TranslatedText text="Updating..." />
-                </span>
-              )}
-              {/* Network status indicator */}
-              <span className={`inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 ${
-                navigator.onLine 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
-                  : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-              }`}>
-                {navigator.onLine ? (
-                  <Wifi className="w-3 h-3" />
-                ) : (
-                  <WifiOff className="w-3 h-3" />
-                )}
-                {navigator.onLine ? <TranslatedText text="Online" /> : <TranslatedText text="Offline" />}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              {searchQuery && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSearchCategory('');
-                    setSearchPriceMin('');
-                    setSearchPriceMax('');
-                    setSearchCheckIn('');
-                    setSearchCheckOut('');
-                    setSearchNearMe(false);
-                    setSearchLat('');
-                    setSearchLng('');
-                    setSearchRadiusKm(25);
-                    setVisibleCount(100);
-                    showToast(tSync('Search cleared'), 'info');
-                  }}
-                  className="text-sm text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  title={tSync('Clear Search')}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={handleRefresh}
-                className="text-sm text-gray-600 dark:text-slate-400 hover:text-my-primary dark:hover:text-teal-400 transition-colors"
-                title={tSync('Refresh')}
-                disabled={loading}
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-              <button
-                onClick={() => {
-                  setLoadingMore(true);
-                  fetchProducts().finally(() => setLoadingMore(false));
-                }}
-                disabled={loading || loadingMore}
-                className="text-sm text-my-primary dark:text-teal-400 hover:underline disabled:opacity-50"
-              >
-                {loadingMore ? <TranslatedText text="Fetching..." /> : <TranslatedText text="Fetch All Products" />}
-              </button>
-              <Link to="/items" className="text-sm text-my-primary dark:text-teal-400 hover:underline"><TranslatedText text="View All" /></Link>
-            </div>
-          </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {filtered.slice(0, visibleCount).map((item, index) => (
-            <Link key={item.id} to={`/it/${item.id}`} className="group"
-              onClick={() => {
-                const token = localStorage.getItem('token') || undefined;
-                const userStr = localStorage.getItem('user');
-                const userId = userStr ? (() => { try { return JSON.parse(userStr)?.id; } catch { return undefined; } })() : undefined;
-                const payload = {
-                  userId,
-                  sessionId: localStorage.getItem('sessionId') || undefined,
-                  actionType: 'click' as const,
-                  targetType: 'product' as const,
-                  targetId: item.id,
-                  pageUrl: `/it/${item.id}`,
-                  referrerUrl: document.referrer || '/homepage',
-                  userAgent: navigator.userAgent,
-                  deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' as const : 'desktop' as const,
-                  metadata: { source: 'home_grid', position: index }
-                };
-                // fire-and-forget
-                void logInteraction(payload, token);
-              }}
-            >
-              <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-300 border border-gray-100 dark:border-slate-700">
-                {/* Image Container */}
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
-                  {productImages[item.id]?.[0] ? (
-                    <img
-                      src={productImages[item.id][0]}
-                      alt={item.title || tSync('Product listing')}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        // Hide the image and show icon instead
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                      }}
-                    />
-                  ) : null}
-                  {/* No Image Icon */}
-                  <div className={`${productImages[item.id]?.[0] ? 'hidden' : ''} flex flex-col items-center justify-center text-gray-400 dark:text-slate-500`}>
-                    <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-sm font-medium"><TranslatedText text="No Image" /></span>
-                  </div>
-                  {/* Heart Icon */}
-                  <button
-                    type="button"
-                    aria-label={tSync('Add to favorites')}
-                    className="absolute top-3 right-3 w-8 h-8 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40 rounded-full flex items-center justify-center transition-colors"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const token = localStorage.getItem('token') || undefined;
-                      if (!token) return; // optionally prompt login
-                      const currentlyFav = Boolean(favoriteMap[item.id]);
-                      // optimistic update
-                      setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
-                      try {
-                        if (currentlyFav) {
-                          await removeUserFavorite(item.id, token);
-                          void logInteraction({
-                            actionType: 'unfavorite',
-                            targetType: 'product',
-                            targetId: item.id,
-                            pageUrl: window.location.pathname,
-                            userAgent: navigator.userAgent,
-                            deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-                          }, token);
-                        } else {
-                          await addUserFavorite(item.id, token);
-                          void logInteraction({
-                            actionType: 'favorite',
-                            targetType: 'product',
-                            targetId: item.id,
-                            pageUrl: window.location.pathname,
-                            userAgent: navigator.userAgent,
-                            deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-                          }, token);
-                        }
-                      } catch {
-                        // revert on failure
-                        setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
-                      }
-                    }}
-                  >
-                    <Heart className={`w-4 h-4 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-white dark:text-slate-200'}`} />
-                  </button>
-                </div>
-
-                {/* Content */}
-                <div className="p-3 space-y-1">
-                  {/* Title and Rating */}
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 pr-2">
-                      {item.title || item.name}
-                    </h3>
-                    <div className="flex items-center space-x-1 flex-shrink-0">
-                      <Star className="w-3 h-3 fill-current text-yellow-400" />
-                      <span className="text-sm text-gray-900 dark:text-slate-100">
-                        {item.average_rating || '4.8'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Location */}
-                  <p className="text-gray-600 dark:text-slate-400 text-sm">
-                    {locationsLoading[item.id] ? (
-                      <span className="flex items-center gap-1">
-                        <div className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin"></div>
-                        <TranslatedText text="Loading location..." />
-                      </span>
-                    ) : (
-                      <>
-                        {itemLocations[item.id]?.city || <TranslatedText text="Unknown Location" />}
-                        {itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
-                      </>
-                    )}
-                  </p>
-                  
-                  {/* Price */}
-                  <div className="text-gray-900 dark:text-slate-100 pt-1">
-                    {productPrices[item.id]?.price_per_day ? (
-                      <>
-                        <span className="font-semibold">
-                          {formatCurrency(productPrices[item.id].price_per_day, productPrices[item.id].currency)}
-                        </span>
-                        <span className="text-sm"> / <TranslatedText text="per day" /></span>
-                      </>
-                    ) : item.base_price_per_day != null ? (
-                      <>
-                        <span className="font-semibold">${item.base_price_per_day}</span>
-                        <span className="text-sm"> / <TranslatedText text="per day" /></span>
-                      </>
-                    ) : (
-                      <span className="font-semibold"><TranslatedText text="Price on Request" /></span>
-                    )}
-                  </div>
-
-                  {/* Interactions */}
-                  {productInteractions[item.id] && productInteractions[item.id].length > 0 && (
-                    <div className="text-xs text-gray-500 dark:text-slate-500 pt-1">
-                      <span className="flex items-center gap-1">
-                        <span>👥</span>
-                        <span>{productInteractions[item.id].length} recent interaction{productInteractions[item.id].length !== 1 ? 's' : ''}</span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Load More Button */}
-        {filtered.length > visibleCount && (
-          <div className="flex justify-center mt-8">
-            <button
-              onClick={() => setVisibleCount(prev => Math.min(prev + 15, filtered.length))}
-              className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary transition-colors"
-            >
-              <Package className="w-4 h-4 mr-2" />
-              <TranslatedText text="Load More" /> ({filtered.length - visibleCount} remaining)
-            </button>
-          </div>
-        )}
-
-        {/* Show total count */}
-        <div className="text-center mt-4 text-sm text-gray-600 dark:text-slate-400">
-          <TranslatedText text="Showing" /> {Math.min(visibleCount, filtered.length)} <TranslatedText text="of" /> {filtered.length} <TranslatedText text="products" />
-        </div>
        
-        </div>
       </div>
       
       {/* Padding between content and footer */}

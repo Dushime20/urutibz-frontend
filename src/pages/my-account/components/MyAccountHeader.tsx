@@ -7,6 +7,7 @@ import { fetchUserProfile } from '../service/api';
 import { useMarkReadMutation, useNotificationsQuery } from '../../../features/notifications/queries';
 import Portal from '../../../components/ui/Portal';
 import { LanguageSwitcher } from '../../../components/language-switcher';
+import useRealtime from '../../../hooks/useRealtime';
 
 type HeaderProps = { 
   onToggleSidebar?: () => void;
@@ -24,7 +25,6 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
 
   const [notificationsData, setNotificationsData] = useState<any[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
-  const unreadCount = notificationsData.filter((n: any) => !n.read).length;
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const { mutate: markRead } = useMarkReadMutation();
   const notifRef = useRef<HTMLDivElement | null>(null);
@@ -33,6 +33,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   const [showAllModal, setShowAllModal] = useState(false);
   const [modalPage, setModalPage] = useState(1);
   const modalQuery = useNotificationsQuery({ page: modalPage, limit: 50 });
+  const { socket, isConnected } = useRealtime();
   const modalItems = (
     (modalQuery.data as any)?.items ??
     (modalQuery.data as any)?.data?.items ??
@@ -42,6 +43,38 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   
   // Use the full notifications data for dropdown
   const dropdownItems = notificationsData;
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleRealtimeNotification = (payload: any) => {
+      const normalized = {
+        id: payload.id || `${Date.now()}-${Math.random()}`,
+        title: payload.title || payload.type || 'Notification',
+        message: payload.message || '',
+        type: payload.type || 'notification',
+        createdAt: payload.createdAt || new Date().toISOString(),
+        channels: payload.channels || [],
+        priority: payload.priority || 'normal',
+        status: payload.status || 'delivered',
+        read: Boolean(payload.isRead),
+        is_read: Boolean(payload.isRead),
+        data: payload.data || {},
+      };
+
+      setNotificationsData(prev => {
+        if (prev.some(item => item.id === normalized.id)) {
+          return prev;
+        }
+        return [normalized, ...prev].slice(0, 100);
+      });
+    };
+
+    socket.on('notification', handleRealtimeNotification);
+    return () => {
+      socket.off('notification', handleRealtimeNotification);
+    };
+  }, [socket, isConnected]);
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
@@ -159,10 +192,28 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
     })();
   }, []);
 
+  const isNotificationRead = (notification: any): boolean => {
+    if (!notification) return false;
+    if (typeof notification.read === 'boolean') return notification.read;
+    if (typeof notification.is_read === 'boolean') return notification.is_read;
+    if (typeof notification.isRead === 'boolean') return notification.isRead;
+    if (notification.read_at || notification.readAt) return true;
+    return false;
+  };
+
+  const unreadCount = notificationsData.reduce((count, notification) => count + (isNotificationRead(notification) ? 0 : 1), 0);
+
   const handleMarkAllRead = () => {
     notificationsData.forEach((n: any) => {
-      if (!n.read) markRead(n.id);
+      if (!isNotificationRead(n)) markRead(n.id);
     });
+  };
+
+  const getNotificationStatusBadge = (isRead: boolean) => {
+    const baseClass = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold';
+    return isRead
+      ? `${baseClass} bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300`
+      : `${baseClass} bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300`;
   };
 
   return (
@@ -246,7 +297,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                       <button onClick={handleMarkAllRead} className="text-xs text-primary-600 hover:text-primary-700 font-medium">Mark all as read</button>
                     </div>
                   </div>
-                  <div className="max-h-96 overflow-auto">
+                  <div className="max-h-96 overflow-y-auto pr-1">
                     {notificationsLoading ? (
                       <div className="px-4 py-6 text-center text-gray-400 text-sm dark:text-slate-500">Loading...</div>
                     ) : dropdownItems.length > 0 ? (
@@ -255,12 +306,18 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                           key={n.id}
                           onClick={() => markRead(n.id)}
                           className={`w-full text-left px-4 py-3 flex gap-3 items-start hover:bg-gray-50 dark:hover:bg-slate-800 ${
-                            n.read ? '' : 'bg-primary-50/40 dark:bg-primary-900/10'
+                            isNotificationRead(n) ? '' : 'bg-primary-50/40 dark:bg-primary-900/10'
                           }`}
                         >
-                          <div className={`mt-1 w-2 h-2 rounded-full ${n.read ? 'bg-gray-300 dark:bg-slate-600' : 'bg-primary-500'}`}></div>
+                          <div className={`mt-1 w-2 h-2 rounded-full ${isNotificationRead(n) ? 'bg-gray-300 dark:bg-slate-600' : 'bg-primary-500'}`}></div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-gray-900 truncate dark:text-slate-100">{n.title || n.type || 'Notification'}</div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400">
+                              <span className={getNotificationStatusBadge(isNotificationRead(n))}>
+                                {isNotificationRead(n) ? 'Read' : 'Unread'}
+                              </span>
+                              <span className="truncate">{n.type || n.category || ''}</span>
+                            </div>
                             <div className="text-xs text-gray-500 truncate dark:text-slate-400">{n.message || n.content || n.body || n.description || ''}</div>
                           </div>
                           <div className="ml-2 text-[10px] text-gray-400 whitespace-nowrap dark:text-slate-500">
@@ -361,20 +418,20 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                   <p className="text-gray-700 dark:text-slate-300">No notifications yet</p>
                 </div>
               ) : (
-                <ul className="divide-y divide-gray-100 dark:divide-slate-800">
+                <ul className="divide-y divide-gray-100 dark:divide-slate-800 max-h-[60vh] overflow-y-auto pr-1">
                   {modalItems.map((n: any) => (
                     <li
                       key={n.id}
                       className="py-4 flex items-start gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg p-2"
                       onClick={() => {
-                        if (!n.read) { markRead(n.id); }
+                        if (!isNotificationRead(n)) { markRead(n.id); }
                       }}
                     >
-                      <div className={`mt-1 w-2 h-2 rounded-full ${ n.read ? 'bg-gray-300 dark:bg-slate-600' : 'bg-emerald-500'}`} />
+                      <div className={`mt-1 w-2 h-2 rounded-full ${ isNotificationRead(n) ? 'bg-gray-300 dark:bg-slate-600' : 'bg-emerald-500'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium text-gray-900 dark:text-slate-100 truncate">{n.title || n.type || 'Notification'}</h4>
-                          {!n.read && (
+                          {!isNotificationRead(n) && (
                             <button
                               onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
                               className="text-xs text-teal-600 dark:text-teal-400 hover:underline"
