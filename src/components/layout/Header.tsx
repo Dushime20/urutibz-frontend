@@ -13,9 +13,6 @@ import {
   PlusCircle,
   Clock,
   TrendingUp,
-  MapPin,
-  Calendar,
-  Filter,
   Headphones,
   Phone,
   Sparkles,
@@ -50,6 +47,28 @@ const primaryNavLinks = [
   { label: 'Support', to: '/faq' }
 ];
 
+const primaryNavItems = [
+  { label: 'Marketplace', to: '/items', icon: LayoutGrid },
+  { label: 'For Renters', to: '/favorites', icon: Tag },
+  { label: 'For Suppliers', to: '/create-listing', icon: PlusCircle },
+  { label: 'Enterprise', to: '/risk-management', icon: TrendingUp },
+  { label: 'Support', to: '/faq', icon: Headphones }
+];
+
+const mobileSupportLinks = [
+  { label: 'Help center', to: '/faq', icon: Headphones },
+  { label: 'Contact sales', to: '/contact', icon: Phone },
+  { label: 'Live status', to: '/status', icon: Sparkles }
+];
+
+const mobileUtilityChips = [
+  { label: 'Near me', action: 'nearby' },
+  { label: 'Instant book', action: 'instant' },
+  { label: 'Verified hosts', action: 'verified' },
+  { label: 'Long term', action: 'long term' },
+  { label: 'Premium gear', action: 'premium' }
+];
+
 const quickFilterPresets = [
   { label: 'Instant book', value: 'instant', query: 'instant booking' },
   { label: 'Verified hosts', value: 'verified', query: 'verified host' },
@@ -62,77 +81,6 @@ const tickerMessages = [
   'New: AI condition reports now live in Spanish & French',
   'Enterprise SLA: 30-min global support, 24/7/365'
 ];
-
-type CategoryShowcase = {
-  tagline: string;
-  description: string;
-  highlights: { title: string; description: string }[];
-  miniTags: string[];
-  cta: string;
-};
-
-const CATEGORY_STORIES: Record<string, CategoryShowcase> = {
-  'camera-equipment': {
-    tagline: 'Pro-Grade Imaging Gear',
-    description: 'Mirrorless bodies, prime lenses, lighting kits, and accessory bundles trusted by agencies worldwide.',
-    highlights: [
-      { title: 'Hybrid Shooters', description: 'Full-frame cameras that seamlessly move from video to stills.' },
-      { title: 'Studio-Ready Lighting', description: 'Softboxes, RGB panels, and modifiers for any set.' },
-      { title: 'On-the-Go Kits', description: 'Curated bundles for travel creators and event teams.' }
-    ],
-    miniTags: ['Cine Lenses', 'Gimbals', 'Sound Kits', 'Live Streaming'],
-    cta: 'Explore pro camera rentals'
-  },
-  mobility: {
-    tagline: 'Move Anything, Anywhere',
-    description: 'Electrified fleets, last-mile delivery solutions, and premium transport for your next project.',
-    highlights: [
-      { title: 'EV Fleets', description: 'Sustainable vehicles for corporate roadshows and shoots.' },
-      { title: 'Specialty Transport', description: 'From refrigerated vans to luxury shuttles.' },
-      { title: 'Smart Logistics', description: 'Telematics, driver services, and insurance ready out of the box.' }
-    ],
-    miniTags: ['EV Vans', 'Luxury SUVs', 'Cargo Bikes', 'Driver Services'],
-    cta: 'Reserve mobility solutions'
-  },
-  events: {
-    tagline: 'Flagship-Ready Experiences',
-    description: 'Everything you need for conferences, pop-ups, and large-scale brand activations.',
-    highlights: [
-      { title: 'Immersive Booths', description: 'Modular builds, LED walls, and digital signage.' },
-      { title: 'Hospitality Suites', description: 'Premium furnishings, bars, and lounge experiences.' },
-      { title: 'On-Site Services', description: 'Staffing, logistics, and 24/7 support teams.' }
-    ],
-    miniTags: ['Modular Stages', 'Registration Tech', 'Corporate Gifting', 'Hybrid Streaming'],
-    cta: 'Plan an unforgettable event'
-  }
-};
-
-const getCategoryKey = (label: string) =>
-  label
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-const buildDefaultShowcase = (name?: string): CategoryShowcase => ({
-  tagline: `Discover ${name || 'our top categories'}`,
-  description: `Handpicked suppliers, flexible terms, and enterprise-grade support for ${name || 'every use case'}.`,
-  highlights: [
-    { title: 'Curated Collections', description: 'Trusted suppliers vetted for quality, compliance, and readiness.' },
-    { title: 'Flexible Terms', description: 'Short-term activations or long-term programs, scaled to your needs.' },
-    { title: 'Global Reach', description: 'Deploy assets across cities with unified logistics.' }
-  ],
-  miniTags: ['Trending', 'Eco-friendly', 'Enterprise-ready', 'Top Rated'],
-  cta: 'Browse all listings'
-});
-
-const resolveCategoryShowcase = (category?: HeaderCategory | null): CategoryShowcase => {
-  if (!category) {
-    return buildDefaultShowcase();
-  }
-  const key = getCategoryKey(category.label);
-  return CATEGORY_STORIES[key] ?? buildDefaultShowcase(category.label);
-};
 
 const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -165,6 +113,7 @@ const Header: React.FC = () => {
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const imageSearchInputRef = useRef<HTMLInputElement>(null);
   const [tickerIndex, setTickerIndex] = useState(0);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const roleDestination =
     user?.role === 'admin'
@@ -183,6 +132,17 @@ const Header: React.FC = () => {
       : user?.role === 'moderator'
       ? 'Moderator Console'
       : 'My Account';
+
+  const mobileBottomNavItems = useMemo(
+    () => [
+      { key: 'explore', label: tSync('Explore'), to: '/items', icon: LayoutGrid },
+      { key: 'trips', label: tSync('Trips'), to: '/bookings', icon: Clock },
+      { key: 'list', label: tSync('List'), to: '/create-listing', icon: PlusCircle },
+      { key: 'support', label: tSync('Support'), to: '/support', icon: Headphones },
+      { key: 'account', label: isAuthenticated ? tSync('Account') : tSync('Login'), to: isAuthenticated ? roleDestination : '/login', icon: User }
+    ],
+    [isAuthenticated, roleDestination, tSync]
+  );
 
   const params = new URLSearchParams(location.search);
   const [q, setQ] = useState<string>(params.get('q') || '');
@@ -347,14 +307,6 @@ const Header: React.FC = () => {
     [buildSearchParams, navigate, recentSearches]
   );
 
-  const handleCategoryChange = useCallback(
-    (value: string) => {
-      setCategory(value);
-      performAutoSearch({ category: value });
-    },
-    [performAutoSearch]
-  );
-
   const performQuickSearch = useCallback(
     (override: Partial<{ q: string; category: string }>) => {
       if (override.q !== undefined) setQ(override.q);
@@ -413,6 +365,15 @@ const Header: React.FC = () => {
     debouncedSearch(value);
   };
 
+  const openMobileSearch = useCallback(() => {
+    setIsMobileSearchOpen(true);
+  }, []);
+
+  const closeMobileSearch = useCallback(() => {
+    setIsMobileSearchOpen(false);
+    setShowSuggestions(false);
+  }, []);
+
   const handleSuggestionClick = (e: React.MouseEvent, suggestion: string | { type: 'product' | 'category'; name: string; id?: string }) => {
     e.preventDefault();
     e.stopPropagation();
@@ -438,6 +399,10 @@ const Header: React.FC = () => {
         performAutoSearch({ q: suggestion.name }, false);
       }
     }
+
+    if (isMobileSearchOpen) {
+      closeMobileSearch();
+    }
   };
 
   const submitSearch = () => {
@@ -457,6 +422,87 @@ const Header: React.FC = () => {
     }
   };
 
+  const renderSuggestionContent = (variant: 'dropdown' | 'full') => {
+    const sectionPadding = variant === 'dropdown' ? 'p-3' : 'p-4';
+    const borderClass = 'border-b border-gray-100 dark:border-gray-700';
+    return (
+      <>
+        {recentSearches.length > 0 && !q && (
+          <div className={`${sectionPadding} ${borderClass}`}>
+            <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+              <Clock className="h-3 w-3" />
+              <TranslatedText text="Recent Searches" />
+            </div>
+            {recentSearches.map((search, index) => (
+              <button
+                key={index}
+                onMouseDown={(e) => handleSuggestionClick(e, search)}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                {search}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!q && (
+          <div className={`${sectionPadding} ${borderClass}`}>
+            <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+              <TrendingUp className="h-3 w-3" />
+              <TranslatedText text="Trending Searches" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {trendingSearches.slice(0, 6).map((search, index) => (
+                <button
+                  key={index}
+                  onMouseDown={(e) => handleSuggestionClick(e, search)}
+                  className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  {search}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {q.length >= 2 && searchSuggestions.length > 0 && (
+          <div className={sectionPadding}>
+            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+              <TranslatedText text="Suggestions" />
+            </div>
+            {searchSuggestions.map((suggestion, index) => (
+              <button
+                key={index}
+                onMouseDown={(e) => handleSuggestionClick(e, suggestion)}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+              >
+                {suggestion.type === 'product' ? (
+                  <>
+                    <Package className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                    <span className="flex-1">{suggestion.name}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Product</span>
+                  </>
+                ) : (
+                  <>
+                    <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span className="flex-1">{suggestion.name}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Category</span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {q.length >= 2 && searchSuggestions.length === 0 && (
+          <div className={`${sectionPadding} text-center text-sm text-gray-500 dark:text-gray-400`}>
+            <TranslatedText text="No suggestions for" /> "{q}"
+          </div>
+        )}
+      </>
+    );
+  };
+
   const handleImageSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -467,9 +513,8 @@ const Header: React.FC = () => {
       // Here you would typically send the image to your backend for image search
       // For now, we'll navigate to a search page with the image data
       // You can implement actual image search API call here
-      const imageData = reader.result;
       // Example: navigate to search with image parameter
-      // navigate(`/items?imageSearch=${encodeURIComponent(imageData as string)}`);
+      // navigate(`/items?imageSearch=${encodeURIComponent(String(reader.result || ''))}`);
       
       // For now, show a toast or handle the image search
       console.log('Image search triggered with file:', file.name);
@@ -533,6 +578,18 @@ const Header: React.FC = () => {
     );
   };
 
+  const handleMobileQuickAction = (action: string) => {
+    if (action === 'nearby') {
+      detectLocation();
+      return;
+    }
+    const preset = quickFilterPresets.find((preset) => preset.value === action);
+    if (preset) {
+      performQuickSearch({ q: preset.query });
+      setIsMenuOpen(false);
+    }
+  };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
@@ -544,6 +601,28 @@ const Header: React.FC = () => {
     if (isProfileOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
+
+  useEffect(() => {
+    if (isMenuOpen || isMobileSearchOpen) {
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = previousOverflow;
+      };
+    }
+    return undefined;
+  }, [isMenuOpen, isMobileSearchOpen]);
+
+  useEffect(() => {
+    if (isMobileSearchOpen) {
+      const timer = window.setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 200);
+      setShowSuggestions(true);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [isMobileSearchOpen]);
 
   const normalizedCategories = React.useMemo(() => {
     const seen = new Set<string>();
@@ -647,16 +726,27 @@ const Header: React.FC = () => {
     [normalizedCategories, activeCategoryId]
   );
 
-  const currentShowcase = useMemo(
-    () => resolveCategoryShowcase(activeCategory),
-    [activeCategory]
-  );
-
-  const spotlightLink = activeCategory ? `/items?category=${encodeURIComponent(activeCategory.id)}` : '/items';
-
   const displayCurrency = ((settings?.platform as any)?.defaultCurrency) || 'USD';
 
+  const isNavItemActive = useCallback(
+    (path: string) => {
+      const current = location.pathname || '/';
+      if (path === '/items') {
+        return current === '/' || current.startsWith('/items');
+      }
+      if (path === '/bookings') {
+        return current.startsWith('/bookings');
+      }
+      if (path === '/support') {
+        return current.startsWith('/support') || current.startsWith('/faq');
+      }
+      return current.startsWith(path);
+    },
+    [location.pathname]
+  );
+
   return (
+    <>
     <header className="sticky top-0 z-50 shadow-sm bg-white/90 dark:bg-gray-900/80 backdrop-blur-md border-b border-white/20 dark:border-gray-700/60">
       {/* Global ticker */}
       <div className="hidden md:block bg-slate-900 text-white text-xs tracking-wide">
@@ -684,10 +774,49 @@ const Header: React.FC = () => {
 
       <div className="relative">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="py-3 lg:py-4">
-            <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-6">
-              {/* Logo section - Order 1 on mobile */}
-              <div className="flex items-center gap-4 lg:gap-6 justify-between lg:justify-start order-1">
+          <div className="py-3 lg:py-4 space-y-3 md:space-y-0">
+            {/* Mobile compact header */}
+            <div className="flex items-center justify-between md:hidden">
+              <Link to="/" className="flex items-center gap-3">
+                <img
+                  src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'}
+                  alt={settings?.business?.companyName || settings?.platform?.siteName || 'UrutiBz'}
+                  className="h-10 object-contain"
+                />
+              </Link>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={openMobileSearch}
+                  className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
+                  aria-label={tSync('Search inventory')}
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+                {isAuthenticated && (
+                  <div className="flex items-center">
+                    <RealtimeNotifications />
+                  </div>
+                )}
+                <button
+                  onClick={toggleDarkMode}
+                  className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
+                  aria-label={tSync('Toggle theme')}
+                >
+                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="p-2 rounded-full border border-gray-200 dark:border-gray-700"
+                  aria-label={tSync('Toggle menu')}
+                >
+                  {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden md:grid w-full grid-cols-1 gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-6">
+              {/* Logo section */}
+              <div className="flex items-center gap-4 lg:gap-6 justify-between lg:justify-start">
                 <Link to="/" className="flex items-center gap-3">
                   <img
                     src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'}
@@ -695,31 +824,10 @@ const Header: React.FC = () => {
                     className="h-12 lg:h-14 object-contain text-2xl"
                   />
                 </Link>
-
-                {/* Menu button and controls - visible on mobile */}
-                <div className="flex items-center gap-2 lg:hidden">
-                  {isAuthenticated && (
-                    <RealtimeNotifications />
-                  )}
-                  <button
-                    onClick={toggleDarkMode}
-                    className="inline-flex p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                    aria-label={tSync('Toggle theme')}
-                  >
-                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  </button>
-                  <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="p-2 rounded-full border border-gray-200 dark:border-gray-700"
-                    aria-label="Toggle menu"
-                  >
-                    {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                  </button>
-                </div>
               </div>
 
-              {/* Search section - Order 2 on mobile (between logo and menu) */}
-              <div className="order-2 w-full px-0 flex justify-center relative">
+              {/* Search section */}
+              <div className="w-full px-0 flex justify-center relative">
                 <div className="w-full max-w-4xl mx-auto flex items-stretch bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden focus-within:border-teal-500 dark:focus-within:border-teal-500 transition-colors relative">
                   {/* Search input */}
                   <div className="flex-1 flex items-center pr-5">
@@ -794,78 +902,7 @@ const Header: React.FC = () => {
                     ref={suggestionsRef}
                     className="absolute top-full left-0 right-0 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto"
                   >
-                    {recentSearches.length > 0 && !q && (
-                      <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                          <Clock className="h-3 w-3" />
-                          <TranslatedText text="Recent Searches" />
-                        </div>
-                        {recentSearches.map((search, index) => (
-                          <button
-                            key={index}
-                            onMouseDown={(e) => handleSuggestionClick(e, search)}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                          >
-                            {search}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {!q && (
-                      <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                          <TrendingUp className="h-3 w-3" />
-                          <TranslatedText text="Trending Searches" />
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {trendingSearches.slice(0, 6).map((search, index) => (
-                            <button
-                              key={index}
-                              onMouseDown={(e) => handleSuggestionClick(e, search)}
-                              className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            >
-                              {search}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {q.length >= 2 && searchSuggestions.length > 0 && (
-                      <div className="p-3">
-                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                          <TranslatedText text="Suggestions" />
-                        </div>
-                        {searchSuggestions.map((suggestion, index) => (
-                          <button
-                            key={index}
-                            onMouseDown={(e) => handleSuggestionClick(e, suggestion)}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
-                          >
-                            {suggestion.type === 'product' ? (
-                              <>
-                                <Package className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
-                                <span className="flex-1">{suggestion.name}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">Product</span>
-                              </>
-                            ) : (
-                              <>
-                                <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                                <span className="flex-1">{suggestion.name}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">Category</span>
-                              </>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {q.length >= 2 && searchSuggestions.length === 0 && (
-                      <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
-                        <TranslatedText text="No suggestions for" /> "{q}"
-                      </div>
-                    )}
+                    {renderSuggestionContent('dropdown')}
                   </div>
                 )}
               </div>
@@ -1129,112 +1166,285 @@ const Header: React.FC = () => {
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 dark:border-gray-600 py-4 px-4">
-            <div className="space-y-3">
-              <Link
-                to="/items"
-                className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-teal-500"
-              >
-                <TranslatedText text="Marketplace" />
-              </Link>
+          <div className="md:hidden fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={tSync('Navigation menu')}>
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
+            <div className="absolute inset-x-0 top-[68px] bottom-0">
+              <div className="h-full bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border border-white/20 dark:border-gray-800 pt-4 pb-28 px-4 overflow-y-auto safe-area-bottom space-y-6">
+                <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto" />
 
-              <div className="grid grid-cols-2 gap-2">
-                {topCategories.slice(0, 6).map((c) => (
-                  <Link
-                    key={c.id}
-                    to={`/items?category=${c.id}`}
-                    className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-                  >
-                    {c.label}
-                  </Link>
-                ))}
-              </div>
-
-              <Link
-                to="/create-listing"
-                className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-teal-600 dark:text-teal-300 text-center font-semibold hover:border-teal-500 dark:hover:border-teal-500"
-              >
-                <TranslatedText text="List inventory" />
-              </Link>
-
-              {isAuthenticated ? (
-                <div className="space-y-2">
-                  {/* Profile Dropdown Button */}
-                  <button
-                    onClick={() => setIsMobileProfileOpen(!isMobileProfileOpen)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-teal-500"
-                  >
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="h-10 w-10 rounded-full bg-teal-500 flex items-center justify-center text-white">
-                        <User className="w-5 h-5" />
-                      </div>
-                    )}
-                    <div className="flex-1 text-left">
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isMobileProfileOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {/* Profile Dropdown Menu */}
-                  {isMobileProfileOpen && (
-                    <div className="ml-4 space-y-2 border-l-2 border-teal-500 pl-4">
-                  <Link
-                        to={roleDestination}
-                        onClick={() => {
-                          setIsMobileProfileOpen(false);
-                          setIsMenuOpen(false);
-                        }}
-                        className="block px-3 py-2 rounded-lg bg-slate-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700"
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+                    {tSync('Quick Filters')}
+                  </p>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                    {mobileUtilityChips.map((chip) => (
+                      <button
+                        key={chip.label}
+                        onClick={() => handleMobileQuickAction(chip.action)}
+                        className="px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 touch-manipulation"
                       >
-                        <TranslatedText text={roleLinkLabel} />
-                  </Link>
+                        {tSync(chip.label)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+                    {tSync('Navigation')}
+                  </p>
+                  <div className="space-y-2">
+                    {primaryNavItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:border-teal-400 dark:hover:border-teal-500 transition-colors"
+                        >
+                          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-300">
+                            <Icon className="w-4 h-4" />
+                          </span>
+                          <span>{tSync(item.label)}</span>
+                          <ArrowRight className="ml-auto w-4 h-4 text-gray-400" />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {topCategories.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+                        {tSync('Top Categories')}
+                      </p>
                       <button
                         onClick={() => {
-                          setIsMobileProfileOpen(false);
+                          navigate('/categories');
                           setIsMenuOpen(false);
-                          logout();
                         }}
-                        className="w-full text-left px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+                        className="text-xs font-semibold text-teal-600 dark:text-teal-400"
                       >
-                        <TranslatedText text="Sign out" />
+                        <TranslatedText text="View all" />
                       </button>
                     </div>
-                  )}
+                    <div className="grid grid-cols-2 gap-2">
+                      {topCategories.slice(0, 8).map((cat) => (
+                        <Link
+                          key={cat.id}
+                          to={`/items?category=${encodeURIComponent(cat.id)}`}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="px-3 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-800/60 text-sm text-gray-800 dark:text-gray-100 hover:border-teal-400 dark:hover:border-teal-500"
+                        >
+                          {cat.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                  <Link
-                    to="/favorites"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-                  >
-                    <TranslatedText text="Favorites" />
-                  </Link>
+                <Link
+                  to="/create-listing"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-sky-500 text-white font-semibold shadow-lg"
+                >
+                  <div>
+                    <p className="text-sm"><TranslatedText text="List inventory" /></p>
+                    <p className="text-xs text-white/80"><TranslatedText text="Reach renters in 45+ countries" /></p>
+                  </div>
+                  <PlusCircle className="w-5 h-5" />
+                </Link>
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+                    {tSync('Support & tools')}
+                  </p>
+                  <div className="space-y-2">
+                    {mobileSupportLinks.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <Link
+                          key={link.to}
+                          to={link.to}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 hover:border-teal-400 dark:hover:border-teal-500"
+                        >
+                          <Icon className="w-4 h-4 text-teal-500" />
+                          <span>{tSync(link.label)}</span>
+                          <ArrowRight className="ml-auto w-4 h-4 text-gray-400" />
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <Link
-                    to="/login"
-                    className="block px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-center"
-                  >
-                    <TranslatedText text="Log in" />
-                  </Link>
-                  {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
-                    <Link
-                      to="/register"
-                      className="block px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center font-semibold"
+
+                {isAuthenticated ? (
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setIsMobileProfileOpen((prev) => !prev)}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                     >
-                      <TranslatedText text="Create account" />
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="h-11 w-11 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-11 w-11 rounded-full bg-teal-500 text-white flex items-center justify-center">
+                          <User className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div className="flex-1 text-left">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{user?.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isMobileProfileOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isMobileProfileOpen && (
+                      <div className="space-y-2">
+                        <Link
+                          to={roleDestination}
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            setIsMobileProfileOpen(false);
+                          }}
+                          className="block px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-800 dark:text-gray-200 hover:border-teal-400 dark:hover:border-teal-500"
+                        >
+                          <TranslatedText text={roleLinkLabel} />
+                        </Link>
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsMenuOpen(false);
+                            setIsMobileProfileOpen(false);
+                          }}
+                          className="w-full px-4 py-3 rounded-2xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/40"
+                        >
+                          <TranslatedText text="Sign out" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="block px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-center text-sm font-semibold text-gray-800 dark:text-gray-200 hover:border-teal-400 dark:hover:border-teal-500"
+                    >
+                      <TranslatedText text="Log in" />
                     </Link>
-                  )}
+                    {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
+                      <Link
+                        to="/register"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="block px-4 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-sky-500 text-white text-center font-semibold shadow-lg"
+                      >
+                        <TranslatedText text="Create account" />
+                      </Link>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                  <span>{language?.toUpperCase() || 'EN'}</span>
+                  <span>•</span>
+                  <span>{displayCurrency}</span>
+                  <span>•</span>
+                  <button onClick={toggleDarkMode} className="inline-flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    {isDarkMode ? tSync('Light') : tSync('Dark')}
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
-</div>      
+      </div>
     </header>
+
+    {/* Mobile search overlay */}
+    {isMobileSearchOpen && (
+      <div className="md:hidden fixed inset-0 z-[75]" role="dialog" aria-modal="true">
+        <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onClick={closeMobileSearch} />
+        <div className="absolute inset-x-0 top-0 bottom-0 flex flex-col">
+          <div className="mt-[max(env(safe-area-inset-top),1rem)] mx-4 bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 p-4 flex flex-col h-[calc(100%-max(env(safe-area-inset-top),1rem)-env(safe-area-inset-bottom))]">
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={closeMobileSearch}
+                className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200"
+                aria-label={tSync('Close search')}
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <Search className="w-4 h-4 text-gray-400" />
+                <input
+                  ref={searchInputRef}
+                  value={q}
+                  onChange={(e) => handleSearchInputChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      submitSearch();
+                      closeMobileSearch();
+                    }
+                  }}
+                  placeholder={tSync('Search inventory, suppliers, SKU...')}
+                  className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  submitSearch();
+                  closeMobileSearch();
+                }}
+                className="p-2 rounded-full bg-teal-600 text-white"
+                aria-label={tSync('Search')}
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-2xl">
+              {renderSuggestionContent('full')}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Mobile bottom navigation */}
+    {!(isMenuOpen || isMobileSearchOpen) && (
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40">
+        <nav className="mx-auto max-w-3xl rounded-t-3xl border border-gray-200/70 dark:border-gray-800/80 bg-white/95 dark:bg-gray-900/95 shadow-[0_-10px_30px_-20px_rgba(0,0,0,0.45)] backdrop-blur px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+          <div className="grid grid-cols-5 gap-1">
+            {mobileBottomNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = isNavItemActive(item.to);
+              return (
+                <Link
+                  key={item.key}
+                  to={item.to}
+                  className={`flex flex-col items-center gap-1 py-1 text-[11px] font-semibold transition-colors ${
+                    active ? 'text-teal-600' : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-2xl border text-xs ${
+                      active
+                        ? 'border-teal-200 bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:border-teal-700'
+                        : 'border-transparent bg-transparent'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </span>
+                  <span className="leading-none">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
+    )}
+    </>
   );
 };
 

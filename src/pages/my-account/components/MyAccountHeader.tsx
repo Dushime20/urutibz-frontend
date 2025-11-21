@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, Sun, Moon, Menu, X, UserCircle } from 'lucide-react';
+import { Bell, Sun, Moon, Menu, UserCircle, LogOut, Package } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getMyNotifications } from '../../../features/notifications/api';
 import { fetchUserProfile } from '../service/api';
@@ -21,7 +21,6 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   const avatarRef = useRef<HTMLDivElement | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
-  const searchRef = useRef<HTMLInputElement | null>(null);
 
   const [notificationsData, setNotificationsData] = useState<any[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -29,7 +28,6 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   const { mutate: markRead } = useMarkReadMutation();
   const notifRef = useRef<HTMLDivElement | null>(null);
   const [isDark, setIsDark] = useState<boolean>(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [showAllModal, setShowAllModal] = useState(false);
   const [modalPage, setModalPage] = useState(1);
   const modalQuery = useNotificationsQuery({ page: modalPage, limit: 50 });
@@ -111,18 +109,18 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
       if (e.key === 'Escape') {
         setIsNotifOpen(false);
         setIsAvatarMenuOpen(false);
-        setMobileSearchOpen(false);
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
+    }
+    function handleOpenNotifications() {
+      setIsNotifOpen(true);
     }
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-notifications', handleOpenNotifications);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-notifications', handleOpenNotifications);
     };
   }, []);
 
@@ -216,73 +214,107 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
       : `${baseClass} bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300`;
   };
 
+  // Mobile navigation items for bottom nav (only 4 items: notifications, items, theme, logout)
+  const mobileNavItems = useMemo(
+    () => [
+      {
+        key: 'notifications',
+        label: 'Notifications',
+        icon: Bell,
+        onPress: () => {
+          setIsNotifOpen((v) => !v);
+        },
+        active: isNotifOpen,
+        badge: unreadCount > 0 ? unreadCount : null,
+        disabled: false
+      },
+      {
+        key: 'items',
+        label: 'Items',
+        icon: Package,
+        onPress: () => {
+          navigate('/browse');
+        },
+        active: false,
+        disabled: false
+      },
+      {
+        key: 'theme',
+        label: isDark ? 'Light' : 'Dark',
+        icon: isDark ? Sun : Moon,
+        onPress: toggleTheme,
+        active: false,
+        disabled: false
+      },
+      {
+        key: 'logout',
+        label: 'Logout',
+        icon: LogOut,
+        onPress: () => {
+          logout();
+          navigate('/');
+        },
+        active: false,
+        disabled: false
+      }
+    ],
+    [isNotifOpen, unreadCount, isDark, navigate, logout, toggleTheme]
+  );
+
   return (
-    <div className="w-full">
-      <div className="">
-        <div className="flex items-center justify-between py-2">
-          <div className="flex items-center space-x-4">
-            {/* Mobile: sidebar toggle */}
+    <div className="w-full space-y-4">
+      {/* Desktop: Full header with all features - Hidden on mobile */}
+      <div className="hidden md:block">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => onToggleSidebar?.()}
-              className="p-2 rounded-xl border text-gray-700 hover:bg-gray-50 md:hidden dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
+              className="p-2.5 rounded-2xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
               aria-label="Open navigation"
-            > 
+            >
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="font-bold text-base sm:text-xl tracking-tight text-gray-900 dark:text-slate-100 whitespace-nowrap">My Account</h1>
-            <button
-              onClick={() => navigate('/browse')}
-              className="px-3 py-1.5 rounded-xl border text-gray-700 hover:bg-gray-50 hidden sm:inline-flex dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
-            >
-              Browse Items
-            </button>
-          </div>
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            {/* Desktop search */}
-            <div className="relative hidden md:block" ref={notifRef}>
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
-              <input
-                ref={searchRef}
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-xl focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all duration-200 w-64 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:bg-slate-900"
-              />
+            <div>
+              <h1 className="font-bold text-lg sm:text-2xl tracking-tight text-gray-900 dark:text-slate-100">
+                My Account
+              </h1>
             </div>
-            {/* Mobile search button */}
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => navigate('/browse')}
+            className="hidden sm:inline-flex px-4 py-2 rounded-2xl border text-sm font-semibold text-gray-700 hover:border-teal-400 hover:text-teal-600 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors"
+          >
+            Browse Items
+          </button>
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="p-2.5 rounded-2xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <LanguageSwitcher
+            buttonClassName="p-2.5 rounded-2xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
+          />
+          <div className="relative" ref={notifRef} style={{ zIndex: 3000 }}>
             <button
-              onClick={() => setMobileSearchOpen((v) => !v)}
-              className="p-2 rounded-xl border text-gray-700 md:hidden dark:text-slate-200 dark:border-slate-700"
-              aria-label="Search"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsNotifOpen((v) => !v);
+              }}
+              className="relative p-2.5 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200 rounded-2xl border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
             >
-              <Search className="w-4 h-4" />
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 ? (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              ) : (
+                <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+              )}
             </button>
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="p-2 rounded-xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-            {/* Language Switcher */}
-            <LanguageSwitcher 
-              buttonClassName="p-2 rounded-xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
-            />
-            <div className="relative" ref={notifRef} style={{ zIndex: 3000 }}>
-              <button
-                onClick={(e) => { e.stopPropagation(); setIsNotifOpen((v) => !v); }}
-                className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadCount > 0 ? (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                ) : (
-                  <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-                )}
-              </button>
-              {isNotifOpen && (
+            {isNotifOpen && (
                 <div
                   className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl dark:bg-slate-900 dark:border-slate-700"
                   style={{ zIndex: 3001, pointerEvents: 'auto' }}
@@ -335,26 +367,29 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
-            {/* Avatar Menu */}
-            <div className="relative" ref={avatarRef}>
-              <button
-                onClick={() => setIsAvatarMenuOpen((v) => !v)}
-                className="flex items-center gap-2 group"
-                aria-haspopup="menu"
-                aria-expanded={isAvatarMenuOpen}
-              >
-                <span className="hidden sm:block text-sm text-gray-700 group-hover:text-gray-900 max-w-[120px] truncate dark:text-slate-300 dark:group-hover:text-slate-100">{userName}</span>
-                <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200 bg-gray-100 dark:border-slate-700 dark:bg-slate-800">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm"><UserCircle></UserCircle></div>
-                  )}
-                </div>
-              </button>
-              {isAvatarMenuOpen && (
+            )}
+          </div>
+          <div className="relative" ref={avatarRef}>
+            <button
+              onClick={() => setIsAvatarMenuOpen((v) => !v)}
+              className="flex items-center gap-2 group"
+              aria-haspopup="menu"
+              aria-expanded={isAvatarMenuOpen}
+            >
+              <span className="hidden sm:block text-sm text-gray-700 group-hover:text-gray-900 max-w-[140px] truncate dark:text-slate-300 dark:group-hover:text-slate-100">
+                {userName}
+              </span>
+              <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 bg-gray-100 dark:border-slate-700 dark:bg-slate-800">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-base">
+                    <UserCircle />
+                  </div>
+                )}
+              </div>
+            </button>
+            {isAvatarMenuOpen && (
                 <div role="menu" className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 dark:bg-slate-900 dark:border-slate-700">
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700">
                     <div className="text-sm font-semibold text-gray-900 truncate dark:text-slate-100">{userName}</div>
@@ -377,29 +412,11 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+            )}
+          </div>
           </div>
         </div>
       </div>
-
-      {/* Mobile Search Overlay */}
-      {mobileSearchOpen && (
-        <div className="fixed inset-x-0 top-16 z-50 px-4">
-          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-2 shadow-xl flex items-center">
-            <Search className="w-5 h-5 text-gray-400 dark:text-slate-500 ml-2" />
-            <input
-              autoFocus
-              type="text"
-              placeholder="Search..."
-              className="flex-1 px-3 py-2 bg-transparent outline-none text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
-            />
-            <button onClick={() => setMobileSearchOpen(false)} className="p-2 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200" aria-label="Close search">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
       {/* All Notifications Modal */}
       {showAllModal && (
         <Portal>
@@ -453,6 +470,42 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
           </div>
         </Portal>
       )}
+
+      {/* Mobile Bottom Navigation - Only visible on small devices and mobile phones */}
+      <nav
+        aria-label="Mobile account navigation"
+        className="md:hidden fixed bottom-0 inset-x-0 z-[60] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 backdrop-blur safe-area-bottom shadow-[0_-8px_30px_rgba(15,23,42,0.12)]"
+      >
+        <div className="px-4 py-3 grid grid-cols-4 gap-2">
+          {mobileNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = Boolean(item.active);
+
+            return (
+              <button
+                key={item.key}
+                onClick={item.onPress}
+                disabled={item.disabled}
+                className={`flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-all touch-manipulation min-h-[56px] ${
+                  isActive
+                    ? 'text-teal-600 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 shadow-inner shadow-teal-900/10'
+                    : 'text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                } ${item.disabled ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                <span className="relative">
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-teal-600 dark:text-teal-300' : ''}`} />
+                  {item.badge !== undefined && item.badge !== null && Number(item.badge) > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-[5px] rounded-full bg-red-500 text-white text-[10px] leading-[16px] text-center">
+                      {Number(item.badge) > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
+                </span>
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 };

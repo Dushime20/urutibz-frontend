@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Star, XCircle, TrendingUp, Package, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Star, XCircle, TrendingUp, Package, CheckCircle, LayoutGrid, Calendar, Wallet, User as UserIcon, Menu, Bell } from 'lucide-react';
 import VerificationBanner from '../../components/verification/VerificationBanner';
 import {
   createProduct,
@@ -30,6 +30,7 @@ import MyAccountHeader from './components/MyAccountHeader';
 import MyAccountSidebar from './components/MyAccountSidebar';
 import OverviewSection from './components/OverviewSection';
 import SkeletonMyAccountOverview from '../../components/ui/SkeletonMyAccountOverview';
+import DashboardMobileNav from '../../components/dashboard/DashboardMobileNav';
 import BookingsSection from './components/BookingsSection';
 import CancelBookingModal from './components/CancelBookingModal';
 import ReviewCancellationModal from './components/ReviewCancellationModal';
@@ -40,6 +41,7 @@ import ReviewsSection from './components/ReviewsSection';
 import SettingsSection from './components/SettingsSection';
 import ProfileSection from './components/ProfileSection';
 import MessagesSection from './components/MessagesSection';
+import NotificationsSection from './components/NotificationsSection';
 import RiskAssessmentForm from '../risk-management/components/RiskAssessmentForm';
 import ComplianceChecker from '../risk-management/components/ComplianceChecker';
 import ProductRiskProfile from '../risk-management/components/ProductRiskProfile';
@@ -70,7 +72,7 @@ import type { FormState } from './types';
 
 
 const DashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile' | 'notifications'>('overview');
   const [riskAssessmentTab, setRiskAssessmentTab] = useState<'assessment' | 'compliance' | 'profile'>('assessment');
   const { showToast } = useToast();
   const { user: authUser } = useAuth();
@@ -197,6 +199,84 @@ const DashboardPage: React.FC = () => {
   const [bookingReviewCounts, setBookingReviewCounts] = useState<{ [bookingId: string]: number }>({});
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingWallet, setLoadingWallet] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  
+  const pendingBookings = useMemo(
+    () => userBookings.filter((booking) => booking.status === 'pending').length,
+    [userBookings]
+  );
+
+  // Load notifications for badge count
+  useEffect(() => {
+    (async () => {
+      try {
+        const items = await getMyNotifications({ page: 1, limit: 100 });
+        const notificationsList = Array.isArray(items) ? items : [];
+        setNotifications(notificationsList);
+        const unread = notificationsList.filter((n: any) => {
+          return !(n.read ?? n.is_read ?? n.isRead ?? n.read_at ?? n.readAt);
+        }).length;
+        setUnreadNotificationCount(unread);
+      } catch {
+        setNotifications([]);
+        setUnreadNotificationCount(0);
+      }
+    })();
+  }, []);
+  const mobileNavItems = useMemo(
+    () => [
+      {
+        key: 'overview',
+        label: tSync('Home'),
+        icon: LayoutGrid,
+        onPress: () => setActiveTab('overview'),
+        active: activeTab === 'overview'
+      },
+      {
+        key: 'bookings',
+        label: tSync('Bookings'),
+        icon: Calendar,
+        onPress: () => setActiveTab('bookings'),
+        active: activeTab === 'bookings',
+        badge: pendingBookings
+      },
+      {
+        key: 'wallet',
+        label: tSync('Wallet'),
+        icon: Wallet,
+        onPress: () => setActiveTab('wallet'),
+        active: activeTab === 'wallet'
+      },
+      {
+        key: 'notifications',
+        label: tSync('Notifications'),
+        icon: Bell,
+        onPress: () => setActiveTab('notifications'),
+        active: activeTab === 'notifications',
+        badge: unreadNotificationCount > 0 ? unreadNotificationCount : null
+      },
+      {
+        key: 'menu',
+        label: tSync('Menu'),
+        icon: Menu,
+        onPress: () => setSidebarOpen(true)
+      }
+    ],
+    [activeTab, pendingBookings, unreadNotificationCount, tSync]
+  );
+
+  useEffect(() => {
+    const handleNav = (event: Event) => {
+      const detail = (event as CustomEvent<{ tab?: typeof activeTab }>).detail;
+      if (detail?.tab) {
+        setActiveTab(detail.tab);
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('my-account-nav', handleNav as EventListener);
+    return () => window.removeEventListener('my-account-nav', handleNav as EventListener);
+  }, []);
 
   // 2FA state
   const [show2FAModal, setShow2FAModal] = useState(false);
@@ -1094,13 +1174,13 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
-      {/* Top Navigation Bar */}
-      <div className="sticky top-0 z-50  backdrop-blur-xl border-b border-gray-200 bg-white dark:bg-slate-900 dark:border-slate-700">
+      {/* Top Navigation Bar - Hidden on mobile, visible on desktop */}
+      <div className="hidden md:block lg:sticky lg:top-0 z-50 backdrop-blur-xl border-b border-gray-200 bg-white dark:bg-slate-900 dark:border-slate-700">
         <div className="flex h-16">
           {/* Sidebar Space */}
          
           {/* Header Content - full width */}
-          <div className="flex-1 flex items-center  w-full">
+          <div className="flex-1 flex items-center w-full">
             <MyAccountHeader 
               onToggleSidebar={() => setSidebarOpen(true)} 
               onNavigateToProfile={() => setActiveTab('profile')}
@@ -1131,7 +1211,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto px-4 sm:px-6 lg:px-4 py-8">
+          <div className="mx-auto px-4 sm:px-6 lg:px-4 py-8 pb-28 md:pb-12">
         {/* Verification Banner */}
         <div className="mb-8">
           <VerificationBanner />
@@ -1410,22 +1490,24 @@ const DashboardPage: React.FC = () => {
             <MessagesSection />
           )}
 
+          {activeTab === 'notifications' && (
+            <NotificationsSection />
+          )}
+
           {activeTab === 'risk-assessment' && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Header */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Risk Assessment" /></h2>
-                    <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">
-                      <TranslatedText text="Evaluate risk for product-renter combinations and check compliance" />
-                    </p>
-                  </div>
+              <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 dark:bg-slate-900 dark:border-slate-700">
+                <div className="mb-4 sm:mb-6">
+                  <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-slate-100 mb-1"><TranslatedText text="Risk Assessment" /></h2>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-300">
+                    <TranslatedText text="Evaluate risk for product-renter combinations and check compliance" />
+                  </p>
                 </div>
 
                 {/* Risk Assessment Tabs */}
                 <div className="border-b border-gray-200 dark:border-slate-700">
-                  <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto whitespace-nowrap">
+                  <nav className="-mb-px flex space-x-2 sm:space-x-4 md:space-x-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
                     {[
                       { id: 'assessment', label: tSync('Risk Assessment'), icon: TrendingUp },
                       { id: 'compliance', label: tSync('Compliance Check'), icon: CheckCircle },
@@ -1438,18 +1520,18 @@ const DashboardPage: React.FC = () => {
                         <button
                           key={tab.id}
                           onClick={() => setRiskAssessmentTab(tab.id as any)}
-                          className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm shrink-0 ${
+                          className={`group inline-flex items-center py-2 sm:py-2.5 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm shrink-0 touch-manipulation min-h-[44px] sm:min-h-0 transition-colors ${
                             isActive
                               ? 'border-teal-500 text-teal-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 active:text-gray-900 active:border-gray-400 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600 dark:active:text-slate-100'
                           }`}
                         >
                           <Icon
-                            className={`-ml-0.5 mr-2 h-5 w-5 ${
+                            className={`-ml-0.5 mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 ${
                               isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-slate-500 dark:group-hover:text-slate-300'
                             }`}
                           />
-                          {tab.label}
+                          <span className="whitespace-nowrap">{tab.label}</span>
                         </button>
                       );
                     })}
@@ -1458,7 +1540,7 @@ const DashboardPage: React.FC = () => {
               </div>
 
               {/* Tab Content */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
+              <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
                 {riskAssessmentTab === 'assessment' && <RiskAssessmentForm />}
                 {riskAssessmentTab === 'compliance' && <ComplianceChecker />}
                 {riskAssessmentTab === 'profile' && <ProductRiskProfile />}
@@ -1719,6 +1801,8 @@ const DashboardPage: React.FC = () => {
         renterReason={reviewRenterReason || undefined}
         isLoading={isReviewing}
       />
+
+      <DashboardMobileNav items={mobileNavItems} />
 
     </div>
   );

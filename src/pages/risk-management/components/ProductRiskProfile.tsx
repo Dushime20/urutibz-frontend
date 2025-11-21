@@ -169,31 +169,31 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 ${className}`}>
+    <div className={`bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 ${className}`}>
       {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex items-center space-x-3">
-            <Shield className="w-6 h-6 text-teal-600" />
-            <div>
-              <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Product Risk Profile" /></h2>
-              <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="View product-specific risk information" /></p>
+      <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-slate-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2">
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-slate-100"><TranslatedText text="Product Risk Profile" /></h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-400"><TranslatedText text="View product-specific risk information" /></p>
             </div>
           </div>
           {profile && (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={exportProfileReport}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+                className="inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg sm:rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:active:bg-slate-600 touch-manipulation min-h-[44px] sm:min-h-0 transition-colors w-full sm:w-auto"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 <TranslatedText text="Export" />
               </button>
               <button
                 onClick={handleClear}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+                className="inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg sm:rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:active:bg-slate-600 touch-manipulation min-h-[44px] sm:min-h-0 transition-colors w-full sm:w-auto"
               >
-                <XCircle className="w-4 h-4 mr-2" />
+                <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 <TranslatedText text="Clear" />
               </button>
             </div>
@@ -201,15 +201,15 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
         </div>
       </div>
 
-      <div className="p-4 sm:p-6">
+      <div className="p-3 sm:p-4 md:p-6">
         {/* Form */}
         <form onSubmit={handleGetProfile} className="space-y-4 sm:space-y-6">
           <div>
-            <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
-              <Package className="w-4 h-4 inline mr-2" />
+            <label htmlFor="product" className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
+              <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1.5 sm:mr-2" />
               <TranslatedText text="Product" />
             </label>
-            <div className="flex gap-2 sm:space-x-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <div className="relative flex-1">
                 <input
                   type="text"
@@ -228,7 +228,7 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
                       setProductOptions(filterProducts(productQuery));
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
+                  className="w-full px-3 py-2.5 sm:py-2 text-sm border border-gray-300 rounded-lg sm:rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 touch-manipulation min-h-[44px] sm:min-h-0"
                   placeholder={tSync("Search product by name")}
                   disabled={loading}
                   autoComplete="off"
@@ -261,16 +261,16 @@ const ProductRiskProfile: React.FC<ProductRiskProfileProps> = ({
               <button
                 type="submit"
                 disabled={loading || !productId.trim()}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-4 sm:px-5 py-2.5 sm:py-2 border border-transparent rounded-lg sm:rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 active:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[44px] sm:min-h-0 transition-colors w-full sm:w-auto"
               >
                 {loading ? (
                   <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 animate-spin" />
                     <TranslatedText text="Loading..." />
                   </>
                 ) : (
                   <>
-                    <Search className="w-4 h-4 mr-2" />
+                    <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                     <TranslatedText text="Get Profile" />
                   </>
                 )}

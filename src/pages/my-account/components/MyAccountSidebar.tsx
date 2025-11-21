@@ -16,14 +16,15 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Bell
 } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { TranslatedText } from '../../../components/translated-text';
 
 interface MyAccountSidebarProps {
-  activeTab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile';
-  setActiveTab: (tab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile') => void;
+  activeTab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile' | 'notifications';
+  setActiveTab: (tab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile' | 'notifications') => void;
   className?: string;
 }
 
@@ -44,12 +45,13 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
     { icon: ArrowRightLeft, label: 'Handover & Return', tab: 'handover-return' },
     { icon: BookOpen, label: 'Reviews', tab: 'reviews' },
     { icon: MessageCircle, label: 'Messages', tab: 'messages' },
+    { icon: Bell, label: 'Notifications', tab: 'notifications' },
     { icon: User, label: 'Profile', tab: 'profile' },
     { icon: Settings, label: 'Settings', tab: 'settings' },
   ];
 
   return (
-    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-full dark:bg-slate-900 dark:border-slate-700 transition-all duration-300 relative ${className}`}>
+    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-full dark:bg-slate-900 dark:border-slate-700 transition-all duration-300 relative flex flex-col ${className}`}>
       {/* Toggle Button */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -63,8 +65,8 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
         )}
       </button>
 
-      {/* Header */}
-      <div className={`p-6 border-b border-gray-200 dark:border-slate-700 ${isCollapsed ? 'px-3' : ''}`}>
+      {/* Header - Fixed */}
+      <div className={`p-6 border-b border-gray-200 dark:border-slate-700 flex-shrink-0 ${isCollapsed ? 'px-3' : ''}`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
           <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center dark:bg-teal-900/30 flex-shrink-0">
             {isCollapsed ? (
@@ -82,8 +84,8 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className={`p-4 space-y-2 ${isCollapsed ? 'px-2' : ''}`}>
+      {/* Navigation - Scrollable */}
+      <nav className={`p-4 pb-24 md:pb-4 space-y-2 flex-1 overflow-y-auto overscroll-contain ${isCollapsed ? 'px-2' : ''}`}>
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.tab;
@@ -118,7 +120,7 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
       </nav>
 
       {/* Footer */}
-      {/* <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+      {/* <div className="flex-shrink-0 p-4 border-t border-gray-200">
         <div className="text-xs text-gray-500 text-center">
           © 2025 Urutibz Platform
         </div>

@@ -226,13 +226,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Sidebar */}
       <div 
         className={`
-          flex flex-col relative
+          flex flex-col relative z-40
           ${isCollapsed && !isMobileMenuOpen ? 'w-16' : 'w-72'}
           bg-white dark:bg-gray-900 
           shadow-sm border-r border-gray-100 dark:border-gray-800 
           overflow-y-auto scrollbar-hide
           transition-all duration-300
-          h-full xl:h-[calc(100vh-3rem)]
+          h-full xl:h-[calc(100vh-3rem)] xl:max-h-[calc(100vh-3rem)]
           xl:static
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
         `}

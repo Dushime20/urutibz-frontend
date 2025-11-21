@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { Button } from '../../components/ui/DesignSystem';
 import { itemCategories } from '../../data/mockRentalData';
@@ -58,8 +58,9 @@ import SkeletonMetrics from '../../components/ui/SkeletonMetrics';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { Users, Calendar, Cpu, Clock, CheckCircle, Activity, User as UserIcon, Image as ImageIcon } from 'lucide-react';
+import { Users, Calendar, Cpu, Clock, CheckCircle, Activity, User as UserIcon, Image as ImageIcon, LayoutGrid, Menu } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import DashboardMobileNav from '../../components/dashboard/DashboardMobileNav';
 import { inspectionService, inspectionItemService } from '../../services/inspectionService';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TranslatedText } from '../../components/translated-text';
@@ -737,23 +738,67 @@ const AdminDashboardPage: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const mobileBookingsBadge = useMemo(
+    () => recentBookings.filter((booking) => (booking as any)?.status === 'pending').length,
+    [recentBookings]
+  );
+
+  const adminMobileNavItems = useMemo(
+    () => [
+      {
+        key: 'overview',
+        label: tSync('Home'),
+        icon: LayoutGrid,
+        onPress: () => setActiveTab('overview'),
+        active: activeTab === 'overview'
+      },
+      {
+        key: 'bookings',
+        label: tSync('Bookings'),
+        icon: Calendar,
+        onPress: () => setActiveTab('bookings'),
+        active: activeTab === 'bookings',
+        badge: mobileBookingsBadge
+      },
+      {
+        key: 'users',
+        label: tSync('Users'),
+        icon: Users,
+        onPress: () => setActiveTab('users'),
+        active: activeTab === 'users'
+      },
+      {
+        key: 'profile',
+        label: tSync('Profile'),
+        icon: UserIcon,
+        onPress: () => setActiveTab('profile'),
+        active: activeTab === 'profile'
+      },
+      {
+        key: 'menu',
+        label: tSync('Menu'),
+        icon: Menu,
+        onPress: () => setIsMobileMenuOpen(true)
+      }
+    ],
+    [activeTab, mobileBookingsBadge, setActiveTab, tSync]
+  );
+
   return (
     <>
-      <AdminHeader
-        selectedLocation={selectedLocation}
-        setSelectedLocation={setSelectedLocation}
-        selectedLanguage={selectedLanguage}
-        setSelectedLanguage={handleLanguageChange}
-        onMenuToggle={handleMenuToggle}
-      />
+      {/* Admin Header - Hidden on mobile, visible on desktop */}
+      <div className="hidden md:block sticky top-0 z-[100]">
+        <AdminHeader
+          selectedLocation={selectedLocation}
+          setSelectedLocation={setSelectedLocation}
+          selectedLanguage={selectedLanguage}
+          setSelectedLanguage={handleLanguageChange}
+          onMenuToggle={handleMenuToggle}
+        />
+      </div>
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Mobile Sidebar Overlay */}
-        {isMobileMenuOpen && (
-          <div className="fixed inset-0 bg-black/50 z-30 xl:hidden" onClick={handleMenuClose} />
-        )}
-        
         {/* Sidebar - Desktop and Mobile */}
-        <div className="fixed xl:static inset-y-0 left-0 z-40 xl:z-auto xl:flex-shrink-0 xl:relative xl:pt-2">
+        <div className={`fixed left-0 z-[70] xl:z-auto xl:flex-shrink-0 top-0 bottom-[88px] md:top-0 md:bottom-0 xl:top-16 xl:bottom-0 xl:pt-2 ${!isMobileMenuOpen ? 'pointer-events-none xl:pointer-events-auto' : 'pointer-events-auto'}`}>
           <AdminSidebar
             activeTab={activeTab}
             setActiveTab={(tab: any) => { 
@@ -768,7 +813,7 @@ const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto xl:pt-2 w-full">
+        <div className={`flex-1 overflow-y-auto xl:pt-2 w-full pb-28 md:pb-8 xl:transition-all xl:duration-300 ${isSidebarCollapsed ? 'xl:ml-16' : 'xl:ml-72'}`}>
           <div className="px-4 sm:px-8 py-4">
             <div className="space-y-10">
               {(() => {
@@ -1955,6 +2000,8 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <DashboardMobileNav items={adminMobileNavItems} />
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Shield,
@@ -35,6 +35,7 @@ import { disputeService } from '../../services/inspectionService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import DashboardMobileNav from '../../components/dashboard/DashboardMobileNav';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 const ModeratorDashboardPage: React.FC = () => {
@@ -195,8 +196,50 @@ const ModeratorDashboardPage: React.FC = () => {
     { id: 'settings', label: 'Settings', icon: Settings, description: 'Account settings', badge: null }
   ];
 
+  const moderatorMobileNavItems = useMemo(
+    () => [
+      {
+        key: 'overview',
+        label: 'Home',
+        icon: Home,
+        onPress: () => setActiveTab('overview'),
+        active: activeTab === 'overview'
+      },
+      {
+        key: 'active',
+        label: 'Active',
+        icon: AlertCircle,
+        onPress: () => setActiveTab('active'),
+        active: activeTab === 'active',
+        badge: stats.open + stats.underReview
+      },
+      {
+        key: 'resolved',
+        label: 'Resolved',
+        icon: CheckCircle2,
+        onPress: () => setActiveTab('resolved'),
+        active: activeTab === 'resolved',
+        badge: stats.resolved
+      },
+      {
+        key: 'settings',
+        label: 'Settings',
+        icon: Settings,
+        onPress: () => setActiveTab('settings'),
+        active: activeTab === 'settings'
+      },
+      {
+        key: 'menu',
+        label: 'Menu',
+        icon: Menu,
+        onPress: () => setSidebarOpen(true)
+      }
+    ],
+    [activeTab, setSidebarOpen, stats.open, stats.resolved, stats.underReview]
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-28 md:pb-0">
       {/* Professional Sidebar */}
       <div className={`
         fixed top-0 left-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
@@ -385,9 +428,114 @@ const ModeratorDashboardPage: React.FC = () => {
 
       {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
-          <div className="px-4 sm:px-6 lg:px-8 py-4">
+        {/* Header - Hidden on mobile, visible on desktop */}
+        <header className="hidden md:block bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
+          {/* Desktop: Full header */}
+          <div className="px-3 py-2">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex-1 text-center">
+                <h1 className="text-base font-bold text-gray-900 dark:text-gray-100">
+                  {activeTab === 'overview' && 'Dashboard'}
+                  {activeTab === 'active' && 'Active'}
+                  {activeTab === 'resolved' && 'Resolved'}
+                  {activeTab === 'settings' && 'Settings'}
+                </h1>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="relative p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    aria-label="Notifications"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {notifications.filter(n => n.unread).length > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    )}
+                  </button>
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                            No notifications
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {notifications.map((notification) => (
+                              <div
+                                key={notification.id}
+                                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${notification.unread ? 'bg-my-primary/5' : ''}`}
+                              >
+                                <p className="text-sm text-gray-900 dark:text-gray-100">{notification.message}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex items-center p-2 focus:outline-none focus:ring-2 focus:ring-my-primary rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    aria-label="Profile menu"
+                  >
+                    {user?.profileImageUrl ? (
+                      <img
+                        src={user.profileImageUrl}
+                        alt={user.name || user.email}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <UserCircle className="w-8 h-8 text-gray-400" />
+                    )}
+                  </button>
+                  {showProfileMenu && (
+                    <div className="absolute right-0 top-10 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50">
+                      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                        <div className="font-semibold text-gray-900 dark:text-gray-100">
+                          {user?.name || user?.email || 'Moderator'}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Moderator</div>
+                      </div>
+                      <div className="px-4 py-2">
+                        <button
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            setActiveTab('settings');
+                          }}
+                        >
+                          <User className="w-4 h-4 mr-2" /> Profile Settings
+                        </button>
+                        <button
+                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors mt-1"
+                          onClick={handleLogout}
+                        >
+                          <LogOut className="w-4 h-4 mr-2" /> Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop: Full header */}
+          <div className="hidden md:block px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -810,6 +958,8 @@ const ModeratorDashboardPage: React.FC = () => {
           )}
         </main>
       </div>
+
+      <DashboardMobileNav items={moderatorMobileNavItems} />
 
       {/* Dispute Details Modal */}
       {showDetailsModal && selectedDispute && (

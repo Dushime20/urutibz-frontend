@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -70,6 +70,7 @@ import PaymentsTab from './components/PaymentsTab';
 import InspectorInspectionDetailsModal from './components/InspectorInspectionDetailsModal';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TranslatedText } from '../../components/translated-text';
+import DashboardMobileNav from '../../components/dashboard/DashboardMobileNav';
 
 const InspectorDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -172,6 +173,47 @@ const InspectorDashboardPage: React.FC = () => {
       photos: []
     }
   }));
+
+  const inspectorMobileNavItems = useMemo(
+    () => [
+      {
+        key: 'overview',
+        label: tSync('Home'),
+        icon: Home,
+        onPress: () => setActiveTab('overview'),
+        active: activeTab === 'overview'
+      },
+      {
+        key: 'inspections',
+        label: tSync('Jobs'),
+        icon: ClipboardCheck,
+        onPress: () => setActiveTab('inspections'),
+        active: activeTab === 'inspections',
+        badge: stats.pending + stats.inProgress
+      },
+      {
+        key: 'payments',
+        label: tSync('Payouts'),
+        icon: Wallet,
+        onPress: () => setActiveTab('payments'),
+        active: activeTab === 'payments'
+      },
+      {
+        key: 'settings',
+        label: tSync('Settings'),
+        icon: Settings,
+        onPress: () => setActiveTab('settings'),
+        active: activeTab === 'settings'
+      },
+      {
+        key: 'menu',
+        label: tSync('Menu'),
+        icon: Menu,
+        onPress: () => setSidebarOpen(true)
+      }
+    ],
+    [activeTab, setActiveTab, sidebarOpen, stats.inProgress, stats.pending, tSync]
+  );
 
 
   // Enhanced header states
@@ -767,246 +809,120 @@ const InspectorDashboardPage: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+      <div className={`flex-1 flex flex-col transition-all duration-300 pb-28 md:pb-10 ${
         sidebarOpen 
           ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64') 
           : 'lg:ml-0'
       }`}>
-        {/* Enhanced Professional Header */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-40">
-          <div className="px-4 sm:px-6 lg:px-8">
-            {/* Top Bar */}
-            <div className="flex items-center justify-between py-1">
-            <div className="flex items-center space-x-4">
-              {/* Mobile menu button */}
+        {/* Enhanced Professional Header - Hidden on mobile, visible on desktop */}
+        <div className="hidden md:block bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-40">
+          {/* Desktop: Full header */}
+          <div className="px-3 py-2">
+            <div className="flex items-center justify-between">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
-              
-              <div className="flex items-center space-x-3">
-              
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    {activeTab === 'overview' && <TranslatedText text="Dashboard" />}
-                    {activeTab === 'inspections' && <TranslatedText text="Inspections" />}
-                    {activeTab === 'completed' && <TranslatedText text="Completed Inspections" />}
-                    {activeTab === 'payments' && <TranslatedText text="Payments" />}
-                    {activeTab === 'settings' && <TranslatedText text="Settings" />}
-                  </h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Professional Inspector" /></p>
-                </div>
+              <div className="flex-1 text-center">
+                <h1 className="text-base font-bold text-gray-900 dark:text-gray-100">
+                  {activeTab === 'overview' && <TranslatedText text="Dashboard" />}
+                  {activeTab === 'inspections' && <TranslatedText text="Inspections" />}
+                  {activeTab === 'completed' && <TranslatedText text="Completed" />}
+                  {activeTab === 'payments' && <TranslatedText text="Payments" />}
+                  {activeTab === 'settings' && <TranslatedText text="Settings" />}
+                </h1>
               </div>
-             
-            </div>
-            
-            {/* Right side actions */}
-            <div className="flex items-center space-x-4">
-              {/* Theme Toggle */}
-              <button
-                onClick={() => toggleTheme(isDark ? 'light' : 'dark')}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                aria-label="Toggle theme"
-                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-              {/* Notifications */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors notifications-button"
-                >
-                  <Bell className="w-5 h-5" />
-                  {notifications.filter(n => n.unread).length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                      {notifications.filter(n => n.unread).length}
-                    </span>
-                  )}
-                </button>
-                
-                {/* Notifications Dropdown */}
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 notifications-dropdown">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Notifications" /></h3>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notifications.map((notification) => (
-                        <div key={notification.id} className={`p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 ${notification.unread ? 'bg-my-primary/5 dark:bg-gray-800/60' : ''}`}>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className={`text-sm ${notification.unread ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}>
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
+              <div className="flex items-center gap-1">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {notifications.filter(n => n.unread).length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                        {notifications.filter(n => n.unread).length}
+                      </span>
+                    )}
+                  </button>
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100"><TranslatedText text="Notifications" /></h3>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {notifications.map((notification) => (
+                          <div key={notification.id} className={`p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 ${notification.unread ? 'bg-my-primary/5 dark:bg-gray-800/60' : ''}`}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className={`text-sm ${notification.unread ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
+                              </div>
+                              {notification.unread && (
+                                <div className="w-2 h-2 bg-my-primary rounded-full ml-2"></div>
+                              )}
                             </div>
-                            {notification.unread && (
-                              <div className="w-2 h-2 bg-my-primary rounded-full ml-2"></div>
-                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                    className="flex items-center p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-my-primary/10 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-my-primary" />
+                    </div>
+                  </button>
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                      <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-my-primary/10 rounded-full flex items-center justify-center">
+                            <User className="w-6 h-6 text-my-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {inspector?.userId || user?.name || 'Inspector'}
+                            </p>
+                            <p className="text-xs text-gray-500"><TranslatedText text="ID" />: {inspector?.id || <TranslatedText text="N/A" />}</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    <div className="p-3 border-t border-gray-200 dark:border-gray-800">
-                      <button className="w-full text-sm text-my-primary hover:text-my-primary/80 font-medium">
-                        <TranslatedText text="View All Notifications" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Language Switcher (replaces Settings icon) */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                  className="flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors language-button"
-                  aria-label="Select language"
-                >
-                  <Globe className="w-5 h-5" />
-                </button>
-                
-                {showLanguageDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 language-dropdown max-h-96 overflow-y-auto">
-                    <div className="py-2">
-                      {[
-                        { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
-                        { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
-                        { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', flag: '🇰🇪' },
-                        { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
-                        { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇵🇹' },
-                        { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
-                        { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
-                        { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
-                        { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
-                        { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹' },
-                        { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
-                        { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
-                        { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
-                        { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷' },
-                        { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
-                        { code: 'nl', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱' },
-                        { code: 'pl', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱' },
-                        { code: 'th', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
-                        { code: 'uk', name: 'Ukrainian', nativeName: 'Українська', flag: '🇺🇦' },
-                      ].map((lang) => (
+                      </div>
+                      <div className="py-2">
                         <button
-                          key={lang.code}
                           onClick={() => {
-                            setLanguage(lang.code);
-                            setShowLanguageDropdown(false);
+                            setShowProfileDropdown(false);
+                            setActiveTab('settings');
                           }}
-                          className={`w-full flex items-center space-x-3 px-4 py-2 text-sm text-left transition-colors ${
-                            language === lang.code
-                              ? 'text-[#01aaa7] font-medium bg-[#01aaa7]/10 dark:bg-[#01aaa7]/20'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                          }`}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
-                          <span className="text-lg">{lang.flag}</span>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{lang.nativeName}</span>
-                            {lang.name !== lang.nativeName && (
-                              <span className="text-xs opacity-70">{lang.name}</span>
-                            )}
-                          </div>
-                          {language === lang.code && (
-                            <span className="ml-auto text-[#01aaa7]">✓</span>
-                          )}
+                          <TranslatedText text="Settings" />
                         </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Profile Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded-lg transition-colors profile-button"
-                >
-                  <div className="w-10 h-10 bg-my-primary/10 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-my-primary" />
-                  </div>
-                  <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-gray-900">
-                      {inspector?.userId || user?.name || 'Inspector'}
-                    </p>
-                    <p className="text-xs text-gray-500"><TranslatedText text="Professional Inspector" /></p>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                </button>
-                
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 profile-dropdown">
-                    <div className="p-4 border-b border-gray-200">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-my-primary/10 rounded-full flex items-center justify-center">
-                          <User className="w-6 h-6 text-my-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {inspector?.userId || user?.name || 'Inspector'}
-                          </p>
-                          <p className="text-xs text-gray-500"><TranslatedText text="ID" />: {inspector?.id || <TranslatedText text="N/A" />}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="py-2">
-                      <div className="px-4 py-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600"><TranslatedText text="Rating" /></span>
-                          <div className="flex items-center space-x-1">
-                            <Star className="w-4 h-4 text-amber-500 fill-current" />
-                            <span className="font-medium">{inspector?.rating || 0}/5.0</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-sm mt-2">
-                          <span className="text-gray-600"><TranslatedText text="Experience" /></span>
-                          <span className="font-medium">{inspector?.experience || 0} <TranslatedText text="years" /></span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm mt-2">
-                          <span className="text-gray-600"><TranslatedText text="Total Inspections" /></span>
-                          <span className="font-medium">{inspector?.totalInspections || 0}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="border-t border-gray-200 pt-2">
-                        <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                          <UserCheck className="w-4 h-4" />
-                          <span>Edit Profile</span>
-                        </button>
-                        <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                          <BarChart3 className="w-4 h-4" />
-                          <span>Performance Report</span>
-                        </button>
-                        <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3">
-                          <FileText className="w-4 h-4" />
-                          <span>Certifications</span>
-                        </button>
-                      </div>
-                      
-                      <div className="border-t border-gray-200 pt-2">
                         <button
-                          onClick={() => { logout(); navigate('/login'); }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3"
+                          onClick={() => {
+                            logout();
+                            navigate('/');
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                         >
-                          <LogOut className="w-4 h-4" />
-                          <span><TranslatedText text="Sign Out" /></span>
+                          <TranslatedText text="Logout" />
                         </button>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1052,6 +968,7 @@ const InspectorDashboardPage: React.FC = () => {
                 trendingData={trendingData}
                 recentActivities={recentActivities}
                 performanceMetrics={performanceMetrics}
+                inspectorMobileNavItems={inspectorMobileNavItems}
               />
             )}
 
@@ -1122,7 +1039,7 @@ const InspectorDashboardPage: React.FC = () => {
       {showInspectionDetailsModal && selectedInspectionId && (
         <InspectorInspectionDetailsModal
           isOpen={showInspectionDetailsModal}
-          inspectionId={selectedInspectionId}
+          inspectionId={selectedInspectionId as string}
           onClose={() => {
             setShowInspectionDetailsModal(false);
             setSelectedInspectionId(null);
@@ -1570,12 +1487,12 @@ const InspectorDashboardPage: React.FC = () => {
                </button>
             </div>
           </div>
-                 </div>
-       )}
+        </div>
+      )}
 
-     </div>
-   );
- };
+    </div>
+  );
+};
 
 // Overview Tab Component
 const OverviewTab: React.FC<{
@@ -1588,7 +1505,8 @@ const OverviewTab: React.FC<{
   trendingData: any[];
   recentActivities: any[];
   performanceMetrics: any;
-}> = ({ stats, inspections, inspector, onInspectionClick, formatDate, getTypeLabel, trendingData, recentActivities, performanceMetrics }) => {
+  inspectorMobileNavItems: any[];
+}> = ({ stats, inspections, inspector, onInspectionClick, formatDate, getTypeLabel, trendingData, recentActivities, performanceMetrics, inspectorMobileNavItems }) => {
   const { tSync } = useTranslation();
   return (
     <div className="space-y-8">
@@ -1864,6 +1782,7 @@ const OverviewTab: React.FC<{
         </div>
       </div>
 
+      <DashboardMobileNav items={inspectorMobileNavItems} />
     </div>
   );
 };

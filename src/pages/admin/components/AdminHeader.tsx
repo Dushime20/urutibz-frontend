@@ -204,7 +204,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
 
   if (loading) {
     return (
-      <div className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm">
+      <div className="sticky top-0 z-[100] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -231,8 +231,117 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   }
 
   return (
-    <div className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+    <div className="sticky top-0 z-[100] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      {/* Mobile: Minimal compact header */}
+      <div className="md:hidden px-3 py-2">
+        <div className="flex items-center justify-between">
+          {onMenuToggle && (
+            <button
+              onClick={onMenuToggle}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle menu"
+            >
+              <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            </button>
+          )}
+          <div className="flex-1 text-center">
+            <h1 className="text-base font-bold text-gray-900 dark:text-gray-100">Admin</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <button className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" aria-label="Notifications">
+              <Bell className="w-5 h-5" />
+              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            </button>
+            <div className="relative flex items-center">
+              <button
+                className="flex items-center focus:outline-none focus:ring-2 focus:ring-my-primary rounded-xl"
+                onClick={() => setProfileOpen((open) => !open)}
+                aria-label="Open profile menu"
+                tabIndex={0}
+                ref={profileButtonRef}
+              >
+                {user?.profileImageUrl ? (
+                  <img
+                    src={user.profileImageUrl}
+                    alt={`${user.firstName} ${user.lastName}`}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                {!user?.profileImageUrl && (
+                  <UserCircle className="w-8 h-8 text-gray-400" />
+                )}
+              </button>
+              {profileOpen && (
+                <div
+                  ref={profileMenuRef}
+                  className="absolute right-0 top-10 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-50 transition-all duration-200"
+                  tabIndex={-1}
+                  role="menu"
+                >
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      {user ? `${user.firstName} ${user.lastName}` : 'Loading...'}
+                    </div>
+                  </div>
+                  <div className="px-4 py-2">
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                      onClick={() => {
+                        (document.activeElement as HTMLElement | null)?.blur?.();
+                        setProfileOpen(false);
+                        setTimeout(() => {
+                          const event = new CustomEvent('admin-navigate', { detail: { tab: 'profile' } });
+                          window.dispatchEvent(event);
+                        }, 0);
+                      }}
+                      aria-label="Profile"
+                    >
+                      <User className="w-4 h-4 mr-2" /> Profile Details
+                    </button>
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors mt-1"
+                      onClick={() => {
+                        (document.activeElement as HTMLElement | null)?.blur?.();
+                        setProfileOpen(false);
+                        setTimeout(() => setShow2FAModal(true), 0);
+                      }}
+                      aria-label="Two-factor Authentication"
+                    >
+                      <Smartphone className="w-4 h-4 mr-2" /> Two-Factor Authentication
+                    </button>
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors mt-1"
+                      onClick={() => {
+                        (document.activeElement as HTMLElement | null)?.blur?.();
+                        setProfileOpen(false);
+                        setTimeout(() => setShowChangePassword(true), 0);
+                      }}
+                      aria-label="Change Password"
+                    >
+                      <Lock className="w-4 h-4 mr-2" /> Change Password
+                    </button>
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors mt-1"
+                      onClick={handleLogout}
+                      aria-label="Logout"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" /> Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: Full header */}
+      <div className="hidden md:block w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
             {/* Hamburger Menu Button - visible on mobile/tablet, hidden on xl+ */}

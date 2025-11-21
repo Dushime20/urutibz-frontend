@@ -245,7 +245,7 @@ const RegisterPage: React.FC = () => {
             </button>
 
             {/* AI Platform Badge */}
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 rounded-full text-sm font-medium">
+            <div className="inline-flex items-center space-x-2 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors" style={{ backgroundColor: '#0c9488' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0a7a70'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0c9488'}>
               <Sparkles className="w-4 h-4" />
               <span>AI-Powered Platform</span>
             </div>
@@ -484,7 +484,10 @@ const RegisterPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white py-3 px-6 rounded-lg font-medium transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                className="w-full text-white py-3 px-6 rounded-lg font-medium transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                style={{ backgroundColor: '#0c9488' }}
+                onMouseEnter={(e) => !isLoading && (e.currentTarget.style.backgroundColor = '#0a7a70')}
+                onMouseLeave={(e) => !isLoading && (e.currentTarget.style.backgroundColor = '#0c9488')}
               >
                 {isLoading ? (
                   <>
