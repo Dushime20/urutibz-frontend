@@ -244,7 +244,7 @@ const ThirdPartyInspectionRequestModal: React.FC<ThirdPartyInspectionRequestModa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
-      <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
@@ -348,7 +348,7 @@ const ThirdPartyInspectionRequestModal: React.FC<ThirdPartyInspectionRequestModa
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
                   <button
                     type="button"
                     onClick={() => setInspectorId('')}

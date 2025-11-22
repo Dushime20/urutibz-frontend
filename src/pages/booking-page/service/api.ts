@@ -323,3 +323,90 @@ export async function convertCurrencyLive(params: { from: string; to: string; am
     throw err as any;
   }
 }
+
+// Fetch booking by ID
+export async function fetchBookingById(bookingId: string, token: string) {
+  const url = `${API_BASE_URL}/bookings/${bookingId}`;
+  
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return {
+      success: true,
+      data: response.data?.data || response.data,
+      message: response.data?.message || 'Booking retrieved successfully'
+    };
+  } catch (error: any) {
+    console.error('Error fetching booking:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to fetch booking',
+      data: null
+    };
+  }
+}
+
+// Owner confirms booking
+export async function confirmBookingByOwner(bookingId: string, notes?: string, token?: string) {
+  const url = `${API_BASE_URL}/bookings/${bookingId}/owner-confirm`;
+  
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, { notes }, { headers });
+    
+    return {
+      success: true,
+      data: response.data?.data || response.data,
+      message: response.data?.message || 'Booking confirmed successfully'
+    };
+  } catch (error: any) {
+    console.error('Error confirming booking:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to confirm booking',
+      data: null
+    };
+  }
+}
+
+// Owner rejects booking
+export async function rejectBookingByOwner(bookingId: string, reason: string, notes?: string, token?: string) {
+  const url = `${API_BASE_URL}/bookings/${bookingId}/owner-reject`;
+  
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(url, { reason, notes }, { headers });
+    
+    return {
+      success: true,
+      data: response.data?.data || response.data,
+      message: response.data?.message || 'Booking rejected successfully'
+    };
+  } catch (error: any) {
+    console.error('Error rejecting booking:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to reject booking',
+      data: null
+    };
+  }
+}

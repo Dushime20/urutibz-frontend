@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Smartphone, Check, AlertCircle, CheckCircle, ArrowUpDown } from 'lucide-react';
+import { CreditCard, Smartphone, Check, AlertCircle, CheckCircle, ArrowUpDown, Clock, XCircle } from 'lucide-react';
 import Button from '../../../components/ui/Button';
-import { processPaymentTransaction, fetchPaymentMethods, convertCurrencyLive, fetchPaymentProvidersByCountry, CountryPaymentProvidersResponse, fetchPaymentProviders, fetchDefaultPaymentMethods, PaymentMethodRecord } from '../service/api';
+import { processPaymentTransaction, fetchPaymentMethods, convertCurrencyLive, fetchPaymentProvidersByCountry, CountryPaymentProvidersResponse, fetchPaymentProviders, fetchDefaultPaymentMethods, PaymentMethodRecord, fetchBookingById } from '../service/api';
 import axios from 'axios';
 import { API_BASE_URL } from '../service/api';
 import { 
@@ -16,6 +16,14 @@ interface PaymentStepperProps {
   amount: number;
   currency: string;
   onSuccess: () => void;
+}
+
+interface BookingData {
+  id: string;
+  owner_confirmed?: boolean;
+  owner_confirmation_status?: 'pending' | 'confirmed' | 'rejected';
+  owner_rejection_reason?: string;
+  status?: string;
 }
 
 // Country code mapping with validation rules
@@ -50,11 +58,39 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
   const [selectedCountryCode, setSelectedCountryCode] = useState('+250');
   const [phoneNumber, setPhoneNumber] = useState('');
 
+  // Owner confirmation state
+  const [bookingData, setBookingData] = useState<BookingData | null>(null);
+  const [checkingConfirmation, setCheckingConfirmation] = useState(true);
+
   const steps = [
     { id: 1, title: 'Choose Type', description: 'Select payment method' },
     { id: 2, title: 'Enter Details', description: 'Provide payment information' },
     { id: 3, title: 'Confirm Payment', description: 'Review and complete' }
   ];
+
+  // Check owner confirmation status
+  useEffect(() => {
+    const checkOwnerConfirmation = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setCheckingConfirmation(false);
+          return;
+        }
+
+        const result = await fetchBookingById(bookingId, token);
+        if (result.success && result.data) {
+          setBookingData(result.data);
+        }
+      } catch (error) {
+        console.error('Error checking owner confirmation:', error);
+      } finally {
+        setCheckingConfirmation(false);
+      }
+    };
+
+    checkOwnerConfirmation();
+  }, [bookingId]);
 
   useEffect(() => {
     const fetchInitialPaymentMethods = async () => {
@@ -371,6 +407,13 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     setError(null);
     
     try {
+      // Double-check owner confirmation before processing payment
+      if (bookingData && (!bookingData.owner_confirmed || bookingData.owner_confirmation_status !== 'confirmed')) {
+        setError('Payment cannot be processed. The product owner must confirm the booking first to ensure the product is available and accessible.');
+        setLoading(false);
+        return;
+      }
+
       const token = localStorage.getItem('token');
       
       const paymentMethodId = selectedMethod?.id || 
@@ -410,11 +453,73 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
       setTimeout(() => onSuccess(), 2000);
     } catch (err: any) {
       console.error('Transaction error:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to process payment');
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to process payment';
+      
+      // Check if error is about owner confirmation
+      if (errorMessage.includes('owner') || errorMessage.includes('confirmation') || errorMessage.includes('OWNER_CONFIRMATION_REQUIRED')) {
+        setError('Payment cannot be processed. The product owner must confirm the booking first to ensure the product is available and accessible.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading state while checking confirmation
+  if (checkingConfirmation) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-slate-400">Checking booking status...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if owner hasn't confirmed
+  if (bookingData && !bookingData.owner_confirmed && bookingData.owner_confirmation_status !== 'confirmed') {
+    const isRejected = bookingData.owner_confirmation_status === 'rejected';
+    
+    return (
+      <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
+        <div className="text-center">
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+            isRejected ? 'bg-red-100 dark:bg-red-900/20' : 'bg-yellow-100 dark:bg-yellow-900/20'
+          }`}>
+            {isRejected ? (
+              <XCircle className="w-12 h-12 text-red-600 dark:text-red-400" />
+            ) : (
+              <Clock className="w-12 h-12 text-yellow-600 dark:text-yellow-400" />
+            )}
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            {isRejected ? 'Booking Rejected' : 'Awaiting Owner Confirmation'}
+          </h2>
+          <p className="text-gray-600 dark:text-slate-300 mb-2">
+            {isRejected ? (
+              <>
+                The product owner has rejected this booking.
+                {bookingData.owner_rejection_reason && (
+                  <span className="block mt-2 text-sm font-medium">
+                    Reason: {bookingData.owner_rejection_reason}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                The product owner needs to confirm that the product is available and accessible before you can proceed with payment.
+                <span className="block mt-2 text-sm text-gray-500 dark:text-slate-400">
+                  You will be notified once the owner confirms the booking.
+                </span>
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -442,6 +547,15 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
 
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
+      {/* Owner Confirmation Success Banner */}
+      {bookingData?.owner_confirmed && (
+        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+          <p className="text-sm text-green-800 dark:text-green-200">
+            Owner has confirmed this booking. You can now proceed with payment.
+          </p>
+        </div>
+      )}
       {/* Enhanced Stepper */}
       <div className="mb-10">
         <div className="flex items-center justify-between relative">

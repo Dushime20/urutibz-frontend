@@ -921,7 +921,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           ))}
         </div>
         {/* Scrollable form body and sticky footer now inside the form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-8 py-6 flex flex-col">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto scrollbar-hide px-8 py-6 flex flex-col">
           {renderStepContent()}
           {/* Sticky footer */}
           <div className="border-t border-gray-200 dark:border-slate-700 px-4 sm:px-8 py-4 bg-white dark:bg-slate-900 flex-shrink-0 flex flex-col sm:flex-row justify-between items-center gap-4 mt-auto">

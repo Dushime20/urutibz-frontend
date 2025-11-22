@@ -1,7 +1,7 @@
 // My Account Sidebar Component
 // Collapsible sidebar with toggle functionality
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   Calendar, 
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { TranslatedText } from '../../../components/translated-text';
+import { useMessaging } from '../../../hooks/useMessaging';
 
 interface MyAccountSidebarProps {
   activeTab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile' | 'notifications';
@@ -35,6 +36,12 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
 }) => {
   const { tSync } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { unreadCount, loadUnreadCount } = useMessaging();
+
+  // Load unread count on mount
+  useEffect(() => {
+    loadUnreadCount();
+  }, [loadUnreadCount]);
   const navigationItems = [
     { icon: BarChart3, label: 'Overview', tab: 'overview' },
     { icon: Calendar, label: 'Bookings', tab: 'bookings' },
@@ -85,7 +92,7 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
       </div>
 
       {/* Navigation - Scrollable */}
-      <nav className={`p-4 pb-24 md:pb-4 space-y-2 flex-1 overflow-y-auto overscroll-contain ${isCollapsed ? 'px-2' : ''}`}>
+      <nav className={`p-4 pb-24 md:pb-4 space-y-2 flex-1 overflow-y-auto overscroll-contain scrollbar-hide ${isCollapsed ? 'px-2' : ''}`}>
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.tab;
@@ -107,12 +114,27 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
                 }`}
               />
               {!isCollapsed && (
-                <span className="font-medium dark:text-slate-200 truncate"><TranslatedText text={item.label} /></span>
+                <div className="flex items-center justify-between w-full">
+                  <span className="font-medium dark:text-slate-200 truncate"><TranslatedText text={item.label} /></span>
+                  {item.tab === 'messages' && unreadCount > 0 && (
+                    <span className="ml-auto px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full min-w-[20px] text-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </div>
               )}
               {isCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
                   <TranslatedText text={item.label} />
+                  {item.tab === 'messages' && unreadCount > 0 && (
+                    <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </div>
+              )}
+              {isCollapsed && item.tab === 'messages' && unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               )}
             </button>
           );

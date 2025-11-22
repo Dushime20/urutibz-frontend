@@ -11,11 +11,13 @@ import { useTranslation } from '../hooks/useTranslation';
 import { TranslatedText } from '../components/translated-text';
 import { formatPrice, getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
 import Button from '../components/ui/Button';
-import { getProductById, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites, fetchAvailableProducts } from './admin/service';
+import { getProductById, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites, fetchAvailableProducts, fetchUserById } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
 import { fetchProductReviews } from './my-account/service/api';
 import { UserProfileService } from './admin/service/userProfileService';
 import ProductSwiper from '../components/products/ProductSwiper';
+import ProductMap from '../components/map/ProductMap';
+import MessagingModal from '../components/messaging/MessagingModal';
 
 
 
@@ -58,8 +60,11 @@ const ItemDetailsPage: React.FC = () => {
   const [itemLocation, setItemLocation] = useState<{ city: string | null, country: string | null }>({ city: null, country: null });
   const [productPrices, setProductPrices] = useState<any>(null);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [productCoordinates, setProductCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [productInteractions, setProductInteractions] = useState<any[]>([]);
   const [productReviews, setProductReviews] = useState<any[]>([]);
+  const [showMessagingModal, setShowMessagingModal] = useState(false);
+  const [ownerInfo, setOwnerInfo] = useState<{ id: string; name: string; avatar?: string } | null>(null);
   
   // Related products state
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
@@ -134,6 +139,43 @@ const ItemDetailsPage: React.FC = () => {
         navigate('/items');
       });
   }, [id, navigate]);
+
+  // Fetch owner information when item is loaded
+  useEffect(() => {
+    if (!item?.owner_id) return;
+    
+    const fetchOwnerInfo = async () => {
+      try {
+        const token = localStorage.getItem('token') || undefined;
+        const result = await fetchUserById(item.owner_id, token);
+        
+        if (result.data) {
+          const owner = result.data;
+          const ownerName = owner.first_name && owner.last_name
+            ? `${owner.first_name} ${owner.last_name}`
+            : owner.email || 'Product Owner';
+          
+          setOwnerInfo({
+            id: owner.id,
+            name: ownerName,
+            avatar: owner.profile_image || owner.profileImageUrl || owner.avatar || item.ownerAvatar
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching owner info:', err);
+        // Fallback to item data if available
+        if (item.ownerName) {
+          setOwnerInfo({
+            id: item.owner_id,
+            name: item.ownerName,
+            avatar: item.ownerAvatar
+          });
+        }
+      }
+    };
+    
+    fetchOwnerInfo();
+  }, [item?.owner_id, item?.ownerName, item?.ownerAvatar]);
 
   // Fetch product prices
   useEffect(() => {
@@ -233,6 +275,8 @@ const ItemDetailsPage: React.FC = () => {
       }
       
       if (lat != null && lng != null) {
+        // Store coordinates for map display
+        setProductCoordinates({ lat, lng });
         try {
           const { city, country } = await getCityFromCoordinates(lat, lng);
           setItemLocation({ city, country });
@@ -241,6 +285,7 @@ const ItemDetailsPage: React.FC = () => {
         }
       } else {
         setItemLocation({ city: null, country: null });
+        setProductCoordinates(null);
       }
       
       setLocationLoading(false);
@@ -826,6 +871,28 @@ const ItemDetailsPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Product Location Map */}
+              {productCoordinates && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <MapPin className="w-5 h-5" />
+                    <TranslatedText text="Location" />
+                  </h3>
+                  <ProductMap
+                    latitude={productCoordinates.lat}
+                    longitude={productCoordinates.lng}
+                    productTitle={item.name || item.title || 'Product Location'}
+                    address={item.address_line}
+                    height="400px"
+                  />
+                  {itemLocation.city && (
+                    <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">
+                      {itemLocation.city}{itemLocation.country ? `, ${itemLocation.country}` : ''}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Included Accessories */}
               {Array.isArray(item.included_accessories) && item.included_accessories.length > 0 && (
                 <div className="mb-6">
@@ -1000,7 +1067,11 @@ const ItemDetailsPage: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 flex items-center justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 flex items-center justify-center gap-2"
+                    onClick={() => setShowMessagingModal(true)}
+                  >
                     <MessageCircle className="w-4 h-4" />
                     <TranslatedText text="Message" />
                   </Button>
@@ -1128,6 +1199,26 @@ const ItemDetailsPage: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Messaging Modal */}
+      {item && ownerInfo && (
+        <MessagingModal
+          isOpen={showMessagingModal}
+          onClose={() => setShowMessagingModal(false)}
+          productId={item.id}
+          productTitle={item.title}
+          ownerId={ownerInfo.id}
+          ownerName={ownerInfo.name}
+          ownerAvatar={ownerInfo.avatar}
+          productImage={images[0] || item.image}
+          productPrice={productPrices?.price_per_day && productPrices?.currency 
+            ? formatCurrency(productPrices.price_per_day, productPrices.currency) + '/day'
+            : item.base_price_per_day 
+              ? `${item.base_price_per_day} ${item.base_currency}/day`
+              : undefined
+          }
+        />
       )}
     </div>
   );

@@ -1210,7 +1210,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
           <div className="mx-auto px-4 sm:px-6 lg:px-4 py-8 pb-28 md:pb-12">
         {/* Verification Banner */}
         <div className="mb-8">
@@ -1588,7 +1588,7 @@ const DashboardPage: React.FC = () => {
 
       {showReviewDetail && selectedReview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto dark:bg-slate-900">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide dark:bg-slate-900">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Review Details" /></h3>
@@ -1749,7 +1749,7 @@ const DashboardPage: React.FC = () => {
       {/* 2FA Management Modal */}
       {show2FAModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto dark:bg-slate-900">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide dark:bg-slate-900">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Two-Factor Authentication</h2>

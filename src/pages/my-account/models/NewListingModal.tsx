@@ -990,7 +990,7 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-h-0">
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6 min-h-0">
+            <div className="flex-1 overflow-y-auto scrollbar-hide px-4 sm:px-8 py-4 sm:py-6 min-h-0">
               {renderStepContent()}
             </div>
 

@@ -61,10 +61,22 @@ export const useRealtime = (): UseRealtimeReturn => {
     };
   }, []);
 
-  // Send message function
-  const sendMessage = useCallback((data: { chatId: string; message: string; toUserId: string }) => {
+  // Send message function (enhanced for new messaging system)
+  const sendMessage = useCallback((data: { 
+    chatId: string; 
+    content: string; 
+    messageType?: string;
+    replyToMessageId?: string;
+    attachments?: any[];
+  }) => {
     if (socketRef.current && isConnected) {
-      socketRef.current.emit('message', data);
+      socketRef.current.emit('message', {
+        chatId: data.chatId,
+        content: data.content,
+        messageType: data.messageType || 'text',
+        replyToMessageId: data.replyToMessageId,
+        attachments: data.attachments
+      });
     }
   }, [isConnected]);
 
@@ -96,6 +108,27 @@ export const useRealtime = (): UseRealtimeReturn => {
     }
   }, [isConnected]);
 
+  // Set typing indicator
+  const setTypingIndicator = useCallback((chatId: string, isTyping: boolean) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('typing', { chatId, isTyping });
+    }
+  }, [isConnected]);
+
+  // Mark message as read
+  const markMessageAsRead = useCallback((messageId: string, chatId: string) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('message-read', { messageId, chatId });
+    }
+  }, [isConnected]);
+
+  // Mark chat as read
+  const markChatAsRead = useCallback((chatId: string) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('chat-read', { chatId });
+    }
+  }, [isConnected]);
+
   return {
     socket,
     isConnected,
@@ -104,6 +137,9 @@ export const useRealtime = (): UseRealtimeReturn => {
     leaveRoom,
     sendNotification,
     updateBooking,
+    setTypingIndicator,
+    markMessageAsRead,
+    markChatAsRead,
   };
 };
 

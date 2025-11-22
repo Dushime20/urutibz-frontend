@@ -422,7 +422,7 @@ const InspectionPaymentModal: React.FC<InspectionPaymentModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl border border-gray-100 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl border border-gray-100 dark:border-slate-700 max-h-[90vh] overflow-y-auto scrollbar-hide">
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-5 flex items-center justify-between z-10">
           <div className="flex-1">

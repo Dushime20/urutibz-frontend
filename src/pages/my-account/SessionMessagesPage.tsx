@@ -219,7 +219,7 @@ const SessionMessagesPage: React.FC = () => {
                     <div className="p-4 border-b border-gray-200 dark:border-slate-700">
                       <h3 className="font-semibold text-gray-900 dark:text-slate-100">Notifications</h3>
                     </div>
-                    <div className="max-h-64 overflow-y-auto">
+                    <div className="max-h-64 overflow-y-auto scrollbar-hide">
                       {notificationsLoading ? (
                         <div className="p-4 text-center text-gray-500 dark:text-slate-400">Loading...</div>
                       ) : notificationsData.length === 0 ? (

@@ -167,7 +167,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ open, onClose, 
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
             {loading ? (
               <div className="flex items-center justify-center py-16">
                 <div className="flex items-center space-x-3">

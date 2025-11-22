@@ -8,6 +8,7 @@ import { useMarkReadMutation, useNotificationsQuery } from '../../../features/no
 import Portal from '../../../components/ui/Portal';
 import { LanguageSwitcher } from '../../../components/language-switcher';
 import useRealtime from '../../../hooks/useRealtime';
+import { useMessaging } from '../../../hooks/useMessaging';
 
 type HeaderProps = { 
   onToggleSidebar?: () => void;
@@ -32,6 +33,49 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   const [modalPage, setModalPage] = useState(1);
   const modalQuery = useNotificationsQuery({ page: modalPage, limit: 50 });
   const { socket, isConnected } = useRealtime();
+  const { onNewMessage, loadUnreadCount } = useMessaging();
+  
+  // Listen for new messages and show notifications
+  useEffect(() => {
+    const handleNewMessageNotification = (message: any) => {
+      const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null;
+      
+      // Only show notification if message is from someone else
+      if (message.sender_id !== user?.id) {
+        const normalized = {
+          id: `message-${message.id}-${Date.now()}`,
+          title: 'New Message',
+          message: message.content?.substring(0, 100) || 'You have a new message',
+          type: 'message',
+          createdAt: message.created_at || new Date().toISOString(),
+          channels: ['in_app'],
+          priority: 'normal',
+          status: 'delivered',
+          read: false,
+          is_read: false,
+          data: {
+            chatId: message.chat_id,
+            messageId: message.id,
+            productContext: message.productContext
+          },
+        };
+
+        setNotificationsData(prev => {
+          if (prev.some(item => item.id === normalized.id)) {
+            return prev;
+          }
+          return [normalized, ...prev].slice(0, 100);
+        });
+        
+        // Reload unread count
+        loadUnreadCount();
+      }
+    };
+
+    const cleanup = onNewMessage(handleNewMessageNotification);
+    return cleanup;
+  }, [onNewMessage, loadUnreadCount]);
+  
   const modalItems = (
     (modalQuery.data as any)?.items ??
     (modalQuery.data as any)?.data?.items ??
@@ -329,7 +373,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                       <button onClick={handleMarkAllRead} className="text-xs text-primary-600 hover:text-primary-700 font-medium">Mark all as read</button>
                     </div>
                   </div>
-                  <div className="max-h-96 overflow-y-auto pr-1">
+                  <div className="max-h-96 overflow-y-auto scrollbar-hide pr-1">
                     {notificationsLoading ? (
                       <div className="px-4 py-6 text-center text-gray-400 text-sm dark:text-slate-500">Loading...</div>
                     ) : dropdownItems.length > 0 ? (
@@ -435,7 +479,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                   <p className="text-gray-700 dark:text-slate-300">No notifications yet</p>
                 </div>
               ) : (
-                <ul className="divide-y divide-gray-100 dark:divide-slate-800 max-h-[60vh] overflow-y-auto pr-1">
+                <ul className="divide-y divide-gray-100 dark:divide-slate-800 max-h-[60vh] overflow-y-auto scrollbar-hide pr-1">
                   {modalItems.map((n: any) => (
                     <li
                       key={n.id}

@@ -1445,7 +1445,7 @@ const InspectionsSection: React.FC<Props> = ({
             setShowRenterPreReviewModal(false);
             setSelectedInspection(null);
           }} />
-          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-hide">
             <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Review Pre-Inspection" /></h3>
               <button
@@ -1482,7 +1482,7 @@ const InspectionsSection: React.FC<Props> = ({
             setShowRenterPostInspectionModal(false);
             setSelectedInspection(null);
           }} />
-          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-hide">
             <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Provide Post-Inspection" /></h3>
               <button
@@ -1533,7 +1533,7 @@ const InspectionsSection: React.FC<Props> = ({
             setShowOwnerPostReviewModal(false);
             setSelectedInspection(null);
           }} />
-          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-hide">
             <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text="Review Post-Inspection" /></h3>
               <button
