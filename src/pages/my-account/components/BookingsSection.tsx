@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, MapPin, DollarSign, Hash, User, CheckCircle, XCircle, AlertCircle, Loader2, Filter, X } from 'lucide-react';
-import { formatDateUTC } from '../../../utils/dateUtils';
-import { formatDate, formatDateTime, calculateDays, formatCurrency } from '../../../lib/utils';
+import { formatDate, calculateDays, formatCurrency } from '../../../lib/utils';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { TranslatedText } from '../../../components/translated-text';
 
@@ -18,6 +17,8 @@ interface Props {
   onReviewCancellation?: (bookingId: string) => void;
   onCheckIn?: (bookingId: string) => void;
   onCheckOut?: (bookingId: string) => void;
+  confirmingBookingId?: string | null;
+  recentlyConfirmedBookings?: Record<string, boolean>;
 }
 
 const BookingsSection: React.FC<Props> = ({
@@ -33,6 +34,8 @@ const BookingsSection: React.FC<Props> = ({
   onReviewCancellation,
   onCheckIn,
   onCheckOut,
+  confirmingBookingId,
+  recentlyConfirmedBookings,
 }) => {
   const { tSync } = useTranslation();
   const [roleTab, setRoleTab] = useState<'all' | 'renter' | 'owner'>('all');
@@ -92,11 +95,10 @@ const BookingsSection: React.FC<Props> = ({
     
     try {
       const bookingStartDate = booking.start_date ? new Date(booking.start_date) : null;
-      const bookingEndDate = booking.end_date ? new Date(booking.end_date) : null;
-      const bookingCreatedDate = booking.created_at ? new Date(booking.created_at) : null;
+      const bookingCreationDate = booking.created_at ? new Date(booking.created_at) : null;
       
       // Use booking dates or created date for filtering
-      const relevantDate = bookingStartDate || bookingCreatedDate;
+      const relevantDate = bookingStartDate || bookingCreationDate;
       if (!relevantDate) return true;
       
       const filterStart = filterStartDate ? new Date(filterStartDate) : null;
@@ -404,6 +406,9 @@ const BookingsSection: React.FC<Props> = ({
             
             const statusConfig = getStatusConfig(booking.status);
             const StatusIcon = statusConfig.icon;
+            const isOwnerView = String(booking.owner_id || booking.ownerId) === String(currentUserId);
+            const isConfirmingThisBooking = confirmingBookingId === booking.id;
+            const isRecentlyConfirmed = Boolean(recentlyConfirmedBookings?.[booking.id]);
             
             return (
               <div key={booking.id} className="group bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
@@ -625,43 +630,67 @@ const BookingsSection: React.FC<Props> = ({
                     
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      {booking.status === 'pending' && (
-                        <>
-                          {String(booking.renter_id || booking.renterId) === String(currentUserId) && booking.payment_status === 'pending' && (
-                            <button
-                              onClick={() => {
-                                window.location.href = `/booking/item/${booking.product_id}?bookingId=${booking.id}&step=1`;
-                              }}
-                              className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
-                              style={{ backgroundColor: '#0c9488' }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0a7a70'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0c9488'}
-                            >
-                              <TranslatedText text="Pay Now" />
-                            </button>
-                          )}
-                          {String(booking.owner_id || booking.ownerId) === String(currentUserId) && (
-                            <>
-                              {onConfirmBooking && (
-                                <button
-                                  onClick={() => onConfirmBooking(booking.id)}
-                                  className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
-                                >
-                                  <TranslatedText text="Confirm Booking" />
-                                </button>
-                              )}
-                              {onCancelBooking && (
-                                <button
-                                  onClick={() => onCancelBooking(booking.id)}
-                                  className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
-                                >
-                                  <TranslatedText text="Reject" />
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </>
-                      )}
+                      {(() => {
+                        const isPending = booking.status === 'pending';
+                        const isRenterView = String(booking.renter_id || booking.renterId) === String(currentUserId);
+                        const ownerConfirmed = booking.owner_confirmed === true;
+                        const ownerStatus = (booking.owner_confirmation_status || '').toLowerCase();
+                        const ownerCanConfirm =
+                          isOwnerView &&
+                          isPending &&
+                          !ownerConfirmed &&
+                          ownerStatus !== 'confirmed';
+
+                        return (
+                          <>
+                            {isPending && isRenterView && booking.payment_status === 'pending' && (
+                              <button
+                                onClick={() => {
+                                  const ownerConfirmedValue = String(ownerConfirmed || ownerStatus === 'confirmed').toLowerCase();
+                                  window.location.href = `/booking/item/${booking.product_id}?bookingId=${booking.id}&step=1&ownerConfirmed=${ownerConfirmedValue}&ownerStatus=${ownerStatus}`;
+                                }}
+                                className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
+                                style={{ backgroundColor: '#0c9488' }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0a7a70')}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0c9488')}
+                              >
+                                <TranslatedText text="Pay Now" />
+                              </button>
+                            )}
+
+                            {ownerCanConfirm && (
+                              <>
+                                {onConfirmBooking && !isRecentlyConfirmed && (
+                                  <button
+                                    onClick={() => onConfirmBooking(booking.id)}
+                                    disabled={isConfirmingThisBooking}
+                                    className={`px-3 py-1.5 text-xs font-semibold text-white rounded-lg transition-all duration-200 transform shadow-md hover:shadow-lg ${
+                                      isConfirmingThisBooking
+                                        ? 'bg-green-400 cursor-not-allowed opacity-80'
+                                        : 'bg-green-600 hover:bg-green-700 hover:scale-105'
+                                    }`}
+                                  >
+                                    <TranslatedText text={isConfirmingThisBooking ? 'Confirming…' : 'Confirm Booking'} />
+                                  </button>
+                                )}
+                                {isRecentlyConfirmed && (
+                                  <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                                    <TranslatedText text="Confirmation sent. Renter notified to pay." />
+                                  </span>
+                                )}
+                                {onCancelBooking && !isRecentlyConfirmed && (
+                                  <button
+                                    onClick={() => onCancelBooking(booking.id)}
+                                    className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
+                                  >
+                                    <TranslatedText text="Reject" />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </>
+                        );
+                      })()}
                       
                       {booking.status === 'confirmed' && (
                         <>

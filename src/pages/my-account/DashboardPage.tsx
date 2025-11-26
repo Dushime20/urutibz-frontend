@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Star, XCircle, TrendingUp, Package, CheckCircle, LayoutGrid, Calendar, Wallet, User as UserIcon, Menu, Bell } from 'lucide-react';
 import VerificationBanner from '../../components/verification/VerificationBanner';
 import {
@@ -91,6 +91,7 @@ const DashboardPage: React.FC = () => {
   const [reviewBookingTitle, setReviewBookingTitle] = useState<string | null>(null);
   const [reviewRenterReason, setReviewRenterReason] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
+  const mainScrollRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState<FormState>({
     title: '',
     slug: '',
@@ -201,6 +202,8 @@ const DashboardPage: React.FC = () => {
   const [loadingWallet, setLoadingWallet] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [confirmingBookingId, setConfirmingBookingId] = useState<string | null>(null);
+  const [recentlyConfirmedBookings, setRecentlyConfirmedBookings] = useState<Record<string, boolean>>({});
   
   const pendingBookings = useMemo(
     () => userBookings.filter((booking) => booking.status === 'pending').length,
@@ -277,6 +280,41 @@ const DashboardPage: React.FC = () => {
     window.addEventListener('my-account-nav', handleNav as EventListener);
     return () => window.removeEventListener('my-account-nav', handleNav as EventListener);
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'notifications') {
+      return;
+    }
+
+    const scrollContainer = mainScrollRef.current;
+    if (!scrollContainer) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const section = scrollContainer.querySelector('#my-account-notifications') as HTMLElement | null;
+      if (!section) {
+        return;
+      }
+
+      const offset = 80;
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      const sectionTop = section.getBoundingClientRect().top;
+      const distance = sectionTop - containerTop;
+      const targetScrollTop = Math.max(scrollContainer.scrollTop + distance - offset, 0);
+
+      scrollContainer.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+      });
+
+      section.focus({ preventScroll: true });
+    }, 80);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeTab]);
 
   // 2FA state
   const [show2FAModal, setShow2FAModal] = useState(false);
@@ -899,11 +937,13 @@ const DashboardPage: React.FC = () => {
 
   // Quick action handlers
   const handleConfirmBooking = async (bookingId: string) => {
+    setConfirmingBookingId(bookingId);
     try {
       const token = localStorage.getItem('token');
       const result = await confirmBooking(bookingId, token ?? undefined);
       if (result.success) {
-        showToast('Booking confirmed successfully', 'success');
+        showToast('Booking confirmed successfully. Renter notified to pay.', 'success');
+        setRecentlyConfirmedBookings(prev => ({ ...prev, [bookingId]: true }));
         // Refresh bookings list
         const bookingsRes = await fetchUserBookings(token);
         const bookings = bookingsRes.data || [];
@@ -914,6 +954,8 @@ const DashboardPage: React.FC = () => {
     } catch (error) {
       console.error('Error confirming booking:', error);
       showToast('Failed to confirm booking', 'error');
+    } finally {
+      setConfirmingBookingId(null);
     }
   };
 
@@ -1184,6 +1226,7 @@ const DashboardPage: React.FC = () => {
             <MyAccountHeader 
               onToggleSidebar={() => setSidebarOpen(true)} 
               onNavigateToProfile={() => setActiveTab('profile')}
+              onNavigateToNotifications={() => setActiveTab('notifications')}
             />
           </div>
         </div>
@@ -1210,7 +1253,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div ref={mainScrollRef} className="flex-1 overflow-y-auto scrollbar-hide">
           <div className="mx-auto px-4 sm:px-6 lg:px-4 py-8 pb-28 md:pb-12">
         {/* Verification Banner */}
         <div className="mb-8">
@@ -1247,6 +1290,8 @@ const DashboardPage: React.FC = () => {
               onReviewCancellation={handleReviewCancellation}
               onCheckIn={handleCheckIn}
               onCheckOut={handleCheckOut}
+              confirmingBookingId={confirmingBookingId}
+              recentlyConfirmedBookings={recentlyConfirmedBookings}
             />
           )}
 

@@ -10,7 +10,7 @@ import {
   MessageSquare,
   Shield,
 } from 'react-feather';
-import { createBooking } from './service/api';
+import { createBooking, fetchBookingById } from './service/api';
 import { fetchProductImages, getProductById, fetchProductPricesByProductId } from '../admin/service';
 import { useToast } from '../../contexts/ToastContext';
 import ReviewForm from './components/ReviewForm';
@@ -30,7 +30,7 @@ const BookingPage: React.FC = () => {
   const navigate = useNavigate();
   const { itemId } = useParams<{ itemId: string }>();
   const { showToast } = useToast();
-  const { formatCurrency, formatDate } = useAdminSettingsContext();
+  const { formatCurrency } = useAdminSettingsContext();
 
   // State
   const [bookingItem, setBookingItem] = useState<any>(null);
@@ -47,9 +47,35 @@ const BookingPage: React.FC = () => {
   });
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [existingBooking, setExistingBooking] = useState<any>(null);
+  const [ownerStatusOverride, setOwnerStatusOverride] = useState<'pending' | 'confirmed' | 'rejected' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [productPricing, setProductPricing] = useState<any>(null); // Add pricing state
+
+  const normalizeDateInput = (value?: string | null) => {
+    if (!value) return '';
+    if (typeof value === 'string') {
+      try {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().slice(0, 10);
+        }
+      } catch {
+        // Ignore parsing errors and fallback to substring
+      }
+      return value.length >= 10 ? value.slice(0, 10) : '';
+    }
+    return '';
+  };
+
+  const extractTimeInput = (value?: string | null) => {
+    if (!value || typeof value !== 'string') return '';
+    if (value.includes('T')) {
+      return value.slice(11, 16);
+    }
+    return value.length >= 5 ? value.slice(0, 5) : '';
+  };
 
   // Fetch product pricing when product is loaded
   useEffect(() => {
@@ -203,6 +229,36 @@ const BookingPage: React.FC = () => {
     };
   }, [formData, bookingItem, productPricing]);
 
+  const paymentAmount = useMemo(() => {
+    if (existingBooking) {
+      const total =
+        existingBooking.total_amount ??
+        existingBooking.totalAmount ??
+        existingBooking.pricing?.total_amount ??
+        existingBooking.pricing?.totalAmount;
+      const parsedTotal = typeof total === 'string' ? parseFloat(total) : total;
+      if (parsedTotal && !isNaN(parsedTotal)) {
+        return parsedTotal;
+      }
+    }
+    return rentalDetails.totalCost;
+  }, [existingBooking, rentalDetails.totalCost]);
+
+  const paymentCurrency = useMemo(() => {
+    if (existingBooking) {
+      return (
+        existingBooking.currency ||
+        existingBooking.pricing?.currency ||
+        existingBooking.currency_code ||
+        existingBooking.currencyCode ||
+        rentalDetails.currency ||
+        bookingItem?.base_currency ||
+        'USD'
+      );
+    }
+    return rentalDetails.currency || bookingItem?.base_currency || 'USD';
+  }, [existingBooking, rentalDetails.currency, bookingItem?.base_currency]);
+
   // Fetch item and images
   console.log(bookingItem,'data to check why booking item not visible')
   useEffect(() => {
@@ -301,6 +357,8 @@ const BookingPage: React.FC = () => {
     const searchParams = new URLSearchParams(window.location.search);
     const urlBookingId = searchParams.get('bookingId');
     const stepParam = searchParams.get('step');
+    const ownerConfirmedParam = searchParams.get('ownerConfirmed');
+    const ownerStatusParam = searchParams.get('ownerStatus');
     
     if (urlBookingId) {
       setBookingId(urlBookingId);
@@ -312,7 +370,55 @@ const BookingPage: React.FC = () => {
         }
       }
     }
+
+    if (ownerStatusParam) {
+      const normalized = ownerStatusParam.toLowerCase() as 'pending' | 'confirmed' | 'rejected';
+      setOwnerStatusOverride(normalized);
+    } else if (ownerConfirmedParam) {
+      const normalizedBool = ownerConfirmedParam === 'true' || ownerConfirmedParam === '1';
+      if (normalizedBool) setOwnerStatusOverride('confirmed');
+    }
   }, []);
+
+  useEffect(() => {
+    const loadExistingBooking = async () => {
+      if (!bookingId) {
+        setExistingBooking(null);
+        return;
+      }
+
+      console.log('[BookingPage] loading existing booking for bookingId:');
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const response = await fetchBookingById(bookingId, token);
+        if (response.success && response.data) {
+          const bookingData = response.data;
+          setExistingBooking(bookingData);
+          try {
+            console.log('[BookingPage] existing booking data:', bookingData);
+            console.log('[BookingPage] owner_confirmed:', bookingData.owner_confirmed);
+            console.log('[BookingPage] owner_confirmation_status:', bookingData.owner_confirmation_status);
+            (window as any).__bookingData = bookingData;
+          } catch {}
+          setFormData(prev => ({
+            ...prev,
+            startDate: normalizeDateInput(bookingData.start_date) || prev.startDate,
+            endDate: normalizeDateInput(bookingData.end_date) || prev.endDate,
+            pickupTime: bookingData.pickup_time || extractTimeInput(bookingData.start_time) || prev.pickupTime,
+            returnTime: bookingData.return_time || extractTimeInput(bookingData.end_time) || prev.returnTime,
+            pickupMethod: bookingData.pickup_method || prev.pickupMethod,
+            renterNotes: bookingData.renter_notes || prev.renterNotes,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load existing booking for payment:', error);
+      }
+    };
+
+    loadExistingBooking();
+  }, [bookingId]);
 
   // Handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -742,9 +848,11 @@ const BookingPage: React.FC = () => {
           </div>
           <PaymentStepper
             bookingId={bookingId}
-            amount={rentalDetails.totalCost}
-            currency={rentalDetails.currency || bookingItem?.base_currency || "USD"}
+            amount={paymentAmount}
+            currency={paymentCurrency}
             onSuccess={handlePaymentSuccess}
+            initialBookingData={existingBooking}
+            ownerConfirmationOverride={ownerStatusOverride}
           />
         </div>
       );
@@ -777,7 +885,10 @@ const BookingPage: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-slate-400">Total Paid</span>
                   <span className="font-medium text-[#00aaa9]">
-                    {formatCurrency(rentalDetails.totalCost, rentalDetails.currency || bookingItem?.base_currency || 'RWF')}
+                    {formatCurrency(
+                      paymentAmount || rentalDetails.totalCost,
+                      paymentCurrency || rentalDetails.currency || bookingItem?.base_currency || 'RWF'
+                    )}
                   </span>
                 </div>
               </div>
@@ -890,7 +1001,7 @@ const BookingPage: React.FC = () => {
                           Hourly Rate ({rentalDetails.rentalHours.toFixed(2)} hours)
                         </span>
                         <span className="font-medium">
-                          {formatCurrency(rentalDetails.itemPrice, rentalDetails.currency)} × {rentalDetails.unitsUsed.toFixed(2)} hrs
+                          {formatCurrency(rentalDetails.itemPrice ?? 0, rentalDetails.currency)} × {rentalDetails.unitsUsed.toFixed(2)} hrs
                         </span>
                       </div>
                     )}
@@ -901,7 +1012,7 @@ const BookingPage: React.FC = () => {
                             Daily Rate ({rentalDetails.totalDays} {rentalDetails.totalDays === 1 ? 'day' : 'days'})
                           </span>
                           <span className="font-medium">
-                            {formatCurrency(rentalDetails.baseRate, rentalDetails.currency)} × {rentalDetails.totalDays}
+                            {formatCurrency(rentalDetails.baseRate ?? 0, rentalDetails.currency)} × {rentalDetails.totalDays}
                           </span>
                         </div>
                         {rentalDetails.remainingHours > 0 && (
@@ -910,7 +1021,7 @@ const BookingPage: React.FC = () => {
                               Additional Hours ({rentalDetails.remainingHours.toFixed(2)} hrs)
                             </span>
                             <span className="font-medium">
-                              {formatCurrency(rentalDetails.pricePerHour, rentalDetails.currency)} × {rentalDetails.remainingHours.toFixed(2)}
+                              {formatCurrency(rentalDetails.pricePerHour || 0, rentalDetails.currency)} × {rentalDetails.remainingHours.toFixed(2)}
                             </span>
                           </div>
                         )}
@@ -922,7 +1033,7 @@ const BookingPage: React.FC = () => {
                           {rentalDetails.pricingType === 'monthly' ? 'Monthly' : rentalDetails.pricingType === 'weekly' ? 'Weekly' : 'Daily'} Rate ({rentalDetails.rentalDays} {rentalDetails.rentalDays === 1 ? 'day' : 'days'})
                         </span>
                         <span className="font-medium">
-                          {formatCurrency(rentalDetails.itemPrice, rentalDetails.currency)} × {rentalDetails.unitsUsed}
+                          {formatCurrency(rentalDetails.itemPrice ?? 0, rentalDetails.currency)} × {rentalDetails.unitsUsed}
                         </span>
                       </div>
                     )}

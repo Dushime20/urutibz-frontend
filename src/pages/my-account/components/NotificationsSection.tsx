@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Bell, CheckCircle, Circle, Trash2, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, CheckCircle, Circle, Filter } from 'lucide-react';
 import { getMyNotifications } from '../../../features/notifications/api';
-import { useMarkReadMutation, useNotificationsQuery } from '../../../features/notifications/queries';
+import { useMarkReadMutation } from '../../../features/notifications/queries';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { TranslatedText } from '../../../components/translated-text';
 import useRealtime from '../../../hooks/useRealtime';
@@ -14,19 +15,10 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
   const { tSync } = useTranslation();
   const { mutate: markRead } = useMarkReadMutation();
   const { socket, isConnected } = useRealtime();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<NotificationFilter>('all');
-  const [page, setPage] = useState(1);
-  const limit = 50;
-
-  const modalQuery = useNotificationsQuery({ page, limit });
-  const modalItems = (
-    (modalQuery.data as any)?.items ??
-    (modalQuery.data as any)?.data?.items ??
-    (modalQuery.data as any)?.data?.data ??
-    (Array.isArray(modalQuery.data) ? modalQuery.data : [])
-  ) as any[];
 
   // Load notifications
   useEffect(() => {
@@ -121,6 +113,36 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
     );
   };
 
+  const parseNotificationData = (data: any) => {
+    if (!data) return {};
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data);
+      } catch {
+        return {};
+      }
+    }
+    return data;
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    const payload = parseNotificationData(notification?.data || notification?.payload);
+    const normalizedType = (notification?.type || '').toLowerCase();
+    const isBookingConfirmation =
+      normalizedType === 'booking_confirmed' || payload?.action === 'confirmed';
+
+    if (
+      isBookingConfirmation &&
+      payload?.product_id &&
+      payload?.booking_id
+    ) {
+      if (!isNotificationRead(notification)) {
+        handleMarkAsRead(notification.id);
+      }
+      navigate(`/booking/item/${payload.product_id}?bookingId=${payload.booking_id}&step=1`);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     try {
@@ -156,7 +178,12 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div
+      id="my-account-notifications"
+      data-my-account-section="notifications"
+      tabIndex={-1}
+      className="space-y-4 sm:space-y-6 focus:outline-none"
+    >
       {/* Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 dark:bg-slate-900 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -239,14 +266,29 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
         ) : (
           filteredNotifications.map((notification) => {
             const isRead = isNotificationRead(notification);
+            const notificationPayload = parseNotificationData(notification?.data || notification?.payload);
+            const isPaymentAction =
+              Boolean(notificationPayload?.booking_id && notificationPayload?.product_id) &&
+              (((notification?.type || '') as string).toLowerCase() === 'booking_confirmed' ||
+                notificationPayload?.action === 'confirmed');
             return (
               <div
                 key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
                 className={`bg-white rounded-xl shadow-sm border p-4 sm:p-6 transition-all hover:shadow-md dark:bg-slate-900 dark:border-slate-700 ${
                   !isRead
                     ? 'border-teal-200 bg-teal-50/30 dark:bg-teal-900/10 dark:border-teal-800'
                     : 'border-gray-200'
-                }`}
+                } ${isPaymentAction ? 'cursor-pointer' : ''}`}
+                role={isPaymentAction ? 'button' : undefined}
+                tabIndex={isPaymentAction ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (!isPaymentAction) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleNotificationClick(notification);
+                  }
+                }}
               >
                 <div className="flex items-start gap-4">
                   {/* Status Indicator */}
@@ -275,7 +317,10 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
                       </div>
                       {!isRead && (
                         <button
-                          onClick={() => handleMarkAsRead(notification.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAsRead(notification.id);
+                          }}
                           className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors dark:text-teal-400 dark:hover:bg-teal-900/20"
                         >
                           <TranslatedText text="Mark read" />
@@ -290,6 +335,11 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
                         {notification.type || notification.category || 'General'}
                       </span>
                       <span>{formatDate(notification.createdAt || notification.created_at || '')}</span>
+                      {isPaymentAction && (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold dark:bg-emerald-900/40 dark:text-emerald-300">
+                          <TranslatedText text="Tap to continue payment" />
+                        </span>
+                      )}
                       {!isRead && (
                         <span className="px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-semibold dark:bg-teal-900/30 dark:text-teal-300">
                           <TranslatedText text="New" />
@@ -308,5 +358,6 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
 };
 
 export default NotificationsSection;
+
 
 

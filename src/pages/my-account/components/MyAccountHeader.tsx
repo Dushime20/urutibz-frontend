@@ -13,9 +13,10 @@ import { useMessaging } from '../../../hooks/useMessaging';
 type HeaderProps = { 
   onToggleSidebar?: () => void;
   onNavigateToProfile?: () => void;
+  onNavigateToNotifications?: () => void;
 };
 
-const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToProfile }) => {
+const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToProfile, onNavigateToNotifications }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
@@ -85,6 +86,16 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   
   // Use the full notifications data for dropdown
   const dropdownItems = notificationsData;
+  const MAX_VISIBLE_NOTIFICATIONS = 3;
+  const NOTIFICATION_ROW_HEIGHT = 96; // fallback height
+  const dropdownListRef = useRef<HTMLDivElement | null>(null);
+  const [dropdownViewportHeight, setDropdownViewportHeight] = useState(
+    MAX_VISIBLE_NOTIFICATIONS * NOTIFICATION_ROW_HEIGHT
+  );
+  const shouldClampDropdownHeight = dropdownItems.length > MAX_VISIBLE_NOTIFICATIONS;
+  const dropdownViewportStyle = shouldClampDropdownHeight
+    ? { maxHeight: dropdownViewportHeight }
+    : undefined;
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -197,6 +208,36 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
     })();
   }, [isNotifOpen]);
 
+  useEffect(() => {
+    if (!isNotifOpen) return;
+    const container = dropdownListRef.current;
+    if (!container) return;
+
+    const measure = () => {
+      const firstItem = container.querySelector('[data-notification-item]') as HTMLElement | null;
+      if (!firstItem) return;
+      const height = firstItem.getBoundingClientRect().height;
+      if (!height) return;
+      const nextHeight = height * MAX_VISIBLE_NOTIFICATIONS;
+      setDropdownViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+    };
+
+    const raf = window.requestAnimationFrame(measure);
+    if (typeof ResizeObserver === 'undefined') {
+      return () => {
+        window.cancelAnimationFrame(raf);
+      };
+    }
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(container);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      resizeObserver.disconnect();
+    };
+  }, [isNotifOpen, dropdownItems.length]);
+
   // Load avatar and display name from stored user (kept in settings)
   useEffect(() => {
     try {
@@ -245,9 +286,50 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
 
   const unreadCount = notificationsData.reduce((count, notification) => count + (isNotificationRead(notification) ? 0 : 1), 0);
 
+  const markNotificationLocally = (id: string) => {
+    console.log('[MyAccountHeader] marking notification as read locally', id);
+    setNotificationsData((prev) =>
+      prev.map((notification) =>
+        notification.id === id
+          ? {
+              ...notification,
+              read: true,
+              is_read: true,
+              isRead: true,
+              read_at: notification.read_at || new Date().toISOString(),
+              readAt: notification.readAt || new Date().toISOString()
+            }
+          : notification
+      )
+    );
+  };
+
+  const markAllNotificationsLocally = () => {
+    console.log('[MyAccountHeader] marking all notifications as read locally');
+    setNotificationsData((prev) =>
+      prev.map((notification) =>
+        isNotificationRead(notification)
+          ? notification
+          : {
+              ...notification,
+              read: true,
+              is_read: true,
+              isRead: true,
+              read_at: notification.read_at || new Date().toISOString(),
+              readAt: notification.readAt || new Date().toISOString()
+            }
+      )
+    );
+  };
+
   const handleMarkAllRead = () => {
+    console.log('[MyAccountHeader] handleMarkAllRead clicked');
+    markAllNotificationsLocally();
     notificationsData.forEach((n: any) => {
-      if (!isNotificationRead(n)) markRead(n.id);
+      if (!isNotificationRead(n)) {
+        console.log('[MyAccountHeader] sending markRead request for', n.id);
+        markRead(n.id);
+      }
     });
   };
 
@@ -304,6 +386,48 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
     ],
     [isNotifOpen, unreadCount, isDark, navigate, logout, toggleTheme]
   );
+
+  const navigateToNotificationsTab = () => {
+    console.log('[MyAccountHeader] navigateToNotificationsTab triggered');
+    if (onNavigateToNotifications) {
+      console.log('[MyAccountHeader] using onNavigateToNotifications prop');
+      onNavigateToNotifications();
+      return true;
+    }
+
+    try {
+      const event = new CustomEvent('my-account-nav', {
+        detail: { tab: 'notifications' }
+      });
+      window.dispatchEvent(event);
+      console.log('[MyAccountHeader] dispatched my-account-nav event');
+      return true;
+    } catch {}
+
+    console.log('[MyAccountHeader] fallback navigate to /my-account#notifications');
+    navigate('/my-account#notifications');
+    return true;
+  };
+
+  const handleNotificationClick = (notificationId: string) => {
+    console.log('[MyAccountHeader] notification clicked', notificationId);
+    markNotificationLocally(notificationId);
+    markRead(notificationId);
+  };
+
+  const handleViewAllClick = (event?: React.MouseEvent<HTMLButtonElement>) => {
+    event?.stopPropagation();
+    console.log('[MyAccountHeader] View all clicked');
+    setIsNotifOpen(false);
+
+    const navigated = navigateToNotificationsTab();
+    setShowAllModal(false);
+    setModalPage(1);
+
+    if (!navigated) {
+      setShowAllModal(true);
+    }
+  };
 
   return (
     <div className="w-full space-y-4">
@@ -373,14 +497,19 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                       <button onClick={handleMarkAllRead} className="text-xs text-primary-600 hover:text-primary-700 font-medium">Mark all as read</button>
                     </div>
                   </div>
-                  <div className="max-h-96 overflow-y-auto scrollbar-hide pr-1">
+                  <div
+                    ref={dropdownListRef}
+                    className="overflow-y-auto pr-1"
+                    style={dropdownViewportStyle}
+                  >
                     {notificationsLoading ? (
                       <div className="px-4 py-6 text-center text-gray-400 text-sm dark:text-slate-500">Loading...</div>
                     ) : dropdownItems.length > 0 ? (
                       dropdownItems.map((n: any) => (
                         <button
                           key={n.id}
-                          onClick={() => markRead(n.id)}
+                          data-notification-item
+                          onClick={() => handleNotificationClick(n.id)}
                           className={`w-full text-left px-4 py-3 flex gap-3 items-start hover:bg-gray-50 dark:hover:bg-slate-800 ${
                             isNotificationRead(n) ? '' : 'bg-primary-50/40 dark:bg-primary-900/10'
                           }`}
@@ -406,7 +535,13 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                     )}
                   </div>
                   <div className="px-4 py-2 border-t border-gray-100 text-center dark:border-slate-700" >
-                    <button type="button" onPointerDownCapture={(e)=>e.stopPropagation()} onMouseDown={(e)=>e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setIsNotifOpen(false); setShowAllModal(true); setModalPage(1); }} className="text-sm text-teal-600 hover:text-primary-700 font-medium" style={{ zIndex: 3002, pointerEvents: 'auto' }}>
+                    <button
+                      type="button"
+                      onPointerDownCapture={(e)=>e.stopPropagation()}
+                      onMouseDown={(e)=>e.stopPropagation()}
+                      onClick={handleViewAllClick}
+                      className="inline-flex items-center justify-center w-full px-3 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                    >
                       View all
                     </button>
                   </div>

@@ -16,13 +16,17 @@ interface PaymentStepperProps {
   amount: number;
   currency: string;
   onSuccess: () => void;
+  initialBookingData?: BookingData | null;
+  ownerConfirmationOverride?: 'pending' | 'confirmed' | 'rejected' | null;
 }
 
 interface BookingData {
   id: string;
   owner_confirmed?: boolean;
   owner_confirmation_status?: 'pending' | 'confirmed' | 'rejected';
+  owner_confirmed_at?: string;
   owner_rejection_reason?: string;
+  owner_confirmation_notes?: string;
   status?: string;
 }
 
@@ -34,7 +38,14 @@ const countryCodes: Record<string, { code: string; name: string; flag: string; p
   'TZ': { code: '+255', name: 'Tanzania', flag: '🇹🇿', pattern: /^[0-9]{9}$/, minLength: 9, maxLength: 9, example: '712345678' },
 };
 
-const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, currency, onSuccess }) => {
+const PaymentStepper: React.FC<PaymentStepperProps> = ({
+  bookingId,
+  amount,
+  currency,
+  onSuccess,
+  initialBookingData,
+  ownerConfirmationOverride,
+}) => {
   const [step, setStep] = useState(1);
   const [type, setType] = useState<'card' | 'mobile_money' | ''>('');
   const [form, setForm] = useState<any>({});
@@ -59,8 +70,11 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
   const [phoneNumber, setPhoneNumber] = useState('');
 
   // Owner confirmation state
-  const [bookingData, setBookingData] = useState<BookingData | null>(null);
-  const [checkingConfirmation, setCheckingConfirmation] = useState(true);
+  const [bookingData, setBookingData] = useState<BookingData | null>(initialBookingData || null);
+  const [checkingConfirmation, setCheckingConfirmation] = useState(() => {
+    if (!ownerConfirmationOverride) return true;
+    return ownerConfirmationOverride !== 'confirmed' && ownerConfirmationOverride !== 'rejected';
+  });
 
   const steps = [
     { id: 1, title: 'Choose Type', description: 'Select payment method' },
@@ -68,29 +82,71 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     { id: 3, title: 'Confirm Payment', description: 'Review and complete' }
   ];
 
+  const getOwnerStatus = (booking?: BookingData | null): string => {
+    if (!booking) return '';
+    return (
+      booking.owner_confirmation_status ||
+      ''
+    ).toString().toLowerCase();
+  };
+
+  const isOwnerConfirmed = (booking?: BookingData | null): boolean => {
+    if (!booking) return false;
+    if (booking.owner_confirmed === true) return true;
+    return getOwnerStatus(booking) === 'confirmed';
+  };
+
+  const isOwnerRejected = (booking?: BookingData | null): boolean => {
+    return getOwnerStatus(booking) === 'rejected';
+  };
+
   // Check owner confirmation status
   useEffect(() => {
+    let isMounted = true;
+
     const checkOwnerConfirmation = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          setCheckingConfirmation(false);
+          if (isMounted) setCheckingConfirmation(false);
           return;
         }
 
         const result = await fetchBookingById(bookingId, token);
-        if (result.success && result.data) {
+        if (isMounted && result.success && result.data) {
           setBookingData(result.data);
         }
       } catch (error) {
         console.error('Error checking owner confirmation:', error);
       } finally {
-        setCheckingConfirmation(false);
+        if (isMounted) setCheckingConfirmation(false);
       }
     };
 
+    // If override says confirmed/rejected, no need to fetch.
+    if (ownerConfirmationOverride === 'confirmed' || ownerConfirmationOverride === 'rejected') {
+      setCheckingConfirmation(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    // If we already have booking data (from parent) that clearly states the status, skip fetch.
+    if (initialBookingData) {
+      setBookingData(initialBookingData);
+      if (isOwnerConfirmed(initialBookingData) || isOwnerRejected(initialBookingData)) {
+        setCheckingConfirmation(false);
+        return () => {
+          isMounted = false;
+        };
+      }
+    }
+
     checkOwnerConfirmation();
-  }, [bookingId]);
+    return () => {
+      isMounted = false;
+    };
+  }, [bookingId, initialBookingData, ownerConfirmationOverride]);
 
   useEffect(() => {
     const fetchInitialPaymentMethods = async () => {
@@ -466,6 +522,10 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     }
   };
 
+  const overrideStatus = ownerConfirmationOverride?.toLowerCase() || null;
+  const ownerConfirmed = overrideStatus === 'confirmed' || isOwnerConfirmed(bookingData);
+  const ownerRejected = overrideStatus === 'rejected' || isOwnerRejected(bookingData);
+
   // Show loading state while checking confirmation
   if (checkingConfirmation) {
     return (
@@ -478,43 +538,45 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
     );
   }
 
-  // Show message if owner hasn't confirmed
-  if (bookingData && !bookingData.owner_confirmed && bookingData.owner_confirmation_status !== 'confirmed') {
-    const isRejected = bookingData.owner_confirmation_status === 'rejected';
-    
+  if (ownerRejected) {
     return (
       <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
         <div className="text-center">
-          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
-            isRejected ? 'bg-red-100 dark:bg-red-900/20' : 'bg-yellow-100 dark:bg-yellow-900/20'
-          }`}>
-            {isRejected ? (
-              <XCircle className="w-12 h-12 text-red-600 dark:text-red-400" />
-            ) : (
-              <Clock className="w-12 h-12 text-yellow-600 dark:text-yellow-400" />
-            )}
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-red-100 dark:bg-red-900/20">
+            <XCircle className="w-12 h-12 text-red-600 dark:text-red-400" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            {isRejected ? 'Booking Rejected' : 'Awaiting Owner Confirmation'}
+            Booking Rejected
           </h2>
           <p className="text-gray-600 dark:text-slate-300 mb-2">
-            {isRejected ? (
-              <>
-                The product owner has rejected this booking.
-                {bookingData.owner_rejection_reason && (
-                  <span className="block mt-2 text-sm font-medium">
-                    Reason: {bookingData.owner_rejection_reason}
-                  </span>
-                )}
-              </>
-            ) : (
-              <>
-                The product owner needs to confirm that the product is available and accessible before you can proceed with payment.
-                <span className="block mt-2 text-sm text-gray-500 dark:text-slate-400">
-                  You will be notified once the owner confirms the booking.
-                </span>
-              </>
+            The product owner has rejected this booking.
+            {(bookingData?.owner_rejection_reason || (bookingData as any)?.ownerRejectionReason) && (
+              <span className="block mt-2 text-sm font-medium">
+                Reason: {bookingData?.owner_rejection_reason || (bookingData as any)?.ownerRejectionReason}
+              </span>
             )}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if owner hasn't confirmed yet
+  if (bookingData && !ownerConfirmed) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
+        <div className="text-center">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-yellow-100 dark:bg-yellow-900/20">
+            <Clock className="w-12 h-12 text-yellow-600 dark:text-yellow-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Awaiting Owner Confirmation
+          </h2>
+          <p className="text-gray-600 dark:text-slate-300 mb-2">
+            The product owner needs to confirm that the product is available and accessible before you can proceed with payment.
+            <span className="block mt-2 text-sm text-gray-500 dark:text-slate-400">
+              You will be notified once the owner confirms the booking.
+            </span>
           </p>
         </div>
       </div>
@@ -548,7 +610,7 @@ const PaymentStepper: React.FC<PaymentStepperProps> = ({ bookingId, amount, curr
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
       {/* Owner Confirmation Success Banner */}
-      {bookingData?.owner_confirmed && (
+      {ownerConfirmed && (
         <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
           <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
           <p className="text-sm text-green-800 dark:text-green-200">
