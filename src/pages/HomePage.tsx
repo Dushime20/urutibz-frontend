@@ -691,7 +691,7 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <div className="space-y-8 sm:space-y-10">
         {/* Hero Section */}
-        <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+        {/* <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
           <div
             className="rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 shadow-xl relative"
             style={{
@@ -774,10 +774,10 @@ const HomePage: React.FC = () => {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
          {/* Products Sections */}
-         <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 space-y-12">
+         <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 space-y-12 pt-4">
           {/* Search Results Header (only show if searching) */}
           {searchQuery && (
             <div className="mb-4 sm:mb-6 flex items-center justify-between">
@@ -904,7 +904,7 @@ const HomePage: React.FC = () => {
                 }}
                 formatCurrency={formatCurrency}
                 tSync={tSync}
-                slidesPerView={4}
+                slidesPerView={6}
                 autoplay={true}
               />
 
@@ -947,7 +947,7 @@ const HomePage: React.FC = () => {
                 }}
                 formatCurrency={formatCurrency}
                 tSync={tSync}
-                slidesPerView={4}
+                slidesPerView={6}
                 autoplay={true}
               />
 
@@ -990,7 +990,7 @@ const HomePage: React.FC = () => {
                 }}
                 formatCurrency={formatCurrency}
                 tSync={tSync}
-                slidesPerView={4}
+                slidesPerView={6}
                 autoplay={true}
               />
 

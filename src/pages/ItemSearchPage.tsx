@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Star, Heart, MapPin, Calendar, Clock, Shield, TrendingUp, Eye, MousePointer, ThumbsUp, Search, Filter, X, Camera, Laptop, Car, Gamepad2, Headphones, Watch, Package, Grid, List, ChevronDown, AlertCircle, Truck } from 'lucide-react';
 
 import { fetchAvailableProducts, fetchActiveDailyPrice, fetchCategories, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
+import { ImageSearchResult } from './admin/service/imageSearch';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
 import { formatCurrency } from '../lib/utils';
 import Button from '../components/ui/Button';
@@ -59,7 +60,12 @@ interface ProductImage {
 const ItemSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { tSync } = useTranslation();
+  
+  // Check if we have image search results from navigation state
+  const imageSearchResults = (location.state as any)?.imageSearchResults as ImageSearchResult[] | undefined;
+  const searchMode = (location.state as any)?.searchMode as string | undefined;
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -85,6 +91,35 @@ const ItemSearchPage: React.FC = () => {
    
    // Categories state
    const [itemCategories, setItemCategories] = useState<Array<{ id: string; name: string; icon?: string }>>([]);
+   
+   // Handle image search results
+   useEffect(() => {
+     if (imageSearchResults && searchMode === 'image') {
+       // Convert image search results to product format
+       const convertedProducts: Product[] = imageSearchResults.map((result) => ({
+         id: result.product.id,
+         title: result.product.title,
+         description: result.product.description,
+         base_price_per_day: String(result.product.base_price_per_day),
+         base_currency: result.product.currency,
+         images: [result.image.url],
+         // Add similarity as a custom property for display
+         similarity: result.similarity,
+         similarity_percentage: result.similarity_percentage,
+       } as Product));
+       
+       setItems(convertedProducts);
+       setTotalResults(convertedProducts.length);
+       setLoading(false);
+       
+       // Set product images
+       const imagesMap: { [productId: string]: string[] } = {};
+       imageSearchResults.forEach((result) => {
+         imagesMap[result.product.id] = [result.image.url];
+       });
+       setProductImages(imagesMap);
+     }
+   }, [imageSearchResults, searchMode]);
 
   // Filter and search logic
   useEffect(() => {
@@ -593,10 +628,23 @@ const ItemSearchPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">
-              {searchQuery ? <><TranslatedText text="Results for" /> "{searchQuery}"</> : <TranslatedText text="Browse Rentals" />}
+              {searchMode === 'image' ? (
+                <div className="flex items-center gap-3">
+                  <Camera className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                  <span><TranslatedText text="Similar Products Found" /></span>
+                </div>
+              ) : searchQuery ? (
+                <><TranslatedText text="Results for" /> "{searchQuery}"</>
+              ) : (
+                <TranslatedText text="Browse Rentals" />
+              )}
             </h1>
             <p className="text-gray-600 dark:text-slate-400">
-              {loading ? <TranslatedText text="Searching..." /> : <>{filteredItems.length} <TranslatedText text="items available" /></>}
+              {loading ? <TranslatedText text="Searching..." /> : (
+                <>
+                  {filteredItems.length} {searchMode === 'image' ? <TranslatedText text="similar products" /> : <TranslatedText text="items available" />}
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -699,12 +747,23 @@ const ItemSearchPage: React.FC = () => {
                        <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 pr-2">
                          {item.title || item.name}
                        </h3>
-                                               <div className="flex items-center space-x-1 flex-shrink-0">
-                          <Star className="w-3 h-3 fill-current text-yellow-400" />
-                          <span className="text-sm text-gray-900 dark:text-slate-100">
-                            {item.average_rating || '4.8'}
-                          </span>
-                        </div>
+                       <div className="flex items-center gap-2 flex-shrink-0">
+                         {/* Similarity Score for Image Search */}
+                         {(item as any).similarity_percentage && searchMode === 'image' && (
+                           <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                             <Camera className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                             <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                               {(item as any).similarity_percentage}%
+                             </span>
+                           </div>
+                         )}
+                         <div className="flex items-center space-x-1">
+                           <Star className="w-3 h-3 fill-current text-yellow-400" />
+                           <span className="text-sm text-gray-900 dark:text-slate-100">
+                             {item.average_rating || '4.8'}
+                           </span>
+                         </div>
+                       </div>
                      </div>
                      
                      {/* Location */}

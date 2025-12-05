@@ -36,6 +36,8 @@ import { Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import { fetchAvailableProducts } from '../../pages/admin/service';
 import { getProductImagesByProductId } from '../../pages/my-account/service/api';
+import ImageSearchModal from '../products/ImageSearchModal';
+import { ImageSearchResult } from '../../pages/admin/service/imageSearch';
 
 type HeaderCategory = { id: string; label: string };
 
@@ -96,6 +98,7 @@ const Header: React.FC = () => {
   const [categoryProducts, setCategoryProducts] = useState<any[]>([]);
   const [categoryProductImages, setCategoryProductImages] = useState<Record<string, string[]>>({});
   const [loadingCategoryProducts, setLoadingCategoryProducts] = useState(false);
+  const [isImageSearchOpen, setIsImageSearchOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -111,7 +114,6 @@ const Header: React.FC = () => {
   const autoSearchTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const imageSearchInputRef = useRef<HTMLInputElement>(null);
   const [tickerIndex, setTickerIndex] = useState(0);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
@@ -503,33 +505,11 @@ const Header: React.FC = () => {
     );
   };
 
-  const handleImageSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Create a FileReader to read the image
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      // Here you would typically send the image to your backend for image search
-      // For now, we'll navigate to a search page with the image data
-      // You can implement actual image search API call here
-      // Example: navigate to search with image parameter
-      // navigate(`/items?imageSearch=${encodeURIComponent(String(reader.result || ''))}`);
-      
-      // For now, show a toast or handle the image search
-      console.log('Image search triggered with file:', file.name);
-      // You can implement your image search logic here
-    };
-    reader.readAsDataURL(file);
-    
-    // Reset the input so the same file can be selected again
-    if (imageSearchInputRef.current) {
-      imageSearchInputRef.current.value = '';
-    }
-  };
-
-  const triggerImageSearch = () => {
-    imageSearchInputRef.current?.click();
+  const handleImageSearchResults = (results: ImageSearchResult[]) => {
+    // Navigate to search page with image search results
+    navigate('/items', {
+      state: { imageSearchResults: results, searchMode: 'image' }
+    });
   };
 
   useEffect(() => {
@@ -831,19 +811,10 @@ const Header: React.FC = () => {
                 <div className="w-full max-w-4xl mx-auto flex items-stretch bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden focus-within:border-teal-500 dark:focus-within:border-teal-500 transition-colors relative">
                   {/* Search input */}
                   <div className="flex-1 flex items-center pr-5">
-                    {/* Hidden file input for image search */}
-                    <input
-                      ref={imageSearchInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageSearch}
-                      className="hidden"
-                      aria-label={tSync('Search by image')}
-                    />
-                    {/* Camera icon button */}
+                    {/* Camera icon button for image search */}
                     <button
                       type="button"
-                      onClick={triggerImageSearch}
+                      onClick={() => setIsImageSearchOpen(true)}
                       className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 rounded"
                       aria-label={tSync('Search by image')}
                       title={tSync('Search by image')}
@@ -1444,6 +1415,14 @@ const Header: React.FC = () => {
         </nav>
       </div>
     )}
+    
+    {/* Image Search Modal */}
+    <ImageSearchModal
+      isOpen={isImageSearchOpen}
+      onClose={() => setIsImageSearchOpen(false)}
+      onSearchComplete={handleImageSearchResults}
+      onNavigateToResults={handleImageSearchResults}
+    />
     </>
   );
 };
