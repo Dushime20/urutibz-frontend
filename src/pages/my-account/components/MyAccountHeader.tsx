@@ -488,13 +488,22 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                   style={{ zIndex: 3001, pointerEvents: 'auto' }}
                   onPointerDownCapture={(e) => e.stopPropagation()}
                   onMouseDownCapture={(e) => e.stopPropagation()}
-                  onClickCapture={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between dark:border-slate-700">
                     <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">Notifications</span>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-500 dark:text-slate-400">{unreadCount} unread</span>
-                      <button onClick={handleMarkAllRead} className="text-xs text-primary-600 hover:text-primary-700 font-medium">Mark all as read</button>
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkAllRead();
+                        }}
+                        className="text-xs text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
+                      >
+                        Mark all as read
+                      </button>
                     </div>
                   </div>
                   <div
@@ -537,10 +546,11 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                   <div className="px-4 py-2 border-t border-gray-100 text-center dark:border-slate-700" >
                     <button
                       type="button"
-                      onPointerDownCapture={(e)=>e.stopPropagation()}
-                      onMouseDown={(e)=>e.stopPropagation()}
-                      onClick={handleViewAllClick}
-                      className="inline-flex items-center justify-center w-full px-3 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewAllClick(e);
+                      }}
+                      className="inline-flex items-center justify-center w-full px-3 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 cursor-pointer"
                     >
                       View all
                     </button>

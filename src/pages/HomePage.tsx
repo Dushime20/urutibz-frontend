@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Star, Heart, TrendingUp, AlertCircle, RefreshCw, Package, Wifi, WifiOff, Search, X, ShieldCheck, Sparkles, Handshake, Globe, Briefcase, Users } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Star, TrendingUp, AlertCircle, RefreshCw, Package, WifiOff, Search, X, ShieldCheck, Sparkles, Handshake, Globe, Briefcase, Users } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { TranslatedText } from '../components/translated-text';
+import { useAuth } from '../contexts/AuthContext';
 
 import { fetchAvailableProducts, fetchProductPricesByProductId, addUserFavorite, removeUserFavorite, getUserFavorites, getProductInteractions } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
@@ -102,6 +103,8 @@ const quickActionItems = [
 const HomePage: React.FC = () => {
   const { showToast } = useToast();
   const { tSync } = useTranslation();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
   const [productImages, setProductImages] = useState<Record<string, string[]>>({});
   const [itemLocations, setItemLocations] = useState<Record<string, { city: string | null; country: string | null }>>({});
@@ -562,7 +565,7 @@ const HomePage: React.FC = () => {
   if (loading && products.length === 0) {
     return (
       <div className="space-y-8 sm:space-y-10">
-        <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+        <div className="max-w-9xl mx-auto px-6 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#01aaa7] mx-auto mb-4"></div>
@@ -580,7 +583,7 @@ const HomePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
         <div className="space-y-8 sm:space-y-10">
-          <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          <div className="max-w-9xl mx-auto px-6 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
             <div className="flex items-center justify-center py-20">
               <div className="text-center max-w-md">
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
@@ -618,7 +621,7 @@ const HomePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
         <div className="space-y-8 sm:space-y-10">
-          <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          <div className="max-w-9xl mx-auto px-6 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
             <div className="flex items-center justify-center py-20">
               <div className="text-center max-w-md">
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
@@ -654,7 +657,7 @@ const HomePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
         <div className="space-y-8 sm:space-y-10">
-          <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
+          <div className="max-w-9xl mx-auto px-6 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
             <div className="flex items-center justify-center py-20">
               <div className="text-center max-w-md">
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 dark:bg-slate-700 mb-4">
@@ -691,93 +694,9 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <div className="space-y-8 sm:space-y-10">
         {/* Hero Section */}
-        {/* <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 pt-6 sm:pt-10 lg:pt-12">
-          <div
-            className="rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 shadow-xl relative"
-            style={{
-              backgroundImage: heroBackgrounds[heroBgIndex],
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
-            <div className="absolute inset-0 bg-slate-900/80"></div>
-            <div className="relative px-8 sm:px-12 lg:px-16 py-10 sm:py-14 lg:py-16 text-white flex flex-col lg:flex-row gap-10 lg:gap-16">
-              <div className="flex-1 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-sm">
-                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                  <TranslatedText text="Trusted rentals across 45+ countries" />
-                </div>
-                <div className="space-y-4">
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
-                    {tSync('Rent anything, anywhere — with Uruti Bz protection')}
-                  </h1>
-                  <p className="text-base sm:text-lg text-white/80 max-w-2xl">
-                    {tSync('Connect with verified hosts, manage multilingual inspections, and grow your rental business with real-time risk insights.')}
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link
-                    to="/create-listing"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white text-slate-900 font-semibold shadow-lg shadow-slate-900/10 hover:bg-slate-100 transition-colors"
-                  >
-                    <TranslatedText text="Start selling" />
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                  <Link
-                    to="/items"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-white/40 text-white font-semibold hover:bg-white/10 transition-colors"
-                  >
-                    <TranslatedText text="Find inventory" />
-                  </Link>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-white/80">
-                  <div>
-                    <p className="text-3xl font-semibold text-white">210K+</p>
-                    <p><TranslatedText text="Monthly rentals" /></p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-semibold text-white">76</p>
-                    <p><TranslatedText text="Markets launched" /></p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-semibold text-white">24/7</p>
-                    <p><TranslatedText text="Live inspections" /></p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-semibold text-white">18</p>
-                    <p><TranslatedText text="Languages supported" /></p>
-                  </div>
-                </div>
-              </div>
-              <div className="w-full lg:max-w-sm">
-                <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 space-y-6 border border-white/10">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm uppercase tracking-wide text-white/70"><TranslatedText text="Live demand" /></p>
-                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full"><TranslatedText text="Updated now" /></span>
-                  </div>
-                  <ul className="space-y-4 text-sm">
-                    {liveDemandData.map((slot) => (
-                      <li key={slot.city} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                          <span>{slot.city}</span>
-                        </div>
-                        <span className="text-white/70">{slot.requests} <TranslatedText text="active requests" /></span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="p-4 rounded-xl bg-black/20">
-                    <p className="text-sm text-white/70"><TranslatedText text="Need help launching in a new region?" /></p>
-                    <p className="text-lg font-semibold"><TranslatedText text="Dedicated onboarding team is live." /></p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section> */}
 
          {/* Products Sections */}
-         <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 space-y-12 pt-4">
+         <div className="max-w-9xl mx-auto px-6 lg:px-10 space-y-12 pt-4">
           {/* Search Results Header (only show if searching) */}
           {searchQuery && (
             <div className="mb-4 sm:mb-6 flex items-center justify-between">
@@ -827,17 +746,24 @@ const HomePage: React.FC = () => {
                   locationsLoading={locationsLoading}
                   onFavoriteToggle={async (productId, isFavorite) => {
                     const token = localStorage.getItem('token') || undefined;
-                    if (!token) return;
+                    if (!token || !isAuthenticated) {
+                      showToast(tSync('Please log in to add products to favorites'), 'info');
+                      navigate('/login');
+                      return;
+                    }
                     const currentlyFav = isFavorite;
                     setFavoriteMap(prev => ({ ...prev, [productId]: !currentlyFav }));
                     try {
                       if (currentlyFav) {
                         await removeUserFavorite(productId, token);
+                        showToast(tSync('Removed from favorites'), 'success');
                       } else {
                         await addUserFavorite(productId, token);
+                        showToast(tSync('Added to favorites'), 'success');
                       }
-                    } catch {
+                    } catch (error) {
                       setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
+                      showToast(tSync('Failed to update favorites'), 'error');
                     }
                   }}
                   onProductClick={(productId, idx) => {
@@ -1016,17 +942,24 @@ const HomePage: React.FC = () => {
                       locationsLoading={locationsLoading}
                       onFavoriteToggle={async (productId, isFavorite) => {
                         const token = localStorage.getItem('token') || undefined;
-                        if (!token) return;
+                        if (!token || !isAuthenticated) {
+                          showToast(tSync('Please log in to add products to favorites'), 'info');
+                          navigate('/login');
+                          return;
+                        }
                         const currentlyFav = isFavorite;
                         setFavoriteMap(prev => ({ ...prev, [productId]: !currentlyFav }));
                         try {
                           if (currentlyFav) {
                             await removeUserFavorite(productId, token);
+                            showToast(tSync('Removed from favorites'), 'success');
                           } else {
                             await addUserFavorite(productId, token);
+                            showToast(tSync('Added to favorites'), 'success');
                           }
-                        } catch {
+                        } catch (error) {
                           setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
+                          showToast(tSync('Failed to update favorites'), 'error');
                         }
                       }}
                       onProductClick={(productId, idx) => {
@@ -1071,8 +1004,94 @@ const HomePage: React.FC = () => {
           )}
         </div>
 
+        <section className="max-w-9xl mx-auto px-6 sm:px-10 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
+          <div
+            className="rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 shadow-xl relative"
+            style={{
+              backgroundImage: heroBackgrounds[heroBgIndex],
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            <div className="absolute inset-0 bg-slate-900/80"></div>
+            <div className="relative px-8 sm:px-12 lg:px-16 py-10 sm:py-14 lg:py-16 text-white flex flex-col lg:flex-row gap-10 lg:gap-16">
+              <div className="flex-1 space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                  <TranslatedText text="Trusted rentals across 45+ countries" />
+                </div>
+                <div className="space-y-4">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
+                    {tSync('Rent anything, anywhere — with Uruti Bz protection')}
+                  </h1>
+                  <p className="text-base sm:text-lg text-white/80 max-w-2xl">
+                    {tSync('Connect with verified hosts, manage multilingual inspections, and grow your rental business with real-time risk insights.')}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link
+                    to="/create-listing"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white text-slate-900 font-semibold shadow-lg shadow-slate-900/10 hover:bg-slate-100 transition-colors"
+                  >
+                    <TranslatedText text="Start selling" />
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                  <Link
+                    to="/items"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-white/40 text-white font-semibold hover:bg-white/10 transition-colors"
+                  >
+                    <TranslatedText text="Find inventory" />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-white/80">
+                  <div>
+                    <p className="text-3xl font-semibold text-white">210K+</p>
+                    <p><TranslatedText text="Monthly rentals" /></p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-semibold text-white">76</p>
+                    <p><TranslatedText text="Markets launched" /></p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-semibold text-white">24/7</p>
+                    <p><TranslatedText text="Live inspections" /></p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-semibold text-white">18</p>
+                    <p><TranslatedText text="Languages supported" /></p>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full lg:max-w-sm">
+                <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 space-y-6 border border-white/10">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm uppercase tracking-wide text-white/70"><TranslatedText text="Live demand" /></p>
+                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full"><TranslatedText text="Updated now" /></span>
+                  </div>
+                  <ul className="space-y-4 text-sm">
+                    {liveDemandData.map((slot) => (
+                      <li key={slot.city} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                          <span>{slot.city}</span>
+                        </div>
+                        <span className="text-white/70">{slot.requests} <TranslatedText text="active requests" /></span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="p-4 rounded-xl bg-black/20">
+                    <p className="text-sm text-white/70"><TranslatedText text="Need help launching in a new region?" /></p>
+                    <p className="text-lg font-semibold"><TranslatedText text="Dedicated onboarding team is live." /></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section> 
+
+
         {/* Enterprise trust and quick actions */}
-        <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20">
+        <section className="max-w-9xl mx-auto px-6 lg:px-10">
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-lg space-y-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex items-center gap-4">
@@ -1125,7 +1144,7 @@ const HomePage: React.FC = () => {
         </section>
 
         {/* Featured stories */}
-        <section className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20">
+        <section className="max-w-9xl mx-auto px-6 lg:px-10">
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xl space-y-8">
             <div className="flex flex-col gap-2">
               <p className="text-sm text-my-primary font-semibold uppercase tracking-[0.2em]"><TranslatedText text="Featured sellers" /></p>

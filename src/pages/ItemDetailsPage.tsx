@@ -4,11 +4,13 @@ import {
   Star, Heart, Share2, MapPin, Clock, Shield, Zap, Truck,
   User, MessageCircle, Phone,
   ChevronLeft, ChevronRight, CheckCircle, AlertCircle,
-  Package, Info, ArrowRight
+  Package, Info, ArrowRight, ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { TranslatedText } from '../components/translated-text';
+import { useCart } from '../contexts/CartContext';
+import { useToast } from '../contexts/ToastContext';
 import { formatPrice, getCityFromCoordinates, wkbHexToLatLng } from '../lib/utils';
 import Button from '../components/ui/Button';
 import { getProductById, fetchProductPricesByProductId, getProductInteractions, addUserFavorite, removeUserFavorite, getUserFavorites, fetchAvailableProducts, fetchUserById } from './admin/service';
@@ -18,6 +20,7 @@ import { UserProfileService } from './admin/service/userProfileService';
 import ProductSwiper from '../components/products/ProductSwiper';
 import ProductMap from '../components/map/ProductMap';
 import MessagingModal from '../components/messaging/MessagingModal';
+import AddToCartModal from '../components/cart/AddToCartModal';
 
 
 
@@ -44,6 +47,8 @@ const ItemDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { tSync } = useTranslation();
+  const { addToCart, isInCart } = useCart();
+  const { showToast } = useToast();
 
   // Debug: log user and kyc_status
 
@@ -73,6 +78,7 @@ const ItemDetailsPage: React.FC = () => {
   const [relatedItemLocations, setRelatedItemLocations] = useState<Record<string, { city: string | null; country: string | null }>>({});
   const [relatedLocationsLoading, setRelatedLocationsLoading] = useState<Record<string, boolean>>({});
   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
 
   useEffect(() => {
     // Fetch latest KYC status from authoritative API using localStorage user.id
@@ -392,7 +398,7 @@ const ItemDetailsPage: React.FC = () => {
           const loadingMap: Record<string, boolean> = {};
           const productsToProcess = filtered.slice(0, 8);
           
-          productsToProcess.forEach(product => {
+          productsToProcess.forEach((product: any) => {
             loadingMap[product.id] = true;
           });
           setRelatedLocationsLoading(loadingMap);
@@ -540,6 +546,49 @@ const ItemDetailsPage: React.FC = () => {
       setLatestKycStatus(null);
       setShowVerificationModal(true);
     }
+  };
+
+  const handleAddToCart = () => {
+    if (!item) return;
+
+    // Check if already in cart
+    if (isInCart(item.id)) {
+      showToast(tSync('Item is already in your cart'), 'info');
+      return;
+    }
+
+    // Get price - prefer productPrices, fallback to item base_price_per_day
+    const pricePerDay = productPrices?.price_per_day || item.base_price_per_day || 0;
+    const currency = productPrices?.currency || item.currency || 'RWF';
+
+    // Default dates: tomorrow to day after tomorrow (2 days rental)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const dayAfter = new Date(tomorrow);
+    dayAfter.setDate(dayAfter.getDate() + 1);
+    dayAfter.setHours(0, 0, 0, 0);
+
+    const startDate = tomorrow.toISOString().split('T')[0];
+    const endDate = dayAfter.toISOString().split('T')[0];
+
+    // Get product image
+    const productImage = images.length > 0 ? images[0] : undefined;
+
+    addToCart({
+      productId: item.id,
+      productTitle: item.title || 'Product',
+      productImage,
+      startDate,
+      endDate,
+      pricePerDay,
+      currency,
+      ownerId: item.owner_id,
+      categoryId: item.category_id,
+    });
+
+    showToast(tSync('Item added to cart'), 'success');
   };
 
 
@@ -991,14 +1040,23 @@ const ItemDetailsPage: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Book Now Button */}
-                <Button
-                  onClick={handleBookNow}
-                  className="w-full py-3 btn-primary text-white rounded-xl font-semibold hover:bg-[#01aaa7]  transition-colors flex items-center justify-center gap-2"
-                >
-                  <TranslatedText text="Book Now" />
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowAddToCartModal(true)}
+                    className="flex-1 py-3 bg-white border-2 border-teal-600 text-teal-600 dark:text-teal-400 rounded-xl font-semibold hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                    <TranslatedText text="Add to Cart" />
+                  </Button>
+                  <Button
+                    onClick={handleBookNow}
+                    className="flex-1 py-3 btn-primary text-white rounded-xl font-semibold hover:bg-[#01aaa7] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <TranslatedText text="Book Now" />
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
 
                 {/* Authentication Status */}
                 {!isAuthenticated && (
@@ -1218,6 +1276,27 @@ const ItemDetailsPage: React.FC = () => {
               ? `${item.base_price_per_day} ${item.base_currency}/day`
               : undefined
           }
+        />
+      )}
+
+      {/* Add to Cart Modal */}
+      {showAddToCartModal && item && productPrices && (
+        <AddToCartModal
+          isOpen={showAddToCartModal}
+          onClose={() => setShowAddToCartModal(false)}
+          product={{
+            id: item.id,
+            title: item.title || item.name || '',
+            image: images[0],
+            pricePerDay: typeof productPrices.price_per_day === 'string' 
+              ? parseFloat(productPrices.price_per_day) 
+              : (productPrices.price_per_day || parseFloat(item.base_price_per_day || '0')),
+            currency: productPrices.currency || item.base_currency || 'USD',
+            ownerId: item.owner_id || '',
+            categoryId: item.category_id,
+            pickupAvailable: item.pickup_available !== false,
+            deliveryAvailable: item.delivery_available === true,
+          }}
         />
       )}
     </div>

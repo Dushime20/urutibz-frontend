@@ -38,22 +38,24 @@ import { fetchAvailableProducts } from '../../pages/admin/service';
 import { getProductImagesByProductId } from '../../pages/my-account/service/api';
 import ImageSearchModal from '../products/ImageSearchModal';
 import { ImageSearchResult } from '../../pages/admin/service/imageSearch';
+import CartIcon from '../cart/CartIcon';
+import CartDrawer from '../cart/CartDrawer';
 
 type HeaderCategory = { id: string; label: string };
 
 const primaryNavLinks = [
   { label: 'Marketplace', to: '/items' },
-  { label: 'For Renters', to: '/favorites' },
-  { label: 'For Suppliers', to: '/create-listing' },
-  { label: 'Enterprise', to: '/risk-management' },
+  { label: 'Favorites', to: '/favorites' },
+  { label: 'For Suppliers', to: '/suppliers' },
+  { label: 'Enterprise', to: '/enterprise' },
   { label: 'Support', to: '/faq' }
 ];
 
 const primaryNavItems = [
   { label: 'Marketplace', to: '/items', icon: LayoutGrid },
-  { label: 'For Renters', to: '/favorites', icon: Tag },
-  { label: 'For Suppliers', to: '/create-listing', icon: PlusCircle },
-  { label: 'Enterprise', to: '/risk-management', icon: TrendingUp },
+  { label: 'Favorites', to: '/favorites', icon: Tag },
+  { label: 'For Suppliers', to: '/suppliers', icon: PlusCircle },
+  { label: 'Enterprise', to: '/enterprise', icon: TrendingUp },
   { label: 'Support', to: '/faq', icon: Headphones }
 ];
 
@@ -116,6 +118,7 @@ const Header: React.FC = () => {
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [tickerIndex, setTickerIndex] = useState(0);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const roleDestination =
     user?.role === 'admin'
@@ -753,7 +756,7 @@ const Header: React.FC = () => {
       </div>
 
       <div className="relative">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-6 lg:px-10">
           <div className="py-3 lg:py-4 space-y-3 md:space-y-0">
             {/* Mobile compact header */}
             <div className="flex items-center justify-between md:hidden">
@@ -772,11 +775,12 @@ const Header: React.FC = () => {
                 >
                   <Search className="w-4 h-4" />
                 </button>
-                {isAuthenticated && (
-                  <div className="flex items-center">
-                    <RealtimeNotifications />
-                  </div>
-                )}
+                  {isAuthenticated && (
+                    <div className="flex items-center gap-3">
+                      <CartIcon onClick={() => setIsCartOpen(true)} />
+                      <RealtimeNotifications />
+                    </div>
+                  )}
                 <button
                   onClick={toggleDarkMode}
                   className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
@@ -894,6 +898,7 @@ const Header: React.FC = () => {
 
               {isAuthenticated ? (
                 <div className="hidden md:flex items-center gap-3">
+                  <CartIcon onClick={() => setIsCartOpen(true)} />
                   <RealtimeNotifications />
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -1423,6 +1428,9 @@ const Header: React.FC = () => {
       onSearchComplete={handleImageSearchResults}
       onNavigateToResults={handleImageSearchResults}
     />
+
+    {/* Cart Drawer */}
+    <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </>
   );
 };

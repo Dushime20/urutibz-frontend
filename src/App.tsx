@@ -12,6 +12,7 @@ import { DarkModeProvider } from './contexts/DarkModeContext';
 import { AdminSettingsProvider } from './contexts/AdminSettingsContext';
 import { I18nProvider } from './contexts/i18n-context';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { CartProvider } from './contexts/CartContext';
 
 // Lazy load page components for code-splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -27,6 +28,9 @@ const CreateListingPage = lazy(() => import('./pages/CreateListingPage'));
 const ItemSearchPage = lazy(() => import('./pages/ItemSearchPage'));
 const ItemDetailsPage = lazy(() => import('./pages/ItemDetailsPage'));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
+const SuppliersPage = lazy(() => import('./pages/SuppliersPage'));
+const EnterprisePage = lazy(() => import('./pages/EnterprisePage'));
+const CartPage = lazy(() => import('./pages/CartPage'));
 const UrutiBzVerification = lazy(() => import('./pages/verification2/urutibiziVerification'));
 const DemoPage = lazy(() => import('./pages/DemoPage'));
 const RoleAwareInspections = lazy(() => import('./pages/inspections/RoleAwareInspections'));
@@ -38,6 +42,7 @@ const RiskAssessmentPage = lazy(() => import('./pages/risk-management/RiskAssess
 const NotificationsPage = lazy(() => import('./features/notifications/pages/NotificationsPage'));
 const SessionMessagesPage = lazy(() => import('./pages/my-account/SessionMessagesPage'));
 const HandoverReturnDemoPage = lazy(() => import('./pages/handover-return/HandoverReturnDemoPage'));
+const CartCheckoutPage = lazy(() => import('./pages/CartCheckoutPage'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -64,6 +69,7 @@ function App() {
           <AdminSettingsProvider token={localStorage.getItem('token') || undefined}>
             <ToastProvider>
           <ToastContainer />
+          <CartProvider>
           <AuthProvider>
             <Router>
               <Suspense fallback={<LoadingFallback />}>
@@ -133,9 +139,10 @@ function App() {
 
                     <Route path="it/:id" element={<ItemDetailsPage />} />
 
-
                     <Route path="demo" element={<DemoPage />} />
                     <Route path="faq" element={<FaqPage />} />
+                    <Route path="suppliers" element={<SuppliersPage />} />
+                    <Route path="enterprise" element={<EnterprisePage />} />
                     <Route path="handover-return-demo" element={<HandoverReturnDemoPage />} />
 
                     {/* Protected routes */}
@@ -168,6 +175,12 @@ function App() {
                         <BookingPage />
                       </ProtectedRoute>
                     } />
+                    <Route path="cart" element={<CartPage />} />
+                    <Route path="cart/checkout" element={
+                      <ProtectedRoute>
+                        <CartCheckoutPage />
+                      </ProtectedRoute>
+                    } />
                   </Route>
                   <Route path="risk-assessment" element={
                       <ProtectedRoute>
@@ -183,6 +196,7 @@ function App() {
               </Suspense>
           </Router>
         </AuthProvider>
+        </CartProvider>
         </ToastProvider>
         </AdminSettingsProvider>
         </DarkModeProvider>

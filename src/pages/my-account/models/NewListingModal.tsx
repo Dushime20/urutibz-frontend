@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, MapPin, Plus, Trash2, Camera, DollarSign, Package, Info, AlertCircle, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { fetchCategories, fetchCountries } from '../service/api';
+import LocationPicker from '../../../components/map/LocationPicker';
 
 type FormState = {
   title: string;
@@ -832,22 +833,58 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                <MapPin className="inline mr-2" size={20} />
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
                 Location
               </h3>
               
+              <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
+                Click on the map to select your product location, or use the "Use My Location" button to automatically detect your current location.
+              </p>
+
+              {/* Interactive Map */}
+              <div className="mb-6">
+                <LocationPicker
+                  latitude={form.location?.latitude ? parseFloat(form.location.latitude) : undefined}
+                  longitude={form.location?.longitude ? parseFloat(form.location.longitude) : undefined}
+                  onLocationChange={(lat, lng) => {
+                    setForm((f: FormState) => ({
+                      ...f,
+                      location: {
+                        latitude: lat.toString(),
+                        longitude: lng.toString()
+                      }
+                    }));
+                  }}
+                  onAddressChange={(address) => {
+                    setForm((f: FormState) => ({
+                      ...f,
+                      address_line: address
+                    }));
+                  }}
+                  height="400px"
+                  defaultCenter={[-1.9441, 30.0619]} // Kigali, Rwanda
+                />
+              </div>
+
+              {/* Address Line */}
               <div className="group mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Address Line</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                  Address Line
+                </label>
                 <input
                   name="address_line"
                   value={form.address_line || ''}
                   onChange={handleInputChange}
-                  placeholder="KG 11 Ave, Kigali"
+                  placeholder="Address will be auto-filled when you select a location on the map"
                   className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                 />
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                  You can also manually edit the address if needed
+                </p>
               </div>
 
+              {/* Coordinates Display */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
@@ -861,9 +898,12 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                       ...f,
                       location: { ...(f.location || { latitude: '', longitude: '' }), latitude: e.target.value }
                     }))}
-                    placeholder="e.g., 40.7128"
+                    placeholder="e.g., -1.9441"
                     className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                   />
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                    Automatically updated when you click on the map
+                  </p>
                 </div>
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
@@ -877,9 +917,12 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
                       ...f,
                       location: { ...(f.location || { latitude: '', longitude: '' }), longitude: e.target.value }
                     }))}
-                    placeholder="e.g., -74.0060"
+                    placeholder="e.g., 30.0619"
                     className="w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
                   />
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                    Automatically updated when you click on the map
+                  </p>
                 </div>
               </div>
 

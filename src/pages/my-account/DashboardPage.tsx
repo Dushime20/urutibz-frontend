@@ -25,6 +25,7 @@ import {
   requestCancellation,
   reviewCancellation
 } from './service/api';
+import { getMyNotifications } from '../../features/notifications/api';
 // Notifications handled in MyAccountHeader
 import MyAccountHeader from './components/MyAccountHeader';
 import MyAccountSidebar from './components/MyAccountSidebar';
@@ -1536,7 +1537,27 @@ const DashboardPage: React.FC = () => {
           )}
 
           {activeTab === 'notifications' && (
-            <NotificationsSection />
+            <NotificationsSection 
+              onNavigateToNotifications={() => {
+                // Always set the tab to notifications (even if already there, this ensures it's active)
+                setActiveTab('notifications');
+                // Scroll to top after a brief delay to ensure DOM is ready
+                setTimeout(() => {
+                  // Try multiple scroll targets
+                  const notificationsSection = document.getElementById('my-account-notifications');
+                  if (notificationsSection) {
+                    notificationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                  // Also scroll the main scrollable container
+                  const scrollContainer = document.querySelector('.overflow-y-auto, [class*="overflow"]');
+                  if (scrollContainer) {
+                    scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                  // Scroll window as fallback
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 150);
+              }}
+            />
           )}
 
           {activeTab === 'risk-assessment' && (

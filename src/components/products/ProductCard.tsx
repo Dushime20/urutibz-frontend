@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Heart } from 'lucide-react';
+import { Star, Heart, ShoppingCart } from 'lucide-react';
 import { TranslatedText } from '../translated-text';
+import AddToCartModal from '../cart/AddToCartModal';
+import { useCart } from '../../contexts/CartContext';
 
 interface ProductCardProps {
   product: any;
@@ -30,6 +32,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   formatCurrency,
   tSync
 }) => {
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
+  const { isInCart } = useCart();
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -38,13 +43,24 @@ const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
+  const handleAddToCartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowAddToCartModal(true);
+  };
+
   const handleProductClick = () => {
     if (onProductClick) {
       onProductClick(product.id, index);
     }
   };
 
+  const pricePerDay = productPrices[product.id]?.price_per_day || product.base_price_per_day || 0;
+  const currency = productPrices[product.id]?.currency || product.base_currency || 'USD';
+  const productImage = productImages[product.id]?.[0];
+
   return (
+    <>
     <Link
       to={`/it/${product.id}`}
       className="group block"
@@ -71,15 +87,45 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </svg>
             <span className="text-sm font-medium"><TranslatedText text="No Image" /></span>
           </div>
-          {/* Heart Icon */}
-          <button
-            type="button"
-            aria-label={tSync('Add to favorites')}
-            className="absolute top-3 right-3 w-8 h-8 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40 rounded-full flex items-center justify-center transition-colors z-10"
-            onClick={handleFavoriteClick}
-          >
-            <Heart className={`w-4 h-4 ${favoriteMap[product.id] ? 'text-red-500 fill-current' : 'text-white dark:text-slate-200'}`} />
-          </button>
+          {/* Action Buttons */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+            {/* Heart Icon - Favorites */}
+            <button
+              type="button"
+              aria-label={favoriteMap[product.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                favoriteMap[product.id] 
+                  ? 'bg-red-500 hover:bg-red-600' 
+                  : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
+              }`}
+              onClick={handleFavoriteClick}
+            >
+              <Heart className={`w-5 h-5 transition-all ${
+                favoriteMap[product.id] 
+                  ? 'text-white fill-current' 
+                  : 'text-gray-700 dark:text-slate-300'
+              }`} />
+            </button>
+            {/* Add to Cart Icon */}
+            {pricePerDay > 0 && (
+              <button
+                type="button"
+                aria-label={tSync('Add to cart')}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                  isInCart(product.id)
+                    ? 'bg-teal-600 hover:bg-teal-700'
+                    : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
+                }`}
+                onClick={handleAddToCartClick}
+              >
+                <ShoppingCart className={`w-5 h-5 transition-all ${
+                  isInCart(product.id)
+                    ? 'text-white fill-current'
+                    : 'text-gray-700 dark:text-slate-300'
+                }`} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -133,6 +179,24 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
     </Link>
+    {showAddToCartModal && pricePerDay > 0 && (
+      <AddToCartModal
+        isOpen={showAddToCartModal}
+        onClose={() => setShowAddToCartModal(false)}
+        product={{
+          id: product.id,
+          title: product.title || product.name || '',
+          image: productImage,
+          pricePerDay: typeof pricePerDay === 'string' ? parseFloat(pricePerDay) : pricePerDay,
+          currency,
+          ownerId: product.owner_id || '',
+          categoryId: product.category_id,
+          pickupAvailable: product.pickup_available !== false,
+          deliveryAvailable: product.delivery_available === true,
+        }}
+      />
+    )}
+    </>
   );
 };
 

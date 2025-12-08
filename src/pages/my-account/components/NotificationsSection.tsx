@@ -7,29 +7,40 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { TranslatedText } from '../../../components/translated-text';
 import useRealtime from '../../../hooks/useRealtime';
 
-interface NotificationsSectionProps {}
+interface NotificationsSectionProps {
+  onNavigateToNotifications?: () => void;
+}
 
 type NotificationFilter = 'all' | 'unread' | 'read';
 
-const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
+const NotificationsSection: React.FC<NotificationsSectionProps> = ({ onNavigateToNotifications }) => {
   const { tSync } = useTranslation();
-  const { mutate: markRead } = useMarkReadMutation();
+  const markReadMutation = useMarkReadMutation();
+  const markRead = markReadMutation.mutate;
   const { socket, isConnected } = useRealtime();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<NotificationFilter>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const limit = 100;
 
   // Load notifications
   useEffect(() => {
     const loadNotifications = async () => {
       try {
         setLoading(true);
-        const items = await getMyNotifications({ page: 1, limit: 100 });
-        setNotifications(Array.isArray(items) ? items : []);
+        const items = await getMyNotifications({ page: 1, limit });
+        const notificationsList = Array.isArray(items) ? items : [];
+        setNotifications(notificationsList);
+        setHasMore(notificationsList.length >= limit);
+        setCurrentPage(1);
       } catch (error) {
         console.error('Failed to load notifications:', error);
         setNotifications([]);
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
@@ -102,15 +113,85 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
     );
   };
 
-  const handleMarkAllAsRead = () => {
-    notifications.forEach((n: any) => {
-      if (!isNotificationRead(n)) {
+  const handleMarkAllAsRead = async () => {
+    const unreadNotifications = notifications.filter((n: any) => !isNotificationRead(n));
+    if (unreadNotifications.length === 0) return;
+    
+    try {
+      // Optimistically update UI
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, read: true, is_read: true }))
+      );
+      
+      // Mark all unread notifications as read
+      unreadNotifications.forEach((n: any) => {
         markRead(n.id);
+      });
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+      // Revert on error
+      setNotifications(prev =>
+        prev.map(n => {
+          const wasUnread = unreadNotifications.some(un => un.id === n.id);
+          if (wasUnread) {
+            return { ...n, read: false, is_read: false };
+          }
+          return n;
+        })
+      );
+    }
+  };
+
+  const handleViewAll = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('[NotificationsSection] View all clicked');
+    
+    // Always call the callback to ensure we're on the notifications tab
+    if (onNavigateToNotifications) {
+      onNavigateToNotifications();
+    } else {
+      // Fallback: dispatch custom event to navigate
+      window.dispatchEvent(new CustomEvent('my-account-nav', { detail: { tab: 'notifications' } }));
+    }
+    
+    // Scroll to top and reload notifications after a brief delay
+    setTimeout(() => {
+      // Scroll to top of notifications section
+      const notificationsSection = document.getElementById('my-account-notifications');
+      if (notificationsSection) {
+        notificationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    });
-    setNotifications(prev =>
-      prev.map(n => ({ ...n, read: true, is_read: true }))
-    );
+      
+      // Also scroll the main scrollable container
+      const scrollContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y"]');
+      scrollContainers.forEach(container => {
+        if (container instanceof HTMLElement) {
+          container.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+      
+      // Fallback: scroll window
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 150);
+    
+    // Reload all notifications
+    const reloadNotifications = async () => {
+      try {
+        setLoading(true);
+        const items = await getMyNotifications({ page: 1, limit: 500 });
+        const notificationsList = Array.isArray(items) ? items : [];
+        setNotifications(notificationsList);
+        setHasMore(notificationsList.length >= limit);
+        setCurrentPage(1);
+      } catch (error) {
+        console.error('Failed to reload notifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reloadNotifications();
   };
 
   const parseNotificationData = (data: any) => {
@@ -177,6 +258,12 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
     );
   }
 
+  // Test function to verify buttons work
+  const testClick = () => {
+    alert('Button works!');
+    console.log('Test button clicked');
+  };
+
   return (
     <div
       id="my-account-notifications"
@@ -185,7 +272,14 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
       className="space-y-4 sm:space-y-6 focus:outline-none"
     >
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 dark:bg-slate-900 dark:border-slate-700">
+      <div 
+        className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 dark:bg-slate-900 dark:border-slate-700"
+        style={{ position: 'relative', zIndex: 10 }}
+        onClick={(e) => {
+          // Prevent any parent click handlers from interfering
+          e.stopPropagation();
+        }}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2">
@@ -196,15 +290,40 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = () => {
               <TranslatedText text="Manage your notifications" />
             </p>
           </div>
-          {unreadCount > 0 && (
+          <div 
+            className="flex items-center gap-3" 
+            style={{ position: 'relative', zIndex: 1000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Mark all as read clicked');
+                  handleMarkAllAsRead();
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {tSync('Mark all as read')}
+              </button>
+            )}
             <button
-              onClick={handleMarkAllAsRead}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('View all button clicked');
+                handleViewAll(e);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 active:bg-gray-100 dark:active:bg-slate-700 transition-colors text-sm font-medium cursor-pointer"
             >
-              <CheckCircle className="w-4 h-4" />
-              <TranslatedText text="Mark all as read" />
+              {tSync('View all')}
             </button>
-          )}
+          </div>
         </div>
       </div>
 

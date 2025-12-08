@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronUp, Bot, Shield, Globe, Sparkles, HelpCircle, MessageCircle } from 'lucide-react';
 
 interface FaqItem {
@@ -7,12 +7,16 @@ interface FaqItem {
   category: 'general' | 'ai' | 'safety' | 'payments' | 'international';
 }
 
-export const FaqSection: React.FC = () => {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+interface FaqSectionProps {
+  searchQuery?: string;
+}
+
+export const FaqSection: React.FC<FaqSectionProps> = ({ searchQuery = '' }) => {
+  const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  const toggleFaq = (index: number) => {
-    setActiveIndex(activeIndex === index ? null : index);
+  const toggleFaq = (question: string) => {
+    setActiveQuestion(activeQuestion === question ? null : question);
   };
 
   const categories = [
@@ -87,14 +91,39 @@ export const FaqSection: React.FC = () => {
     }
   ];
 
-  const filteredFaqs = activeCategory === 'all' 
-    ? faqs 
-    : faqs.filter(faq => faq.category === activeCategory);
+  // Filter FAQs based on category and search query
+  const filteredFaqs = useMemo(() => {
+    let filtered = activeCategory === 'all' 
+      ? faqs 
+      : faqs.filter(faq => faq.category === activeCategory);
+
+    // Apply search filter if query exists
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(faq => 
+        faq.question.toLowerCase().includes(query) ||
+        faq.answer.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [activeCategory, searchQuery]);
 
   return (
     <section className="py-12 sm:py-16 lg:py-20 xl:py-24 bg-white dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="max-w-4xl mx-auto">
+          {/* Search Results Info */}
+          {searchQuery && (
+            <div className="mb-6 text-center">
+              <div className="inline-block bg-teal-50 dark:bg-teal-900/20 px-4 py-2 rounded-full border border-teal-100 dark:border-teal-800">
+                <span className="text-sm text-slate-600 dark:text-slate-300">
+                  Found <span className="font-semibold text-teal-600 dark:text-teal-400">{filteredFaqs.length}</span> {filteredFaqs.length === 1 ? 'result' : 'results'} for "<span className="font-medium">{searchQuery}</span>"
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-teal-50 dark:bg-teal-900/20 px-4 py-2 rounded-full border border-teal-100 dark:border-teal-800 shadow-sm mb-6 text-teal-700 dark:text-teal-200">
@@ -136,28 +165,53 @@ export const FaqSection: React.FC = () => {
 
           {/* FAQ Items */}
           <div className="space-y-4 mb-12">
-            {filteredFaqs.map((faq, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
-              >
-                <button
-                  onClick={() => toggleFaq(index)}
-                  className="w-full flex items-center justify-between p-6 text-left hover:bg-teal-50/70 dark:hover:bg-teal-900/20 transition-colors duration-200"
-                >
-                  <span className="text-lg font-semibold text-slate-800 dark:text-white pr-4">
-                    {faq.question}
-                  </span>
-                  <div className="flex-shrink-0">
-                    {activeIndex === index ? (
-                      <ChevronUp className="h-6 w-6 text-teal-600" />
-                    ) : (
-                      <ChevronDown className="h-6 w-6 text-slate-400" />
-                    )}
+            {filteredFaqs.length === 0 ? (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-100 dark:border-slate-800 shadow-sm text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full">
+                    <Search className="w-8 h-8 text-slate-400" />
                   </div>
-                </button>
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">
+                  No results found
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">
+                  {searchQuery 
+                    ? `We couldn't find any questions matching "${searchQuery}". Try different keywords or browse by category.`
+                    : 'No questions found in this category.'}
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium"
+                  >
+                    Clear search
+                  </button>
+                )}
+              </div>
+            ) : (
+              filteredFaqs.map((faq, index) => (
+                <div
+                  key={`${faq.question}-${index}`}
+                  className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
+                >
+                  <button
+                    onClick={() => toggleFaq(faq.question)}
+                    className="w-full flex items-center justify-between p-6 text-left hover:bg-teal-50/70 dark:hover:bg-teal-900/20 transition-colors duration-200"
+                  >
+                    <span className="text-lg font-semibold text-slate-800 dark:text-white pr-4">
+                      {faq.question}
+                    </span>
+                    <div className="flex-shrink-0">
+                      {activeQuestion === faq.question ? (
+                        <ChevronUp className="h-6 w-6 text-teal-600" />
+                      ) : (
+                        <ChevronDown className="h-6 w-6 text-slate-400" />
+                      )}
+                    </div>
+                  </button>
 
-                {activeIndex === index && (
+                  {activeQuestion === faq.question && (
                   <div className="px-6 pb-6 border-t border-teal-100/70 dark:border-slate-800">
                     <div className="pt-4">
                       <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{faq.answer}</p>
@@ -165,7 +219,8 @@ export const FaqSection: React.FC = () => {
                   </div>
                 )}
               </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Help Center CTA */}

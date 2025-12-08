@@ -10,6 +10,8 @@ import { formatCurrency } from '../lib/utils';
 import Button from '../components/ui/Button';
 import { useTranslation } from '../hooks/useTranslation';
 import { TranslatedText } from '../components/translated-text';
+import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 
 // Product type definition with better typing
 type Product = {
@@ -62,6 +64,8 @@ const ItemSearchPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { tSync } = useTranslation();
+  const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
   
   // Check if we have image search results from navigation state
   const imageSearchResults = (location.state as any)?.imageSearchResults as ImageSearchResult[] | undefined;
@@ -457,7 +461,7 @@ const ItemSearchPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
              {/* Enhanced Search Header */}
        <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-40">
-         <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 py-6">
+         <div className="max-w-9xl mx-auto px-6 lg:px-10 py-6">
           {/* Main Search Section */}
           <div className="flex flex-col gap-6">
             {/* Search Bar */}
@@ -613,7 +617,7 @@ const ItemSearchPage: React.FC = () => {
       </div>
 
              {/* Main Content */}
-       <div className="max-w-9xl mx-auto px-8 sm:px-10 lg:px-12 xl:px-16 2xl:px-20 py-8">
+       <div className="max-w-9xl mx-auto px-6 lg:px-10 py-8">
         {/* Error Handling */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-400 px-6 py-4 rounded-2xl mb-8 animate-in fade-in duration-200">
@@ -711,32 +715,47 @@ const ItemSearchPage: React.FC = () => {
                        </svg>
                        <span className="text-xs font-medium">No Image</span>
                      </div>
-                     {/* Heart Icon */}
+                     {/* Heart Icon - Favorites */}
                      <button
                        type="button"
-                       aria-label="Add to favorites"
-                       className="absolute top-3 right-3 w-8 h-8 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40 rounded-full flex items-center justify-center transition-colors"
+                       aria-label={favoriteMap[item.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
+                       className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 shadow-lg ${
+                         favoriteMap[item.id] 
+                           ? 'bg-red-500 hover:bg-red-600' 
+                           : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
+                       }`}
                        onClick={async (e) => {
                          e.preventDefault();
                          e.stopPropagation();
                          const token = localStorage.getItem('token') || undefined;
-                         if (!token) return; // optionally prompt login
+                         if (!token || !isAuthenticated) {
+                           showToast(tSync('Please log in to add products to favorites'), 'info');
+                           navigate('/login');
+                           return;
+                         }
                          const currentlyFav = Boolean(favoriteMap[item.id]);
                          // optimistic update
                          setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
                          try {
                            if (currentlyFav) {
                              await removeUserFavorite(item.id, token);
+                             showToast(tSync('Removed from favorites'), 'success');
                            } else {
                              await addUserFavorite(item.id, token);
+                             showToast(tSync('Added to favorites'), 'success');
                            }
-                         } catch {
+                         } catch (error) {
                            // revert on failure
                            setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
+                           showToast(tSync('Failed to update favorites'), 'error');
                          }
                        }}
                      >
-                       <Heart className={`w-4 h-4 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-white dark:text-slate-200'}`} />
+                       <Heart className={`w-5 h-5 transition-all ${
+                         favoriteMap[item.id] 
+                           ? 'text-white fill-current' 
+                           : 'text-gray-700 dark:text-slate-300'
+                       }`} />
                      </button>
                    </div>
 
@@ -843,28 +862,44 @@ const ItemSearchPage: React.FC = () => {
                           <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2 leading-relaxed">{item.description}</p>
                         </div>
                                                  <button 
-                           className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors ml-4"
+                           className={`p-2 rounded-lg transition-all ml-4 shadow-sm ${
+                             favoriteMap[item.id]
+                               ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                               : 'hover:bg-gray-100 dark:hover:bg-slate-700'
+                           }`}
                            onClick={async (e) => {
                              e.preventDefault();
                              e.stopPropagation();
                              const token = localStorage.getItem('token') || undefined;
-                             if (!token) return; // optionally prompt login
+                             if (!token || !isAuthenticated) {
+                               showToast(tSync('Please log in to add products to favorites'), 'info');
+                               navigate('/login');
+                               return;
+                             }
                              const currentlyFav = Boolean(favoriteMap[item.id]);
                              // optimistic update
                              setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
                              try {
                                if (currentlyFav) {
                                  await removeUserFavorite(item.id, token);
+                                 showToast(tSync('Removed from favorites'), 'success');
                                } else {
                                  await addUserFavorite(item.id, token);
+                                 showToast(tSync('Added to favorites'), 'success');
                                }
-                             } catch {
+                             } catch (error) {
                                // revert on failure
                                setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
+                               showToast(tSync('Failed to update favorites'), 'error');
                              }
                            }}
+                           aria-label={favoriteMap[item.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
                          >
-                           <Heart className={`w-5 h-5 ${favoriteMap[item.id] ? 'text-red-500 fill-current' : 'text-gray-600 dark:text-slate-400'} hover:text-red-500 transition-colors`} />
+                           <Heart className={`w-5 h-5 transition-all ${
+                             favoriteMap[item.id] 
+                               ? 'text-red-500 fill-current' 
+                               : 'text-gray-600 dark:text-slate-400 hover:text-red-500'
+                           }`} />
                          </button>
                       </div>
                       
