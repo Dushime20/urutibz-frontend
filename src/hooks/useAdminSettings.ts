@@ -146,11 +146,22 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
       
     } catch (err: any) {
       console.error('Failed to load settings:', err);
-      setError(err.message || 'Failed to load settings');
+      // Don't set error state for settings - just use fallback silently
+      // This prevents blocking the UI when settings API is unavailable
       
       // Fallback to cache if available
       if (cacheRef.current.data) {
         setSettings(cacheRef.current.data);
+      } else {
+        // Use default settings if no cache available
+        setSettings({
+          system: {},
+          theme: {},
+          security: {},
+          notifications: {},
+          platform: {},
+          'backup-recovery': {},
+        } as AdminSettings);
       }
     } finally {
       setIsLoading(false);

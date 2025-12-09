@@ -65,20 +65,7 @@ const mobileSupportLinks = [
   { label: 'Live status', to: '/status', icon: Sparkles }
 ];
 
-const mobileUtilityChips = [
-  { label: 'Near me', action: 'nearby' },
-  { label: 'Instant book', action: 'instant' },
-  { label: 'Verified hosts', action: 'verified' },
-  { label: 'Long term', action: 'long term' },
-  { label: 'Premium gear', action: 'premium' }
-];
-
-const quickFilterPresets = [
-  { label: 'Instant book', value: 'instant', query: 'instant booking' },
-  { label: 'Verified hosts', value: 'verified', query: 'verified host' },
-  { label: 'Long term', value: 'long term', query: 'monthly rental' },
-  { label: 'Premium gear', value: 'premium', query: 'pro equipment' }
-];
+// Removed hardcoded mobileUtilityChips and quickFilterPresets - now using categories from database
 
 const tickerMessages = [
   '45 countries onboarding new rental fleets this month',
@@ -561,17 +548,6 @@ const Header: React.FC = () => {
     );
   };
 
-  const handleMobileQuickAction = (action: string) => {
-    if (action === 'nearby') {
-      detectLocation();
-      return;
-    }
-    const preset = quickFilterPresets.find((preset) => preset.value === action);
-    if (preset) {
-      performQuickSearch({ q: preset.query });
-      setIsMenuOpen(false);
-    }
-  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1144,25 +1120,17 @@ const Header: React.FC = () => {
         {isMenuOpen && (
           <div className="md:hidden fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={tSync('Navigation menu')}>
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-            <div className="absolute inset-x-0 top-[68px] bottom-0">
-              <div className="h-full bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border border-white/20 dark:border-gray-800 pt-4 pb-28 px-4 overflow-y-auto safe-area-bottom space-y-6">
-                <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto" />
-
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-                    {tSync('Quick Filters')}
-                  </p>
-                  <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                    {mobileUtilityChips.map((chip) => (
-                      <button
-                        key={chip.label}
-                        onClick={() => handleMobileQuickAction(chip.action)}
-                        className="px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 touch-manipulation"
-                      >
-                        {tSync(chip.label)}
-                      </button>
-                    ))}
-                  </div>
+            <div className="absolute inset-0 h-screen">
+              <div className="h-full bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border border-white/20 dark:border-gray-800 pt-4 pb-48 px-4 overflow-y-auto safe-area-bottom space-y-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto" />
+                  <button
+                    onClick={() => setIsMenuOpen(false)}
+                    className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                    aria-label={tSync('Close menu')}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
                 <div className="space-y-3">
@@ -1187,6 +1155,17 @@ const Header: React.FC = () => {
                         </Link>
                       );
                     })}
+                    <Link
+                      to="/create-listing"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:border-teal-400 dark:hover:border-teal-500 transition-colors"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-300">
+                        <PlusCircle className="w-4 h-4" />
+                      </span>
+                      <span>{tSync('List inventory')}</span>
+                      <ArrowRight className="ml-auto w-4 h-4 text-gray-400" />
+                    </Link>
                   </div>
                 </div>
 
@@ -1194,7 +1173,7 @@ const Header: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-                        {tSync('Top Categories')}
+                        {tSync('Categories')}
                       </p>
                       <button
                         onClick={() => {
@@ -1207,12 +1186,12 @@ const Header: React.FC = () => {
                       </button>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      {topCategories.slice(0, 8).map((cat) => (
+                      {topCategories.map((cat) => (
                         <Link
                           key={cat.id}
                           to={`/items?category=${encodeURIComponent(cat.id)}`}
                           onClick={() => setIsMenuOpen(false)}
-                          className="px-3 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-800/60 text-sm text-gray-800 dark:text-gray-100 hover:border-teal-400 dark:hover:border-teal-500"
+                          className="px-3 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-800/60 text-sm text-gray-800 dark:text-gray-100 hover:border-teal-400 dark:hover:border-teal-500 transition-colors"
                         >
                           {cat.label}
                         </Link>
@@ -1220,41 +1199,6 @@ const Header: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                <Link
-                  to="/create-listing"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-sky-500 text-white font-semibold shadow-lg"
-                >
-                  <div>
-                    <p className="text-sm"><TranslatedText text="List inventory" /></p>
-                    <p className="text-xs text-white/80"><TranslatedText text="Reach renters in 45+ countries" /></p>
-                  </div>
-                  <PlusCircle className="w-5 h-5" />
-                </Link>
-
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-                    {tSync('Support & tools')}
-                  </p>
-                  <div className="space-y-2">
-                    {mobileSupportLinks.map((link) => {
-                      const Icon = link.icon;
-                      return (
-                        <Link
-                          key={link.to}
-                          to={link.to}
-                          onClick={() => setIsMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 hover:border-teal-400 dark:hover:border-teal-500"
-                        >
-                          <Icon className="w-4 h-4 text-teal-500" />
-                          <span>{tSync(link.label)}</span>
-                          <ArrowRight className="ml-auto w-4 h-4 text-gray-400" />
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
 
                 {isAuthenticated ? (
                   <div className="space-y-3">
@@ -1362,18 +1306,34 @@ const Header: React.FC = () => {
                     if (e.key === 'Enter') {
                       submitSearch();
                       closeMobileSearch();
+                    } else if (e.key === 'Escape') {
+                      setShowSuggestions(false);
+                      closeMobileSearch();
                     }
+                  }}
+                  onFocus={() => {
+                    if (q.length >= 2) {
+                      setSearchSuggestions(generateSearchSuggestions(q));
+                    }
+                    setShowSuggestions(q.length >= 2 || recentSearches.length > 0);
                   }}
                   placeholder={tSync('Search inventory, suppliers, SKU...')}
                   className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none"
                 />
+                <button
+                  onClick={() => setIsImageSearchOpen(true)}
+                  className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+                  aria-label={tSync('Search by image')}
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
               </div>
               <button
                 onClick={() => {
                   submitSearch();
                   closeMobileSearch();
                 }}
-                className="p-2 rounded-full bg-teal-600 text-white"
+                className="p-2 rounded-full bg-teal-600 text-white hover:bg-teal-700 transition-colors"
                 aria-label={tSync('Search')}
               >
                 <ArrowRight className="w-5 h-5" />
@@ -1387,39 +1347,6 @@ const Header: React.FC = () => {
       </div>
     )}
 
-    {/* Mobile bottom navigation */}
-    {!(isMenuOpen || isMobileSearchOpen) && (
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40">
-        <nav className="mx-auto max-w-3xl rounded-t-3xl border border-gray-200/70 dark:border-gray-800/80 bg-white/95 dark:bg-gray-900/95 shadow-[0_-10px_30px_-20px_rgba(0,0,0,0.45)] backdrop-blur px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
-          <div className="grid grid-cols-5 gap-1">
-            {mobileBottomNavItems.map((item) => {
-              const Icon = item.icon;
-              const active = isNavItemActive(item.to);
-              return (
-                <Link
-                  key={item.key}
-                  to={item.to}
-                  className={`flex flex-col items-center gap-1 py-1 text-[11px] font-semibold transition-colors ${
-                    active ? 'text-teal-600' : 'text-slate-500 dark:text-slate-400'
-                  }`}
-                >
-                  <span
-                    className={`flex h-9 w-9 items-center justify-center rounded-2xl border text-xs ${
-                      active
-                        ? 'border-teal-200 bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:border-teal-700'
-                        : 'border-transparent bg-transparent'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </span>
-                  <span className="leading-none">{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-      </div>
-    )}
     
     {/* Image Search Modal */}
     <ImageSearchModal

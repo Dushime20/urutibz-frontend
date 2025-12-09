@@ -46,6 +46,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const handleAddToCartClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
     setShowAddToCartModal(true);
   };
 
@@ -88,12 +89,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <span className="text-sm font-medium"><TranslatedText text="No Image" /></span>
           </div>
           {/* Action Buttons */}
-          <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-50 pointer-events-none">
             {/* Heart Icon - Favorites */}
             <button
               type="button"
               aria-label={favoriteMap[product.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${
                 favoriteMap[product.id] 
                   ? 'bg-red-500 hover:bg-red-600' 
                   : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
@@ -111,12 +112,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <button
                 type="button"
                 aria-label={tSync('Add to cart')}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${
                   isInCart(product.id)
                     ? 'bg-teal-600 hover:bg-teal-700'
                     : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
                 }`}
                 onClick={handleAddToCartClick}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onMouseUp={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
                 <ShoppingCart className={`w-5 h-5 transition-all ${
                   isInCart(product.id)

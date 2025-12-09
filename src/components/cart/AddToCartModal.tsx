@@ -114,51 +114,59 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
   if (!isOpen) return null;
 
   return (
-    <>
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
+        className="fixed inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-md transition-opacity duration-300"
         onClick={onClose}
+        style={{ animation: 'fadeIn 0.2s ease-out' }}
       />
 
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Modal Container */}
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 min-h-screen">
         <div
-          className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+          className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100"
+          style={{ 
+            animation: 'slideUp 0.3s ease-out',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 p-6 flex items-center justify-between z-10">
+          <div className="sticky top-0 bg-white dark:bg-slate-900 border-b-2 border-teal-200 dark:border-teal-800 p-6 flex items-center justify-between z-10 shadow-sm">
             <div className="flex items-center gap-3">
-              <ShoppingCart className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                <ShoppingCart className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+              </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
                 <TranslatedText text="Add to Cart" />
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5 text-gray-600 dark:text-slate-400" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
             {/* Product Info */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700">
               {product.image && (
                 <img
                   src={product.image}
                   alt={product.title}
-                  className="w-20 h-20 rounded-lg object-cover"
+                  className="w-20 h-20 rounded-lg object-cover border-2 border-gray-200 dark:border-slate-700"
                 />
               )}
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-2 text-lg">
                   {product.title}
                 </h3>
-                <p className="text-lg font-bold text-teal-600 dark:text-teal-400">
+                <p className="text-xl font-bold text-teal-600 dark:text-teal-400">
                   {formatCurrency(product.pricePerDay, product.currency)} / <TranslatedText text="day" />
                 </p>
               </div>
@@ -280,31 +288,31 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
             </div>
 
             {/* Total */}
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 rounded-xl p-5 border-2 border-teal-200 dark:border-teal-800">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600 dark:text-slate-400">
+                <span className="text-base font-semibold text-gray-700 dark:text-slate-300">
                   <TranslatedText text="Total" />
                 </span>
-                <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+                <span className="text-3xl font-bold text-teal-600 dark:text-teal-400">
                   {formatCurrency(totalPrice, product.currency)}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-slate-500">
+              <p className="text-sm text-gray-600 dark:text-slate-400 font-medium">
                 {formatCurrency(product.pricePerDay, product.currency)} × {totalDays} {totalDays === 1 ? tSync('day') : tSync('days')}
               </p>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors font-medium"
+                className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-semibold hover:scale-105 active:scale-95"
               >
                 <TranslatedText text="Cancel" />
               </button>
               <button
                 onClick={handleAddToCart}
-                className="flex-1 px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
               >
                 <ShoppingCart className="w-5 h-5" />
                 <TranslatedText text="Add to Cart" />
@@ -313,9 +321,34 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
           </div>
         </div>
       </div>
-    </>
+
+      {/* Add CSS animations */}
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
+    </div>
   );
 };
 
 export default AddToCartModal;
+
+
 

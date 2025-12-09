@@ -21,6 +21,7 @@ import ProductSwiper from '../components/products/ProductSwiper';
 import ProductMap from '../components/map/ProductMap';
 import MessagingModal from '../components/messaging/MessagingModal';
 import AddToCartModal from '../components/cart/AddToCartModal';
+import ReviewsSection from '../components/reviews/ReviewsSection';
 
 
 
@@ -957,32 +958,6 @@ const ItemDetailsPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Reviews */}
-              {productReviews.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3"><TranslatedText text="Reviews" /></h3>
-                  <div className="space-y-4">
-                    {productReviews.map((rev: any, idx: number) => (
-                      <div key={rev.id || idx} className="border rounded-xl p-4 dark:border-slate-700">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
-                            <User className="w-4 h-4" />
-                            <span>{rev.user_name || rev.reviewer || 'Anonymous'}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                            <span className="text-sm font-medium dark:text-white">{rev.rating || rev.overallRating || 0}</span>
-                          </div>
-                        </div>
-                        <p className="text-gray-700 text-sm dark:text-slate-300">{rev.comment || rev.text || ''}</p>
-                        <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
-                          {rev.created_at ? new Date(rev.created_at).toLocaleDateString() : ''}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Recent Interactions */}
               {productInteractions.length > 0 && (
@@ -1137,6 +1112,22 @@ const ItemDetailsPage: React.FC = () => {
                     <Phone className="w-4 h-4" />
                     <TranslatedText text="Call" />
                   </Button>
+                </div>
+
+                {/* Reviews Section */}
+                <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
+                  <ReviewsSection
+                    reviews={productReviews}
+                    productId={item?.id || ''}
+                    ownerId={item?.owner_id || item?.user_id}
+                    onReviewAdded={() => {
+                      // Refetch reviews after a new review is added
+                      const token = localStorage.getItem('token') || undefined;
+                      fetchProductReviews(item.id, token).then((reviews) => {
+                        setProductReviews(Array.isArray(reviews) ? reviews : []);
+                      });
+                    }}
+                  />
                 </div>
               </div>
             </div>

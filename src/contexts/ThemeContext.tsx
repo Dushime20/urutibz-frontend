@@ -172,12 +172,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, token })
 
   // Load theme from API
   const loadTheme = useCallback(async () => {
+    // Prefer locally saved theme immediately to avoid visual flicker/revert
+    const savedThemeRaw = typeof window !== 'undefined' ? localStorage.getItem('theme-settings') : null;
+    
     try {
       setIsLoading(true);
       setError(null);
       
-      // Prefer locally saved theme immediately to avoid visual flicker/revert
-      const savedThemeRaw = typeof window !== 'undefined' ? localStorage.getItem('theme-settings') : null;
       if (savedThemeRaw) {
         try {
           const parsed = JSON.parse(savedThemeRaw);

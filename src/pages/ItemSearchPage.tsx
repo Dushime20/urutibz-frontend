@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Star, Heart, MapPin, Calendar, Clock, Shield, TrendingUp, Eye, MousePointer, ThumbsUp, Search, Filter, X, Camera, Laptop, Car, Gamepad2, Headphones, Watch, Package, Grid, List, ChevronDown, AlertCircle, Truck } from 'lucide-react';
+import { Star, Heart, MapPin, Calendar, Clock, Shield, TrendingUp, Eye, MousePointer, ThumbsUp, Search, Filter, X, Camera, Laptop, Car, Gamepad2, Headphones, Watch, Package, Grid, List, ChevronDown, AlertCircle, Truck, ShoppingCart, Check } from 'lucide-react';
+import MapSearchView from '../components/map/MapSearchView';
 
 import { fetchAvailableProducts, fetchActiveDailyPrice, fetchCategories, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
@@ -12,6 +13,8 @@ import { useTranslation } from '../hooks/useTranslation';
 import { TranslatedText } from '../components/translated-text';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
+import AddToCartModal from '../components/cart/AddToCartModal';
 
 // Product type definition with better typing
 type Product = {
@@ -66,6 +69,7 @@ const ItemSearchPage: React.FC = () => {
   const { tSync } = useTranslation();
   const { showToast } = useToast();
   const { isAuthenticated } = useAuth();
+  const { isInCart } = useCart();
   
   // Check if we have image search results from navigation state
   const imageSearchResults = (location.state as any)?.imageSearchResults as ImageSearchResult[] | undefined;
@@ -80,8 +84,9 @@ const ItemSearchPage: React.FC = () => {
     max: Number(searchParams.get('priceMax') || 0),
   });
   const [sortBy, setSortBy] = useState('relevance');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [mapLocation, setMapLocation] = useState<{ lat: number; lng: number; radiusKm: number } | null>(null);
   
      // Results state
    const [items, setItems] = useState<Product[]>([]);
@@ -90,11 +95,13 @@ const ItemSearchPage: React.FC = () => {
    const [totalResults, setTotalResults] = useState(0);
    const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
    const [itemLocations, setItemLocations] = useState<{ [id: string]: { city: string | null, country: string | null } }>({});
-   const [locationsLoading, setLocationsLoading] = useState<Record<string, boolean>>({});
-   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
-   
-   // Categories state
-   const [itemCategories, setItemCategories] = useState<Array<{ id: string; name: string; icon?: string }>>([]);
+  const [locationsLoading, setLocationsLoading] = useState<Record<string, boolean>>({});
+  const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
+  const [selectedProductForCart, setSelectedProductForCart] = useState<Product | null>(null);
+  
+  // Categories state
+  const [itemCategories, setItemCategories] = useState<Array<{ id: string; name: string; icon?: string }>>([]);
    
    // Handle image search results
    useEffect(() => {
@@ -104,6 +111,11 @@ const ItemSearchPage: React.FC = () => {
          id: result.product.id,
          title: result.product.title,
          description: result.product.description,
+         price: typeof result.product.base_price_per_day === 'number' 
+           ? result.product.base_price_per_day 
+           : (typeof result.product.base_price_per_day === 'string' 
+             ? parseFloat(result.product.base_price_per_day) || 0 
+             : 0),
          base_price_per_day: String(result.product.base_price_per_day),
          base_currency: result.product.currency,
          images: [result.image.url],
@@ -138,15 +150,19 @@ const ItemSearchPage: React.FC = () => {
         const result = await fetchAvailableProducts(token, true);
         
         if (result.error) {
+          console.error('Error fetching products:', result.error);
           setError(result.error);
+          // Don't return - continue with empty array to show empty state
+          setItems([]);
+          setTotalResults(0);
           return;
         }
         
         const productList = result.data || [];
         setTotalResults(result.total || productList.length);
         
-                 // Process item locations - will be handled by separate useEffect
-         const processedItems = productList;
+        // Process item locations - will be handled by separate useEffect
+        const processedItems = productList;
 
         // Enrich with active daily price and currency
         const enrichedItems = await Promise.all(processedItems.map(async (item: Product) => {
@@ -188,8 +204,14 @@ const ItemSearchPage: React.FC = () => {
 
         setProductImages(imagesMap);
         setItems(enrichedItems);
-      } catch (err) {
-        setError('Failed to load items');
+      } catch (err: any) {
+        console.error('Error fetching items:', err);
+        const errorMessage = err?.message || 'Failed to load items. Please try again.';
+        setError(errorMessage);
+        // Set empty state to prevent blank page
+        setItems([]);
+        setTotalResults(0);
+        setProductImages({});
       } finally {
         setLoading(false);
       }
@@ -349,6 +371,20 @@ const ItemSearchPage: React.FC = () => {
      })();
    }, []);
 
+  // Initialize map location from URL params
+  useEffect(() => {
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+    const radiusKm = searchParams.get('radiusKm');
+    if (lat && lng) {
+      setMapLocation({
+        lat: Number(lat),
+        lng: Number(lng),
+        radiusKm: radiusKm ? Number(radiusKm) : 25
+      });
+    }
+  }, []);
+
   // Update URL params
   useEffect(() => {
     const params = new URLSearchParams();
@@ -357,11 +393,18 @@ const ItemSearchPage: React.FC = () => {
     if (selectedLocation !== 'all') params.set('location', selectedLocation);
     if (priceRange.min > 0) params.set('priceMin', String(priceRange.min));
     if (priceRange.max > 0) params.set('priceMax', String(priceRange.max));
+    if (mapLocation) {
+      params.set('lat', mapLocation.lat.toString());
+      params.set('lng', mapLocation.lng.toString());
+      params.set('radiusKm', mapLocation.radiusKm.toString());
+      params.set('nearMe', 'true');
+    }
     setSearchParams(params);
-  }, [searchQuery, selectedCategory, selectedLocation, priceRange.min, priceRange.max, setSearchParams]);
+  }, [searchQuery, selectedCategory, selectedLocation, priceRange.min, priceRange.max, mapLocation, setSearchParams]);
 
   // Derived filtered and sorted items based on selected filters
   const filteredItems = React.useMemo(() => {
+    try {
     const query = (searchQuery || '').toLowerCase();
     const selectedCat = (selectedCategory || '').toLowerCase();
     const selectedLoc = selectedLocation;
@@ -421,6 +464,10 @@ const ItemSearchPage: React.FC = () => {
     });
 
     return list;
+    } catch (error) {
+      console.error('Error filtering items:', error);
+      return []; // Return empty array on error to prevent blank page
+    }
   }, [items, itemLocations, searchQuery, selectedCategory, selectedLocation, priceRange.min, priceRange.max, sortBy]);
 
   const handleItemClick = (itemId: string) => {
@@ -456,6 +503,27 @@ const ItemSearchPage: React.FC = () => {
     setPriceRange({ min: 0, max: 0 });
     setSortBy('relevance');
   };
+
+  // Early return for critical errors to prevent blank page
+  if (error && items.length === 0 && !loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900 flex items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <TranslatedText text="Unable to Load Items" />
+          </h2>
+          <p className="text-gray-600 dark:text-slate-400 mb-6">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-semibold"
+          >
+            <TranslatedText text="Reload Page" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
@@ -557,6 +625,18 @@ const ItemSearchPage: React.FC = () => {
                 >
                   <List className="w-4 h-4" />
                   <span className="hidden sm:inline"><TranslatedText text="List" /></span>
+                </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-4 py-3 flex items-center gap-2 transition-all duration-200 ${
+                    viewMode === 'map' 
+                      ? 'bg-my-primary dark:bg-teal-500 text-white' 
+                      : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-600'
+                  }`}
+                  aria-label="Map view"
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span className="hidden sm:inline"><TranslatedText text="Map" /></span>
                 </button>
               </div>
             </div>
@@ -671,11 +751,33 @@ const ItemSearchPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Results Grid/List */}
+        {/* Results Grid/List/Map */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-my-primary dark:border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-gray-600 dark:text-slate-400 font-medium"><TranslatedText text="Loading items..." /></p>
+          </div>
+        ) : viewMode === 'map' ? (
+          <div className="relative" style={{ height: 'calc(100vh - 300px)', minHeight: '600px' }}>
+            <MapSearchView
+              products={filteredItems.map(item => ({
+                ...item,
+                images: productImages[item.id] || []
+              }))}
+              onLocationSelect={(lat, lng, radiusKm) => {
+                setMapLocation({ lat, lng, radiusKm });
+                // Update URL params
+                const params = new URLSearchParams(searchParams);
+                params.set('lat', lat.toString());
+                params.set('lng', lng.toString());
+                params.set('radiusKm', radiusKm.toString());
+                params.set('nearMe', 'true');
+                setSearchParams(params);
+              }}
+              selectedLocation={mapLocation}
+              onProductClick={(productId) => handleItemClick(productId)}
+              height="100%"
+            />
           </div>
         ) : filteredItems.length > 0 ? (
                      <div className={viewMode === 'grid' 
@@ -715,48 +817,90 @@ const ItemSearchPage: React.FC = () => {
                        </svg>
                        <span className="text-xs font-medium">No Image</span>
                      </div>
-                     {/* Heart Icon - Favorites */}
-                     <button
-                       type="button"
-                       aria-label={favoriteMap[item.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
-                       className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 shadow-lg ${
-                         favoriteMap[item.id] 
-                           ? 'bg-red-500 hover:bg-red-600' 
-                           : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
-                       }`}
-                       onClick={async (e) => {
-                         e.preventDefault();
-                         e.stopPropagation();
-                         const token = localStorage.getItem('token') || undefined;
-                         if (!token || !isAuthenticated) {
-                           showToast(tSync('Please log in to add products to favorites'), 'info');
-                           navigate('/login');
-                           return;
-                         }
-                         const currentlyFav = Boolean(favoriteMap[item.id]);
-                         // optimistic update
-                         setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
-                         try {
-                           if (currentlyFav) {
-                             await removeUserFavorite(item.id, token);
-                             showToast(tSync('Removed from favorites'), 'success');
-                           } else {
-                             await addUserFavorite(item.id, token);
-                             showToast(tSync('Added to favorites'), 'success');
+                     {/* Action Buttons */}
+                     <div className="absolute top-3 right-3 flex flex-col gap-2 z-50 pointer-events-none">
+                       {/* Heart Icon - Favorites */}
+                       <button
+                         type="button"
+                         aria-label={favoriteMap[item.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
+                         className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${
+                           favoriteMap[item.id] 
+                             ? 'bg-red-500 hover:bg-red-600' 
+                             : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
+                         }`}
+                         onClick={async (e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           e.nativeEvent.stopImmediatePropagation();
+                           const token = localStorage.getItem('token') || undefined;
+                           if (!token || !isAuthenticated) {
+                             showToast(tSync('Please log in to add products to favorites'), 'info');
+                             navigate('/login');
+                             return;
                            }
-                         } catch (error) {
-                           // revert on failure
-                           setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
-                           showToast(tSync('Failed to update favorites'), 'error');
-                         }
-                       }}
-                     >
-                       <Heart className={`w-5 h-5 transition-all ${
-                         favoriteMap[item.id] 
-                           ? 'text-white fill-current' 
-                           : 'text-gray-700 dark:text-slate-300'
-                       }`} />
-                     </button>
+                           const currentlyFav = Boolean(favoriteMap[item.id]);
+                           // optimistic update
+                           setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
+                           try {
+                             if (currentlyFav) {
+                               await removeUserFavorite(item.id, token);
+                               showToast(tSync('Removed from favorites'), 'success');
+                             } else {
+                               await addUserFavorite(item.id, token);
+                               showToast(tSync('Added to favorites'), 'success');
+                             }
+                           } catch (error) {
+                             // revert on failure
+                             setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
+                             showToast(tSync('Failed to update favorites'), 'error');
+                           }
+                         }}
+                       >
+                         <Heart className={`w-5 h-5 transition-all ${
+                           favoriteMap[item.id] 
+                             ? 'text-white fill-current' 
+                             : 'text-gray-700 dark:text-slate-300'
+                         }`} />
+                       </button>
+                       {/* Add to Cart Icon */}
+                       {item.base_price_per_day && parseFloat(String(item.base_price_per_day)) > 0 && (
+                         <button
+                           type="button"
+                           aria-label={tSync('Add to cart')}
+                           className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${
+                             isInCart(item.id)
+                               ? 'bg-teal-600 hover:bg-teal-700'
+                               : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
+                           }`}
+                           onClick={(e) => {
+                             e.preventDefault();
+                             e.stopPropagation();
+                             e.nativeEvent.stopImmediatePropagation();
+                             if (!isAuthenticated) {
+                               showToast(tSync('Please log in to add items to cart'), 'info');
+                               navigate('/login');
+                               return;
+                             }
+                             setSelectedProductForCart(item);
+                             setShowAddToCartModal(true);
+                           }}
+                           onMouseDown={(e) => {
+                             e.preventDefault();
+                             e.stopPropagation();
+                           }}
+                           onMouseUp={(e) => {
+                             e.preventDefault();
+                             e.stopPropagation();
+                           }}
+                         >
+                           {isInCart(item.id) ? (
+                             <Check className="w-5 h-5 text-white" />
+                           ) : (
+                             <ShoppingCart className="w-5 h-5 text-gray-700 dark:text-slate-300" />
+                           )}
+                         </button>
+                       )}
+                     </div>
                    </div>
 
                    {/* Content */}
@@ -861,46 +1005,81 @@ const ItemSearchPage: React.FC = () => {
                           <h3 className="font-bold text-gray-900 dark:text-slate-100 text-lg mb-1">{item.title || item.name}</h3>
                           <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2 leading-relaxed">{item.description}</p>
                         </div>
-                                                 <button 
-                           className={`p-2 rounded-lg transition-all ml-4 shadow-sm ${
-                             favoriteMap[item.id]
-                               ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
-                               : 'hover:bg-gray-100 dark:hover:bg-slate-700'
-                           }`}
-                           onClick={async (e) => {
-                             e.preventDefault();
-                             e.stopPropagation();
-                             const token = localStorage.getItem('token') || undefined;
-                             if (!token || !isAuthenticated) {
-                               showToast(tSync('Please log in to add products to favorites'), 'info');
-                               navigate('/login');
-                               return;
-                             }
-                             const currentlyFav = Boolean(favoriteMap[item.id]);
-                             // optimistic update
-                             setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
-                             try {
-                               if (currentlyFav) {
-                                 await removeUserFavorite(item.id, token);
-                                 showToast(tSync('Removed from favorites'), 'success');
-                               } else {
-                                 await addUserFavorite(item.id, token);
-                                 showToast(tSync('Added to favorites'), 'success');
-                               }
-                             } catch (error) {
-                               // revert on failure
-                               setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
-                               showToast(tSync('Failed to update favorites'), 'error');
-                             }
-                           }}
-                           aria-label={favoriteMap[item.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
-                         >
-                           <Heart className={`w-5 h-5 transition-all ${
-                             favoriteMap[item.id] 
-                               ? 'text-red-500 fill-current' 
-                               : 'text-gray-600 dark:text-slate-400 hover:text-red-500'
-                           }`} />
-                         </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            className={`p-2 rounded-lg transition-all shadow-sm ${
+                              favoriteMap[item.id]
+                                ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                                : 'hover:bg-gray-100 dark:hover:bg-slate-700'
+                            }`}
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const token = localStorage.getItem('token') || undefined;
+                              if (!token || !isAuthenticated) {
+                                showToast(tSync('Please log in to add products to favorites'), 'info');
+                                navigate('/login');
+                                return;
+                              }
+                              const currentlyFav = Boolean(favoriteMap[item.id]);
+                              // optimistic update
+                              setFavoriteMap(prev => ({ ...prev, [item.id]: !currentlyFav }));
+                              try {
+                                if (currentlyFav) {
+                                  await removeUserFavorite(item.id, token);
+                                  showToast(tSync('Removed from favorites'), 'success');
+                                } else {
+                                  await addUserFavorite(item.id, token);
+                                  showToast(tSync('Added to favorites'), 'success');
+                                }
+                              } catch (error) {
+                                // revert on failure
+                                setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
+                                showToast(tSync('Failed to update favorites'), 'error');
+                              }
+                            }}
+                            aria-label={favoriteMap[item.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
+                          >
+                            <Heart className={`w-5 h-5 transition-all ${
+                              favoriteMap[item.id] 
+                                ? 'text-red-500 fill-current' 
+                                : 'text-gray-600 dark:text-slate-400 hover:text-red-500'
+                            }`} />
+                          </button>
+                          {/* Add to Cart Icon - List View */}
+                          {item.base_price_per_day && parseFloat(String(item.base_price_per_day)) > 0 && (
+                            <button
+                              type="button"
+                              aria-label={tSync('Add to cart')}
+                              className={`p-2 rounded-lg transition-all shadow-sm ${
+                                isInCart(item.id)
+                                  ? 'bg-teal-600 hover:bg-teal-700'
+                                  : 'hover:bg-gray-100 dark:hover:bg-slate-700'
+                              }`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (!isAuthenticated) {
+                                  showToast(tSync('Please log in to add items to cart'), 'info');
+                                  navigate('/login');
+                                  return;
+                                }
+                                setSelectedProductForCart(item);
+                                setShowAddToCartModal(true);
+                              }}
+                            >
+                              {isInCart(item.id) ? (
+                                <Check className="w-5 h-5 text-white" />
+                              ) : (
+                                <ShoppingCart className={`w-5 h-5 transition-all ${
+                                  isInCart(item.id)
+                                    ? 'text-white'
+                                    : 'text-gray-600 dark:text-slate-400 hover:text-teal-600'
+                                }`} />
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-6 mb-3">
@@ -989,6 +1168,30 @@ const ItemSearchPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add to Cart Modal */}
+      {showAddToCartModal && selectedProductForCart && (
+        <AddToCartModal
+          isOpen={showAddToCartModal}
+          onClose={() => {
+            setShowAddToCartModal(false);
+            setSelectedProductForCart(null);
+          }}
+          product={{
+            id: selectedProductForCart.id,
+            title: selectedProductForCart.title || selectedProductForCart.name || '',
+            image: productImages[selectedProductForCart.id]?.[0],
+            pricePerDay: typeof selectedProductForCart.base_price_per_day === 'string' 
+              ? parseFloat(selectedProductForCart.base_price_per_day) 
+              : (selectedProductForCart.base_price_per_day || 0),
+            currency: selectedProductForCart.base_currency || 'USD',
+            ownerId: selectedProductForCart.owner_id || '',
+            categoryId: selectedProductForCart.category_id,
+            pickupAvailable: true,
+            deliveryAvailable: selectedProductForCart.deliveryAvailable === true,
+          }}
+        />
+      )}
     </div>
   );
 };

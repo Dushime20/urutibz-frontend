@@ -1004,7 +1004,7 @@ const HomePage: React.FC = () => {
           )}
         </div>
 
-        <section className="max-w-9xl mx-auto px-6 sm:px-10 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
+        {/* <section className="max-w-9xl mx-auto px-6 sm:px-10 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
           <div
             className="rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 shadow-xl relative"
             style={{
@@ -1088,10 +1088,10 @@ const HomePage: React.FC = () => {
             </div>
           </div>
         </section> 
-
+ */}
 
         {/* Enterprise trust and quick actions */}
-        <section className="max-w-9xl mx-auto px-6 lg:px-10">
+        {/* <section className="max-w-9xl mx-auto px-6 lg:px-10">
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-lg space-y-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex items-center gap-4">
@@ -1141,10 +1141,10 @@ const HomePage: React.FC = () => {
               ))}
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Featured stories */}
-        <section className="max-w-9xl mx-auto px-6 lg:px-10">
+        {/* <section className="max-w-9xl mx-auto px-6 lg:px-10">
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xl space-y-8">
             <div className="flex flex-col gap-2">
               <p className="text-sm text-my-primary font-semibold uppercase tracking-[0.2em]"><TranslatedText text="Featured sellers" /></p>
@@ -1258,7 +1258,7 @@ const HomePage: React.FC = () => {
               ))}
             </div>
           </div>
-        </section>
+        </section> */}
 
        
       </div>

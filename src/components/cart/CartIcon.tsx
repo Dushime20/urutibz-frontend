@@ -29,3 +29,5 @@ const CartIcon: React.FC<CartIconProps> = ({ onClick, className = '' }) => {
 
 export default CartIcon;
 
+
+
