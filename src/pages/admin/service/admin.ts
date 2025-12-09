@@ -437,7 +437,7 @@ export async function fetchModerationStats(token?: string): Promise<any> {
 
 export async function fetchProductModerationActions(productId: string, token?: string): Promise<any> {
   try {
-    const response = await axios.get(`${API_BASE_URL}/admin/moderation/products/${productId}/actions`, {
+    const response = await axios.get(`${API_BASE_URL}/admin/moderation/actions/product/${productId}`, {
       headers: createAuthHeaders(token)
     });
     return processApiResponse(response);

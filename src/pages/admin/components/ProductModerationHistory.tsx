@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Clock, AlertTriangle, CheckCircle, XCircle, Flag, Eye, Package } from 'lucide-react';
-import { fetchProductModerationActions } from '../service';
+import { Shield, Clock, AlertTriangle, CheckCircle, XCircle, Flag, Eye, Package, X } from 'lucide-react';
+import { fetchProductModerationActions, moderateAdminProduct } from '../service';
 import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
+import { TranslatedText } from '../../../components/translated-text';
 
 interface ProductModerationAction {
   id: string;
   resourceType: string;
   resourceId: string;
-  action: 'approve' | 'reject' | 'flag' | 'quarantine';
-  reason: string | null;
+  action: 'approve' | 'reject' | 'flag' | 'quarantine' | 'delete' | 'draft' | 'ban' | 'suspend' | 'activate' | 'warn';
+  reason?: string | null;
   moderatorId: string;
-  metadata: {
-    newStatus: string;
-    previousStatus: string;
+  metadata?: {
+    newStatus?: string;
+    previousStatus?: string;
+    [key: string]: any;
   };
-  createdAt: string;
+  createdAt: string | Date;
 }
 
 interface ProductModerationHistoryProps {
@@ -34,6 +36,14 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<ProductModerationAction | null>(null);
+  
+  // Moderation form state
+  const [moderateOpen, setModerateOpen] = useState(false);
+  const [moderationAction, setModerationAction] = useState<'approve' | 'reject' | 'flag' | 'quarantine'>('approve');
+  const [moderationReason, setModerationReason] = useState('');
+  const [moderateLoading, setModerateLoading] = useState(false);
+  const [moderateError, setModerateError] = useState<string | null>(null);
+  const [moderationSuccess, setModerationSuccess] = useState(false);
 
   useEffect(() => {
     if (productId) {
@@ -55,7 +65,9 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
       }
       
       const response = await fetchProductModerationActions(productId, token);
-      setActions(response.data || []);
+      // processApiResponse already extracts the data, so response is the array directly
+      const actionsArray = Array.isArray(response) ? response : (response?.data || []);
+      setActions(actionsArray);
     } catch (err: any) {
       if (err.message.includes('Authentication token')) {
         setError('Please log in again to access moderation history');
@@ -121,8 +133,9 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -165,8 +178,15 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
         </div>
         <div className="flex items-center space-x-3">
           <button
-            onClick={loadModerationHistory}
+            onClick={() => setModerateOpen(true)}
             className="bg-my-primary hover:bg-my-primary/90 text-white px-4 py-2 rounded-xl transition-colors flex items-center"
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            <TranslatedText text="Moderate Product" />
+          </button>
+          <button
+            onClick={loadModerationHistory}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors flex items-center"
           >
             <Clock className="w-4 h-4 mr-2" />
             Refresh
@@ -226,18 +246,20 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
                       </div>
                       
                       {/* Status Change */}
-                      <div className="mb-4">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Status changed from:</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(action.metadata.previousStatus)}`}>
-                            {action.metadata.previousStatus}
-                          </span>
-                          <span className="text-gray-400">→</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(action.metadata.newStatus)}`}>
-                            {action.metadata.newStatus}
-                          </span>
+                      {action.metadata?.previousStatus && action.metadata?.newStatus && (
+                        <div className="mb-4">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Status changed from:</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(action.metadata.previousStatus)}`}>
+                              {action.metadata.previousStatus}
+                            </span>
+                            <span className="text-gray-400">→</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(action.metadata.newStatus)}`}>
+                              {action.metadata.newStatus}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                       
                       {/* Reason */}
                       {action.reason && (
@@ -329,6 +351,142 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
                 </div>
                 <div className="text-sm text-yellow-700 dark:text-yellow-300">Flags/Quarantine</div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Moderate Product Modal */}
+      {moderateOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !moderateLoading && !moderationSuccess) {
+              setModerateOpen(false);
+              setModerationAction('approve');
+              setModerationReason('');
+              setModerateError(null);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <TranslatedText text="Moderate Product" />
+              </h3>
+              <button
+                onClick={() => {
+                  setModerateOpen(false);
+                  setModerationAction('approve');
+                  setModerationReason('');
+                  setModerateError(null);
+                }}
+                disabled={moderateLoading || moderationSuccess}
+                className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <TranslatedText text="Action" />
+                </label>
+                <select
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  value={moderationAction}
+                  onChange={e => setModerationAction(e.target.value as any)}
+                  disabled={moderationSuccess}
+                >
+                  <option value="approve"><TranslatedText text="Approve" /></option>
+                  <option value="reject"><TranslatedText text="Reject" /></option>
+                  <option value="flag"><TranslatedText text="Flag" /></option>
+                  <option value="quarantine"><TranslatedText text="Quarantine" /></option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <TranslatedText text="Reason" /> (<TranslatedText text="Optional" />)
+                </label>
+                <textarea
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 h-24 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
+                  placeholder="Enter reason for moderation"
+                  value={moderationReason}
+                  onChange={e => setModerationReason(e.target.value)}
+                  disabled={moderationSuccess}
+                />
+              </div>
+              {moderationSuccess ? (
+                <div className="text-center py-4">
+                  <div className="flex items-center justify-center text-green-600 dark:text-green-400 text-lg font-semibold mb-2">
+                    <CheckCircle className="w-6 h-6 mr-2" />
+                    <TranslatedText text="Product moderated successfully!" />
+                  </div>
+                  <div className="text-gray-600 dark:text-gray-400 text-sm">
+                    <TranslatedText text="Closing in a moment..." />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={() => {
+                        setModerateOpen(false);
+                        setModerationAction('approve');
+                        setModerationReason('');
+                        setModerateError(null);
+                      }}
+                      className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                      disabled={moderateLoading}
+                    >
+                      <TranslatedText text="Cancel" />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setModerateLoading(true);
+                        setModerateError(null);
+                        try {
+                          const token = localStorage.getItem('token') || undefined;
+                          await moderateAdminProduct(productId, { action: moderationAction, reason: moderationReason }, token);
+                          
+                          setModerationSuccess(true);
+                          
+                          setTimeout(() => {
+                            setModerationSuccess(false);
+                            setModerateOpen(false);
+                            setModerationAction('approve');
+                            setModerationReason('');
+                            // Reload moderation history
+                            loadModerationHistory();
+                          }, 1500);
+                        } catch (err: any) {
+                          setModerateError(err.message || 'Failed to moderate product');
+                        } finally {
+                          setModerateLoading(false);
+                        }
+                      }}
+                      disabled={moderateLoading || moderationSuccess}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        moderateLoading || moderationSuccess
+                          ? 'bg-gray-400 cursor-not-allowed text-white'
+                          : 'bg-my-primary hover:bg-my-primary/90 text-white'
+                      }`}
+                    >
+                      {moderateLoading ? (
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <TranslatedText text="Submitting..." />
+                        </div>
+                      ) : (
+                        <TranslatedText text="Submit" />
+                      )}
+                    </button>
+                  </div>
+                  {moderateError && (
+                    <div className="text-red-600 dark:text-red-400 mt-2 text-sm">{moderateError}</div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

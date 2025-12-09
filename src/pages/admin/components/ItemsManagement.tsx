@@ -1439,19 +1439,10 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                                 setActionMenuOpen(null);
                                 setModerationHistoryProductId(item.id);
                               }}
-                              className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center"
+                              className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center"
                             >
                               <Shield className="w-4 h-4 mr-2" />
                               Moderation History
-                            </button>
-                            <button
-                              onClick={() => {
-                                setActionMenuOpen(null);
-                                // You can add edit logic here
-                              }}
-                              className="block w-full text-left px-4 py-2 text-sm text-my-primary hover:bg-my-primary/10"
-                            >
-                              <TranslatedText text="Edit" />
                             </button>
                           </div>
                         )}
