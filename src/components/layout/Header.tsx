@@ -1321,7 +1321,10 @@ const Header: React.FC = () => {
                   className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none"
                 />
                 <button
-                  onClick={() => setIsImageSearchOpen(true)}
+                  onClick={() => {
+                    setIsImageSearchOpen(true);
+                    closeMobileSearch();
+                  }}
                   className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
                   aria-label={tSync('Search by image')}
                 >
