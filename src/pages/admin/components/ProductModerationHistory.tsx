@@ -247,18 +247,18 @@ const ProductModerationHistory: React.FC<ProductModerationHistoryProps> = ({
                       
                       {/* Status Change */}
                       {action.metadata?.previousStatus && action.metadata?.newStatus && (
-                        <div className="mb-4">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Status changed from:</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(action.metadata.previousStatus)}`}>
-                              {action.metadata.previousStatus}
-                            </span>
-                            <span className="text-gray-400">→</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(action.metadata.newStatus)}`}>
-                              {action.metadata.newStatus}
-                            </span>
-                          </div>
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Status changed from:</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(action.metadata.previousStatus)}`}>
+                            {action.metadata.previousStatus}
+                          </span>
+                          <span className="text-gray-400">→</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(action.metadata.newStatus)}`}>
+                            {action.metadata.newStatus}
+                          </span>
                         </div>
+                      </div>
                       )}
                       
                       {/* Reason */}

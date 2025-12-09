@@ -17,26 +17,45 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Bell
+  Bell,
+  LogOut,
+  Package
 } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { TranslatedText } from '../../../components/translated-text';
 import { useMessaging } from '../../../hooks/useMessaging';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface MyAccountSidebarProps {
   activeTab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile' | 'notifications';
   setActiveTab: (tab: 'overview' | 'bookings' | 'listings' | 'wallet' | 'inspections' | 'reviews' | 'messages' | 'settings' | 'risk-assessment' | 'handover-return' | 'profile' | 'notifications') => void;
   className?: string;
+  onNavigate?: () => void; // Callback to close sidebar on mobile when navigating
 }
 
 const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({ 
   activeTab, 
   setActiveTab, 
-  className = '' 
+  className = '',
+  onNavigate
 }) => {
   const { tSync } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { unreadCount, loadUnreadCount } = useMessaging();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Load unread count on mount
   useEffect(() => {
@@ -58,22 +77,22 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
   ];
 
   return (
-    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-full dark:bg-slate-900 dark:border-slate-700 transition-all duration-300 relative flex flex-col ${className}`}>
+    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-full dark:bg-slate-900 dark:border-slate-700 transition-all duration-300 relative flex flex-col overflow-hidden mt-1 md:mt-0 ${className}`}>
       {/* Toggle Button */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
+        className="hidden md:flex absolute -right-3  z-10 w-6 h-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full items-center justify-center shadow-md hover:shadow-lg transition-shadow"
         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? (
-          <ChevronRight className="w-4 h-4 text-gray-600 dark:text-slate-300" />
+          <ChevronRight className="w-4 h-4 text-black dark:text-slate-300" />
         ) : (
-          <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-slate-300" />
+          <ChevronLeft className="w-4 h-4 text-black dark:text-slate-300" />
         )}
       </button>
 
       {/* Header - Fixed */}
-      <div className={`p-6 border-b border-gray-200 dark:border-slate-700 flex-shrink-0 ${isCollapsed ? 'px-3' : ''}`}>
+      <div className={`p-6 mt-0 border-b border-gray-200 dark:border-slate-700 flex-shrink-0 ${isCollapsed ? 'px-3' : ''}`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
           <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center dark:bg-teal-900/30 flex-shrink-0">
             {isCollapsed ? (
@@ -92,13 +111,14 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
       </div>
 
       {/* Navigation - Scrollable */}
-      <nav className={`p-4 pb-24 md:pb-4 space-y-2 flex-1 overflow-y-auto overscroll-contain scrollbar-hide ${isCollapsed ? 'px-2' : ''}`}>
+      <nav className={`p-4 mb-10 space-y-2 flex-1 overflow-y-auto overscroll-contain scrollbar-hide min-h-0 ${isCollapsed ? 'px-2' : ''}`}>
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.tab;
           
-          return (
-            <button
+          return (<>
+
+          <button
               key={item.tab}
               onClick={() => setActiveTab(item.tab as any)}
               title={isCollapsed ? tSync(item.label) : ''}
@@ -137,16 +157,69 @@ const MyAccountSidebar: React.FC<MyAccountSidebarProps> = ({
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               )}
             </button>
+       
+          </>
+            
+            
           );
         })}
+
+            {/* Footer - Browse Items and Logout (especially visible on mobile) */}
+      <div className={`flex-shrink-0 p-4  border-t border-gray-200 dark:border-slate-700 space-y-2 ${isCollapsed ? 'px-2' : ''}`}>
+        {/* Browse Items Link */}
+        <button
+          onClick={() => {
+            navigate('/items');
+            if (isMobile && onNavigate) {
+              // Close sidebar on mobile after navigation
+              onNavigate();
+            }
+          }}
+          title={isCollapsed ? tSync('Browse Items') : ''}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg text-left transition-colors duration-200 group text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200`}
+        >
+          <Package
+            className="w-5 h-5 flex-shrink-0 text-gray-400 dark:text-slate-500"
+          />
+          {!isCollapsed && (
+            <span className="font-medium dark:text-slate-200 truncate">
+              <TranslatedText text="Browse Items" />
+            </span>
+          )}
+          {isCollapsed && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+              <TranslatedText text="Browse Items" />
+            </div>
+          )}
+        </button>
+
+        {/* Logout Button */}
+        <button
+          onClick={() => {
+            logout();
+            navigate('/');
+          }}
+          title={isCollapsed ? tSync('Logout') : ''}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg text-left transition-colors duration-200 group text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300`}
+        >
+          <LogOut
+            className="w-5 h-5 flex-shrink-0 text-red-500 dark:text-red-400"
+          />
+          {!isCollapsed && (
+            <span className="font-medium truncate">
+              <TranslatedText text="Logout" />
+            </span>
+          )}
+          {isCollapsed && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+              <TranslatedText text="Logout" />
+            </div>
+          )}
+        </button>
+        </div>
       </nav>
 
-      {/* Footer */}
-      {/* <div className="flex-shrink-0 p-4 border-t border-gray-200">
-        <div className="text-xs text-gray-500 text-center">
-          © 2025 Urutibz Platform
-        </div>
-      </div> */}
+     
     </div>
   );
 };

@@ -206,10 +206,23 @@ const DashboardPage: React.FC = () => {
   const [confirmingBookingId, setConfirmingBookingId] = useState<string | null>(null);
   const [recentlyConfirmedBookings, setRecentlyConfirmedBookings] = useState<Record<string, boolean>>({});
   
-  const pendingBookings = useMemo(
-    () => userBookings.filter((booking) => booking.status === 'pending').length,
-    [userBookings]
-  );
+  // Calculate recent bookings count (created in last 7 days)
+  const recentBookingCount = useMemo(() => {
+    if (!userBookings.length) return 0;
+    
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    return userBookings.filter((booking) => {
+      if (!booking.created_at) return false;
+      try {
+        const bookingDate = new Date(booking.created_at);
+        return bookingDate >= weekAgo && bookingDate <= now;
+      } catch {
+        return false;
+      }
+    }).length;
+  }, [userBookings]);
 
   // Load notifications for badge count
   useEffect(() => {
@@ -243,7 +256,7 @@ const DashboardPage: React.FC = () => {
         icon: Calendar,
         onPress: () => setActiveTab('bookings'),
         active: activeTab === 'bookings',
-        badge: pendingBookings
+        badge: recentBookingCount
       },
       {
         key: 'wallet',
@@ -267,7 +280,7 @@ const DashboardPage: React.FC = () => {
         onPress: () => setSidebarOpen(true)
       }
     ],
-    [activeTab, pendingBookings, unreadNotificationCount, tSync]
+    [activeTab, recentBookingCount, unreadNotificationCount, tSync]
   );
 
   useEffect(() => {
@@ -1239,11 +1252,15 @@ const DashboardPage: React.FC = () => {
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 flex md:hidden">
             <div className="fixed inset-0 bg-black/40" onClick={() => setSidebarOpen(false)}></div>
-            <div className="relative ml-0 h-full w-72 bg-white dark:bg-slate-900 shadow-xl transform transition-transform duration-300 translate-x-0">
+            <div className="relative ml-0 h-full w-auto bg-white dark:bg-slate-900 shadow-xl transform transition-transform duration-300 translate-x-0">
               <div className="p-3 flex justify-end">
                 <button onClick={() => setSidebarOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
               </div>
-              <MyAccountSidebar activeTab={activeTab} setActiveTab={(tab: any) => { setActiveTab(tab); setSidebarOpen(false); }} />
+              <MyAccountSidebar 
+                activeTab={activeTab} 
+                setActiveTab={(tab: any) => { setActiveTab(tab); setSidebarOpen(false); }} 
+                onNavigate={() => setSidebarOpen(false)}
+              />
             </div>
           </div>
         )}
