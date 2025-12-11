@@ -102,7 +102,7 @@ const quickActionItems = [
 
 const HomePage: React.FC = () => {
   const { showToast } = useToast();
-  const { tSync } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
@@ -162,11 +162,15 @@ const HomePage: React.FC = () => {
       // Check if it's a network error
       if (err.code === 'NETWORK_ERROR' || err.message?.includes('Network Error') || !navigator.onLine) {
         setNetworkError(true);
-        setError('Unable to connect to the server. Please check your internet connection.');
-        showToast('Network connection failed. Please check your internet connection.', 'error');
+        t('Unable to connect to the server. Please check your internet connection.').then(msg => {
+          setError(msg);
+          showToast(msg, 'error');
+        });
       } else {
-        setError('Failed to load products. Please try again.');
-        showToast('Failed to load products. Please try again.', 'error');
+        t('Failed to load products. Please try again.').then(msg => {
+          setError(msg);
+          showToast(msg, 'error');
+        });
       }
     } finally {
       setLoading(false);
@@ -224,7 +228,7 @@ const HomePage: React.FC = () => {
       
       // Show toast for search feedback
       if (query) {
-        showToast(`Searching for "${query}"...`, 'info');
+        t('Searching...').then(msg => showToast(`${msg} "${query}"`, 'info'));
       }
     };
 
@@ -239,7 +243,7 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const handleOnline = () => {
       setNetworkError(false);
-      showToast('Connection restored', 'success');
+      t('Connection restored').then(msg => showToast(msg, 'success'));
       // Auto-retry if there was a network error
       if (error && products.length === 0) {
         fetchProducts();
@@ -248,7 +252,7 @@ const HomePage: React.FC = () => {
 
     const handleOffline = () => {
       setNetworkError(true);
-      showToast('Connection lost', 'error');
+      t('Connection lost').then(msg => showToast(msg, 'error'));
     };
 
     window.addEventListener('online', handleOnline);
@@ -263,13 +267,13 @@ const HomePage: React.FC = () => {
   const handleRetry = () => {
     const newRetryCount = retryCount + 1;
     setRetryCount(newRetryCount);
-    showToast(`Retrying... (Attempt ${newRetryCount})`, 'info');
+    t('Retrying...').then(msg => showToast(`${msg} (Attempt ${newRetryCount})`, 'info'));
     fetchProducts();
   };
 
   const handleRefresh = () => {
     fetchProducts();
-    showToast('Refreshing products...', 'info');
+    t('Refreshing products...').then(msg => showToast(msg, 'info'));
   };
 
   // Load user's favorites and map by product id
@@ -635,13 +639,13 @@ const HomePage: React.FC = () => {
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    Try Again
+                    <TranslatedText text="Try Again" />
                   </button>
                   <button
                     onClick={() => window.location.reload()}
                     className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
-                    Refresh Page
+                    <TranslatedText text="Refresh Page" />
                   </button>
                 </div>
               </div>
@@ -673,13 +677,13 @@ const HomePage: React.FC = () => {
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh
+                    <TranslatedText text="Refresh" />
                   </button>
                   <Link
                     to="/search"
                     className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
-                    Browse All Categories
+                    <TranslatedText text="Browse All Categories" />
                   </Link>
                 </div>
               </div>
@@ -696,7 +700,7 @@ const HomePage: React.FC = () => {
         {/* Hero Section */}
 
          {/* Products Sections */}
-         <div className="max-w-9xl mx-auto px-6 lg:px-10 space-y-12 pt-4">
+         <div className="max-w-9xl mx-auto px-10 lg:px-20 space-y-12 pt-4">
           {/* Search Results Header (only show if searching) */}
           {searchQuery && (
             <div className="mb-4 sm:mb-6 flex items-center justify-between">
@@ -722,10 +726,10 @@ const HomePage: React.FC = () => {
                   setSearchLng('');
                   setSearchRadiusKm(25);
                   setVisibleCount(100);
-                  showToast(tSync('Search cleared'), 'info');
+                  t('Search cleared').then(msg => showToast(msg, 'info'));
                 }}
                 className="text-sm text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                title={tSync('Clear Search')}
+                title=""
               >
                 <X className="w-4 h-4" />
               </button>
@@ -747,7 +751,7 @@ const HomePage: React.FC = () => {
                   onFavoriteToggle={async (productId, isFavorite) => {
                     const token = localStorage.getItem('token') || undefined;
                     if (!token || !isAuthenticated) {
-                      showToast(tSync('Please log in to add products to favorites'), 'info');
+                      t('Please log in to add products to favorites').then(msg => showToast(msg, 'info'));
                       navigate('/login');
                       return;
                     }
@@ -756,14 +760,14 @@ const HomePage: React.FC = () => {
                     try {
                       if (currentlyFav) {
                         await removeUserFavorite(productId, token);
-                        showToast(tSync('Removed from favorites'), 'success');
+                        t('Removed from favorites').then(msg => showToast(msg, 'success'));
                       } else {
                         await addUserFavorite(productId, token);
-                        showToast(tSync('Added to favorites'), 'success');
+                        t('Added to favorites').then(msg => showToast(msg, 'success'));
                       }
                     } catch (error) {
                       setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
-                      showToast(tSync('Failed to update favorites'), 'error');
+                      t('Failed to update favorites').then(msg => showToast(msg, 'error'));
                     }
                   }}
                   onProductClick={(productId, idx) => {
@@ -785,7 +789,6 @@ const HomePage: React.FC = () => {
                   }}
                   index={index}
                   formatCurrency={formatCurrency}
-                  tSync={tSync}
                 />
               ))}
             </div>
@@ -793,7 +796,7 @@ const HomePage: React.FC = () => {
             <>
               {/* Popular Products Section */}
               <ProductSwiper
-                title={tSync('Popular Products')}
+                title={<TranslatedText text="Popular Products" />}
                 products={categorizedProducts.popular}
                 productImages={productImages}
                 itemLocations={itemLocations}
@@ -829,14 +832,13 @@ const HomePage: React.FC = () => {
                   }, token);
                 }}
                 formatCurrency={formatCurrency}
-                tSync={tSync}
                 slidesPerView={6}
                 autoplay={true}
               />
 
               {/* New Products Section */}
               <ProductSwiper
-                title={tSync('New Products')}
+                title={<TranslatedText text="New Products" />}
                 products={categorizedProducts.new}
                 productImages={productImages}
                 itemLocations={itemLocations}
@@ -872,14 +874,13 @@ const HomePage: React.FC = () => {
                   }, token);
                 }}
                 formatCurrency={formatCurrency}
-                tSync={tSync}
                 slidesPerView={6}
                 autoplay={true}
               />
 
               {/* Top Ranking Section */}
               <ProductSwiper
-                title={tSync('Top Ranking')}
+                title={<TranslatedText text="Top Ranking" />}
                 products={categorizedProducts.topRanking}
                 productImages={productImages}
                 itemLocations={itemLocations}
@@ -915,7 +916,6 @@ const HomePage: React.FC = () => {
                   }, token);
                 }}
                 formatCurrency={formatCurrency}
-                tSync={tSync}
                 slidesPerView={6}
                 autoplay={true}
               />
@@ -930,7 +930,7 @@ const HomePage: React.FC = () => {
                     <TranslatedText text="View All" />
                   </Link>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 auto-rows-fr">
                   {filtered.slice(0, visibleCount).map((item, index) => (
                     <ProductCard
                       key={item.id}
@@ -943,7 +943,7 @@ const HomePage: React.FC = () => {
                       onFavoriteToggle={async (productId, isFavorite) => {
                         const token = localStorage.getItem('token') || undefined;
                         if (!token || !isAuthenticated) {
-                          showToast(tSync('Please log in to add products to favorites'), 'info');
+                          t('Please log in to add products to favorites').then(msg => showToast(msg, 'info'));
                           navigate('/login');
                           return;
                         }
@@ -952,14 +952,14 @@ const HomePage: React.FC = () => {
                         try {
                           if (currentlyFav) {
                             await removeUserFavorite(productId, token);
-                            showToast(tSync('Removed from favorites'), 'success');
+                            t('Removed from favorites').then(msg => showToast(msg, 'success'));
                           } else {
                             await addUserFavorite(productId, token);
-                            showToast(tSync('Added to favorites'), 'success');
+                            t('Added to favorites').then(msg => showToast(msg, 'success'));
                           }
                         } catch (error) {
                           setFavoriteMap(prev => ({ ...prev, [productId]: currentlyFav }));
-                          showToast(tSync('Failed to update favorites'), 'error');
+                          t('Failed to update favorites').then(msg => showToast(msg, 'error'));
                         }
                       }}
                       onProductClick={(productId, idx) => {
@@ -977,7 +977,6 @@ const HomePage: React.FC = () => {
                       }}
                       index={index}
                       formatCurrency={formatCurrency}
-                      tSync={tSync}
                     />
                   ))}
                 </div>
@@ -990,7 +989,7 @@ const HomePage: React.FC = () => {
                       className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-my-primary hover:bg-my-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary transition-colors"
                     >
                       <Package className="w-4 h-4 mr-2" />
-                      <TranslatedText text="Load More" /> ({filtered.length - visibleCount} remaining)
+                      <TranslatedText text="Load More" /> ({filtered.length - visibleCount} <TranslatedText text="remaining" />)
                     </button>
                   </div>
                 )}
@@ -1022,10 +1021,10 @@ const HomePage: React.FC = () => {
                 </div>
                 <div className="space-y-4">
                   <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
-                    {tSync('Rent anything, anywhere — with Uruti Bz protection')}
+                    <TranslatedText text="Rent anything, anywhere — with Uruti Bz protection" />
                   </h1>
                   <p className="text-base sm:text-lg text-white/80 max-w-2xl">
-                    {tSync('Connect with verified hosts, manage multilingual inspections, and grow your rental business with real-time risk insights.')}
+                    <TranslatedText text="Connect with verified hosts, manage multilingual inspections, and grow your rental business with real-time risk insights." />
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -1131,8 +1130,8 @@ const HomePage: React.FC = () => {
                     <card.icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-slate-100">{tSync(card.title)}</p>
-                    <p className="text-sm text-gray-600 dark:text-slate-400">{tSync(card.description)}</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-slate-100"><TranslatedText text={card.title} /></p>
+                    <p className="text-sm text-gray-600 dark:text-slate-400"><TranslatedText text={card.description} /></p>
                   </div>
                   <span className="mt-auto text-sm font-semibold text-my-primary group-hover:underline flex items-center gap-2">
                     <TranslatedText text="Explore" /> <span aria-hidden="true">→</span>
@@ -1171,7 +1170,7 @@ const HomePage: React.FC = () => {
                     <div className="space-y-4">
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-sm">
                         <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                        {featuredStories[activeStory].category}
+                        <TranslatedText text={featuredStories[activeStory].category} />
                       </div>
                       <div className="flex items-center gap-4">
                         <div className={`w-14 h-14 rounded-full ${featuredStories[activeStory].avatarBg} text-white flex items-center justify-center text-xl font-semibold`}>
@@ -1182,7 +1181,7 @@ const HomePage: React.FC = () => {
                           <p className="text-white/80">{featuredStories[activeStory].location}</p>
                         </div>
                       </div>
-                      <p className="text-lg leading-relaxed">{featuredStories[activeStory].story}</p>
+                      <p className="text-lg leading-relaxed"><TranslatedText text={featuredStories[activeStory].story} /></p>
                     </div>
                     <div className="flex flex-wrap gap-6 text-sm text-white/80">
                       <span className="inline-flex items-center gap-2">
@@ -1231,13 +1230,13 @@ const HomePage: React.FC = () => {
                       }`}
                     >
                       <div>
-                        <p className="text-sm uppercase tracking-wide text-gray-500 dark:text-slate-400">{story.category}</p>
+                        <p className="text-sm uppercase tracking-wide text-gray-500 dark:text-slate-400"><TranslatedText text={story.category} /></p>
                         <p className="text-lg font-semibold text-gray-900 dark:text-slate-100">{story.sellerName}</p>
                         <p className="text-sm text-gray-500 dark:text-slate-400">{story.location}</p>
                       </div>
                       <div className="text-right text-sm text-gray-600 dark:text-slate-300">
                         <p className="font-semibold">{story.volume}</p>
-                        <p>{story.metrics.listings} listings</p>
+                        <p>{story.metrics.listings} <TranslatedText text="listings" /></p>
                       </div>
                     </button>
                   ))}
@@ -1253,7 +1252,7 @@ const HomePage: React.FC = () => {
                 'Same-day payouts'
               ].map((promise) => (
                 <div key={promise} className="rounded-2xl border border-dashed border-gray-200 dark:border-slate-800 px-4 py-3 text-sm text-gray-600 dark:text-slate-400">
-                  {tSync(promise)}
+                  <TranslatedText text={promise} />
                 </div>
               ))}
             </div>

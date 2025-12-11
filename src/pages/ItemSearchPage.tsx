@@ -66,7 +66,7 @@ const ItemSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { tSync } = useTranslation();
+  const { t, language } = useTranslation();
   const { showToast } = useToast();
   const { isAuthenticated } = useAuth();
   const { isInCart } = useCart();
@@ -99,9 +99,66 @@ const ItemSearchPage: React.FC = () => {
   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
   const [selectedProductForCart, setSelectedProductForCart] = useState<Product | null>(null);
+  const [translatedAttrs, setTranslatedAttrs] = useState<Record<string, string>>({});
+  const [translatedProductNames, setTranslatedProductNames] = useState<Record<string, string>>({});
+  const [translatedCategoryNames, setTranslatedCategoryNames] = useState<Record<string, string>>({});
   
   // Categories state
   const [itemCategories, setItemCategories] = useState<Array<{ id: string; name: string; icon?: string }>>([]);
+  
+  // Translate attributes
+  useEffect(() => {
+    const translateAttributes = async () => {
+      const keys = [
+        'Remove from favorites', 'Add to favorites', 'Add to cart',
+        'Please log in to add products to favorites', 'Removed from favorites',
+        'Added to favorites', 'Failed to update favorites',
+        'Please log in to add items to cart', 'Min', 'Max'
+      ];
+      const translations: Record<string, string> = {};
+      await Promise.all(keys.map(async (key) => {
+        const translated = await t(key);
+        translations[key] = translated;
+      }));
+      setTranslatedAttrs(translations);
+    };
+    translateAttributes();
+  }, [t, language]);
+  
+  // Translate product names for alt attributes
+  useEffect(() => {
+    const translateProductNames = async () => {
+      const productNames: Record<string, string> = {};
+      await Promise.all(items.map(async (item) => {
+        const productName = item.title || item.name || 'Product';
+        if (productName && productName !== 'Product') {
+          const translated = await t(productName);
+          productNames[item.id] = translated;
+        } else {
+          productNames[item.id] = productName;
+        }
+      }));
+      setTranslatedProductNames(productNames);
+    };
+    if (items.length > 0) {
+      translateProductNames();
+    }
+  }, [items, t, language]);
+  
+  // Translate category names
+  useEffect(() => {
+    const translateCategoryNames = async () => {
+      const categoryNames: Record<string, string> = {};
+      await Promise.all(itemCategories.map(async (category) => {
+        const translated = await t(category.name);
+        categoryNames[category.id] = translated;
+      }));
+      setTranslatedCategoryNames(categoryNames);
+    };
+    if (itemCategories.length > 0) {
+      translateCategoryNames();
+    }
+  }, [itemCategories, t, language]);
    
    // Handle image search results
    useEffect(() => {
@@ -529,7 +586,7 @@ const ItemSearchPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
              {/* Enhanced Search Header */}
        <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-40">
-         <div className="max-w-9xl mx-auto px-6 lg:px-10 py-6">
+         <div className="max-w-9xl mx-auto px-6 lg:px-20 py-6">
           {/* Main Search Section */}
           <div className="flex flex-col gap-6">
             {/* Search Bar */}
@@ -566,7 +623,7 @@ const ItemSearchPage: React.FC = () => {
                   <option value="all"><TranslatedText text="All Categories" /></option>
                   {itemCategories.map(category => (
                     <option key={category.id} value={category.id}>
-                      {category.icon} {category.name}
+                      {category.icon} {translatedCategoryNames[category.id] || category.name}
                     </option>
                   ))}
                 </select>
@@ -653,14 +710,14 @@ const ItemSearchPage: React.FC = () => {
                       type="number"
                       value={priceRange.min}
                       onChange={(e) => setPriceRange({...priceRange, min: Number(e.target.value)})}
-                      placeholder={tSync('Min')}
+                      placeholder=""
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                     />
                     <input
                       type="number"
                       value={priceRange.max}
                       onChange={(e) => setPriceRange({...priceRange, max: Number(e.target.value)})}
-                      placeholder={tSync('Max')}
+                      placeholder=""
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-my-primary outline-none transition-all duration-200 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                     />
                   </div>
@@ -697,7 +754,7 @@ const ItemSearchPage: React.FC = () => {
       </div>
 
              {/* Main Content */}
-       <div className="max-w-9xl mx-auto px-6 lg:px-10 py-8">
+       <div className="max-w-9xl mx-auto px-6 lg:px-20 py-8">
         {/* Error Handling */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-400 px-6 py-4 rounded-2xl mb-8 animate-in fade-in duration-200">
@@ -745,8 +802,8 @@ const ItemSearchPage: React.FC = () => {
                   : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
               }`}
             >
-              <span className="text-lg">{category.icon}</span>
-              <span className="text-sm">{category.name}</span>
+              {/* <span className="text-lg">{category.icon}</span> */}
+              <span className="text-sm"><TranslatedText text={category.name} /></span>
             </button>
           ))}
         </div>
@@ -801,7 +858,7 @@ const ItemSearchPage: React.FC = () => {
                      {productImages[item.id]?.[0] ? (
                        <img
                          src={productImages[item.id][0]}
-                         alt={item.title || item.name}
+                         alt={translatedProductNames[item.id] || item.title || item.name || 'Product'}
                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                          onError={(e) => {
                            // Hide the image and show icon instead
@@ -822,7 +879,7 @@ const ItemSearchPage: React.FC = () => {
                        {/* Heart Icon - Favorites */}
                        <button
                          type="button"
-                         aria-label={favoriteMap[item.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
+                         aria-label={favoriteMap[item.id] ? (translatedAttrs['Remove from favorites'] || 'Remove from favorites') : (translatedAttrs['Add to favorites'] || 'Add to favorites')}
                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${
                            favoriteMap[item.id] 
                              ? 'bg-red-500 hover:bg-red-600' 
@@ -834,7 +891,7 @@ const ItemSearchPage: React.FC = () => {
                            e.nativeEvent.stopImmediatePropagation();
                            const token = localStorage.getItem('token') || undefined;
                            if (!token || !isAuthenticated) {
-                             showToast(tSync('Please log in to add products to favorites'), 'info');
+                             t('Please log in to add products to favorites').then(msg => showToast(msg, 'info'));
                              navigate('/login');
                              return;
                            }
@@ -844,15 +901,15 @@ const ItemSearchPage: React.FC = () => {
                            try {
                              if (currentlyFav) {
                                await removeUserFavorite(item.id, token);
-                               showToast(tSync('Removed from favorites'), 'success');
+                               t('Removed from favorites').then(msg => showToast(msg, 'success'));
                              } else {
                                await addUserFavorite(item.id, token);
-                               showToast(tSync('Added to favorites'), 'success');
+                               t('Added to favorites').then(msg => showToast(msg, 'success'));
                              }
                            } catch (error) {
                              // revert on failure
                              setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
-                             showToast(tSync('Failed to update favorites'), 'error');
+                             t('Failed to update favorites').then(msg => showToast(msg, 'error'));
                            }
                          }}
                        >
@@ -866,7 +923,7 @@ const ItemSearchPage: React.FC = () => {
                        {item.base_price_per_day && parseFloat(String(item.base_price_per_day)) > 0 && (
                          <button
                            type="button"
-                           aria-label={tSync('Add to cart')}
+                           aria-label={translatedAttrs['Add to cart'] || 'Add to cart'}
                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${
                              isInCart(item.id)
                                ? 'bg-teal-600 hover:bg-teal-700'
@@ -877,7 +934,7 @@ const ItemSearchPage: React.FC = () => {
                              e.stopPropagation();
                              e.nativeEvent.stopImmediatePropagation();
                              if (!isAuthenticated) {
-                               showToast(tSync('Please log in to add items to cart'), 'info');
+                               t('Please log in to add items to cart').then(msg => showToast(msg, 'info'));
                                navigate('/login');
                                return;
                              }
@@ -908,7 +965,7 @@ const ItemSearchPage: React.FC = () => {
                      {/* Title and Rating */}
                      <div className="flex items-start justify-between">
                        <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 pr-2">
-                         {item.title || item.name}
+                         <TranslatedText text={item.title || item.name || 'Product'} />
                        </h3>
                        <div className="flex items-center gap-2 flex-shrink-0">
                          {/* Similarity Score for Image Search */}
@@ -976,7 +1033,7 @@ const ItemSearchPage: React.FC = () => {
                       {productImages[item.id]?.[0] ? (
                         <img
                           src={productImages[item.id][0]}
-                          alt={item.title || item.name}
+                          alt={translatedProductNames[item.id] || item.title || item.name || 'Product'}
                           className="w-28 h-28 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => {
                             // Hide the image and show icon instead
@@ -1002,7 +1059,7 @@ const ItemSearchPage: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <h3 className="font-bold text-gray-900 dark:text-slate-100 text-lg mb-1">{item.title || item.name}</h3>
+                          <h3 className="font-bold text-gray-900 dark:text-slate-100 text-lg mb-1"><TranslatedText text={item.title || item.name || 'Product'} /></h3>
                           <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2 leading-relaxed">{item.description}</p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1017,7 +1074,7 @@ const ItemSearchPage: React.FC = () => {
                               e.stopPropagation();
                               const token = localStorage.getItem('token') || undefined;
                               if (!token || !isAuthenticated) {
-                                showToast(tSync('Please log in to add products to favorites'), 'info');
+                                t('Please log in to add products to favorites').then(msg => showToast(msg, 'info'));
                                 navigate('/login');
                                 return;
                               }
@@ -1027,18 +1084,18 @@ const ItemSearchPage: React.FC = () => {
                               try {
                                 if (currentlyFav) {
                                   await removeUserFavorite(item.id, token);
-                                  showToast(tSync('Removed from favorites'), 'success');
+                                  t('Removed from favorites').then(msg => showToast(msg, 'success'));
                                 } else {
                                   await addUserFavorite(item.id, token);
-                                  showToast(tSync('Added to favorites'), 'success');
+                                  t('Added to favorites').then(msg => showToast(msg, 'success'));
                                 }
                               } catch (error) {
                                 // revert on failure
                                 setFavoriteMap(prev => ({ ...prev, [item.id]: currentlyFav }));
-                                showToast(tSync('Failed to update favorites'), 'error');
+                                t('Failed to update favorites').then(msg => showToast(msg, 'error'));
                               }
                             }}
-                            aria-label={favoriteMap[item.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
+                            aria-label={favoriteMap[item.id] ? (translatedAttrs['Remove from favorites'] || 'Remove from favorites') : (translatedAttrs['Add to favorites'] || 'Add to favorites')}
                           >
                             <Heart className={`w-5 h-5 transition-all ${
                               favoriteMap[item.id] 
@@ -1050,7 +1107,7 @@ const ItemSearchPage: React.FC = () => {
                           {item.base_price_per_day && parseFloat(String(item.base_price_per_day)) > 0 && (
                             <button
                               type="button"
-                              aria-label={tSync('Add to cart')}
+                              aria-label={translatedAttrs['Add to cart'] || 'Add to cart'}
                               className={`p-2 rounded-lg transition-all shadow-sm ${
                                 isInCart(item.id)
                                   ? 'bg-teal-600 hover:bg-teal-700'
@@ -1060,7 +1117,7 @@ const ItemSearchPage: React.FC = () => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 if (!isAuthenticated) {
-                                  showToast(tSync('Please log in to add items to cart'), 'info');
+                                  t('Please log in to add items to cart').then(msg => showToast(msg, 'info'));
                                   navigate('/login');
                                   return;
                                 }

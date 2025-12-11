@@ -16,7 +16,6 @@ interface ProductCardProps {
   onProductClick?: (productId: string, index: number) => void;
   index?: number;
   formatCurrency: (amount: string, currency: string) => string;
-  tSync: (text: string) => string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -29,8 +28,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onFavoriteToggle,
   onProductClick,
   index = 0,
-  formatCurrency,
-  tSync
+  formatCurrency
 }) => {
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
   const { isInCart } = useCart();
@@ -64,16 +62,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <>
     <Link
       to={`/it/${product.id}`}
-      className="group block"
+      className="group block h-full w-full"
       onClick={handleProductClick}
     >
-      <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-300 border border-gray-100 dark:border-slate-700 h-full flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-300 border border-gray-100 dark:border-slate-700 h-full flex flex-col w-full">
         {/* Image Container */}
-        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
+        <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
           {productImages[product.id]?.[0] ? (
             <img
               src={productImages[product.id][0]}
-              alt={product.title || product.name || tSync('Product listing')}
+              alt={product.title || product.name || 'Product listing'}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
@@ -93,7 +91,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {/* Heart Icon - Favorites */}
             <button
               type="button"
-              aria-label={favoriteMap[product.id] ? tSync('Remove from favorites') : tSync('Add to favorites')}
+              aria-label={favoriteMap[product.id] ? 'Remove from favorites' : 'Add to favorites'}
               className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${
                 favoriteMap[product.id] 
                   ? 'bg-red-500 hover:bg-red-600' 
@@ -111,7 +109,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {pricePerDay > 0 && (
               <button
                 type="button"
-                aria-label={tSync('Add to cart')}
+                aria-label="Add to cart"
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${
                   isInCart(product.id)
                     ? 'bg-teal-600 hover:bg-teal-700'
@@ -138,11 +136,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-3 space-y-1 flex-1 flex flex-col">
+        <div className="p-3 space-y-1 flex-1 flex flex-col min-h-0">
           {/* Title and Rating */}
-          <div className="flex items-start justify-between">
-            <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 pr-2">
-              {product.title || product.name}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 min-h-[2.5rem] line-clamp-2">
+              <TranslatedText text={product.title || product.name || 'Product'} />
             </h3>
             <div className="flex items-center space-x-1 flex-shrink-0">
               <Star className="w-3 h-3 fill-current text-yellow-400" />

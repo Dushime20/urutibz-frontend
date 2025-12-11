@@ -47,7 +47,7 @@ const ItemDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const { tSync } = useTranslation();
+  const { t } = useTranslation();
   const { addToCart, isInCart } = useCart();
   const { showToast } = useToast();
 
@@ -554,7 +554,7 @@ const ItemDetailsPage: React.FC = () => {
 
     // Check if already in cart
     if (isInCart(item.id)) {
-      showToast(tSync('Item is already in your cart'), 'info');
+      t('Item is already in your cart').then(msg => showToast(msg, 'info'));
       return;
     }
 
@@ -589,7 +589,7 @@ const ItemDetailsPage: React.FC = () => {
       categoryId: item.category_id,
     });
 
-    showToast(tSync('Item added to cart'), 'success');
+    t('Item added to cart').then(msg => showToast(msg, 'success'));
   };
 
 
@@ -843,9 +843,10 @@ const ItemDetailsPage: React.FC = () => {
                   <div className="flex items-center gap-1 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm dark:bg-slate-800 dark:text-slate-200">
                     <Shield className="w-4 h-4" />
                     {productPrices?.security_deposit && productPrices?.currency ? 
-                      `${formatCurrency(productPrices.security_deposit, productPrices.currency)} ${tSync('Security Deposit')}` :
-                      `$${item.security || 0} ${tSync('Security Deposit')}`
+                      `${formatCurrency(productPrices.security_deposit, productPrices.currency)} ` : 
+                      `$${item.security || 0} `
                     }
+                    <TranslatedText text="Security Deposit" />
                   </div>
                 </div>
 
@@ -975,7 +976,7 @@ const ItemDetailsPage: React.FC = () => {
                         {interaction.metadata?.source && (
                           <>
                             <span>•</span>
-                            <span className="text-gray-500 dark:text-slate-400">{tSync(`From ${interaction.metadata.source}`)}</span>
+                            <span className="text-gray-500 dark:text-slate-400"><TranslatedText text={`From ${interaction.metadata.source}`} /></span>
                           </>
                         )}
                       </div>
@@ -1059,7 +1060,7 @@ const ItemDetailsPage: React.FC = () => {
 
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-slate-300">Security Deposit</span>
+                      <span className="text-gray-600 dark:text-slate-300"><TranslatedText text="Security Deposit" /></span>
                       <span className="font-medium dark:text-white">
                         {productPrices?.security_deposit && productPrices?.currency ? 
                           formatCurrency(productPrices.security_deposit, productPrices.currency) :
@@ -1173,7 +1174,6 @@ const ItemDetailsPage: React.FC = () => {
               navigate(`/it/${productId}`);
             }}
             formatCurrency={formatCurrency}
-            tSync={tSync}
             slidesPerView={4}
             autoplay={true}
             showNavigation={true}

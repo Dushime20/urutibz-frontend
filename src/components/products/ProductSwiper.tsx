@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 
 interface ProductSwiperProps {
-  title: string;
+  title: React.ReactNode;
   products: any[];
   productImages: Record<string, string[]>;
   itemLocations: Record<string, { city: string | null; country: string | null }>;
@@ -19,7 +19,6 @@ interface ProductSwiperProps {
   onFavoriteToggle?: (productId: string, isFavorite: boolean) => void;
   onProductClick?: (productId: string, index: number) => void;
   formatCurrency: (amount: string, currency: string) => string;
-  tSync: (text: string) => string;
   showNavigation?: boolean;
   autoplay?: boolean;
   slidesPerView?: number;
@@ -38,7 +37,6 @@ const ProductSwiper: React.FC<ProductSwiperProps> = ({
   onFavoriteToggle,
   onProductClick,
   formatCurrency,
-  tSync,
   showNavigation = true,
   autoplay = true,
   slidesPerView = 4,
@@ -128,7 +126,6 @@ const ProductSwiper: React.FC<ProductSwiperProps> = ({
                 onProductClick={onProductClick}
                 index={index}
                 formatCurrency={formatCurrency}
-                tSync={tSync}
               />
             </SwiperSlide>
           ))}

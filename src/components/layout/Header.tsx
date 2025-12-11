@@ -59,14 +59,9 @@ const primaryNavItems = [
   { label: 'Support', to: '/faq', icon: Headphones }
 ];
 
-const mobileSupportLinks = [
-  { label: 'Help center', to: '/faq', icon: Headphones },
-  { label: 'Contact sales', to: '/contact', icon: Phone },
-  { label: 'Live status', to: '/status', icon: Sparkles }
-];
-
 // Removed hardcoded mobileUtilityChips and quickFilterPresets - now using categories from database
 
+// Ticker messages will be translated when displayed
 const tickerMessages = [
   '45 countries onboarding new rental fleets this month',
   'New: AI condition reports now live in Spanish & French',
@@ -77,7 +72,7 @@ const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { settings } = useAdminSettingsContext();
-  const { language, tSync } = useTranslation();
+  const { language, tSync, t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -107,6 +102,29 @@ const Header: React.FC = () => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  // Translated attributes for accessibility
+  const [translatedAttrs, setTranslatedAttrs] = useState<Record<string, string>>({});
+
+  // Translate attribute strings on language change
+  useEffect(() => {
+    const translateAttrs = async () => {
+      const attrs = {
+        'Search inventory': await t('Search inventory'),
+        'Toggle theme': await t('Toggle theme'),
+        'Toggle menu': await t('Toggle menu'),
+        'Search by image': await t('Search by image'),
+        'Search': await t('Search'),
+        'Browse categories': await t('Browse categories'),
+        'Navigation menu': await t('Navigation menu'),
+        'Close menu': await t('Close menu'),
+        'Close search': await t('Close search'),
+        'Search inventory, suppliers, SKU...': await t('Search inventory, suppliers, SKU...'),
+      };
+      setTranslatedAttrs(attrs);
+    };
+    translateAttrs();
+  }, [language, t]);
+
   const roleDestination =
     user?.role === 'admin'
       ? '/admin'
@@ -116,24 +134,22 @@ const Header: React.FC = () => {
       ? '/moderator'
       : '/dashboard';
 
-  const roleLinkLabel =
-    user?.role === 'admin'
-      ? 'Admin Console'
-      : user?.role === 'inspector'
-      ? 'Inspector Console'
-      : user?.role === 'moderator'
-      ? 'Moderator Console'
-      : 'My Account';
+  const roleLinkLabel = useMemo(() => {
+    if (user?.role === 'admin') return 'Admin Console';
+    if (user?.role === 'inspector') return 'Inspector Console';
+    if (user?.role === 'moderator') return 'Moderator Console';
+    return 'My Account';
+  }, [user?.role]);
 
   const mobileBottomNavItems = useMemo(
     () => [
-      { key: 'explore', label: tSync('Explore'), to: '/items', icon: LayoutGrid },
-      { key: 'trips', label: tSync('Trips'), to: '/bookings', icon: Clock },
-      { key: 'list', label: tSync('List'), to: '/create-listing', icon: PlusCircle },
-      { key: 'support', label: tSync('Support'), to: '/support', icon: Headphones },
-      { key: 'account', label: isAuthenticated ? tSync('Account') : tSync('Login'), to: isAuthenticated ? roleDestination : '/login', icon: User }
+      { key: 'explore', label: 'Explore', to: '/items', icon: LayoutGrid },
+      { key: 'trips', label: 'Trips', to: '/bookings', icon: Clock },
+      { key: 'list', label: 'List', to: '/create-listing', icon: PlusCircle },
+      { key: 'support', label: 'Support', to: '/support', icon: Headphones },
+      { key: 'account', label: isAuthenticated ? 'Account' : 'Login', to: isAuthenticated ? roleDestination : '/login', icon: User }
     ],
-    [isAuthenticated, roleDestination, tSync]
+    [isAuthenticated, roleDestination]
   );
 
   const params = new URLSearchParams(location.search);
@@ -245,7 +261,7 @@ const Header: React.FC = () => {
       .slice(0, 8);
     
     return uniqueSuggestions;
-  }, [allProducts, allCategories]);
+  }, [allProducts, allCategories, tSync]);
 
   const buildSearchParams = useCallback(
     (overrides?: Partial<{ q: string; category: string; priceMin: string; priceMax: string; checkIn: string; checkOut: string; nearMe: boolean; lat: string; lng: string; radiusKm: number }>) => {
@@ -471,14 +487,14 @@ const Header: React.FC = () => {
                 {suggestion.type === 'product' ? (
                   <>
                     <Package className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
-                    <span className="flex-1">{suggestion.name}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Product</span>
+                    <span className="flex-1"><TranslatedText text={suggestion.name} /></span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Product" /></span>
                   </>
                 ) : (
                   <>
                     <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <span className="flex-1">{suggestion.name}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Category</span>
+                    <span className="flex-1"><TranslatedText text={suggestion.name} /></span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Category" /></span>
                   </>
                 )}
               </button>
@@ -529,9 +545,10 @@ const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const detectLocation = () => {
+  const detectLocation = async () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+      const msg = await t('Geolocation is not supported by your browser.');
+      alert(msg);
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -543,7 +560,10 @@ const Header: React.FC = () => {
         setLng(longitude);
         performAutoSearch({ nearMe: true, lat: latitude, lng: longitude });
       },
-      () => alert('Unable to retrieve your location. Please allow location access.'),
+      async () => {
+        const msg = await t('Unable to retrieve your location. Please allow location access.');
+        alert(msg);
+      },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };
@@ -709,10 +729,10 @@ const Header: React.FC = () => {
     <header className="sticky top-0 z-50 shadow-sm bg-white/90 dark:bg-gray-900/80 backdrop-blur-md border-b border-white/20 dark:border-gray-700/60">
       {/* Global ticker */}
       <div className="hidden md:block bg-slate-900 text-white text-xs tracking-wide">
-        <div className="max-w-9xl mx-auto px-6 lg:px-10 py-2 flex items-center justify-between gap-6">
+        <div className="max-w-9xl mx-auto px-6 lg:px-20 py-2 flex items-center justify-between gap-6">
           <div className="flex items-center gap-2 uppercase">
             <Sparkles className="w-4 h-4 text-teal-300" />
-            <span>{tSync(tickerMessages[tickerIndex])}</span>
+            <span><TranslatedText text={tickerMessages[tickerIndex]} /></span>
           </div>
           <div className="flex items-center gap-5 text-white/80">
             <span className="inline-flex items-center gap-2">
@@ -732,7 +752,7 @@ const Header: React.FC = () => {
       </div>
 
       <div className="relative">
-        <div className="w-full px-6 lg:px-10">
+        <div className="w-full px-6 lg:px-20 mx-auto">
           <div className="py-3 lg:py-4 space-y-3 md:space-y-0">
             {/* Mobile compact header */}
             <div className="flex items-center justify-between md:hidden">
@@ -747,7 +767,7 @@ const Header: React.FC = () => {
                 <button
                   onClick={openMobileSearch}
                   className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                  aria-label={tSync('Search inventory')}
+                  aria-label={translatedAttrs['Search inventory'] || 'Search inventory'}
                 >
                   <Search className="w-4 h-4" />
                 </button>
@@ -760,14 +780,14 @@ const Header: React.FC = () => {
                 <button
                   onClick={toggleDarkMode}
                   className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                  aria-label={tSync('Toggle theme')}
+                  aria-label={translatedAttrs['Toggle theme'] || 'Toggle theme'}
                 >
                   {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                   className="p-2 rounded-full border border-gray-200 dark:border-gray-700"
-                  aria-label={tSync('Toggle menu')}
+                  aria-label={translatedAttrs['Toggle menu'] || 'Toggle menu'}
                 >
                   {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>
@@ -796,8 +816,8 @@ const Header: React.FC = () => {
                       type="button"
                       onClick={() => setIsImageSearchOpen(true)}
                       className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 rounded"
-                      aria-label={tSync('Search by image')}
-                      title={tSync('Search by image')}
+                      aria-label={translatedAttrs['Search by image'] || 'Search by image'}
+                      title={translatedAttrs['Search by image'] || 'Search by image'}
                     >
                       <Camera className="w-5 h-5" />
                     </button>
@@ -833,7 +853,7 @@ const Header: React.FC = () => {
                           }
                         }, 300);
                       }}
-                      placeholder={tSync('Search inventory, suppliers, SKU...')}
+                      placeholder={translatedAttrs['Search inventory, suppliers, SKU...'] || 'Search inventory, suppliers, SKU...'}
                       className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none"
                     />
                   </div>
@@ -841,7 +861,7 @@ const Header: React.FC = () => {
                   <button
                     onClick={submitSearch}
                     className="h-14 w-20 bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
-                    aria-label={tSync('Search')}
+                    aria-label={translatedAttrs['Search'] || 'Search'}
                   >
                     <Search className={`w-6 h-6 ${isSearching ? 'animate-pulse' : ''}`} />
                   </button>
@@ -863,7 +883,7 @@ const Header: React.FC = () => {
               <button
                 onClick={toggleDarkMode}
                 className="inline-flex p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                aria-label={tSync('Toggle theme')}
+                aria-label={translatedAttrs['Toggle theme'] || 'Toggle theme'}
               >
                 {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
@@ -889,7 +909,7 @@ const Header: React.FC = () => {
                     )}
                     <div className="hidden lg:flex flex-col items-start">
                       <span className="text-[0.6rem] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
-                        {user?.role === 'admin' ? tSync('Operator') : tSync('Member')}
+                        {user?.role === 'admin' ? <TranslatedText text="Operator" /> : <TranslatedText text="Member" />}
                       </span>
                       <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-1">
                         {user?.name}
@@ -957,6 +977,7 @@ const Header: React.FC = () => {
               }`}
               aria-haspopup="true"
               aria-expanded={isCategoriesOpen}
+              aria-label={translatedAttrs['Browse categories'] || 'Browse categories'}
             >
               <span className={`flex h-7 w-7 items-center justify-center rounded-xl transition-all ${
                 isCategoriesOpen
@@ -965,7 +986,7 @@ const Header: React.FC = () => {
               }`}>
                 <LayoutGrid className="w-4 h-4" />
               </span>
-              <span className="tracking-tight">{tSync('Discover')}</span>
+              <span className="tracking-tight"><TranslatedText text="Discover" /></span>
               <ChevronDown className={`w-4 h-4 transition-transform ${isCategoriesOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-teal-500'}`} />
             </button>
             <div
@@ -979,7 +1000,7 @@ const Header: React.FC = () => {
                 <div className="flex flex-col gap-6 lg:flex-row">
                   <div className="w-full lg:w-72 max-h-[360px] overflow-y-auto pr-3 border-r border-slate-100 dark:border-slate-800/70">
                     <p className="px-3 pb-1 text-[11px] uppercase tracking-[0.4em] text-slate-400 dark:text-slate-500">
-                      {tSync('Browse by category')}
+                      <TranslatedText text="Browse by category" />
                     </p>
                     {normalizedCategories.map((cat) => {
                       const isActive = activeCategory?.id === cat.id;
@@ -998,7 +1019,7 @@ const Header: React.FC = () => {
                               : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/70'
                           }`}
                         >
-                          <span className="truncate">{cat.label}</span>
+                          <span className="truncate"><TranslatedText text={cat.label} /></span>
                           <ChevronDown className={`w-3 h-3 transition-transform ${isActive ? 'rotate-90 text-teal-500' : 'text-slate-400'}`} />
                         </button>
                       );
@@ -1010,10 +1031,10 @@ const Header: React.FC = () => {
                       <div className="mb-4">
                         <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 dark:bg-gray-900/60 text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-600 dark:text-emerald-300 shadow-sm">
                           <Sparkles className="w-3 h-3" />
-                          {activeCategory?.label || tSync('Spotlight')}
+                          {activeCategory ? <TranslatedText text={activeCategory.label} /> : <TranslatedText text="Spotlight" />}
                         </span>
                         <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight mt-2">
-                          {tSync('Featured Products')}
+                          <TranslatedText text="Featured Products" />
                         </h3>
                       </div>
                       
@@ -1021,7 +1042,7 @@ const Header: React.FC = () => {
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-2"></div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">{tSync('Loading products...')}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400"><TranslatedText text="Loading products..." /></p>
                           </div>
                         </div>
                       ) : categoryProducts.length > 0 ? (
@@ -1049,7 +1070,7 @@ const Header: React.FC = () => {
                                       {categoryProductImages[product.id]?.[0] ? (
                                         <img
                                           src={categoryProductImages[product.id][0]}
-                                          alt={product.title || product.name || 'Product'}
+                                          alt={product.title || product.name ? (product.title || product.name) : 'Product'}
                                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
                                       ) : (
@@ -1061,7 +1082,7 @@ const Header: React.FC = () => {
                                     {/* Product Name */}
                                     <div className="p-3">
                                       <h4 className="font-medium text-sm text-gray-900 dark:text-slate-100 line-clamp-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                                        {product.title || product.name || tSync('Product')}
+                                        {product.title || product.name ? <TranslatedText text={product.title || product.name} /> : <TranslatedText text="Product" />}
                                       </h4>
                                     </div>
                                   </div>
@@ -1072,11 +1093,11 @@ const Header: React.FC = () => {
                         </div>
                       ) : activeCategoryId ? (
                         <div className="flex items-center justify-center h-full">
-                          <p className="text-sm text-slate-500 dark:text-slate-400">{tSync('No products found in this category')}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400"><TranslatedText text="No products found in this category" /></p>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center h-full">
-                          <p className="text-sm text-slate-500 dark:text-slate-400">{tSync('Hover over a category to see products')}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400"><TranslatedText text="Hover over a category to see products" /></p>
                         </div>
                       )}
                       
@@ -1087,7 +1108,7 @@ const Header: React.FC = () => {
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition w-full justify-center"
                             onClick={() => setIsCategoriesOpen(false)}
                           >
-                            {tSync('View All Products')}
+                            <TranslatedText text="View All Products" />
                             <ArrowRight className="w-4 h-4" />
                           </Link>
                         </div>
@@ -1101,11 +1122,11 @@ const Header: React.FC = () => {
 
           {primaryNavLinks.map((link) => (
             <Link
-              key={link.to}
+              key={`${link.to}-${language}`}
               to={link.to}
               className="hover:text-teal-600 transition-colors"
             >
-              {tSync(link.label)}
+              <TranslatedText text={link.label} />
             </Link>
           ))}
           <Link
@@ -1118,7 +1139,7 @@ const Header: React.FC = () => {
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={tSync('Navigation menu')}>
+          <div className="md:hidden fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={translatedAttrs['Navigation menu'] || 'Navigation menu'}>
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
             <div className="absolute inset-0 h-screen">
               <div className="h-full bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border border-white/20 dark:border-gray-800 pt-4 pb-48 px-4 overflow-y-auto safe-area-bottom space-y-6">
@@ -1127,7 +1148,7 @@ const Header: React.FC = () => {
                   <button
                     onClick={() => setIsMenuOpen(false)}
                     className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                    aria-label={tSync('Close menu')}
+                    aria-label={translatedAttrs['Close menu'] || 'Close menu'}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1135,14 +1156,14 @@ const Header: React.FC = () => {
 
                 <div className="space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-                    {tSync('Navigation')}
+                    <TranslatedText text="Navigation" />
                   </p>
                   <div className="space-y-2">
                     {primaryNavItems.map((item) => {
                       const Icon = item.icon;
                       return (
                         <Link
-                          key={item.to}
+                          key={`${item.to}-${language}`}
                           to={item.to}
                           onClick={() => setIsMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:border-teal-400 dark:hover:border-teal-500 transition-colors"
@@ -1150,7 +1171,7 @@ const Header: React.FC = () => {
                           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-300">
                             <Icon className="w-4 h-4" />
                           </span>
-                          <span>{tSync(item.label)}</span>
+                          <span><TranslatedText text={item.label} key={`${item.label}-${language}`} /></span>
                           <ArrowRight className="ml-auto w-4 h-4 text-gray-400" />
                         </Link>
                       );
@@ -1163,7 +1184,7 @@ const Header: React.FC = () => {
                       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-300">
                         <PlusCircle className="w-4 h-4" />
                       </span>
-                      <span>{tSync('List inventory')}</span>
+                      <span><TranslatedText text="List inventory" /></span>
                       <ArrowRight className="ml-auto w-4 h-4 text-gray-400" />
                     </Link>
                   </div>
@@ -1173,7 +1194,7 @@ const Header: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-                        {tSync('Categories')}
+                        <TranslatedText text="Categories" />
                       </p>
                       <button
                         onClick={() => {
@@ -1193,7 +1214,7 @@ const Header: React.FC = () => {
                           onClick={() => setIsMenuOpen(false)}
                           className="px-3 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-800/60 text-sm text-gray-800 dark:text-gray-100 hover:border-teal-400 dark:hover:border-teal-500 transition-colors"
                         >
-                          {cat.label}
+                          <TranslatedText text={cat.label} />
                         </Link>
                       ))}
                     </div>
@@ -1272,7 +1293,7 @@ const Header: React.FC = () => {
                   <span>•</span>
                   <button onClick={toggleDarkMode} className="inline-flex items-center gap-2 text-gray-700 dark:text-gray-200">
                     {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    {isDarkMode ? tSync('Light') : tSync('Dark')}
+                    {isDarkMode ? <TranslatedText text="Light" /> : <TranslatedText text="Dark" />}
                   </button>
                 </div>
               </div>
@@ -1292,7 +1313,7 @@ const Header: React.FC = () => {
               <button
                 onClick={closeMobileSearch}
                 className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200"
-                aria-label={tSync('Close search')}
+                aria-label={translatedAttrs['Close search'] || 'Close search'}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1317,7 +1338,7 @@ const Header: React.FC = () => {
                     }
                     setShowSuggestions(q.length >= 2 || recentSearches.length > 0);
                   }}
-                  placeholder={tSync('Search inventory, suppliers, SKU...')}
+                  placeholder={translatedAttrs['Search inventory, suppliers, SKU...'] || 'Search inventory, suppliers, SKU...'}
                   className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none"
                 />
                 <button
@@ -1326,7 +1347,7 @@ const Header: React.FC = () => {
                     closeMobileSearch();
                   }}
                   className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
-                  aria-label={tSync('Search by image')}
+                  aria-label={translatedAttrs['Search by image'] || 'Search by image'}
                 >
                   <Camera className="w-4 h-4" />
                 </button>
@@ -1337,7 +1358,7 @@ const Header: React.FC = () => {
                   closeMobileSearch();
                 }}
                 className="p-2 rounded-full bg-teal-600 text-white hover:bg-teal-700 transition-colors"
-                aria-label={tSync('Search')}
+                aria-label={translatedAttrs['Search'] || 'Search'}
               >
                 <ArrowRight className="w-5 h-5" />
               </button>

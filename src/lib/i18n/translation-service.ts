@@ -28,6 +28,25 @@ export class TranslationService {
   private currentLanguage: string = 'en';
   private googleTranslateApiKey: string | null = null;
   private componentCache: TranslationCache = {};
+  
+  /**
+   * Get list of all supported language codes
+   * These match the languages in the language switcher dropdown
+   */
+  getSupportedLanguages(): string[] {
+    return [
+      'en', 'fr', 'sw', 'es', 'pt', 'ar', 'zh', 'hi', 'de', 'it',
+      'ja', 'ko', 'ru', 'tr', 'vi', 'nl', 'pl', 'th', 'uk', 'rw'
+    ];
+  }
+  
+  /**
+   * Check if a language code is supported
+   */
+  isLanguageSupported(lang: string): boolean {
+    const normalized = this.normalizeLanguageCode(lang);
+    return this.getSupportedLanguages().includes(normalized);
+  }
 
   /**
    * Initialize the translation service
@@ -133,10 +152,55 @@ export class TranslationService {
   }
 
   /**
+   * Normalize language code for API compatibility
+   * MyMemory API uses 2-letter ISO 639-1 codes
+   * All languages from the language switcher dropdown are supported
+   */
+  private normalizeLanguageCode(lang: string): string {
+    // Extract 2-letter code if format is like 'pt-BR' or 'es-ES'
+    const twoLetterCode = lang.toLowerCase().split('-')[0];
+    
+    // MyMemory API supported codes (2-letter ISO 639-1)
+    // These match ALL languages in the language switcher dropdown (19 languages)
+    const supportedCodes = [
+      'en', // English (source language, no translation needed)
+      'fr', // French - Français
+      'sw', // Swahili - Kiswahili
+      'es', // Spanish - Español
+      'pt', // Portuguese - Português
+      'ar', // Arabic - العربية
+      'zh', // Chinese - 中文
+      'hi', // Hindi - हिन्दी
+      'de', // German - Deutsch
+      'it', // Italian - Italiano
+      'ja', // Japanese - 日本語
+      'ko', // Korean - 한국어
+      'ru', // Russian - Русский
+      'tr', // Turkish - Türkçe
+      'vi', // Vietnamese - Tiếng Việt
+      'nl', // Dutch - Nederlands
+      'pl', // Polish - Polski
+      'th', // Thai - ไทย
+      'uk', // Ukrainian - Українська
+      'rw'  // Kinyarwanda (used in admin but not in main dropdown)
+    ];
+    
+    // Validate that the language code is supported
+    if (!supportedCodes.includes(twoLetterCode)) {
+      console.warn(`Language code "${lang}" (normalized to "${twoLetterCode}") may not be supported by MyMemory API. Using as-is.`);
+    }
+    
+    // Return 2-letter code if supported, otherwise return as-is
+    return supportedCodes.includes(twoLetterCode) ? twoLetterCode : lang.toLowerCase();
+  }
+
+  /**
    * Translate text using MyMemory API
    */
   private async translateWithMyMemory(text: string, targetLang: string): Promise<string> {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
+    // Normalize language code to 2-letter format
+    const normalizedLang = this.normalizeLanguageCode(targetLang);
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${normalizedLang}`;
     
     try {
       const response = await fetch(url);
@@ -148,15 +212,51 @@ export class TranslationService {
         throw new Error('Rate limited');
       }
 
+      // Check for successful response
       if (data.responseStatus === 200 && data.responseData?.translatedText) {
-        return data.responseData.translatedText;
+        const translated = data.responseData.translatedText;
+        // Sometimes MyMemory returns the same text if translation fails
+        // Also check if translation is actually different (not just whitespace changes)
+        const normalizedOriginal = text.trim().toLowerCase();
+        const normalizedTranslated = translated.trim().toLowerCase();
+        
+        if (translated && translated.trim() && normalizedTranslated !== normalizedOriginal) {
+          return translated;
+        } else {
+          // Translation returned but it's the same as original - might be API issue
+          console.warn('MyMemory returned same text as translation:', {
+            text: text.substring(0, 50),
+            targetLang: normalizedLang,
+            translated: translated?.substring(0, 50)
+          });
+        }
       }
 
-      throw new Error('Translation failed');
+      // Log error details for debugging
+      console.warn('MyMemory translation failed:', {
+        text: text.substring(0, 50),
+        targetLang: normalizedLang,
+        originalLang: targetLang,
+        responseStatus: data.responseStatus,
+        responseData: data.responseData,
+        fullResponse: data
+      });
+
+      // Check for specific error codes
+      if (data.responseStatus === 403) {
+        throw new Error(`Translation API access denied for language ${normalizedLang}. Please check API configuration.`);
+      }
+      
+      if (data.responseStatus === 400) {
+        throw new Error(`Invalid language code: ${normalizedLang}. Language may not be supported.`);
+      }
+
+      throw new Error(`Translation failed: ${data.responseStatus || 'Unknown error'} - ${JSON.stringify(data.responseData || {})}`);
     } catch (error: any) {
       if (error.message === 'Rate limited') {
         throw error;
       }
+      console.error('MyMemory API error for language', normalizedLang, ':', error);
       throw new Error(`Translation API error: ${error.message}`);
     }
   }
@@ -349,8 +449,14 @@ export class TranslationService {
    * Set current language
    */
   setLanguage(language: string): void {
+    const previousLanguage = this.currentLanguage;
     this.currentLanguage = language;
     localStorage.setItem('language', language);
+    
+    // Clear component cache when language changes to force fresh translations
+    if (previousLanguage !== language) {
+      this.componentCache = {};
+    }
     
     // Dispatch language change event
     window.dispatchEvent(new CustomEvent('languageChanged', { 
