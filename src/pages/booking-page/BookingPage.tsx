@@ -9,8 +9,9 @@ import {
   
   MessageSquare,
   Shield,
+  Clock,
 } from 'react-feather';
-import { createBooking, fetchBookingById } from './service/api';
+import { createBooking, fetchBookingById, calculateDeliveryFee, getAvailableTimeWindows } from './service/api';
 import { fetchProductImages, getProductById, fetchProductPricesByProductId } from '../admin/service';
 import { useToast } from '../../contexts/ToastContext';
 import ReviewForm from './components/ReviewForm';
@@ -43,8 +44,15 @@ const BookingPage: React.FC = () => {
     pickupTime: '',
     returnTime: '',
     pickupMethod: '',
+    deliveryMethod: '' as 'pickup' | 'delivery' | 'meet_public' | '',
+    deliveryAddress: '',
+    meetPublicLocation: '',
+    deliveryTimeWindow: 'flexible' as 'morning' | 'afternoon' | 'evening' | 'flexible',
+    deliveryInstructions: '',
     renterNotes: '',
   });
+  const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
+  const [loadingDeliveryFee, setLoadingDeliveryFee] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [existingBooking, setExistingBooking] = useState<any>(null);
@@ -409,6 +417,11 @@ const BookingPage: React.FC = () => {
             pickupTime: bookingData.pickup_time || extractTimeInput(bookingData.start_time) || prev.pickupTime,
             returnTime: bookingData.return_time || extractTimeInput(bookingData.end_time) || prev.returnTime,
             pickupMethod: bookingData.pickup_method || prev.pickupMethod,
+            deliveryMethod: bookingData.delivery_method || prev.deliveryMethod || '',
+            deliveryAddress: bookingData.delivery_address || prev.deliveryAddress || '',
+            meetPublicLocation: bookingData.meet_public_location || prev.meetPublicLocation || '',
+            deliveryTimeWindow: bookingData.delivery_time_window || prev.deliveryTimeWindow || 'flexible',
+            deliveryInstructions: bookingData.delivery_instructions || prev.deliveryInstructions || '',
             renterNotes: bookingData.renter_notes || prev.renterNotes,
           }));
         }
@@ -482,8 +495,17 @@ const BookingPage: React.FC = () => {
     }
     
     // Validate pickup method is selected
-    if (!formData.pickupMethod) {
-      errors.pickupMethod = 'Pickup method is required';
+    const deliveryMethod = formData.deliveryMethod || formData.pickupMethod;
+    if (!deliveryMethod) {
+      errors.pickupMethod = 'Delivery method is required';
+    }
+
+    if (deliveryMethod === 'delivery' && !formData.deliveryAddress.trim()) {
+      errors.deliveryAddress = 'Delivery address is required';
+    }
+
+    if (deliveryMethod === 'meet_public' && !formData.meetPublicLocation.trim()) {
+      errors.meetPublicLocation = 'Meet location is required';
     }
     
     if (Object.keys(errors).length > 0) {
@@ -493,6 +515,7 @@ const BookingPage: React.FC = () => {
     }
     try {
       const token = localStorage.getItem('token') || '';
+      const deliveryMethod = formData.deliveryMethod || formData.pickupMethod;
       const bookingPayload = {
         product_id: bookingItem?.id,
         owner_id: bookingItem?.owner_id,
@@ -501,6 +524,11 @@ const BookingPage: React.FC = () => {
         pickup_time: formData.pickupTime,
         return_time: formData.returnTime,
         pickup_method: formData.pickupMethod,
+        delivery_method: deliveryMethod,
+        delivery_address: deliveryMethod === 'delivery' ? formData.deliveryAddress : undefined,
+        meet_public_location: deliveryMethod === 'meet_public' ? formData.meetPublicLocation : undefined,
+        delivery_time_window: (deliveryMethod === 'delivery' || deliveryMethod === 'meet_public') ? formData.deliveryTimeWindow : undefined,
+        delivery_instructions: (deliveryMethod === 'delivery' || deliveryMethod === 'meet_public') ? formData.deliveryInstructions : undefined,
         renter_notes: formData.renterNotes,
       };
       const response = await createBooking(bookingPayload, token);
@@ -714,83 +742,6 @@ const BookingPage: React.FC = () => {
               )}
             </div>
 
-            {/* Pickup Method */}
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                <MapPinIcon className="w-5 h-5 mr-2 text-[#00aaa9]" />
-                Pickup Method
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className={`
-                  relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 dark:text-slate-100
-                  ${formData.pickupMethod === 'pickup' 
-                    ? 'border-[#00aaa9] bg-[#00aaa9]/5' 
-                    : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
-                  }
-                `}>
-                  <input
-                    type="radio"
-                    name="pickupMethod"
-                    value="pickup"
-                    checked={formData.pickupMethod === 'pickup'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <div className={`
-                    w-4 h-4 rounded-full border-2 mr-3 transition-all duration-200
-                    ${formData.pickupMethod === 'pickup'
-                      ? 'border-[#00aaa9] bg-[#00aaa9] shadow-sm'
-                      : 'border-gray-300'
-                    }
-                  `}>
-                    {formData.pickupMethod === 'pickup' && (
-                      <div className="w-2 h-2 bg-white rounded-full m-0.5" />
-                    )}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-900 dark:text-white">Pickup at Location</span>
-                    <p className="text-sm text-gray-600 dark:text-slate-400">Meet the owner at their location</p>
-                  </div>
-                </label>
-                <label className={`
-                  relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 dark:text-slate-100
-                  ${formData.pickupMethod === 'delivery' 
-                    ? 'border-[#00aaa9] bg-[#00aaa9]/5' 
-                    : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
-                  }
-                `}>
-                  <input
-                    type="radio"
-                    name="pickupMethod"
-                    value="delivery"
-                    checked={formData.pickupMethod === 'delivery'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <div className={`
-                    w-4 h-4 rounded-full border-2 mr-3 transition-all duration-200
-                    ${formData.pickupMethod === 'delivery'
-                      ? 'border-[#00aaa9] bg-[#00aaa9] shadow-sm'
-                      : 'border-gray-300'
-                    }
-                  `}>
-                    {formData.pickupMethod === 'delivery' && (
-                      <div className="w-2 h-2 bg-white rounded-full m-0.5" />
-                    )}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-900 dark:text-white">Delivery</span>
-                    <p className="text-sm text-gray-600 dark:text-slate-400">Have it delivered to you</p>
-                  </div>
-                </label>
-              </div>
-              {validationErrors.pickupMethod && (
-                <p className="text-red-500 text-sm mt-4 flex items-center bg-red-50 p-3 rounded-lg">
-                  <span className="w-4 h-4 mr-2">⚠</span>
-                  {validationErrors.pickupMethod}
-                </p>
-              )}
-            </div>
 
             {/* Additional Notes */}
             <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-6">

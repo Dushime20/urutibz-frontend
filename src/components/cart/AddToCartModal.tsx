@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { X, Calendar, MapPin, ShoppingCart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Calendar, MapPin, ShoppingCart, Clock } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TranslatedText } from '../translated-text';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { calculateDeliveryFee } from '../../pages/booking-page/service/api';
 
 interface AddToCartModalProps {
   isOpen: boolean;
@@ -36,9 +37,14 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
 
   const [startDate, setStartDate] = useState(tomorrow);
   const [endDate, setEndDate] = useState(nextWeek);
-  const [pickupMethod, setPickupMethod] = useState<'pickup' | 'delivery'>('pickup');
+  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery' | 'meet_public'>('pickup');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [meetPublicLocation, setMeetPublicLocation] = useState('');
+  const [deliveryTimeWindow, setDeliveryTimeWindow] = useState<'morning' | 'afternoon' | 'evening' | 'flexible'>('flexible');
+  const [deliveryInstructions, setDeliveryInstructions] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
+  const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
+  const [loadingDeliveryFee, setLoadingDeliveryFee] = useState(false);
 
   const calculateDays = () => {
     if (!startDate || !endDate) return 0;
@@ -49,7 +55,8 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
   };
 
   const totalDays = calculateDays();
-  const totalPrice = product.pricePerDay * totalDays;
+  const basePrice = product.pricePerDay * totalDays;
+  const totalPrice = basePrice + (deliveryFee || 0);
 
   const formatCurrency = (amount: number, currency: string): string => {
     const currencySymbols: { [key: string]: string } = {
@@ -87,8 +94,13 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
       return;
     }
 
-    if (pickupMethod === 'delivery' && !deliveryAddress.trim()) {
+    if (deliveryMethod === 'delivery' && !deliveryAddress.trim()) {
       showToast(tSync('Please provide delivery address'), 'error');
+      return;
+    }
+
+    if (deliveryMethod === 'meet_public' && !meetPublicLocation.trim()) {
+      showToast(tSync('Please provide meet location'), 'error');
       return;
     }
 
@@ -102,8 +114,13 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
       currency: product.currency,
       ownerId: product.ownerId,
       categoryId: product.categoryId,
-      pickupMethod: pickupMethod === 'pickup' ? 'pickup' : 'delivery',
-      deliveryAddress: pickupMethod === 'delivery' ? deliveryAddress : undefined,
+      pickupMethod: deliveryMethod === 'pickup' ? 'pickup' : deliveryMethod === 'delivery' ? 'delivery' : 'meet_public',
+      deliveryMethod: deliveryMethod,
+      deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress : undefined,
+      meetPublicLocation: deliveryMethod === 'meet_public' ? meetPublicLocation : undefined,
+      deliveryTimeWindow: deliveryTimeWindow,
+      deliveryInstructions: deliveryInstructions || undefined,
+      deliveryFee: deliveryFee || undefined,
       specialInstructions: specialInstructions || undefined,
     });
 
@@ -218,47 +235,81 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
               </div>
             </div>
 
-            {/* Pickup Method */}
+            {/* Delivery Method */}
             {(product.pickupAvailable || product.deliveryAvailable) && (
               <div className="space-y-3">
                 <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  <TranslatedText text="Pickup Method" />
+                  <TranslatedText text="Delivery Method" />
                 </label>
-                <div className="flex gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {product.pickupAvailable && (
                     <button
                       type="button"
-                      onClick={() => setPickupMethod('pickup')}
-                      className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                        pickupMethod === 'pickup'
+                      onClick={() => setDeliveryMethod('pickup')}
+                      className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                        deliveryMethod === 'pickup'
                           ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
                           : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-teal-400'
                       }`}
                     >
                       <MapPin className="w-5 h-5 mx-auto mb-1" />
-                      <span className="text-sm font-medium"><TranslatedText text="Pickup" /></span>
+                      <span className="text-xs font-medium"><TranslatedText text="Pickup" /></span>
                     </button>
                   )}
                   {product.deliveryAvailable && (
-                    <button
-                      type="button"
-                      onClick={() => setPickupMethod('delivery')}
-                      className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                        pickupMethod === 'delivery'
-                          ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
-                          : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-teal-400'
-                      }`}
-                    >
-                      <MapPin className="w-5 h-5 mx-auto mb-1" />
-                      <span className="text-sm font-medium"><TranslatedText text="Delivery" /></span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryMethod('delivery')}
+                        className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                          deliveryMethod === 'delivery'
+                            ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
+                            : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-teal-400'
+                        }`}
+                      >
+                        <MapPin className="w-5 h-5 mx-auto mb-1" />
+                        <span className="text-xs font-medium"><TranslatedText text="Delivery" /></span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryMethod('meet_public')}
+                        className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                          deliveryMethod === 'meet_public'
+                            ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
+                            : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-teal-400'
+                        }`}
+                      >
+                        <MapPin className="w-5 h-5 mx-auto mb-1" />
+                        <span className="text-xs font-medium"><TranslatedText text="Meet Public" /></span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
             )}
 
+            {/* Delivery Time Window */}
+            {(deliveryMethod === 'delivery' || deliveryMethod === 'meet_public') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  <Clock className="w-4 h-4 inline mr-1" />
+                  <TranslatedText text="Preferred Time Window" />
+                </label>
+                <select
+                  value={deliveryTimeWindow}
+                  onChange={(e) => setDeliveryTimeWindow(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                >
+                  <option value="flexible"><TranslatedText text="Flexible" /></option>
+                  <option value="morning"><TranslatedText text="Morning (8 AM - 12 PM)" /></option>
+                  <option value="afternoon"><TranslatedText text="Afternoon (12 PM - 5 PM)" /></option>
+                  <option value="evening"><TranslatedText text="Evening (5 PM - 9 PM)" /></option>
+                </select>
+              </div>
+            )}
+
             {/* Delivery Address */}
-            {pickupMethod === 'delivery' && (
+            {deliveryMethod === 'delivery' && (
               <div>
                 <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">
                   <TranslatedText text="Delivery Address" />
@@ -268,6 +319,38 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
                   onChange={(e) => setDeliveryAddress(e.target.value)}
                   placeholder={tSync('Enter delivery address')}
                   rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                />
+              </div>
+            )}
+
+            {/* Meet Public Location */}
+            {deliveryMethod === 'meet_public' && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">
+                  <TranslatedText text="Meet Location" />
+                </label>
+                <textarea
+                  value={meetPublicLocation}
+                  onChange={(e) => setMeetPublicLocation(e.target.value)}
+                  placeholder={tSync('Enter public meeting location (e.g., shopping mall, park)')}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                />
+              </div>
+            )}
+
+            {/* Delivery Instructions */}
+            {(deliveryMethod === 'delivery' || deliveryMethod === 'meet_public') && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">
+                  <TranslatedText text="Delivery Instructions" /> <span className="text-gray-400 text-xs font-normal">(<TranslatedText text="Optional" />)</span>
+                </label>
+                <textarea
+                  value={deliveryInstructions}
+                  onChange={(e) => setDeliveryInstructions(e.target.value)}
+                  placeholder={tSync('Gate codes, special notes, preferred location, etc.')}
+                  rows={2}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                 />
               </div>
@@ -297,9 +380,17 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
                   {formatCurrency(totalPrice, product.currency)}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 dark:text-slate-400 font-medium">
-                {formatCurrency(product.pricePerDay, product.currency)} × {totalDays} {totalDays === 1 ? tSync('day') : tSync('days')}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm text-gray-600 dark:text-slate-400 font-medium">
+                  {formatCurrency(product.pricePerDay, product.currency)} × {totalDays} {totalDays === 1 ? tSync('day') : tSync('days')}
+                </p>
+                {deliveryFee !== null && deliveryFee > 0 && (
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
+                    + {formatCurrency(deliveryFee, product.currency)} <TranslatedText text="delivery fee" />
+                    {loadingDeliveryFee && <span className="ml-2 text-xs">(<TranslatedText text="calculating..." />)</span>}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Actions */}

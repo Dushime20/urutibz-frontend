@@ -410,3 +410,160 @@ export async function rejectBookingByOwner(bookingId: string, reason: string, no
     };
   }
 }
+
+// Delivery API functions
+export interface DeliveryFeeCalculation {
+  baseFee: number;
+  distanceFee?: number;
+  timeWindowFee?: number;
+  urgencyFee?: number;
+  totalFee: number;
+  currency: string;
+  breakdown: Array<{
+    item: string;
+    amount: number;
+    description?: string;
+  }>;
+}
+
+export interface CalculateDeliveryFeeRequest {
+  product_id: string;
+  delivery_method: 'pickup' | 'delivery' | 'meet_public';
+  delivery_address?: string;
+  delivery_coordinates?: { lat: number; lng: number };
+  delivery_time_window?: 'morning' | 'afternoon' | 'evening' | 'flexible';
+  meet_public_location?: string;
+  meet_public_coordinates?: { lat: number; lng: number };
+}
+
+export async function calculateDeliveryFee(
+  request: CalculateDeliveryFeeRequest,
+  token: string
+): Promise<{ success: boolean; data?: DeliveryFeeCalculation; error?: string }> {
+  const url = `${API_BASE_URL}/bookings/delivery/calculate-fee`;
+  
+  try {
+    const response = await axios.post(url, request, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return {
+      success: true,
+      data: response.data?.data || response.data
+    };
+  } catch (error: any) {
+    console.error('Error calculating delivery fee:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to calculate delivery fee'
+    };
+  }
+}
+
+export async function getAvailableTimeWindows(
+  date: string,
+  token: string
+): Promise<{ success: boolean; data?: string[]; error?: string }> {
+  const url = `${API_BASE_URL}/bookings/delivery/available-time-windows?date=${encodeURIComponent(date)}`;
+  
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return {
+      success: true,
+      data: response.data?.data || response.data
+    };
+  } catch (error: any) {
+    console.error('Error fetching available time windows:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to fetch available time windows'
+    };
+  }
+}
+
+export interface DeliveryTracking {
+  status: 'scheduled' | 'confirmed' | 'out_for_delivery' | 'in_transit' | 'delivered' | 'failed' | 'cancelled';
+  currentLocation?: { lat: number; lng: number };
+  eta?: string;
+  trackingNumber?: string;
+  driverContact?: string;
+  updates: Array<{
+    status: string;
+    timestamp: string;
+    location?: { lat: number; lng: number };
+    notes?: string;
+  }>;
+}
+
+export async function getDeliveryTracking(
+  bookingId: string,
+  token: string
+): Promise<{ success: boolean; data?: DeliveryTracking; error?: string }> {
+  const url = `${API_BASE_URL}/bookings/${bookingId}/delivery/tracking`;
+  
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return {
+      success: true,
+      data: response.data?.data || response.data
+    };
+  } catch (error: any) {
+    console.error('Error fetching delivery tracking:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to fetch delivery tracking'
+    };
+  }
+}
+
+export interface UpdateDeliveryStatusRequest {
+  status: 'scheduled' | 'confirmed' | 'out_for_delivery' | 'in_transit' | 'delivered' | 'failed' | 'cancelled';
+  location?: { lat: number; lng: number };
+  tracking_number?: string;
+  eta?: string;
+  driver_contact?: string;
+  notes?: string;
+}
+
+export async function updateDeliveryStatus(
+  bookingId: string,
+  request: UpdateDeliveryStatusRequest,
+  token: string
+): Promise<{ success: boolean; data?: DeliveryTracking; error?: string }> {
+  const url = `${API_BASE_URL}/bookings/${bookingId}/delivery/update-status`;
+  
+  try {
+    const response = await axios.post(url, request, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return {
+      success: true,
+      data: response.data?.data || response.data
+    };
+  } catch (error: any) {
+    console.error('Error updating delivery status:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to update delivery status'
+    };
+  }
+}

@@ -12,7 +12,12 @@ export interface CartItem {
   totalDays: number;
   totalPrice: number;
   pickupMethod?: string;
+  deliveryMethod?: 'pickup' | 'delivery' | 'meet_public';
   deliveryAddress?: string;
+  meetPublicLocation?: string;
+  deliveryTimeWindow?: 'morning' | 'afternoon' | 'evening' | 'flexible';
+  deliveryInstructions?: string;
+  deliveryFee?: number;
   specialInstructions?: string;
   ownerId: string;
   categoryId?: string;

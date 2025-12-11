@@ -9,6 +9,8 @@ interface UseRealtimeReturn {
   leaveRoom: (room: string, type?: string) => void;
   sendNotification: (data: { toUserId: string; type: string; message: string; data?: any }) => void;
   updateBooking: (data: { bookingId: string; status: string; toUserId?: string; notification?: { message: string } }) => void;
+  updateDeliveryStatus: (data: { bookingId: string; status: string; location?: { lat: number; lng: number }; trackingNumber?: string; eta?: string; driverContact?: string; notes?: string }) => void;
+  updateDeliveryLocation: (data: { bookingId: string; location: { lat: number; lng: number } }) => void;
 }
 
 export const useRealtime = (): UseRealtimeReturn => {
@@ -129,6 +131,31 @@ export const useRealtime = (): UseRealtimeReturn => {
     }
   }, [isConnected]);
 
+  // Update delivery status
+  const updateDeliveryStatus = useCallback((data: { 
+    bookingId: string; 
+    status: string; 
+    location?: { lat: number; lng: number }; 
+    trackingNumber?: string; 
+    eta?: string; 
+    driverContact?: string; 
+    notes?: string;
+  }) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('delivery-status-update', data);
+    }
+  }, [isConnected]);
+
+  // Update delivery location (GPS tracking)
+  const updateDeliveryLocation = useCallback((data: { 
+    bookingId: string; 
+    location: { lat: number; lng: number };
+  }) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('delivery-location-update', data);
+    }
+  }, [isConnected]);
+
   return {
     socket,
     isConnected,
@@ -137,6 +164,8 @@ export const useRealtime = (): UseRealtimeReturn => {
     leaveRoom,
     sendNotification,
     updateBooking,
+    updateDeliveryStatus,
+    updateDeliveryLocation,
     setTypingIndicator,
     markMessageAsRead,
     markChatAsRead,
