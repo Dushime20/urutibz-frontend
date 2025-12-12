@@ -635,28 +635,28 @@ const DashboardPage: React.FC = () => {
     fetchBookings();
   }, []);
 
+  // Function to load reviews (can be called from child components)
+  const loadUserReviews = async () => {
+    setLoadingReviews(true);
+    try {
+      const token = localStorage.getItem('token');
+      const received = await fetchMyReceivedReviews(token ?? undefined);
+      const written = await fetchMyWrittenReviews(token ?? undefined);
+      const merged = [
+        ...received.map((r: any) => ({ ...r, _source: 'received' })),
+        ...written.map((r: any) => ({ ...r, _source: 'written' }))
+      ];
+      setUserReviews(merged);
+    } catch (error) {
+      setUserReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchReviews = async () => {
-      if (activeTab !== 'reviews') return;
-
-      setLoadingReviews(true);
-      try {
-        const token = localStorage.getItem('token');
-        const received = await fetchMyReceivedReviews(token ?? undefined);
-        const written = await fetchMyWrittenReviews(token ?? undefined);
-        const merged = [
-          ...received.map((r: any) => ({ ...r, _source: 'received' })),
-          ...written.map((r: any) => ({ ...r, _source: 'written' }))
-        ];
-        setUserReviews(merged);
-      } catch (error) {
-        setUserReviews([]);
-      } finally {
-        setLoadingReviews(false);
-      }
-    };
-
-    fetchReviews();
+    if (activeTab !== 'reviews') return;
+    loadUserReviews();
   }, [activeTab]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -1546,6 +1546,7 @@ const DashboardPage: React.FC = () => {
               userReviews={userReviews}
               onViewReviewDetail={handleViewReviewDetail}
               loadingReviewDetail={loadingReviewDetail}
+              onReviewsUpdated={loadUserReviews}
             />
           )}
 

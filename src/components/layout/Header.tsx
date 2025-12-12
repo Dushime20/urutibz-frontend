@@ -754,7 +754,7 @@ const Header: React.FC = () => {
       <div className="relative">
         <div className="w-full px-6 lg:px-20 mx-auto">
           <div className="py-3 lg:py-4 space-y-3 md:space-y-0">
-            {/* Mobile compact header */}
+            {/* Mobile compact header - Only for small mobile devices */}
             <div className="flex items-center justify-between md:hidden">
               <Link to="/" className="flex items-center gap-3">
                 <img
@@ -794,7 +794,7 @@ const Header: React.FC = () => {
               </div>
             </div>
 
-            <div className="hidden md:grid w-full grid-cols-1 gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-6">
+            <div className="hidden md:grid w-full grid-cols-1 gap-4 md:grid-cols-[auto_1fr_auto] md:items-center md:gap-4 lg:gap-6">
               {/* Logo section */}
               <div className="flex items-center gap-4 lg:gap-6 justify-between lg:justify-start">
                 <Link to="/" className="flex items-center gap-3">
@@ -878,8 +878,8 @@ const Header: React.FC = () => {
                 )}
               </div>
 
-              {/* Right section - Hidden on mobile, visible on desktop */}
-              <div className="hidden lg:flex items-center gap-2 lg:gap-3 justify-end order-3">
+              {/* Right section - Hidden on mobile, visible on tablet and desktop */}
+              <div className="hidden md:flex items-center gap-2 lg:gap-3 justify-end order-3">
               <button
                 onClick={toggleDarkMode}
                 className="inline-flex p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
@@ -888,12 +888,12 @@ const Header: React.FC = () => {
                 {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
 
-              <div className="hidden md:block">
-                <LanguageSwitcher buttonClassName="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-200 hover:text-teal-600 rounded-lg" />
+              <div className="hidden sm:block">
+                <LanguageSwitcher buttonClassName="px-2 md:px-3 py-2 text-xs md:text-sm font-medium text-slate-600 dark:text-slate-200 hover:text-teal-600 rounded-lg" />
               </div>
 
               {isAuthenticated ? (
-                <div className="hidden md:flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2 md:gap-3">
                   <CartIcon onClick={() => setIsCartOpen(true)} />
                   <RealtimeNotifications />
                   <button
@@ -907,11 +907,11 @@ const Header: React.FC = () => {
                         <User className="w-4 h-4" />
                       </div>
                     )}
-                    <div className="hidden lg:flex flex-col items-start">
+                    <div className="hidden md:flex flex-col items-start">
                       <span className="text-[0.6rem] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
                         {user?.role === 'admin' ? <TranslatedText text="Operator" /> : <TranslatedText text="Member" />}
                       </span>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-1">
+                      <span className="text-xs md:text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-1 max-w-[120px] md:max-w-none">
                         {user?.name}
                       </span>
                     </div>
@@ -950,11 +950,11 @@ const Header: React.FC = () => {
                 </div>
               ) : (
                 <div className="hidden sm:flex items-center gap-2">
-                  <Link to="/login" className="px-4 py-2 rounded-full border border-gray-200 text-sm font-semibold text-slate-600 hover:border-teal-400">
+                  <Link to="/login" className="px-3 md:px-4 py-2 rounded-full border border-gray-200 text-xs md:text-sm font-semibold text-slate-600 hover:border-teal-400 whitespace-nowrap">
                     <TranslatedText text="Log in" />
                   </Link>
                   {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
-                    <Link to="/register" className="px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-sky-500 text-white text-sm font-semibold shadow-lg hover:opacity-90">
+                    <Link to="/register" className="px-3 md:px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-sky-500 text-white text-xs md:text-sm font-semibold shadow-lg hover:opacity-90 whitespace-nowrap">
                       <TranslatedText text="Create account" />
                     </Link>
                   )}
@@ -965,12 +965,13 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center justify-center gap-6 m-2 border-gray-100 dark:border-gray-800 pt-3 mt-4 text-base lg:text-lg font-semibold text-slate-600 dark:text-slate-200 relative">
+        {/* Primary Navigation - Visible on tablets and desktop, hidden on mobile */}
+        <div className="hidden md:flex items-center justify-center gap-3 md:gap-4 lg:gap-6 m-2 border-gray-100 dark:border-gray-800 pt-3 mt-4 text-sm md:text-base lg:text-lg font-semibold text-slate-600 dark:text-slate-200 relative flex-wrap">
           {/* Category Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsCategoriesOpen((prev) => !prev)}
-              className={`group inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition-all ${
+              className={`group inline-flex items-center gap-2 rounded-2xl border px-3 md:px-4 py-2 text-xs md:text-sm font-semibold transition-all ${
                 isCategoriesOpen
                   ? 'text-white border-teal-500 bg-teal-600 shadow-[0_15px_35px_-25px_rgba(13,148,136,0.8)]'
                   : 'text-slate-600 dark:text-slate-200 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:text-teal-600 hover:border-teal-200'
@@ -979,15 +980,15 @@ const Header: React.FC = () => {
               aria-expanded={isCategoriesOpen}
               aria-label={translatedAttrs['Browse categories'] || 'Browse categories'}
             >
-              <span className={`flex h-7 w-7 items-center justify-center rounded-xl transition-all ${
+              <span className={`flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-xl transition-all ${
                 isCategoriesOpen
                   ? 'bg-white/20 text-white shadow-inner shadow-teal-900/30'
                   : 'bg-teal-50 text-teal-500 group-hover:text-teal-600 group-hover:bg-teal-50'
               }`}>
-                <LayoutGrid className="w-4 h-4" />
+                <LayoutGrid className="w-3 h-3 md:w-4 md:h-4" />
               </span>
-              <span className="tracking-tight"><TranslatedText text="Discover" /></span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isCategoriesOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-teal-500'}`} />
+              <span className="tracking-tight hidden sm:inline"><TranslatedText text="Discover" /></span>
+              <ChevronDown className={`w-3 h-3 md:w-4 md:h-4 transition-transform ${isCategoriesOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-teal-500'}`} />
             </button>
             <div
               className={`absolute left-0 top-full mt-3 w-[min(90vw,920px)] max-w-5xl rounded-3xl border border-slate-200/70 dark:border-slate-700/60 bg-white/95 dark:bg-gray-900/95 shadow-2xl shadow-slate-900/10 backdrop-blur-xl p-5 transition-all duration-200 origin-top z-50 ${
@@ -1124,17 +1125,18 @@ const Header: React.FC = () => {
             <Link
               key={`${link.to}-${language}`}
               to={link.to}
-              className="hover:text-teal-600 transition-colors"
+              className="hover:text-teal-600 transition-colors px-2 py-1 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 whitespace-nowrap"
             >
               <TranslatedText text={link.label} />
             </Link>
           ))}
           <Link
             to="/create-listing"
-            className="hover:text-teal-600 transition-colors inline-flex items-center gap-1.5"
+            className="hover:text-teal-600 transition-colors inline-flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 whitespace-nowrap"
           >
-            <PlusCircle className="w-4 h-4" />
-            <TranslatedText text="List inventory" />
+            <PlusCircle className="w-3 h-3 md:w-4 md:h-4" />
+            <span className="hidden sm:inline"><TranslatedText text="List inventory" /></span>
+            <span className="sm:hidden"><TranslatedText text="List" /></span>
           </Link>
         </div>
 
@@ -1286,14 +1288,19 @@ const Header: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{language?.toUpperCase() || 'EN'}</span>
-                  <span>•</span>
-                  <span>{displayCurrency}</span>
-                  <span>•</span>
-                  <button onClick={toggleDarkMode} className="inline-flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                <div className="flex items-center justify-between px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <LanguageSwitcher 
+                      buttonClassName="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:text-teal-600 rounded-lg border border-gray-200 dark:border-gray-700"
+                      showFlag={true}
+                      showNativeName={false}
+                    />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">•</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{displayCurrency}</span>
+                  </div>
+                  <button onClick={toggleDarkMode} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:text-teal-600 rounded-lg border border-gray-200 dark:border-gray-700">
                     {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    {isDarkMode ? <TranslatedText text="Light" /> : <TranslatedText text="Dark" />}
+                    <span className="hidden sm:inline">{isDarkMode ? <TranslatedText text="Light" /> : <TranslatedText text="Dark" />}</span>
                   </button>
                 </div>
               </div>

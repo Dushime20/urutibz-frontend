@@ -105,16 +105,25 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ bookingId, ownerId, onReviewSub
         return;
       }
 
-      const reviewData = {
+      // Only include ratings that are > 0 (detailed ratings are optional)
+      const reviewData: any = {
         bookingId,
         reviewedUserId: ownerId,
         overallRating: ratings.overallRating,
-        communicationRating: ratings.communicationRating,
-        conditionRating: ratings.conditionRating,
-        valueRating: ratings.valueRating,
         title: reviewText.title,
         comment: reviewText.comment
       };
+
+      // Only include detailed ratings if they are set (greater than 0)
+      if (ratings.communicationRating > 0) {
+        reviewData.communicationRating = ratings.communicationRating;
+      }
+      if (ratings.conditionRating > 0) {
+        reviewData.conditionRating = ratings.conditionRating;
+      }
+      if (ratings.valueRating > 0) {
+        reviewData.valueRating = ratings.valueRating;
+      }
 
       console.log('Submitting review with data:', reviewData);
       console.log('Token available:', !!token);

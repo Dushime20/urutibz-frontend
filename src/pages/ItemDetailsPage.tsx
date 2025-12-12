@@ -220,7 +220,7 @@ const ItemDetailsPage: React.FC = () => {
     loadInteractions();
   }, [item?.id]);
 
-  // Fetch product reviews
+  // Fetch product reviews (only approved reviews are shown publicly)
   useEffect(() => {
     if (!item?.id) return;
     (async () => {
@@ -228,7 +228,11 @@ const ItemDetailsPage: React.FC = () => {
         const token = localStorage.getItem('token') || undefined;
         console.log('Fetching reviews for product ID:', item.id, 'Type:', typeof item.id);
         const reviews = await fetchProductReviews(item.id, token);
-        setProductReviews(Array.isArray(reviews) ? reviews : []);
+        // Filter to only show approved reviews publicly
+        const approvedReviews = Array.isArray(reviews) 
+          ? reviews.filter((review: any) => review.moderationStatus === 'approved')
+          : [];
+        setProductReviews(approvedReviews);
       } catch (error) {
         console.error('Error in ItemDetailsPage review fetch:', error);
         // Set empty array as fallback - page will still work without reviews

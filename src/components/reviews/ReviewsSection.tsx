@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Star, User, Calendar, CheckCircle, ThumbsUp, Flag, MessageSquare } from 'lucide-react';
+import { Star, User, Calendar, CheckCircle, ThumbsUp, Flag, MessageSquare, Reply, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { TranslatedText } from '../translated-text';
 import Button from '../ui/Button';
+import axios from '../../lib/http';
 
 interface Review {
   id: string;
@@ -20,6 +21,10 @@ interface Review {
   valueRating?: number;
   verifiedBooking?: boolean;
   helpfulVotes?: number;
+  response?: string;
+  responseDate?: string;
+  reviewedUserId?: string;
+  reviewed_user_id?: string;
 }
 
 interface ReviewsSectionProps {
@@ -44,13 +49,14 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
   const [helpfulReviews, setHelpfulReviews] = useState<Set<string>>(new Set());
+  const [respondingToReviewId, setRespondingToReviewId] = useState<string | null>(null);
+  const [responseText, setResponseText] = useState('');
+  const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
+  const [reviewsWithResponses, setReviewsWithResponses] = useState<Record<string, string>>({});
 
   // Review form state
   const [ratings, setRatings] = useState({
     overallRating: 0,
-    communicationRating: 0,
-    conditionRating: 0,
-    valueRating: 0,
   });
   const [reviewText, setReviewText] = useState({
     title: '',
@@ -160,6 +166,64 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
     }
   };
 
+  // Check if current user is the product owner
+  const isOwner = ownerId && user?.id && String(ownerId) === String(user.id);
+
+  // Check if user can respond to a specific review
+  const canRespondToReview = (review: Review) => {
+    if (!isOwner || !isAuthenticated) return false;
+    // Owner can respond if review doesn't have a response yet
+    return !review.response && !reviewsWithResponses[review.id];
+  };
+
+  // Handle review response submission
+  const handleSubmitResponse = async (reviewId: string) => {
+    if (!responseText.trim()) {
+      showToast('Please enter a response', 'error');
+      return;
+    }
+
+    setIsSubmittingResponse(true);
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL;
+      
+      const response = await axios.post(
+        `${API_BASE_URL}/review/${reviewId}/response`,
+        { response: responseText.trim() },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data?.success) {
+        showToast('Response added successfully', 'success');
+        setReviewsWithResponses((prev) => ({
+          ...prev,
+          [reviewId]: responseText.trim(),
+        }));
+        setResponseText('');
+        setRespondingToReviewId(null);
+        
+        // Refresh reviews if callback is provided
+        if (onReviewAdded) {
+          onReviewAdded();
+        }
+      } else {
+        showToast(response.data?.error || 'Failed to add response', 'error');
+      }
+    } catch (error: any) {
+      console.error('Error submitting response:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to add response';
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsSubmittingResponse(false);
+    }
+  };
+
   // Toggle helpful
   const toggleHelpful = (reviewId: string) => {
     setHelpfulReviews((prev) => {
@@ -262,52 +326,31 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
       {/* Review Form */}
       {showReviewForm && isAuthenticated && (
-        <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="mb-8 p-4 sm:p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">
             <TranslatedText text="Share your experience" />
           </h3>
-          <form onSubmit={handleSubmitReview} className="space-y-6">
+          <form onSubmit={handleSubmitReview} className="space-y-4 sm:space-y-6">
             {/* Overall Rating */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+              <label className="block text-base font-semibold text-gray-900 dark:text-white mb-3">
                 <TranslatedText text="Overall rating" /> *
               </label>
-              {renderInteractiveStars(ratings.overallRating, (rating) =>
-                setRatings((prev) => ({ ...prev, overallRating: rating }))
-              )}
-            </div>
-
-            {/* Detailed Ratings */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <TranslatedText text="Communication" />
-                </label>
-                {renderInteractiveStars(ratings.communicationRating, (rating) =>
-                  setRatings((prev) => ({ ...prev, communicationRating: rating }))
+              <div className="flex items-center gap-4">
+                {renderInteractiveStars(ratings.overallRating, (rating) =>
+                  setRatings((prev) => ({ ...prev, overallRating: rating }))
                 )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <TranslatedText text="Condition" />
-                </label>
-                {renderInteractiveStars(ratings.conditionRating, (rating) =>
-                  setRatings((prev) => ({ ...prev, conditionRating: rating }))
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <TranslatedText text="Value" />
-                </label>
-                {renderInteractiveStars(ratings.valueRating, (rating) =>
-                  setRatings((prev) => ({ ...prev, valueRating: rating }))
+                {ratings.overallRating > 0 && (
+                  <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                    {ratings.overallRating} / 5
+                  </span>
                 )}
               </div>
             </div>
 
             {/* Review Comment */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+              <label className="block text-base font-semibold text-gray-900 dark:text-white mb-3">
                 <TranslatedText text="Your review" /> *
               </label>
               <textarea
@@ -316,20 +359,20 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                   setReviewText((prev) => ({ ...prev, comment: e.target.value }))
                 }
                 placeholder="Share your experience with this item..."
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white resize-none"
+                rows={5}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white resize-none text-sm sm:text-base"
                 required
               />
             </div>
 
             {/* Submit Buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button
                 type="submit"
                 variant="primary"
                 disabled={isSubmitting}
                 loading={isSubmitting}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto sm:flex-none"
               >
                 <TranslatedText text="Submit review" />
               </Button>
@@ -338,9 +381,10 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                 variant="outline"
                 onClick={() => {
                   setShowReviewForm(false);
-                  setRatings({ overallRating: 0, communicationRating: 0, conditionRating: 0, valueRating: 0 });
+                  setRatings({ overallRating: 0 });
                   setReviewText({ title: '', comment: '' });
                 }}
+                className="w-full sm:w-auto"
               >
                 <TranslatedText text="Cancel" />
               </Button>
@@ -364,76 +408,61 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                 key={review.id || index}
                 className="border-b border-gray-200 dark:border-gray-800 pb-6 last:border-b-0"
               >
-                <div className="flex gap-4">
+                <div className="flex gap-3 sm:gap-4">
                   {/* Avatar */}
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      <User className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                      <User className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500 dark:text-gray-400" />
                     </div>
                   </div>
 
                   {/* Review Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white mb-1">
                           {review.user_name || review.reviewer || 'Anonymous'}
                         </h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          {renderStars(rating, 'sm')}
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                          <div className="flex items-center gap-1">
+                            {renderStars(rating, 'sm')}
+                            <span className="text-sm font-medium text-gray-900 dark:text-white ml-1">
+                              {rating}
+                            </span>
+                          </div>
+                          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                             {formatDate(review.created_at || review.createdAt)}
                           </span>
                           {review.verifiedBooking && (
-                            <span className="flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400">
+                            <span className="flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-2 py-0.5 rounded-full">
                               <CheckCircle className="w-3 h-3" />
-                              <TranslatedText text="Verified booking" />
+                              <TranslatedText text="Verified" />
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    {/* Detailed Ratings */}
-                    {(review.communicationRating || review.conditionRating || review.valueRating) && (
-                      <div className="flex flex-wrap gap-4 mb-3 text-sm text-gray-600 dark:text-gray-400">
-                        {review.communicationRating && (
-                          <span>
-                            <TranslatedText text="Communication" />: {review.communicationRating}/5
-                          </span>
-                        )}
-                        {review.conditionRating && (
-                          <span>
-                            <TranslatedText text="Condition" />: {review.conditionRating}/5
-                          </span>
-                        )}
-                        {review.valueRating && (
-                          <span>
-                            <TranslatedText text="Value" />: {review.valueRating}/5
-                          </span>
-                        )}
-                      </div>
-                    )}
 
                     {/* Review Text */}
-                    <div className="text-gray-700 dark:text-gray-300 mb-3">
+                    <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
                       {shouldTruncate && !isExpanded ? (
                         <>
-                          <p>{comment.substring(0, 300)}...</p>
+                          <p className="line-clamp-3">{comment.substring(0, 300)}...</p>
                           <button
                             onClick={() => setExpandedReviewId(review.id)}
-                            className="text-teal-600 dark:text-teal-400 font-medium hover:underline mt-1"
+                            className="text-teal-600 dark:text-teal-400 font-medium hover:underline mt-2 text-sm"
                           >
                             <TranslatedText text="Show more" />
                           </button>
                         </>
                       ) : (
                         <>
-                          <p>{comment}</p>
+                          <p className="whitespace-pre-wrap break-words">{comment}</p>
                           {shouldTruncate && (
                             <button
                               onClick={() => setExpandedReviewId(null)}
-                              className="text-teal-600 dark:text-teal-400 font-medium hover:underline mt-1"
+                              className="text-teal-600 dark:text-teal-400 font-medium hover:underline mt-2 text-sm"
                             >
                               <TranslatedText text="Show less" />
                             </button>
@@ -442,14 +471,87 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                       )}
                     </div>
 
+                    {/* Owner Response Section */}
+                    {(review.response || reviewsWithResponses[review.id]) && (
+                      <div className="mb-4 p-4 bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-100 dark:border-teal-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 bg-teal-600 dark:bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs text-white font-bold">O</span>
+                          </div>
+                          <span className="text-sm font-semibold text-teal-900 dark:text-teal-100">
+                            <TranslatedText text="Owner Response" />
+                          </span>
+                          {review.responseDate && (
+                            <span className="text-xs text-teal-600 dark:text-teal-400 ml-auto">
+                              {formatDate(review.responseDate)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                          {review.response || reviewsWithResponses[review.id]}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Response Form (for owners) */}
+                    {respondingToReviewId === review.id && (
+                      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="text-sm font-semibold text-gray-900 dark:text-white">
+                            <TranslatedText text="Write a response" />
+                          </h5>
+                          <button
+                            onClick={() => {
+                              setRespondingToReviewId(null);
+                              setResponseText('');
+                            }}
+                            className="p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <textarea
+                          value={responseText}
+                          onChange={(e) => setResponseText(e.target.value)}
+                          placeholder="Thank the reviewer for their feedback..."
+                          rows={3}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white resize-none mb-3"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleSubmitResponse(review.id)}
+                            disabled={isSubmittingResponse || !responseText.trim()}
+                            variant="primary"
+                            className="text-sm px-4 py-2"
+                          >
+                            {isSubmittingResponse ? (
+                              <TranslatedText text="Submitting..." />
+                            ) : (
+                              <TranslatedText text="Submit Response" />
+                            )}
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setRespondingToReviewId(null);
+                              setResponseText('');
+                            }}
+                            variant="outline"
+                            className="text-sm px-4 py-2"
+                          >
+                            <TranslatedText text="Cancel" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Actions */}
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm pt-2 border-t border-gray-100 dark:border-gray-800">
                       <button
                         onClick={() => toggleHelpful(review.id)}
-                        className={`flex items-center gap-1 transition-colors ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
                           isHelpful
-                            ? 'text-teal-600 dark:text-teal-400 font-medium'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400'
+                            ? 'text-teal-600 dark:text-teal-400 font-medium bg-teal-50 dark:bg-teal-900/20'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                         }`}
                       >
                         <ThumbsUp className="w-4 h-4" />
@@ -457,10 +559,10 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                           <TranslatedText text="Helpful" />
                         </span>
                         {review.helpfulVotes && review.helpfulVotes > 0 && (
-                          <span>({review.helpfulVotes})</span>
+                          <span className="ml-1">({review.helpfulVotes})</span>
                         )}
                       </button>
-                      <button className="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                      <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                         <Flag className="w-4 h-4" />
                         <span>
                           <TranslatedText text="Report" />

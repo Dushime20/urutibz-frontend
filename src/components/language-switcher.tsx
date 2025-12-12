@@ -142,7 +142,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-platform shadow-platform-lg border border-platform-light-grey dark:border-gray-600 py-1 z-50 max-h-96 overflow-y-auto">
+        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-platform shadow-platform-lg border border-platform-light-grey dark:border-gray-600 py-1 z-[100] max-h-96 overflow-y-auto">
           {SUPPORTED_LANGUAGES.map((lang) => (
             <button
               key={lang.code}
