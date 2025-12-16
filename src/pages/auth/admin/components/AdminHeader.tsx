@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Bell, Shield, User, LogOut, ChevronDown, CheckCircle, Clock, AlertCircle, UserCircle, RefreshCw, Upload, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Bell, Shield, User, LogOut, ChevronDown, CheckCircle, Clock, AlertCircle, UserCircle, RefreshCw, Upload, X, Check } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { adminService, type AdminUserProfile } from '../service';
+import { getMyNotifications } from '../../../features/notifications/api';
+import { useMarkReadMutation } from '../../../features/notifications/queries';
 
 interface AdminHeaderProps {
   selectedLocation: string;
@@ -21,6 +23,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   const [avatarUploadLoading, setAvatarUploadLoading] = useState(false);
   const [avatarUploadError, setAvatarUploadError] = useState<string | null>(null);
   const [avatarUploadSuccess, setAvatarUploadSuccess] = useState<string | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const { mutate: markRead } = useMarkReadMutation();
+  const notificationRef = useRef<HTMLDivElement | null>(null);
 
     // Fetch current user data
   const fetchCurrentUser = async () => {
@@ -72,6 +79,79 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   useEffect(() => {
     fetchCurrentUser();
   }, []);
+
+  // Fetch notifications when dropdown opens
+  useEffect(() => {
+    if (!showNotifications) return;
+    
+    const loadNotifications = async () => {
+      try {
+        setNotificationsLoading(true);
+        const items = await getMyNotifications({ page: 1, limit: 50 });
+        setNotifications(Array.isArray(items) ? items : []);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+        setNotifications([]);
+      } finally {
+        setNotificationsLoading(false);
+      }
+    };
+
+    loadNotifications();
+  }, [showNotifications]);
+
+  // Close notifications dropdown on outside click
+  useEffect(() => {
+    if (!showNotifications) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      const withinNotification = notificationRef.current?.contains(target ?? null) ?? false;
+      if (!withinNotification) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications]);
+
+  // Helper function to check if notification is read
+  const isNotificationRead = (notification: any): boolean => {
+    if (!notification) return false;
+    if (typeof notification.read === 'boolean') return notification.read;
+    if (typeof notification.is_read === 'boolean') return notification.is_read;
+    if (typeof notification.isRead === 'boolean') return notification.isRead;
+    if (notification.read_at || notification.readAt) return true;
+    return false;
+  };
+
+  // Calculate unread count
+  const unreadCount = notifications.reduce((count, notification) => 
+    count + (isNotificationRead(notification) ? 0 : 1), 0
+  );
+
+  // Handle marking notification as read
+  const handleMarkAsRead = (id: string) => {
+    markRead(id);
+    setNotifications(prev => 
+      prev.map(n => 
+        n.id === id 
+          ? { ...n, read: true, is_read: true, isRead: true }
+          : n
+      )
+    );
+  };
+
+  // Handle marking all as read
+  const handleMarkAllAsRead = () => {
+    notifications.forEach(n => {
+      if (!isNotificationRead(n)) {
+        markRead(n.id);
+      }
+    });
+    setNotifications(prev => 
+      prev.map(n => ({ ...n, read: true, is_read: true, isRead: true }))
+    );
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -179,10 +259,96 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
             <h1 className="text-base font-bold text-gray-900 dark:text-gray-100">Admin</h1>
           </div>
           <div className="flex items-center gap-1">
-            <button className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" aria-label="Notifications">
-              <Bell className="w-5 h-5" />
-              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-            </button>
+            <div className="relative" ref={notificationRef}>
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" 
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{unreadCount} unread</span>
+                      )}
+                      {notifications.length > 0 && unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="text-xs text-my-primary hover:text-my-primary/80 font-medium"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notificationsLoading ? (
+                      <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        Loading...
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                        <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>No notifications</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                              !isNotificationRead(notification) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {notification.title || notification.type || 'Notification'}
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                                  {notification.message || notification.content || notification.body || ''}
+                                </p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  {notification.createdAt 
+                                    ? new Date(notification.createdAt).toLocaleString()
+                                    : notification.created_at
+                                    ? new Date(notification.created_at).toLocaleString()
+                                    : ''}
+                                </p>
+                              </div>
+                              {!isNotificationRead(notification) && (
+                                <button
+                                  onClick={() => handleMarkAsRead(notification.id)}
+                                  className="p-1 text-my-primary hover:bg-my-primary/10 rounded transition-colors flex-shrink-0"
+                                  title="Mark as read"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="relative flex items-center">
               <button
                 className="flex items-center focus:outline-none focus:ring-2 focus:ring-my-primary rounded-xl"
@@ -301,10 +467,96 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 &times;
               </button>
             </div>
-            <button className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" aria-label="Notifications">
-              <Bell className="w-5 h-5" />
-              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-            </button>
+            <div className="relative" ref={notificationRef}>
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" 
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{unreadCount} unread</span>
+                      )}
+                      {notifications.length > 0 && unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="text-xs text-my-primary hover:text-my-primary/80 font-medium"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notificationsLoading ? (
+                      <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        Loading...
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                        <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>No notifications</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                              !isNotificationRead(notification) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {notification.title || notification.type || 'Notification'}
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                                  {notification.message || notification.content || notification.body || ''}
+                                </p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  {notification.createdAt 
+                                    ? new Date(notification.createdAt).toLocaleString()
+                                    : notification.created_at
+                                    ? new Date(notification.created_at).toLocaleString()
+                                    : ''}
+                                </p>
+                              </div>
+                              {!isNotificationRead(notification) && (
+                                <button
+                                  onClick={() => handleMarkAsRead(notification.id)}
+                                  className="p-1 text-my-primary hover:bg-my-primary/10 rounded transition-colors flex-shrink-0"
+                                  title="Mark as read"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="relative flex items-center space-x-2 pl-4 border-l border-gray-200 dark:border-gray-800">
               <button
                 className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-my-primary rounded-xl"

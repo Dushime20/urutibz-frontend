@@ -32,7 +32,12 @@ export async function fetchAllProducts(
   const url = `${API_BASE_URL}/products${params.toString() ? `?${params.toString()}` : ''}`;
   try {
     const headers = createAuthHeaders(token);
-    const response = await axios.get(url, { headers });
+    // Add timeout and ensure request works without token
+    const response = await axios.get(url, { 
+      headers,
+      timeout: 30000, // 30 second timeout
+      validateStatus: (status) => status < 500 // Don't throw on 4xx errors
+    });
     
     // Normalize server response shape
     const payload = response?.data?.data || {};

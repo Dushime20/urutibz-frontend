@@ -177,6 +177,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Only allow submission on the last step
+    if (currentStep !== steps.length) {
+      // If not on last step, just move to next step instead
+      setCurrentStep(Math.min(steps.length, currentStep + 1));
+      return;
+    }
+    
     setIsSubmitting(true);
     setError(null);
     console.log("FORM SUBMITTED");
@@ -921,7 +929,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           ))}
         </div>
         {/* Scrollable form body and sticky footer now inside the form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto scrollbar-hide px-8 py-6 flex flex-col">
+        <form 
+          onSubmit={handleSubmit} 
+          onKeyDown={(e) => {
+            // Prevent Enter key from submitting form unless on last step
+            if (e.key === 'Enter' && currentStep !== steps.length) {
+              e.preventDefault();
+              // Move to next step on Enter key press
+              setCurrentStep(Math.min(steps.length, currentStep + 1));
+            }
+          }}
+          className="flex-1 overflow-y-auto scrollbar-hide px-8 py-6 flex flex-col"
+        >
           {renderStepContent()}
           {/* Sticky footer */}
           <div className="border-t border-gray-200 dark:border-slate-700 px-4 sm:px-8 py-4 bg-white dark:bg-slate-900 flex-shrink-0 flex flex-col sm:flex-row justify-between items-center gap-4 mt-auto">
@@ -940,7 +959,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
               {currentStep < steps.length ? (
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(Math.min(steps.length, currentStep + 1))}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCurrentStep(Math.min(steps.length, currentStep + 1));
+                  }}
                   className="w-full sm:w-auto px-6 py-3 bg-my-primary text-white rounded-lg font-medium hover:bg-my-primary/90 transition-all duration-200"
                 >
                   Next →
