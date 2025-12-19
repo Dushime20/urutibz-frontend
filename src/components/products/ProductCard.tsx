@@ -159,8 +159,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
               </span>
             ) : (
               <>
-                {itemLocations[product.id]?.city || <TranslatedText text="Unknown Location" />}
-                {itemLocations[product.id]?.country ? `, ${itemLocations[product.id]?.country}` : ''}
+                {itemLocations[product.id]?.city ? (
+                  <>
+                    {itemLocations[product.id].city}
+                    {itemLocations[product.id]?.country ? `, ${itemLocations[product.id].country}` : ''}
+                  </>
+                ) : product.address_line ? (
+                  product.address_line
+                ) : (
+                  <TranslatedText text="Unknown Location" />
+                )}
               </>
             )}
           </p>

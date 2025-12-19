@@ -73,6 +73,60 @@ export async function fetchAdminUsers(
   }
 }
 
+// Admin Products - Fetch all products (with any status) for admin dashboard
+export async function fetchAdminProducts(
+  token?: string,
+  page?: number,
+  limit?: number,
+  status?: string,
+  sort?: 'newest' | 'oldest'
+): Promise<{ data: any[]; error: string | null; total: number; meta: any }> {
+  try {
+    const params = new URLSearchParams();
+    if (page) params.append('page', String(page));
+    if (limit) params.append('limit', String(limit));
+    if (status && status !== 'all') params.append('status', status);
+    if (sort) params.append('sort', sort);
+    
+    const url = `${API_BASE_URL}/admin/products${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await axios.get(url, {
+      headers: createAuthHeaders(token),
+      timeout: 15000,
+      validateStatus: (status) => status < 500
+    });
+    
+    // Normalize server response shape
+    // Admin endpoint returns: { items: [], pagination: { page, limit, total, totalPages } }
+    const payload = response?.data?.data || {};
+    const pagination = payload?.pagination || {};
+    const list = Array.isArray(payload?.items) ? payload.items : Array.isArray(payload?.data) ? payload.data : Array.isArray(response?.data?.data) ? response.data.data : [];
+    const meta = {
+      page: Number(pagination?.page ?? payload?.page ?? page ?? 1),
+      limit: Number(pagination?.limit ?? payload?.limit ?? limit ?? 20),
+      total: Number(pagination?.total ?? payload?.total ?? list.length ?? 0),
+      totalPages: Number(pagination?.totalPages ?? payload?.totalPages ?? (pagination?.total && (pagination?.limit || limit) ? Math.max(1, Math.ceil(Number(pagination.total) / Number(pagination.limit || limit))) : 1)),
+      hasNext: Boolean(payload?.hasNext ?? (pagination?.page && pagination?.totalPages ? pagination.page < pagination.totalPages : false)),
+      hasPrev: Boolean(payload?.hasPrev ?? (pagination?.page ? pagination.page > 1 : false)),
+    };
+
+    return {
+      data: list,
+      error: null,
+      total: meta.total,
+      meta,
+    };
+  } catch (err: any) {
+    const errorMsg = handleApiError(err, 'Failed to fetch admin products');
+    console.error('Error fetching admin products:', errorMsg);
+    return {
+      data: null,
+      error: errorMsg,
+      total: 0,
+      meta: { page: page ?? 1, limit: limit ?? 20, total: 0, totalPages: 1, hasNext: false, hasPrev: false }
+    };
+  }
+}
+
 // Admin user registration interface
 export interface AdminUserRegistration {
   firstName: string;

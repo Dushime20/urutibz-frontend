@@ -680,7 +680,7 @@ const HomePage: React.FC = () => {
                     <TranslatedText text="Refresh" />
                   </button>
                   <Link
-                    to="/search"
+                    to="/items"
                     className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-my-primary"
                   >
                     <TranslatedText text="Browse All Categories" />
@@ -930,7 +930,7 @@ const HomePage: React.FC = () => {
                     <TranslatedText text="View All" />
                   </Link>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 auto-rows-fr">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-6 auto-rows-fr">
                   {filtered.slice(0, visibleCount).map((item, index) => (
                     <ProductCard
                       key={item.id}

@@ -16,6 +16,7 @@ interface ProductImage {
 }
 
 // Product Management Functions
+// For admin dashboard, use fetchAdminProducts from admin service instead
 export async function fetchAllProducts(
   token?: string,
   isAdminDashboard: boolean = false,
@@ -24,6 +25,13 @@ export async function fetchAllProducts(
   status?: string,
   sort?: 'newest' | 'oldest'
 ) {
+  // If admin dashboard, use admin endpoint
+  if (isAdminDashboard) {
+    const { fetchAdminProducts } = await import('./admin');
+    return fetchAdminProducts(token, page, limit, status, sort);
+  }
+
+  // Public endpoint - only returns active products
   const params = new URLSearchParams();
   if (page) params.append('page', String(page));
   if (limit) params.append('limit', String(limit));
@@ -35,7 +43,7 @@ export async function fetchAllProducts(
     // Add timeout and ensure request works without token
     const response = await axios.get(url, { 
       headers,
-      timeout: 30000, // 30 second timeout
+      timeout: 15000, // Reduced to 15 seconds to fail faster
       validateStatus: (status) => status < 500 // Don't throw on 4xx errors
     });
     
@@ -51,25 +59,11 @@ export async function fetchAllProducts(
       hasPrev: Boolean(payload?.hasPrev ?? false),
     };
 
-    // For admin dashboard, return all products without filtering
-    if (isAdminDashboard) {
-      return { 
-        data: list, 
-        error: null,
-        total: meta.total,
-        meta,
-      };
-    }
-
-    // Filter for active products for other views
-    const activeProducts = list.filter((product: any) => 
-      !product.status || product.status.toLowerCase() === 'active'
-    );
-
+    // Public endpoint always returns only active products (backend filters)
     return { 
-      data: activeProducts, 
+      data: list, 
       error: null,
-      total: activeProducts.length,
+      total: meta.total,
       meta,
     };
   } catch (err: any) {
@@ -256,29 +250,46 @@ export async function fetchProductAvailability(productId: string, token?: string
 // Product Availability Check
 export async function fetchAvailableProducts(token?: string, skipAvailabilityCheck: boolean = false) {
   try {
-    // Get ALL active products by fetching all pages
+    // Optimized: Limit pages to prevent timeout (max 5 pages = 500 products)
+    // Frontend can implement pagination or "load more" for additional products
+    const MAX_PAGES = 5; // Reduced from 10 to 5 to prevent timeout
+    const limit = 100; // Fetch 100 products per page
+    
     let allActiveProducts: string | any[] = [];
     let page = 1;
     let hasMore = true;
-    const limit = 100; // Fetch 100 products per page
     
-    while (hasMore) {
-      const productsResult = await fetchAllProducts(token, false, page, limit, 'active');
-      
-      if (productsResult.error || !productsResult.data) {
-        if (page === 1) {
-          return productsResult; // Return error only on first page
+    while (hasMore && page <= MAX_PAGES) {
+      try {
+        // Add timeout to individual requests to prevent hanging
+        const productsResult = await Promise.race([
+          fetchAllProducts(token, false, page, limit, 'active'),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error(`Request timeout for page ${page}`)), 15000) // 15s timeout per page
+          )
+        ]) as any;
+        
+        if (productsResult.error || !productsResult.data) {
+          if (page === 1) {
+            return productsResult; // Return error only on first page
+          }
+          break; // If later pages fail, just stop fetching more
         }
-        break; // If later pages fail, just stop fetching more
-      }
 
-      const pageProducts = productsResult.data;
-      allActiveProducts = [...allActiveProducts, ...pageProducts];
-      
-      // Check if there are more pages
-      hasMore = pageProducts.length === limit && productsResult.meta?.hasNext;
-      page++;
-      
+        const pageProducts = productsResult.data;
+        allActiveProducts = [...allActiveProducts, ...pageProducts];
+        
+        // Check if there are more pages
+        hasMore = pageProducts.length === limit && productsResult.meta?.hasNext;
+        page++;
+      } catch (error: any) {
+        console.warn(`Error fetching page ${page}:`, error.message);
+        // If it's a timeout or error on later pages, return what we have
+        if (page === 1) {
+          throw error; // Re-throw if first page fails
+        }
+        break; // Stop fetching more pages on error
+      }
     }
     const activeProducts = allActiveProducts;
     
