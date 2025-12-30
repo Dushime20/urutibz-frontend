@@ -532,7 +532,7 @@ const BookingPage: React.FC = () => {
       // Show first error as toast
       const firstError = Object.values(errors)[0];
       if (firstError) {
-        showToast(firstError, 'error');
+        showToast(firstError, 'warning');
       }
       return;
     }
