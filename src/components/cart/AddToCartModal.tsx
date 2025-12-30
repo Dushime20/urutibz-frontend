@@ -21,6 +21,9 @@ interface AddToCartModalProps {
     categoryId?: string;
     pickupAvailable?: boolean;
     deliveryAvailable?: boolean;
+    pickup_methods?: string[] | any;
+    address_line?: string;
+    location?: { address?: string };
   };
 }
 
@@ -37,10 +40,9 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
 
   const [startDate, setStartDate] = useState(tomorrow);
   const [endDate, setEndDate] = useState(nextWeek);
-  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery' | 'meet_public'>('pickup');
+  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery' | 'meet_public' | 'visit'>('pickup');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [meetPublicLocation, setMeetPublicLocation] = useState('');
-  const [deliveryTimeWindow, setDeliveryTimeWindow] = useState<'morning' | 'afternoon' | 'evening' | 'flexible'>('flexible');
   const [deliveryInstructions, setDeliveryInstructions] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
@@ -104,6 +106,14 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
       return;
     }
 
+    if (deliveryMethod === 'visit') {
+      const visitLocation = meetPublicLocation || product.address_line || product.location?.address || '';
+      if (!visitLocation.trim()) {
+        showToast(tSync('Visit location is required (product address not available)'), 'error');
+        return;
+      }
+    }
+
     addToCart({
       productId: product.id,
       productTitle: product.title,
@@ -114,11 +124,12 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
       currency: product.currency,
       ownerId: product.ownerId,
       categoryId: product.categoryId,
-      pickupMethod: deliveryMethod === 'pickup' ? 'pickup' : deliveryMethod === 'delivery' ? 'delivery' : 'meet_public',
+      pickupMethod: deliveryMethod,
       deliveryMethod: deliveryMethod,
       deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress : undefined,
-      meetPublicLocation: deliveryMethod === 'meet_public' ? meetPublicLocation : undefined,
-      deliveryTimeWindow: deliveryTimeWindow,
+      meetPublicLocation: (deliveryMethod === 'meet_public' || deliveryMethod === 'visit') 
+        ? (meetPublicLocation || product.address_line || product.location?.address || '') 
+        : undefined,
       deliveryInstructions: deliveryInstructions || undefined,
       deliveryFee: deliveryFee || undefined,
       specialInstructions: specialInstructions || undefined,
@@ -131,21 +142,47 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] overflow-y-auto">
+    <div 
+      className="fixed inset-0 overflow-y-auto" 
+      style={{ 
+        zIndex: 99999,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-md transition-opacity duration-300"
         onClick={onClose}
-        style={{ animation: 'fadeIn 0.2s ease-out' }}
+        style={{ 
+          animation: 'fadeIn 0.2s ease-out', 
+          zIndex: 99999,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0
+        }}
       />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 min-h-screen">
+      <div 
+        className="relative flex items-center justify-center p-4 sm:p-6 w-full h-full pointer-events-none" 
+        style={{ zIndex: 100000 }}
+      >
         <div
-          className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100"
+          className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100 pointer-events-auto"
           style={{ 
             animation: 'slideUp 0.3s ease-out',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+            zIndex: 100001,
+            margin: 'auto'
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -236,28 +273,70 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
             </div>
 
             {/* Delivery Method */}
-            {(product.pickupAvailable || product.deliveryAvailable) && (
-              <div className="space-y-3">
-                <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  <TranslatedText text="Delivery Method" />
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {product.pickupAvailable && (
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryMethod('pickup')}
-                      className={`px-4 py-3 rounded-lg border-2 transition-all ${
-                        deliveryMethod === 'pickup'
-                          ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
-                          : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-teal-400'
-                      }`}
-                    >
-                      <MapPin className="w-5 h-5 mx-auto mb-1" />
-                      <span className="text-xs font-medium"><TranslatedText text="Pickup" /></span>
-                    </button>
-                  )}
-                  {product.deliveryAvailable && (
-                    <>
+            {(() => {
+              // Get available delivery methods from product
+              const productPickupMethods = product.pickup_methods || [];
+              let availableMethods: string[] = [];
+              
+              if (Array.isArray(productPickupMethods)) {
+                availableMethods = productPickupMethods;
+              } else if (typeof productPickupMethods === 'string') {
+                try {
+                  if (productPickupMethods.includes('[')) {
+                    availableMethods = JSON.parse(productPickupMethods);
+                  } else {
+                    availableMethods = [productPickupMethods];
+                  }
+                } catch {
+                  availableMethods = [productPickupMethods];
+                }
+              }
+              
+              // Fallback to boolean flags if pickup_methods not available (backward compatibility)
+              if (availableMethods.length === 0) {
+                if (product.pickupAvailable !== false) availableMethods.push('pickup');
+                if (product.deliveryAvailable === true) {
+                  availableMethods.push('delivery');
+                  availableMethods.push('meet_public');
+                }
+              }
+              
+              // Always include pickup as default if no methods specified
+              if (availableMethods.length === 0) {
+                availableMethods = ['pickup'];
+              }
+              
+              // Handle legacy 'both' option
+              if (availableMethods.includes('both')) {
+                const bothIndex = availableMethods.indexOf('both');
+                availableMethods.splice(bothIndex, 1);
+                if (!availableMethods.includes('pickup')) availableMethods.push('pickup');
+                if (!availableMethods.includes('delivery')) availableMethods.push('delivery');
+              }
+              
+              if (availableMethods.length === 0) return null;
+              
+              return (
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    <TranslatedText text="Delivery Method" />
+                  </label>
+                  <div className={`grid gap-3 ${availableMethods.length === 1 ? 'grid-cols-1' : availableMethods.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                    {availableMethods.includes('pickup') && (
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryMethod('pickup')}
+                        className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                          deliveryMethod === 'pickup'
+                            ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
+                            : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-teal-400'
+                        }`}
+                      >
+                        <MapPin className="w-5 h-5 mx-auto mb-1" />
+                        <span className="text-xs font-medium"><TranslatedText text="Pickup" /></span>
+                      </button>
+                    )}
+                    {availableMethods.includes('delivery') && (
                       <button
                         type="button"
                         onClick={() => setDeliveryMethod('delivery')}
@@ -270,6 +349,8 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
                         <MapPin className="w-5 h-5 mx-auto mb-1" />
                         <span className="text-xs font-medium"><TranslatedText text="Delivery" /></span>
                       </button>
+                    )}
+                    {availableMethods.includes('meet_public') && (
                       <button
                         type="button"
                         onClick={() => setDeliveryMethod('meet_public')}
@@ -282,29 +363,64 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
                         <MapPin className="w-5 h-5 mx-auto mb-1" />
                         <span className="text-xs font-medium"><TranslatedText text="Meet Public" /></span>
                       </button>
-                    </>
-                  )}
+                    )}
+                    {availableMethods.includes('visit') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const productAddress = product.address_line || product.location?.address || '';
+                          setDeliveryMethod('visit');
+                          if (productAddress) {
+                            setMeetPublicLocation(productAddress);
+                          }
+                        }}
+                        className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                          deliveryMethod === 'visit'
+                            ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
+                            : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-teal-400'
+                        }`}
+                      >
+                        <MapPin className="w-5 h-5 mx-auto mb-1" />
+                        <span className="text-xs font-medium"><TranslatedText text="Visit" /></span>
+                      </button>
+                    )}
+                  </div>
                 </div>
+              );
+            })()}
+
+            {/* Visit Location (shown when visit is selected) - Auto-populated from product location */}
+            {deliveryMethod === 'visit' && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">
+                  <TranslatedText text="Visit Location" />
+                </label>
+                <input
+                  type="text"
+                  value={meetPublicLocation || product.address_line || product.location?.address || ''}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-slate-100 cursor-not-allowed"
+                  placeholder={tSync('Product location will be used automatically')}
+                />
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                  {tSync('This location is automatically set from the product\'s address')}
+                </p>
               </div>
             )}
 
-            {/* Delivery Time Window */}
-            {(deliveryMethod === 'delivery' || deliveryMethod === 'meet_public') && (
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  <Clock className="w-4 h-4 inline mr-1" />
-                  <TranslatedText text="Preferred Time Window" />
+            {/* Meet Public Location */}
+            {deliveryMethod === 'meet_public' && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">
+                  <TranslatedText text="Meet Location" />
                 </label>
-                <select
-                  value={deliveryTimeWindow}
-                  onChange={(e) => setDeliveryTimeWindow(e.target.value as any)}
+                <textarea
+                  value={meetPublicLocation}
+                  onChange={(e) => setMeetPublicLocation(e.target.value)}
+                  placeholder={tSync('Enter public meeting location (e.g., shopping mall, park)')}
+                  rows={3}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
-                >
-                  <option value="flexible"><TranslatedText text="Flexible" /></option>
-                  <option value="morning"><TranslatedText text="Morning (8 AM - 12 PM)" /></option>
-                  <option value="afternoon"><TranslatedText text="Afternoon (12 PM - 5 PM)" /></option>
-                  <option value="evening"><TranslatedText text="Evening (5 PM - 9 PM)" /></option>
-                </select>
+                />
               </div>
             )}
 
@@ -340,16 +456,22 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ isOpen, onClose, produc
               </div>
             )}
 
-            {/* Delivery Instructions */}
-            {(deliveryMethod === 'delivery' || deliveryMethod === 'meet_public') && (
+            {/* Instructions */}
+            {(deliveryMethod === 'delivery' || deliveryMethod === 'meet_public' || deliveryMethod === 'visit') && (
               <div>
                 <label className="block text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">
-                  <TranslatedText text="Delivery Instructions" /> <span className="text-gray-400 text-xs font-normal">(<TranslatedText text="Optional" />)</span>
+                  {deliveryMethod === 'delivery' ? tSync('Delivery Instructions') :
+                   deliveryMethod === 'meet_public' ? tSync('Meeting Instructions') :
+                   tSync('Visit Instructions')} <span className="text-gray-400 text-xs font-normal">(<TranslatedText text="Optional" />)</span>
                 </label>
                 <textarea
                   value={deliveryInstructions}
                   onChange={(e) => setDeliveryInstructions(e.target.value)}
-                  placeholder={tSync('Gate codes, special notes, preferred location, etc.')}
+                  placeholder={
+                    deliveryMethod === 'delivery' ? tSync('Gate codes, special notes, preferred location...') :
+                    deliveryMethod === 'meet_public' ? tSync('Meeting point details, landmarks, contact information...') :
+                    tSync('Special notes for your visit, access instructions...')
+                  }
                   rows={2}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                 />

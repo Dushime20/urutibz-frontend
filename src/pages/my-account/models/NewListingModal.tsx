@@ -529,8 +529,8 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Pickup Methods *
               </label>
-              <div className="grid grid-cols-2 gap-4">
-                {['pickup', 'delivery'].map((method) => (
+              <div className="grid grid-cols-3 gap-4">
+                {['pickup', 'delivery', 'visit'].map((method) => (
                   <label key={method} className="flex items-center space-x-3 p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                     <input
                       type="checkbox"

@@ -1287,6 +1287,9 @@ const ItemDetailsPage: React.FC = () => {
               ? parseFloat(productPrices.price_per_day) 
               : (productPrices.price_per_day || parseFloat(item.base_price_per_day || '0')),
             currency: productPrices.currency || item.base_currency || 'USD',
+            pickup_methods: item.pickup_methods,
+            address_line: item.address_line,
+            location: item.location,
             ownerId: item.owner_id || '',
             categoryId: item.category_id,
             pickupAvailable: item.pickup_available !== false,

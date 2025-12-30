@@ -44,7 +44,7 @@ const BookingPage: React.FC = () => {
     pickupTime: '',
     returnTime: '',
     pickupMethod: '',
-    deliveryMethod: '' as 'pickup' | 'delivery' | 'meet_public' | '',
+    deliveryMethod: '' as 'pickup' | 'delivery' | 'meet_public' | 'visit' | '',
     deliveryAddress: '',
     meetPublicLocation: '',
     deliveryTimeWindow: 'flexible' as 'morning' | 'afternoon' | 'evening' | 'flexible',
@@ -291,6 +291,19 @@ const BookingPage: React.FC = () => {
     fetchItemDetails();
   }, [itemId, showToast]);
 
+  // Auto-populate visit location when product loads or visit method is selected
+  useEffect(() => {
+    if (bookingItem && formData.deliveryMethod === 'visit') {
+      const productAddress = bookingItem?.address_line || bookingItem?.location?.address || '';
+      if (productAddress && !formData.meetPublicLocation) {
+        setFormData(prev => ({
+          ...prev,
+          meetPublicLocation: productAddress
+        }));
+      }
+    }
+  }, [bookingItem, formData.deliveryMethod, formData.meetPublicLocation]);
+
   // Resolve real city/country like ItemDetailsPage
   useEffect(() => {
     if (!bookingItem) return;
@@ -525,6 +538,13 @@ const BookingPage: React.FC = () => {
     if (deliveryMethod === 'meet_public' && !formData.meetPublicLocation.trim()) {
       errors.meetPublicLocation = 'Meet location is required';
     }
+
+    if (deliveryMethod === 'visit') {
+      const visitLocation = formData.meetPublicLocation || bookingItem?.address_line || bookingItem?.location?.address || '';
+      if (!visitLocation.trim()) {
+        errors.meetPublicLocation = 'Visit location is required (product address not available)';
+      }
+    }
     
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -556,9 +576,10 @@ const BookingPage: React.FC = () => {
         pickup_method: formData.pickupMethod,
         delivery_method: deliveryMethod,
         delivery_address: deliveryMethod === 'delivery' ? formData.deliveryAddress : undefined,
-        meet_public_location: deliveryMethod === 'meet_public' ? formData.meetPublicLocation : undefined,
-        delivery_time_window: (deliveryMethod === 'delivery' || deliveryMethod === 'meet_public') ? formData.deliveryTimeWindow : undefined,
-        special_instructions: (deliveryMethod === 'delivery' || deliveryMethod === 'meet_public') ? formData.deliveryInstructions : undefined,
+        meet_public_location: (deliveryMethod === 'meet_public' || deliveryMethod === 'visit') 
+          ? (formData.meetPublicLocation || bookingItem?.address_line || bookingItem?.location?.address || '') 
+          : undefined,
+        special_instructions: (deliveryMethod === 'delivery' || deliveryMethod === 'meet_public' || deliveryMethod === 'visit') ? formData.deliveryInstructions : undefined,
         renter_notes: formData.renterNotes,
       };
       
@@ -579,7 +600,7 @@ const BookingPage: React.FC = () => {
                        (response as any)?.message || 
                        'Failed to create booking';
         console.error('Booking creation failed:', errMsg, response);
-        showToast(errMsg, 'error');
+        showToast(errMsg, 'warning');
       }
     } catch (error: any) {
       console.error('Booking creation error:', error);
@@ -662,17 +683,275 @@ const BookingPage: React.FC = () => {
           </div>
           
           <form onSubmit={handleSubmitBookingDetails} className="space-y-8">
+            {/* Delivery Method Selection */}
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                <MapPinIcon className="w-5 h-5 mr-2 text-[#00aaa9]" />
+                Delivery Method
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">
+                    How would you like to receive the item? <span className="text-red-500">*</span>
+                  </label>
+                  {(() => {
+                    // Get available delivery methods from product
+                    const productPickupMethods = bookingItem?.pickup_methods || [];
+                    let availableMethods: string[] = [];
+                    if (Array.isArray(productPickupMethods)) {
+                      availableMethods = productPickupMethods;
+                    } else if (typeof productPickupMethods === 'string') {
+                      try {
+                        if (productPickupMethods.includes('[')) {
+                          availableMethods = JSON.parse(productPickupMethods);
+                        } else {
+                          availableMethods = [productPickupMethods];
+                        }
+                      } catch {
+                        availableMethods = [productPickupMethods];
+                      }
+                    }
+                    
+                    // Use the available methods from the product's pickup_methods
+                    // Always include pickup as default if no methods specified
+                    const allowedMethods: string[] = availableMethods.length > 0 ? availableMethods : ['pickup'];
+                    
+                    // Handle legacy 'both' option - expand to pickup and delivery
+                    if (allowedMethods.includes('both')) {
+                      const bothIndex = allowedMethods.indexOf('both');
+                      allowedMethods.splice(bothIndex, 1);
+                      if (!allowedMethods.includes('pickup')) allowedMethods.push('pickup');
+                      if (!allowedMethods.includes('delivery')) allowedMethods.push('delivery');
+                    }
+                    
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {allowedMethods.includes('pickup') && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                deliveryMethod: 'pickup',
+                                pickupMethod: 'pickup'
+                              }));
+                              if (validationErrors.pickupMethod) {
+                                setValidationErrors(prev => ({ ...prev, pickupMethod: '' }));
+                              }
+                            }}
+                            className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                              (formData.deliveryMethod === 'pickup' || formData.pickupMethod === 'pickup')
+                                ? 'border-[#00aaa9] bg-[#00aaa9]/10 dark:bg-[#00aaa9]/20 text-[#00aaa9]'
+                                : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-[#00aaa9]/50'
+                            } ${validationErrors.pickupMethod ? 'border-red-300' : ''}`}
+                          >
+                            <div className="font-medium mb-1">Pickup</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">Collect from owner</div>
+                          </button>
+                        )}
+                        {allowedMethods.includes('delivery') && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                deliveryMethod: 'delivery',
+                                pickupMethod: 'delivery'
+                              }));
+                              if (validationErrors.pickupMethod) {
+                                setValidationErrors(prev => ({ ...prev, pickupMethod: '' }));
+                              }
+                            }}
+                            className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                              formData.deliveryMethod === 'delivery'
+                                ? 'border-[#00aaa9] bg-[#00aaa9]/10 dark:bg-[#00aaa9]/20 text-[#00aaa9]'
+                                : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-[#00aaa9]/50'
+                            } ${validationErrors.pickupMethod ? 'border-red-300' : ''}`}
+                          >
+                            <div className="font-medium mb-1">Delivery</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">Delivered to you</div>
+                          </button>
+                        )}
+                        {allowedMethods.includes('meet_public') && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                deliveryMethod: 'meet_public',
+                                pickupMethod: 'meet_public'
+                              }));
+                              if (validationErrors.pickupMethod) {
+                                setValidationErrors(prev => ({ ...prev, pickupMethod: '' }));
+                              }
+                            }}
+                            className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                              formData.deliveryMethod === 'meet_public'
+                                ? 'border-[#00aaa9] bg-[#00aaa9]/10 dark:bg-[#00aaa9]/20 text-[#00aaa9]'
+                                : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-[#00aaa9]/50'
+                            } ${validationErrors.pickupMethod ? 'border-red-300' : ''}`}
+                          >
+                            <div className="font-medium mb-1">Meet Public</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">Meet at public location</div>
+                          </button>
+                        )}
+                        {allowedMethods.includes('visit') && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Auto-populate visit location from product address
+                              const productAddress = bookingItem?.address_line || bookingItem?.location?.address || '';
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                deliveryMethod: 'visit',
+                                pickupMethod: 'visit',
+                                meetPublicLocation: productAddress || prev.meetPublicLocation
+                              }));
+                              if (validationErrors.pickupMethod) {
+                                setValidationErrors(prev => ({ ...prev, pickupMethod: '' }));
+                              }
+                            }}
+                            className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                              formData.deliveryMethod === 'visit'
+                                ? 'border-[#00aaa9] bg-[#00aaa9]/10 dark:bg-[#00aaa9]/20 text-[#00aaa9]'
+                                : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-[#00aaa9]/50'
+                            } ${validationErrors.pickupMethod ? 'border-red-300' : ''}`}
+                          >
+                            <div className="font-medium mb-1">Visit</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">Visit at owner's location</div>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {validationErrors.pickupMethod && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center">
+                      <span className="w-4 h-4 mr-1">⚠</span>
+                      {validationErrors.pickupMethod}
+                    </p>
+                  )}
+                </div>
+
+                {/* Delivery Address (shown when delivery is selected) */}
+                {formData.deliveryMethod === 'delivery' && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Delivery Address <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      name="deliveryAddress"
+                      value={formData.deliveryAddress}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none resize-none ${
+                        validationErrors.deliveryAddress ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-slate-700'
+                      }`}
+                      rows={3}
+                      placeholder="Enter your delivery address..."
+                      required
+                    />
+                    {validationErrors.deliveryAddress && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <span className="w-4 h-4 mr-1">⚠</span>
+                        {validationErrors.deliveryAddress}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Meet Public Location (shown when meet_public is selected) */}
+                {formData.deliveryMethod === 'meet_public' && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Meet Location <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="meetPublicLocation"
+                      value={formData.meetPublicLocation}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none ${
+                        validationErrors.meetPublicLocation ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-slate-700'
+                      }`}
+                      placeholder="Enter public meeting location..."
+                      required
+                    />
+                    {validationErrors.meetPublicLocation && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <span className="w-4 h-4 mr-1">⚠</span>
+                        {validationErrors.meetPublicLocation}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Visit Location (shown when visit is selected) - Auto-populated from product location */}
+                {formData.deliveryMethod === 'visit' && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Visit Location <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="meetPublicLocation"
+                      value={formData.meetPublicLocation || bookingItem?.address_line || bookingItem?.location?.address || ''}
+                      readOnly
+                      className="w-full px-4 py-3 border rounded-xl transition-all duration-200 bg-gray-50 dark:bg-slate-800 dark:text-slate-100 border-gray-300 dark:border-slate-700 cursor-not-allowed"
+                      placeholder="Product location will be used automatically"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                      This location is automatically set from the product's address
+                    </p>
+                  </div>
+                )}
+
+                {/* Instructions (shown when delivery, meet_public, or visit is selected) */}
+                {(formData.deliveryMethod === 'delivery' || formData.deliveryMethod === 'meet_public' || formData.deliveryMethod === 'visit') && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      {formData.deliveryMethod === 'delivery' ? 'Delivery Instructions (Optional)' :
+                       formData.deliveryMethod === 'meet_public' ? 'Meeting Instructions (Optional)' :
+                       'Visit Instructions (Optional)'}
+                    </label>
+                    <textarea
+                      name="deliveryInstructions"
+                      value={formData.deliveryInstructions}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none resize-none"
+                      rows={3}
+                      placeholder={
+                        formData.deliveryMethod === 'delivery' ? 'Gate codes, special notes, preferred location...' :
+                        formData.deliveryMethod === 'meet_public' ? 'Meeting point details, landmarks, contact information...' :
+                        'Special notes for your visit, access instructions...'
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Rental Period */}
             <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
                 <CalendarIcon className="w-5 h-5 mr-2 text-[#00aaa9]" />
                 Rental Period
               </h3>
+              {(() => {
+                const deliveryMethod = formData.deliveryMethod || formData.pickupMethod || 'pickup';
+                const startDateLabel = deliveryMethod === 'delivery' ? 'Delivery Date' : 
+                                      deliveryMethod === 'visit' ? 'Visit Date' : 
+                                      deliveryMethod === 'meet_public' ? 'Meet Date' : 
+                                      'Pickup Date';
+                const startTimeLabel = deliveryMethod === 'delivery' ? 'Delivery Time' : 
+                                      deliveryMethod === 'visit' ? 'Visit Time' : 
+                                      deliveryMethod === 'meet_public' ? 'Meet Time' : 
+                                      'Pickup Time';
+                return (
+                  <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Pickup Date
+                      {startDateLabel}
                     </label>
                     <input 
                       type="date" 
@@ -696,7 +975,7 @@ const BookingPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Pickup Time
+                      {startTimeLabel}
                     </label>
                     <input 
                       type="time" 
@@ -778,217 +1057,9 @@ const BookingPage: React.FC = () => {
                   {validationErrors.dates}
                 </p>
               )}
-            </div>
-
-            {/* Delivery Method Selection */}
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                <MapPinIcon className="w-5 h-5 mr-2 text-[#00aaa9]" />
-                Delivery Method
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">
-                    How would you like to receive the item? <span className="text-red-500">*</span>
-                  </label>
-                  {(() => {
-                    // Get available delivery methods from product
-                    const productPickupMethods = bookingItem?.pickup_methods || [];
-                    let availableMethods: string[] = [];
-                    if (Array.isArray(productPickupMethods)) {
-                      availableMethods = productPickupMethods;
-                    } else if (typeof productPickupMethods === 'string') {
-                      try {
-                        if (productPickupMethods.includes('[')) {
-                          availableMethods = JSON.parse(productPickupMethods);
-                        } else {
-                          availableMethods = [productPickupMethods];
-                        }
-                      } catch {
-                        availableMethods = [productPickupMethods];
-                      }
-                    }
-                    
-                    // Always allow pickup as default, add others if in product's pickup_methods
-                    const allowedMethods: string[] = ['pickup'];
-                    if (availableMethods.includes('delivery') || availableMethods.includes('both')) {
-                      allowedMethods.push('delivery');
-                    }
-                    if (availableMethods.includes('meet_public') || availableMethods.includes('both')) {
-                      allowedMethods.push('meet_public');
-                    }
-                    
-                    return (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {allowedMethods.includes('pickup') && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({ 
-                                ...prev, 
-                                deliveryMethod: 'pickup',
-                                pickupMethod: 'pickup'
-                              }));
-                              if (validationErrors.pickupMethod) {
-                                setValidationErrors(prev => ({ ...prev, pickupMethod: '' }));
-                              }
-                            }}
-                            className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
-                              (formData.deliveryMethod === 'pickup' || formData.pickupMethod === 'pickup')
-                                ? 'border-[#00aaa9] bg-[#00aaa9]/10 dark:bg-[#00aaa9]/20 text-[#00aaa9]'
-                                : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-[#00aaa9]/50'
-                            } ${validationErrors.pickupMethod ? 'border-red-300' : ''}`}
-                          >
-                            <div className="font-medium mb-1">Pickup</div>
-                            <div className="text-xs text-gray-500 dark:text-slate-400">Collect from owner</div>
-                          </button>
-                        )}
-                        {allowedMethods.includes('delivery') && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({ 
-                                ...prev, 
-                                deliveryMethod: 'delivery',
-                                pickupMethod: 'delivery'
-                              }));
-                              if (validationErrors.pickupMethod) {
-                                setValidationErrors(prev => ({ ...prev, pickupMethod: '' }));
-                              }
-                            }}
-                            className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
-                              formData.deliveryMethod === 'delivery'
-                                ? 'border-[#00aaa9] bg-[#00aaa9]/10 dark:bg-[#00aaa9]/20 text-[#00aaa9]'
-                                : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-[#00aaa9]/50'
-                            } ${validationErrors.pickupMethod ? 'border-red-300' : ''}`}
-                          >
-                            <div className="font-medium mb-1">Delivery</div>
-                            <div className="text-xs text-gray-500 dark:text-slate-400">Delivered to you</div>
-                          </button>
-                        )}
-                        {allowedMethods.includes('meet_public') && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({ 
-                                ...prev, 
-                                deliveryMethod: 'meet_public',
-                                pickupMethod: 'meet_public'
-                              }));
-                              if (validationErrors.pickupMethod) {
-                                setValidationErrors(prev => ({ ...prev, pickupMethod: '' }));
-                              }
-                            }}
-                            className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
-                              formData.deliveryMethod === 'meet_public'
-                                ? 'border-[#00aaa9] bg-[#00aaa9]/10 dark:bg-[#00aaa9]/20 text-[#00aaa9]'
-                                : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-[#00aaa9]/50'
-                            } ${validationErrors.pickupMethod ? 'border-red-300' : ''}`}
-                          >
-                            <div className="font-medium mb-1">Meet Public</div>
-                            <div className="text-xs text-gray-500 dark:text-slate-400">Meet at public location</div>
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  {validationErrors.pickupMethod && (
-                    <p className="text-red-500 text-sm mt-2 flex items-center">
-                      <span className="w-4 h-4 mr-1">⚠</span>
-                      {validationErrors.pickupMethod}
-                    </p>
-                  )}
-                </div>
-
-                {/* Delivery Address (shown when delivery is selected) */}
-                {formData.deliveryMethod === 'delivery' && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Delivery Address <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      name="deliveryAddress"
-                      value={formData.deliveryAddress}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none resize-none ${
-                        validationErrors.deliveryAddress ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-slate-700'
-                      }`}
-                      rows={3}
-                      placeholder="Enter your delivery address..."
-                      required
-                    />
-                    {validationErrors.deliveryAddress && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center">
-                        <span className="w-4 h-4 mr-1">⚠</span>
-                        {validationErrors.deliveryAddress}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Meet Public Location (shown when meet_public is selected) */}
-                {formData.deliveryMethod === 'meet_public' && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Meet Location <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="meetPublicLocation"
-                      value={formData.meetPublicLocation}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none ${
-                        validationErrors.meetPublicLocation ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-slate-700'
-                      }`}
-                      placeholder="Enter public meeting location..."
-                      required
-                    />
-                    {validationErrors.meetPublicLocation && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center">
-                        <span className="w-4 h-4 mr-1">⚠</span>
-                        {validationErrors.meetPublicLocation}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Delivery Time Window (shown when delivery or meet_public is selected) */}
-                {(formData.deliveryMethod === 'delivery' || formData.deliveryMethod === 'meet_public') && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Preferred Time Window
-                    </label>
-                    <select
-                      name="deliveryTimeWindow"
-                      value={formData.deliveryTimeWindow}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none"
-                    >
-                      <option value="flexible">Flexible</option>
-                      <option value="morning">Morning (8 AM - 12 PM)</option>
-                      <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
-                      <option value="evening">Evening (5 PM - 8 PM)</option>
-                    </select>
-                  </div>
-                )}
-
-                {/* Delivery Instructions (shown when delivery or meet_public is selected) */}
-                {(formData.deliveryMethod === 'delivery' || formData.deliveryMethod === 'meet_public') && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Delivery Instructions (Optional)
-                    </label>
-                    <textarea
-                      name="deliveryInstructions"
-                      value={formData.deliveryInstructions}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-[#00aaa9] focus:border-[#00aaa9] outline-none resize-none"
-                      rows={3}
-                      placeholder="Gate codes, special notes, preferred location..."
-                    />
-                  </div>
-                )}
-              </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Additional Notes */}

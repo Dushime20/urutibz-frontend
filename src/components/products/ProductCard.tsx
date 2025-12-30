@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Star, Heart, ShoppingCart } from 'lucide-react';
 import { TranslatedText } from '../translated-text';
@@ -186,7 +187,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
     </Link>
-    {showAddToCartModal && pricePerDay > 0 && (
+    {showAddToCartModal && pricePerDay > 0 && typeof document !== 'undefined' && createPortal(
       <AddToCartModal
         isOpen={showAddToCartModal}
         onClose={() => setShowAddToCartModal(false)}
@@ -200,8 +201,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
           categoryId: product.category_id,
           pickupAvailable: product.pickup_available !== false,
           deliveryAvailable: product.delivery_available === true,
+          pickup_methods: product.pickup_methods,
+          address_line: product.address_line,
+          location: product.location,
         }}
-      />
+      />,
+      document.body
     )}
     </>
   );

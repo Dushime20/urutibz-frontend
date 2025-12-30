@@ -1242,6 +1242,9 @@ const ItemSearchPage: React.FC = () => {
               ? parseFloat(selectedProductForCart.base_price_per_day) 
               : (selectedProductForCart.base_price_per_day || 0),
             currency: selectedProductForCart.base_currency || 'USD',
+            pickup_methods: selectedProductForCart.pickup_methods,
+            address_line: selectedProductForCart.address_line,
+            location: selectedProductForCart.location,
             ownerId: selectedProductForCart.owner_id || '',
             categoryId: selectedProductForCart.category_id,
             pickupAvailable: true,
