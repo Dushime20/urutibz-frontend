@@ -4,8 +4,8 @@ import { Dialog } from '@headlessui/react';
 import { adminService, type AdminUserProfile } from '../service';
 import { TwoFactorManagement, TwoFactorVerification } from '../../../components/2fa';
 import ChangePasswordModal from '../../my-account/components/ChangePasswordModal';
-// import { useNavigate } from 'react-router-dom';
-// import { useToast } from '../../../contexts/ToastContext';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../../contexts/ToastContext';
 import Portal from '../../../components/ui/Portal';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { getMyNotifications } from '../../../features/notifications/api';
@@ -38,8 +38,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const { mutate: markRead } = useMarkReadMutation();
-  // const navigate = useNavigate();
-  // const { showToast } = useToast();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const profileButtonRef = useRef<HTMLButtonElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const languageButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -233,7 +233,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login';
+    showToast('Logged out successfully', 'success');
+    navigate('/login');
   };
 
 

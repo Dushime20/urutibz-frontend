@@ -25,6 +25,8 @@ import {
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
+import { useToast } from '../../contexts/ToastContext';
 import { LanguageSwitcher } from '../language-switcher';
 import { TranslatedText } from '../translated-text';
 import RealtimeNotifications from '../RealtimeNotifications';
@@ -73,6 +75,8 @@ const Header: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { settings } = useAdminSettingsContext();
   const { language, tSync, t } = useTranslation();
+  const { canInstall, isIOS, handleInstall } = usePWAInstall();
+  const { showToast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -727,7 +731,56 @@ const Header: React.FC = () => {
   return (
     <>
     <header className="sticky top-0 z-50 shadow-sm bg-white/90 dark:bg-gray-900/80 backdrop-blur-md border-b border-white/20 dark:border-gray-700/60">
-      {/* Global ticker */}
+      {/* Global ticker - Mobile version */}
+      <div className="md:hidden bg-slate-900 text-white text-xs tracking-wide">
+        <div className="max-w-9xl mx-auto px-4 py-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <Sparkles className="w-3 h-3 text-teal-300 flex-shrink-0" />
+              <span className="truncate uppercase text-[10px] sm:text-xs">
+                <TranslatedText text={tickerMessages[tickerIndex]} />
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {canInstall && (
+                <button
+                  onClick={async () => {
+                    const installed = await handleInstall();
+                    if (!installed && isIOS) {
+                      // For iOS, show toast with instructions
+                      showToast('Tap Share button (□↑) → Add to Home Screen', 'info');
+                    } else if (installed) {
+                      showToast('App installed successfully!', 'success');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded bg-teal-600 hover:bg-teal-700 text-white transition-colors active:scale-95"
+                  title={isIOS ? 'Add to Home Screen' : 'Install App'}
+                  aria-label={isIOS ? 'Add to Home Screen' : 'Install App'}
+                >
+                  <svg 
+                    className="w-4 h-4 flex-shrink-0" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2.5" 
+                    viewBox="0 0 24 24"
+                    style={{ color: 'white' }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                  <span className="text-[10px] text-white sm:text-xs sm:inline">Install</span>
+                </button>
+              )}
+              <span className="inline-flex items-center gap-1">
+                <Globe className="w-3 h-3" />
+                <span className="text-[10px] sm:text-xs">{language?.toUpperCase() || 'EN'}</span>
+             
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Global ticker - Desktop version */}
       <div className="hidden md:block bg-slate-900 text-white text-xs tracking-wide">
         <div className="max-w-9xl mx-auto px-6 lg:px-20 py-2 flex items-center justify-between gap-6">
           <div className="flex items-center gap-2 uppercase">
@@ -735,6 +788,34 @@ const Header: React.FC = () => {
             <span><TranslatedText text={tickerMessages[tickerIndex]} /></span>
           </div>
           <div className="flex items-center gap-5 text-white/80">
+            {canInstall && (
+              <button
+                onClick={async () => {
+                  const installed = await handleInstall();
+                  if (!installed && isIOS) {
+                    // For iOS, show toast with instructions
+                    showToast('Tap Share button (□↑) → Add to Home Screen', 'info');
+                  } else if (installed) {
+                    showToast('App installed successfully!', 'success');
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-teal-600 hover:bg-teal-700 text-white transition-colors font-medium active:scale-95"
+                title={isIOS ? 'Add to Home Screen' : 'Install App'}
+                aria-label={isIOS ? 'Add to Home Screen' : 'Install App'}
+              >
+                <svg 
+                  className="w-5 h-5 flex-shrink-0" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2.5" 
+                  viewBox="0 0 24 24"
+                  style={{ color: 'white' }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                <span className="text-xs text-white">{isIOS ? 'Add to Home' : 'Install App'}</span>
+              </button>
+            )}
             <span className="inline-flex items-center gap-2">
               <Phone className="w-3.5 h-3.5" />
               <span>+1 (415) 555-0112</span>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bell, Shield, User, LogOut, ChevronDown, CheckCircle, Clock, AlertCircle, UserCircle, RefreshCw, Upload, X, Check } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../../../contexts/ToastContext';
 import { adminService, type AdminUserProfile } from '../service';
 import { getMyNotifications } from '../../../features/notifications/api';
 import { useMarkReadMutation } from '../../../features/notifications/queries';
@@ -27,6 +29,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const { mutate: markRead } = useMarkReadMutation();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const notificationRef = useRef<HTMLDivElement | null>(null);
 
     // Fetch current user data
@@ -156,7 +160,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login';
+    showToast('Logged out successfully', 'success');
+    navigate('/login');
   };
 
   // Get verification status icon

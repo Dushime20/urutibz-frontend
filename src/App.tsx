@@ -13,6 +13,7 @@ import { AdminSettingsProvider } from './contexts/AdminSettingsContext';
 import { I18nProvider } from './contexts/i18n-context';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { CartProvider } from './contexts/CartContext';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 // Lazy load page components for code-splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -201,6 +202,7 @@ function App() {
         </AdminSettingsProvider>
         </DarkModeProvider>
       </ThemeProvider>
+      <PWAInstallPrompt />
     </I18nProvider>
   );
 }
