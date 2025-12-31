@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Bot, Shield, Globe, Sparkles, HelpCircle, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Bot, Shield, Globe, Sparkles, HelpCircle, MessageCircle, Search } from 'lucide-react';
 
 interface FaqItem {
   question: string;
@@ -9,14 +9,25 @@ interface FaqItem {
 
 interface FaqSectionProps {
   searchQuery?: string;
+  onClearSearch?: () => void;
+  whatsappNumber?: string;
 }
 
-export const FaqSection: React.FC<FaqSectionProps> = ({ searchQuery = '' }) => {
+export const FaqSection: React.FC<FaqSectionProps> = ({ searchQuery = '', onClearSearch, whatsappNumber = '+250780626361' }) => {
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const toggleFaq = (question: string) => {
     setActiveQuestion(activeQuestion === question ? null : question);
+  };
+
+  const handleWhatsAppClick = () => {
+    // Format phone number: remove +, spaces, dashes, and parentheses
+    const formattedNumber = whatsappNumber.replace(/[\s+\-()]/g, '');
+    // Default support message
+    const message = encodeURIComponent('Hello! I need support with Urutibz.');
+    // Open WhatsApp
+    window.open(`https://wa.me/${formattedNumber}?text=${message}`, '_blank');
   };
 
   const categories = [
@@ -180,9 +191,9 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ searchQuery = '' }) => {
                     ? `We couldn't find any questions matching "${searchQuery}". Try different keywords or browse by category.`
                     : 'No questions found in this category.'}
                 </p>
-                {searchQuery && (
+                {searchQuery && onClearSearch && (
                   <button
-                    onClick={clearSearch}
+                    onClick={onClearSearch}
                     className="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium"
                   >
                     Clear search
@@ -244,7 +255,10 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ searchQuery = '' }) => {
                   <Bot className="w-5 h-5" />
                   <span>Ask AI Assistant</span>
                 </button>
-                <button className="border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2">
+                <button 
+                  onClick={handleWhatsAppClick}
+                  className="border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2"
+                >
                   <MessageCircle className="w-5 h-5 text-teal-600" />
                   <span>Contact Support</span>
                 </button>

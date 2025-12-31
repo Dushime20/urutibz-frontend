@@ -26,6 +26,16 @@ import { TranslatedText } from '../components/translated-text';
 const EnterprisePage: React.FC = () => {
   const { tSync } = useTranslation();
 
+  const handleWhatsAppClick = () => {
+    // Format phone number: remove +, spaces, dashes, and parentheses
+    const whatsappNumber = '+250780626361';
+    const formattedNumber = whatsappNumber.replace(/[\s+\-()]/g, '');
+    // Enterprise sales message
+    const message = encodeURIComponent('Hello! I\'m interested in learning more about Urutibz Enterprise solutions. Can we schedule a demo?');
+    // Open WhatsApp
+    window.open(`https://wa.me/${formattedNumber}?text=${message}`, '_blank');
+  };
+
   const features = [
     {
       icon: Building2,
@@ -199,17 +209,17 @@ const EnterprisePage: React.FC = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               <TranslatedText text="Enterprise Rental Platform" />
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+            <p className=" text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
               <TranslatedText text="Power your rental business with enterprise-grade tools, advanced analytics, and seamless integrations. Scale globally with confidence." />
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/contact"
+              <button
+                onClick={handleWhatsAppClick}
                 className="inline-flex items-center justify-center px-8 py-4 bg-teal-600 text-white rounded-xl font-semibold text-lg shadow-lg hover:bg-teal-700 transition-colors"
               >
                 <TranslatedText text="Contact Sales" />
                 <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
+              </button>
               <Link
                 to="/register"
                 className="inline-flex items-center justify-center px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl font-semibold text-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

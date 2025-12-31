@@ -73,7 +73,7 @@ const FaqPage: React.FC = () => {
         </div>
       </section>
 
-      <FaqSection searchQuery={searchQuery} />
+      <FaqSection searchQuery={searchQuery} onClearSearch={clearSearch} />
     </div>
   );
 };

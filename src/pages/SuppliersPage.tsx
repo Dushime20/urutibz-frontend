@@ -22,6 +22,16 @@ import { TranslatedText } from '../components/translated-text';
 const SuppliersPage: React.FC = () => {
   const { tSync } = useTranslation();
 
+  const handleWhatsAppClick = () => {
+    // Format phone number: remove +, spaces, dashes, and parentheses
+    const whatsappNumber = '+250780626361';
+    const formattedNumber = whatsappNumber.replace(/[\s+\-()]/g, '');
+    // Sales message
+    const message = encodeURIComponent('Hello! I\'m interested in becoming a supplier on Urutibz. Can you help me get started?');
+    // Open WhatsApp
+    window.open(`https://wa.me/${formattedNumber}?text=${message}`, '_blank');
+  };
+
   const requirements = [
     {
       icon: Shield,
@@ -161,7 +171,7 @@ const SuppliersPage: React.FC = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               <TranslatedText text="Become a Supplier" />
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
               <TranslatedText text="Join our global marketplace and monetize your equipment inventory. Reach renters in 45+ countries and grow your business." />
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -172,12 +182,12 @@ const SuppliersPage: React.FC = () => {
                 <TranslatedText text="Get Started" />
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
-              <Link
-                to="/contact"
+              <button
+                onClick={handleWhatsAppClick}
                 className="inline-flex items-center justify-center px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl font-semibold text-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <TranslatedText text="Contact Sales" />
-              </Link>
+              </button>
             </div>
           </div>
         </div>
