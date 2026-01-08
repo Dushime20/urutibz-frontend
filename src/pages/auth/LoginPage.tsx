@@ -15,7 +15,7 @@ const LoginPage: React.FC = () => {
   const { settings } = useAdminSettingsContext();
   // const { showToast } = useToast();
   const [successMsg, setSuccessMsg] = useState('');
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [requireTwoFactor, setRequireTwoFactor] = useState(false);
   const [pendingUserRole, setPendingUserRole] = useState<string | null>(null);
-  
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -40,7 +40,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    
+
     // If registration is required to be verified before login (example gate)
     if (settings?.platform?.requireEmailVerification && !formData.email) {
       setIsLoading(false);
@@ -67,13 +67,13 @@ const LoginPage: React.FC = () => {
         // ALWAYS fetch full user profile after login to ensure complete fields
         const profileRes: any = await fetchUserProfile(data.token);
         const userObj = profileRes?.data ?? profileRes; // support both {success,data} and raw
-        
+
         console.log('🔑 [LoginPage] User profile fetched:', {
           hasUserObj: !!userObj,
           userObj: userObj ? { id: userObj.id, role: userObj.role, email: userObj.email } : null,
           fullResponse: profileRes
         });
-        
+
         if (userObj) {
           setAuthenticatedUser(userObj);
           console.log('✅ [LoginPage] User authenticated and set in context');
@@ -91,7 +91,7 @@ const LoginPage: React.FC = () => {
         // Check 2FA flag from whichever user object we have
         const twoFAEnabled = userObj?.twoFactorEnabled === true || userObj?.two_factor_enabled === true;
         const role = userObj?.role;
-        
+
         console.log('🎯 [LoginPage] Navigation decision:', {
           role,
           twoFAEnabled,
@@ -101,7 +101,7 @@ const LoginPage: React.FC = () => {
         // If org requires 2FA for admins and this admin hasn't enabled it yet → force setup
         const requireTwoFactorOrg = Boolean((settings as any)?.security?.twoFactorRequired) || (localStorage.getItem('security.requireTwoFactor') === 'true');
         if (role === 'admin' && requireTwoFactorOrg && !twoFAEnabled) {
-          try { localStorage.setItem('force2fa', '1'); } catch {}
+          try { localStorage.setItem('force2fa', '1'); } catch { }
           navigate('/admin?force2fa=1', { replace: true });
           return;
         }
@@ -117,18 +117,18 @@ const LoginPage: React.FC = () => {
           // Double-check user is set before navigating
           const storedUser = localStorage.getItem('user');
           const storedToken = localStorage.getItem('token');
-          
+
           if (!storedUser || !storedToken) {
             console.error('❌ [LoginPage] User or token missing before navigation');
             return;
           }
-          
+
           try {
             const parsedUser = JSON.parse(storedUser);
             const finalRole = parsedUser?.role || role;
-            
+
             console.log('🚀 [LoginPage] Navigating to:', finalRole);
-            
+
             if (finalRole === "admin") navigate("/admin");
             else if (finalRole === "inspector") navigate("/inspector");
             else if (finalRole === "moderator") navigate("/moderator");
@@ -159,8 +159,8 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 overflow-hidden">
-      
-      <div className="w-full max-w-md mx-auto">
+
+      <div className="w-full max-w-xl mx-auto ">
         {/* Header Section */}
         <div className="text-center mb-8">
           {/* Logo and AI Badge in One Row */}
@@ -179,11 +179,11 @@ const LoginPage: React.FC = () => {
 
         {/* Main Form Card */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 mt-[-10px]">
-          <div className="px-8 py-4">
+          <div className="p-12">
             {/* Form Header */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Welcome Back
+                Welcome Back 
               </h1>
               <p className="text-gray-600 dark:text-slate-400 text-sm">
                 Sign in to access your professional dashboard
@@ -208,8 +208,8 @@ const LoginPage: React.FC = () => {
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Email Address
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                <div className="flex items-center border border-gray-300 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-teal-500 transition-all duration-200">
+                  <Mail className="w-4 h-4 text-gray-400 dark:text-slate-500 mr-4 flex-shrink-0" />
                   <input
                     id="email"
                     name="email"
@@ -218,10 +218,11 @@ const LoginPage: React.FC = () => {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500"
+                    className="flex-1 bg-transparent text-sm placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none dark:text-slate-100"
                     placeholder="Enter your email"
                   />
                 </div>
+
               </div>
 
               {/* Password */}
@@ -229,8 +230,8 @@ const LoginPage: React.FC = () => {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Password
                 </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                <div className="relative flex items-center border border-gray-300 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-teal-500 transition-all duration-200">
+                  <Lock className="w-4 h-4 text-gray-400 dark:text-slate-500 mr-4 flex-shrink-0" />
                   <input
                     id="password"
                     name="password"
@@ -239,13 +240,13 @@ const LoginPage: React.FC = () => {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500"
+                    className="flex-1 bg-transparent text-sm placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none dark:text-slate-100 pr-10"
                     placeholder="Enter your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                    className="absolute right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -298,8 +299,8 @@ const LoginPage: React.FC = () => {
         <div className="text-center mt-6">
           <p className="text-gray-600 dark:text-slate-400 text-sm">
             Don't have an account?{' '}
-            <Link 
-              to={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} 
+            <Link
+              to={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
               className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 font-medium underline transition-colors duration-200"
             >
               Sign up now
@@ -319,19 +320,19 @@ const LoginPage: React.FC = () => {
                   // Double-check user is set before navigating
                   const storedUser = localStorage.getItem('user');
                   const storedToken = localStorage.getItem('token');
-                  
+
                   if (!storedUser || !storedToken) {
                     console.error('❌ [LoginPage] User or token missing before 2FA navigation');
                     navigate('/dashboard');
                     return;
                   }
-                  
+
                   try {
                     const parsedUser = JSON.parse(storedUser);
                     const finalRole = parsedUser?.role || role;
-                    
+
                     console.log('🚀 [LoginPage] Navigating after 2FA to:', finalRole);
-                    
+
                     if (finalRole === 'admin') navigate('/admin');
                     else if (finalRole === 'inspector') navigate('/inspector');
                     else if (finalRole === 'moderator') navigate('/moderator');

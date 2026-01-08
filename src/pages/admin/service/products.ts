@@ -17,6 +17,8 @@ interface ProductImage {
 
 // Product Management Functions
 // For admin dashboard, use fetchAdminProducts from admin service instead
+import { fetchAdminProducts } from './admin';
+
 export async function fetchAllProducts(
   token?: string,
   isAdminDashboard: boolean = false,
@@ -27,7 +29,6 @@ export async function fetchAllProducts(
 ) {
   // If admin dashboard, use admin endpoint
   if (isAdminDashboard) {
-    const { fetchAdminProducts } = await import('./admin');
     return fetchAdminProducts(token, page, limit, status, sort);
   }
 

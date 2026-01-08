@@ -28,9 +28,8 @@ function PasswordStrength({ password }: { password: string }) {
         {[1, 2, 3, 4, 5].map((level) => (
           <div
             key={level}
-            className={`h-1 flex-1 rounded ${
-              level <= strength ? colors[strength - 1] : 'bg-gray-200'
-            } transition-colors duration-300`}
+            className={`h-1 flex-1 rounded ${level <= strength ? colors[strength - 1] : 'bg-gray-200'
+              } transition-colors duration-300`}
           />
         ))}
       </div>
@@ -72,7 +71,7 @@ const RegisterPage: React.FC = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -89,7 +88,7 @@ const RegisterPage: React.FC = () => {
 
   const validateField = (field: string, value: any) => {
     let error = '';
-    
+
     switch (field) {
       case 'firstName':
         if (!value.toString().trim()) error = 'First name is required';
@@ -125,7 +124,7 @@ const RegisterPage: React.FC = () => {
         if (!value) error = 'You must agree to the terms and conditions';
         break;
     }
-    
+
     setErrors(prev => ({ ...prev, [field]: error }));
     return error === '';
   };
@@ -133,12 +132,12 @@ const RegisterPage: React.FC = () => {
   const validateForm = () => {
     const fields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'agreeToTerms'];
     let isValid = true;
-    
+
     fields.forEach(field => {
       const fieldValid = validateField(field, formData[field as keyof typeof formData]);
       if (!fieldValid) isValid = false;
     });
-    
+
     return isValid;
   };
 
@@ -149,7 +148,7 @@ const RegisterPage: React.FC = () => {
     // If settings are not available (no token), allow registration by default
     const allow = settings?.platform?.allowUserRegistration !== false; // Default to true if undefined
     const sysAllow = (settings?.system as any)?.registrationEnabled !== false; // Default to true if undefined
-    
+
     // Only block if explicitly disabled
     if (settings && (!allow || !sysAllow)) {
       const msg = 'User registration is currently disabled by the administrator.';
@@ -174,7 +173,7 @@ const RegisterPage: React.FC = () => {
 
     try {
       const { firstName, lastName, email, password } = formData;
-      
+
       // Call the API directly
       console.log('Calling registration API...');
       const response = await registerUser({
@@ -183,9 +182,9 @@ const RegisterPage: React.FC = () => {
         email,
         password
       });
-      
+
       console.log('Registration API response:', response);
-      
+
       if (response.success) {
         // Inline success message banner
         setToast('User registered successfully!');
@@ -229,7 +228,7 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 overflow-hidden">
-      <div className="w-full max-w-md mx-auto">
+      <div className="w-full max-w-xl md:max-w-xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-8">
           {/* Logo and AI Badge in One Row */}
@@ -254,9 +253,9 @@ const RegisterPage: React.FC = () => {
 
         {/* Main Form Card */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 mt-[-10px]">
-          <div className="px-8 py-4">
+          <div className="p-12">
             {toast && (
-              <div className={`${toastType === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'} px-4 py-3 rounded-lg mb-4 flex items-center justify-between`}> 
+              <div className={`${toastType === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'} px-4 py-3 rounded-lg mb-4 flex items-center justify-between`}>
                 <div className="flex items-center gap-2">
                   {toastType === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                   <span className="text-sm font-medium">{toast}</span>
@@ -281,8 +280,11 @@ const RegisterPage: React.FC = () => {
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     First Name
                   </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                  <div className={`flex items-center border rounded-lg px-2 py-1 focus-within:ring-2 transition-all duration-200 ${errors.firstName && touched.firstName
+                    ? 'border-red-300 dark:border-red-500/50 focus-within:ring-red-500 focus-within:border-red-500'
+                    : 'border-gray-300 dark:border-slate-700 dark:bg-slate-800 focus-within:ring-teal-500'
+                    }`}>
+                    <User className={`w-4 h-4 mr-4 flex-shrink-0 ${errors.firstName && touched.firstName ? 'text-red-400' : 'text-gray-400 dark:text-slate-500'}`} />
                     <input
                       id="firstName"
                       name="firstName"
@@ -290,11 +292,7 @@ const RegisterPage: React.FC = () => {
                       value={formData.firstName}
                       onChange={handleChange}
                       onBlur={() => handleBlur('firstName')}
-                      className={`w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500 ${
-                        errors.firstName && touched.firstName
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                          : ''
-                      }`}
+                      className="flex-1 bg-transparent text-sm placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none dark:text-slate-100"
                       placeholder="First name"
                     />
                   </div>
@@ -310,8 +308,11 @@ const RegisterPage: React.FC = () => {
                   <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Last Name
                   </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                  <div className={`flex items-center border rounded-lg px-2 py-1 focus-within:ring-2 transition-all duration-200 ${errors.lastName && touched.lastName
+                    ? 'border-red-300 dark:border-red-500/50 focus-within:ring-red-500 focus-within:border-red-500'
+                    : 'border-gray-300 dark:border-slate-700 dark:bg-slate-800 focus-within:ring-teal-500'
+                    }`}>
+                    <User className={`w-4 h-4 mr-4 flex-shrink-0 ${errors.lastName && touched.lastName ? 'text-red-400' : 'text-gray-400 dark:text-slate-500'}`} />
                     <input
                       id="lastName"
                       name="lastName"
@@ -319,11 +320,7 @@ const RegisterPage: React.FC = () => {
                       value={formData.lastName}
                       onChange={handleChange}
                       onBlur={() => handleBlur('lastName')}
-                      className={`w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500 ${
-                        errors.lastName && touched.lastName
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                          : ''
-                      }`}
+                      className="flex-1 bg-transparent text-sm placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none dark:text-slate-100"
                       placeholder="Last name"
                     />
                   </div>
@@ -341,8 +338,11 @@ const RegisterPage: React.FC = () => {
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Email Address
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                <div className={`flex items-center border rounded-lg px-2 py-1 focus-within:ring-2 transition-all duration-200 ${errors.email && touched.email
+                  ? 'border-red-300 dark:border-red-500/50 focus-within:ring-red-500 focus-within:border-red-500'
+                  : 'border-gray-300 dark:border-slate-700 dark:bg-slate-800 focus-within:ring-teal-500'
+                  }`}>
+                  <Mail className={`w-4 h-4 mr-4 flex-shrink-0 ${errors.email && touched.email ? 'text-red-400' : 'text-gray-400 dark:text-slate-500'}`} />
                   <input
                     id="email"
                     name="email"
@@ -351,11 +351,7 @@ const RegisterPage: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                     onBlur={() => handleBlur('email')}
-                    className={`w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500 ${
-                      errors.email && touched.email
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : ''
-                    }`}
+                    className="flex-1 bg-transparent text-sm placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none dark:text-slate-100"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -374,8 +370,11 @@ const RegisterPage: React.FC = () => {
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Password
                   </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                  <div className={`relative flex items-center border rounded-lg px-2 py-1 focus-within:ring-2 transition-all duration-200 ${errors.password && touched.password
+                    ? 'border-red-300 dark:border-red-500/50 focus-within:ring-red-500 focus-within:border-red-500'
+                    : 'border-gray-300 dark:border-slate-700 dark:bg-slate-800 focus-within:ring-teal-500'
+                    }`}>
+                    <Lock className={`w-4 h-4 mr-4 flex-shrink-0 ${errors.password && touched.password ? 'text-red-400' : 'text-gray-400 dark:text-slate-500'}`} />
                     <input
                       id="password"
                       name="password"
@@ -383,17 +382,13 @@ const RegisterPage: React.FC = () => {
                       value={formData.password}
                       onChange={handleChange}
                       onBlur={() => handleBlur('password')}
-                      className={`w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500 ${
-                        errors.password && touched.password
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                          : ''
-                      }`}
                       placeholder="Create password"
+                      className="flex-1 bg-transparent text-sm placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none dark:text-slate-100 pr-10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                      className={`absolute right-4 transition-colors ${errors.password && touched.password ? 'text-red-400 hover:text-red-600' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -412,8 +407,11 @@ const RegisterPage: React.FC = () => {
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Confirm Password
                   </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                  <div className={`relative flex items-center border rounded-lg px-2 py-1 focus-within:ring-2 transition-all duration-200 ${errors.confirmPassword && touched.confirmPassword
+                    ? 'border-red-300 dark:border-red-500/50 focus-within:ring-red-500 focus-within:border-red-500'
+                    : 'border-gray-300 dark:border-slate-700 dark:bg-slate-800 focus-within:ring-teal-500'
+                    }`}>
+                    <Lock className={`w-4 h-4 mr-4 flex-shrink-0 ${errors.confirmPassword && touched.confirmPassword ? 'text-red-400' : 'text-gray-400 dark:text-slate-500'}`} />
                     <input
                       id="confirmPassword"
                       name="confirmPassword"
@@ -421,17 +419,13 @@ const RegisterPage: React.FC = () => {
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       onBlur={() => handleBlur('confirmPassword')}
-                      className={`w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm placeholder-gray-400 dark:placeholder-slate-500 ${
-                        errors.confirmPassword && touched.confirmPassword
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                          : ''
-                      }`}
+                      className="flex-1 bg-transparent text-sm placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none dark:text-slate-100 pr-10"
                       placeholder="Confirm password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                      className={`absolute right-4 transition-colors ${errors.confirmPassword && touched.confirmPassword ? 'text-red-400 hover:text-red-600' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -454,11 +448,10 @@ const RegisterPage: React.FC = () => {
                   checked={formData.agreeToTerms}
                   onChange={handleChange}
                   onBlur={() => handleBlur('agreeToTerms')}
-                  className={`w-4 h-4 mt-0.5 rounded focus:ring-2 transition-colors ${
-                    errors.agreeToTerms && touched.agreeToTerms
-                      ? 'border-red-300 text-red-600 focus:ring-red-500'
-                      : 'border-gray-300 text-teal-600 focus:ring-teal-500'
-                  }`}
+                  className={`w-4 h-4 mt-0.5 rounded focus:ring-2 transition-colors ${errors.agreeToTerms && touched.agreeToTerms
+                    ? 'border-red-300 text-red-600 focus:ring-red-500'
+                    : 'border-gray-300 text-teal-600 focus:ring-teal-500'
+                    }`}
                 />
                 <div className="text-sm leading-relaxed">
                   <label htmlFor="agreeToTerms" className="text-gray-700 dark:text-slate-300 cursor-pointer">
@@ -466,7 +459,7 @@ const RegisterPage: React.FC = () => {
                     <button type="button" className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 font-medium underline">
                       Terms of Service
                     </button>
-                     {' '}and{' '}
+                    {' '}and{' '}
                     <button type="button" className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 font-medium underline">
                       Privacy Policy
                     </button>
@@ -509,8 +502,8 @@ const RegisterPage: React.FC = () => {
         <div className="text-center mt-2">
           <p className="text-gray-600 dark:text-slate-400 text-sm">
             Already have an account?{' '}
-            <Link 
-              to={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} 
+            <Link
+              to={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`}
               className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 font-medium underline transition-colors duration-200"
             >
               Sign in here

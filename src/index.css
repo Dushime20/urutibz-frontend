@@ -24,6 +24,17 @@
   --scaled-border-radius: calc(var(--border-radius) * var(--scaling-factor));
 }
 
+/* Hide scrollbar but allow scroll */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE & Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari */
+}
+
+
 /* Dark mode theme variables */
 .dark {
   --primary-color: #14b8a6;

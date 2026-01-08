@@ -9,6 +9,7 @@ import axios from '../../lib/http';
 interface Review {
   id: string;
   user_name?: string;
+  user_email?: string;
   reviewer?: string;
   rating?: number;
   overallRating?: number;
@@ -91,11 +92,10 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`${sizeClasses[size]} ${
-              star <= rating
+            className={`${sizeClasses[size]} ${star <= rating
                 ? 'text-yellow-400 fill-current'
                 : 'text-gray-300 dark:text-gray-600'
-            }`}
+              }`}
           />
         ))}
       </div>
@@ -119,11 +119,10 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
             key={star}
             type="button"
             onClick={() => onRatingChange(star)}
-            className={`transition-all duration-200 transform hover:scale-110 ${
-              star <= currentRating
+            className={`transition-all duration-200 transform hover:scale-110 ${star <= currentRating
                 ? 'text-yellow-400'
                 : 'text-gray-300 hover:text-yellow-300'
-            }`}
+              }`}
           >
             <Star
               className={`${sizeClasses[size]} ${star <= currentRating ? 'fill-current' : ''}`}
@@ -187,7 +186,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
     try {
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL;
-      
+
       const response = await axios.post(
         `${API_BASE_URL}/review/${reviewId}/response`,
         { response: responseText.trim() },
@@ -207,7 +206,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
         }));
         setResponseText('');
         setRespondingToReviewId(null);
-        
+
         // Refresh reviews if callback is provided
         if (onReviewAdded) {
           onReviewAdded();
@@ -421,7 +420,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                       <div className="flex-1">
                         <h4 className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white mb-1">
-                          {review.user_name || review.reviewer || 'Anonymous'}
+                          {review.user_name || review.reviewer || review.user_email || 'Anonymous'}
                         </h4>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                           <div className="flex items-center gap-1">
@@ -548,11 +547,10 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm pt-2 border-t border-gray-100 dark:border-gray-800">
                       <button
                         onClick={() => toggleHelpful(review.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-                          isHelpful
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${isHelpful
                             ? 'text-teal-600 dark:text-teal-400 font-medium bg-teal-50 dark:bg-teal-900/20'
                             : 'text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
+                          }`}
                       >
                         <ThumbsUp className="w-4 h-4" />
                         <span>

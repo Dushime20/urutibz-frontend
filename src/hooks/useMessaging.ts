@@ -163,6 +163,14 @@ export const useMessaging = (): UseMessagingReturn => {
 
       // Call registered callbacks
       messageCallbacksRef.current.forEach(cb => cb(data.message));
+      
+      // Emit delivery confirmation back to server
+      if (socket && isConnected) {
+        socket.emit('message-delivered', {
+           messageId: data.message.id,
+           chatId: data.chatId
+        });
+      }
     };
 
     // Listen for message-sent confirmation (for sender)
@@ -259,9 +267,22 @@ export const useMessaging = (): UseMessagingReturn => {
         ));
       }
     };
+    
+    // Listen for message delivery receipts (from server)
+    const handleMessageDelivered = (data: { messageId: string; chatId: string; deliveredAt: string }) => {
+        if (data.chatId === currentChatIdRef.current) {
+            setMessages(prev => prev.map(msg => 
+                msg.id === data.messageId 
+                    ? { ...msg, message_status: 'delivered', delivered_at: data.deliveredAt }
+                    : msg
+            ));
+        }
+    };
 
     socket.on('new-message', handleNewMessage);
+    socket.on('message-sent', handleMessageSent);
     socket.on('message-read-receipt', handleMessageRead);
+    socket.on('message-delivered-receipt', handleMessageDelivered);
     socket.on('user-typing', handleUserTyping);
     socket.on('chat-read', handleChatRead);
 
@@ -269,6 +290,7 @@ export const useMessaging = (): UseMessagingReturn => {
       socket.off('new-message', handleNewMessage);
       socket.off('message-sent', handleMessageSent);
       socket.off('message-read-receipt', handleMessageRead);
+      socket.off('message-delivered-receipt', handleMessageDelivered);
       socket.off('user-typing', handleUserTyping);
       socket.off('chat-read', handleChatRead);
     };

@@ -38,7 +38,7 @@ function formatCurrency(amount: string, currency: string): string {
     'CNY': '¥',
     'INR': '₹'
   };
-  
+
   const symbol = currencySymbols[currency] || currency;
   return symbol === currency ? `${currency} ${amount}` : `${symbol}${amount}`;
 }
@@ -71,7 +71,7 @@ const ItemDetailsPage: React.FC = () => {
   const [productReviews, setProductReviews] = useState<any[]>([]);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
   const [ownerInfo, setOwnerInfo] = useState<{ id: string; name: string; avatar?: string } | null>(null);
-  
+
   // Related products state
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [relatedProductImages, setRelatedProductImages] = useState<Record<string, string[]>>({});
@@ -109,13 +109,13 @@ const ItemDetailsPage: React.FC = () => {
       .then(result => {
         setItem(result);
         setLoading(false);
-        
+
         if (result && result.id) {
           getProductImagesByProductId(result.id)
             .then((rawImages) => {
               // Simple image extraction like in my-account
               const normalizedImages: string[] = [];
-              
+
               if (Array.isArray(rawImages)) {
                 rawImages.forEach((img: any) => {
                   if (img && img.image_url) {
@@ -123,10 +123,10 @@ const ItemDetailsPage: React.FC = () => {
                   }
                 });
               }
-              
+
               // Set images array (empty if no images)
               const finalImages = normalizedImages.length > 0 ? normalizedImages : [];
-              
+
               setImages(finalImages);
             })
             .catch(() => {
@@ -137,7 +137,7 @@ const ItemDetailsPage: React.FC = () => {
           setImages([]);
           navigate('/items');
         }
-        
+
         // Rest of the existing location fetching logic remains the same
       })
       .catch(() => {
@@ -150,18 +150,18 @@ const ItemDetailsPage: React.FC = () => {
   // Fetch owner information when item is loaded
   useEffect(() => {
     if (!item?.owner_id) return;
-    
+
     const fetchOwnerInfo = async () => {
       try {
         const token = localStorage.getItem('token') || undefined;
         const result = await fetchUserById(item.owner_id, token);
-        
+
         if (result.data) {
           const owner = result.data;
           const ownerName = owner.first_name && owner.last_name
             ? `${owner.first_name} ${owner.last_name}`
             : owner.email || 'Product Owner';
-          
+
           setOwnerInfo({
             id: owner.id,
             name: ownerName,
@@ -180,14 +180,14 @@ const ItemDetailsPage: React.FC = () => {
         }
       }
     };
-    
+
     fetchOwnerInfo();
   }, [item?.owner_id, item?.ownerName, item?.ownerAvatar]);
 
   // Fetch product prices
   useEffect(() => {
     if (!item?.id) return;
-    
+
     async function loadPrices() {
       try {
         const result = await fetchProductPricesByProductId(item.id);
@@ -198,14 +198,14 @@ const ItemDetailsPage: React.FC = () => {
       } catch (error) {
       }
     }
-    
+
     loadPrices();
   }, [item?.id]);
 
   // Fetch product interactions
   useEffect(() => {
     if (!item?.id) return;
-    
+
     async function loadInteractions() {
       try {
         const token = localStorage.getItem('token') || undefined;
@@ -216,7 +216,7 @@ const ItemDetailsPage: React.FC = () => {
       } catch (error) {
       }
     }
-    
+
     loadInteractions();
   }, [item?.id]);
 
@@ -229,7 +229,7 @@ const ItemDetailsPage: React.FC = () => {
         console.log('Fetching reviews for product ID:', item.id, 'Type:', typeof item.id);
         const reviews = await fetchProductReviews(item.id, token);
         // Filter to only show approved reviews publicly
-        const approvedReviews = Array.isArray(reviews) 
+        const approvedReviews = Array.isArray(reviews)
           ? reviews.filter((review: any) => review.moderationStatus === 'approved')
           : [];
         setProductReviews(approvedReviews);
@@ -244,33 +244,33 @@ const ItemDetailsPage: React.FC = () => {
   // Fetch location data
   useEffect(() => {
     if (!item) return;
-    
+
     async function loadLocation() {
       setLocationLoading(true);
-      let lat: number | undefined; 
+      let lat: number | undefined;
       let lng: number | undefined;
-      
+
       // Try to extract coordinates from different possible fields
       const locationSources = [item.location, item.geometry];
-      
+
       for (const source of locationSources) {
         if (!source) continue;
-        
+
         // Handle string format (WKB hex)
         if (typeof source === 'string') {
           const coords = wkbHexToLatLng(source);
-          if (coords) { 
-            lat = coords.lat; 
-            lng = coords.lng; 
+          if (coords) {
+            lat = coords.lat;
+            lng = coords.lng;
             break;
           }
-        } 
+        }
         // Handle object format
         else if (source && typeof source === 'object') {
           // Try different property names
           lat = (source as any).lat ?? (source as any).latitude ?? (source as any).y;
           lng = (source as any).lng ?? (source as any).longitude ?? (source as any).x;
-          
+
           // Handle nested coordinates array [lng, lat] or [lat, lng]
           if ((source as any).coordinates && Array.isArray((source as any).coordinates)) {
             const coords = (source as any).coordinates;
@@ -280,11 +280,11 @@ const ItemDetailsPage: React.FC = () => {
               lat = coords[1];
             }
           }
-          
+
           if (lat != null && lng != null) break;
         }
       }
-      
+
       if (lat != null && lng != null) {
         // Store coordinates for map display
         setProductCoordinates({ lat, lng });
@@ -298,20 +298,20 @@ const ItemDetailsPage: React.FC = () => {
         setItemLocation({ city: null, country: null });
         setProductCoordinates(null);
       }
-      
+
       setLocationLoading(false);
     }
-    
+
     loadLocation();
   }, [item]);
 
   // Load user's favorites and check if current item is favorited
   useEffect(() => {
     if (!id || !isAuthenticated) return;
-    
+
     const token = localStorage.getItem('token') || undefined;
     if (!token) return;
-    
+
     (async () => {
       try {
         const favs = await getUserFavorites(token);
@@ -321,7 +321,7 @@ const ItemDetailsPage: React.FC = () => {
             return productId === id;
           });
           setIsFavorited(isFav);
-          
+
           // Build favorite map for related products
           const map: Record<string, boolean> = {};
           favs.forEach((f: any) => {
@@ -339,14 +339,14 @@ const ItemDetailsPage: React.FC = () => {
   // Fetch related products
   useEffect(() => {
     if (!item?.id) return;
-    
+
     let isMounted = true;
     const fetchRelated = async () => {
       try {
         const token = localStorage.getItem('token') || undefined;
         const result = await fetchAvailableProducts(token, true);
         const allProducts = result.data || [];
-        
+
         // Filter out current product and get related products (same category or random)
         const filtered = allProducts
           .filter((p: any) => p.id !== item.id)
@@ -358,10 +358,10 @@ const ItemDetailsPage: React.FC = () => {
             return true;
           })
           .slice(0, 12); // Limit to 12 products
-        
+
         if (isMounted) {
           setRelatedProducts(filtered);
-          
+
           // Fetch images for related products
           const imagesMap: Record<string, string[]> = {};
           await Promise.all(
@@ -382,7 +382,7 @@ const ItemDetailsPage: React.FC = () => {
               }
             })
           );
-          
+
           // Fetch prices for related products
           const pricesMap: Record<string, any> = {};
           await Promise.all(
@@ -397,26 +397,26 @@ const ItemDetailsPage: React.FC = () => {
               }
             })
           );
-          
+
           // Fetch locations for related products (first 8 only to reduce API load)
           const locationsMap: Record<string, { city: string | null; country: string | null }> = {};
           const loadingMap: Record<string, boolean> = {};
           const productsToProcess = filtered.slice(0, 8);
-          
+
           productsToProcess.forEach((product: any) => {
             loadingMap[product.id] = true;
           });
           setRelatedLocationsLoading(loadingMap);
-          
+
           await Promise.all(
             productsToProcess.map(async (product: any) => {
               let lat: number | undefined;
               let lng: number | undefined;
-              
+
               const locationSources = [product.location, product.geometry];
               for (const source of locationSources) {
                 if (!source) continue;
-                
+
                 if (typeof source === 'string') {
                   const coords = wkbHexToLatLng(source);
                   if (coords) {
@@ -427,7 +427,7 @@ const ItemDetailsPage: React.FC = () => {
                 } else if (source && typeof source === 'object') {
                   lat = (source as any).lat ?? (source as any).latitude ?? (source as any).y;
                   lng = (source as any).lng ?? (source as any).longitude ?? (source as any).x;
-                  
+
                   if ((source as any).coordinates && Array.isArray((source as any).coordinates)) {
                     const coords = (source as any).coordinates;
                     if (coords.length >= 2) {
@@ -435,11 +435,11 @@ const ItemDetailsPage: React.FC = () => {
                       lat = coords[1];
                     }
                   }
-                  
+
                   if (lat != null && lng != null) break;
                 }
               }
-              
+
               if (lat != null && lng != null) {
                 try {
                   const { city, country } = await getCityFromCoordinates(lat, lng);
@@ -450,7 +450,7 @@ const ItemDetailsPage: React.FC = () => {
               } else {
                 locationsMap[product.id] = { city: null, country: null };
               }
-              
+
               if (isMounted) {
                 setRelatedLocationsLoading(prev => {
                   const updated = { ...prev };
@@ -460,7 +460,7 @@ const ItemDetailsPage: React.FC = () => {
               }
             })
           );
-          
+
           if (isMounted) {
             setRelatedProductImages(imagesMap);
             setRelatedProductPrices(pricesMap);
@@ -475,9 +475,9 @@ const ItemDetailsPage: React.FC = () => {
         }
       }
     };
-    
+
     fetchRelated();
-    
+
     return () => {
       isMounted = false;
     };
@@ -499,7 +499,7 @@ const ItemDetailsPage: React.FC = () => {
       </div>
     </div>;
   }
-  
+
   if (!item) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
@@ -570,7 +570,7 @@ const ItemDetailsPage: React.FC = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
-    
+
     const dayAfter = new Date(tomorrow);
     dayAfter.setDate(dayAfter.getDate() + 1);
     dayAfter.setHours(0, 0, 0, 0);
@@ -611,9 +611,9 @@ const ItemDetailsPage: React.FC = () => {
 
   const renderImage = (image: string, index?: number) => {
     return (
-      <img 
-        src={image} 
-        alt={`Product image ${index !== undefined ? index + 1 : ''}`} 
+      <img
+        src={image}
+        alt={`Product image ${index !== undefined ? index + 1 : ''}`}
         className="w-full h-full object-cover"
         onError={(e) => {
           // Hide the image and show icon instead
@@ -625,23 +625,10 @@ const ItemDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b dark:bg-slate-900 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <nav className="flex items-center space-x-2 text-sm">
-            <Link to="/items" className="text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white"><TranslatedText text="Items" /></Link>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-            <Link to={`/items?category=${item.category}`} className="text-gray-600 hover:text-gray-900 capitalize dark:text-slate-300 dark:hover:text-white">
-              {item.category}
-            </Link>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-900 font-medium dark:text-white">{item.name}</span>
-          </nav>
-        </div>
-      </div>
+    <div className="max-w-9xl mx-auto px-10 pt-4 lg:px-20 space-y-12 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+      <div className="">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Left Column - Images and Details */}
           <div className="lg:col-span-2 space-y-6">
@@ -707,14 +694,14 @@ const ItemDetailsPage: React.FC = () => {
                         setShowAuthModal(true);
                         return;
                       }
-                      
+
                       const token = localStorage.getItem('token') || undefined;
                       if (!token) return;
-                      
+
                       const currentlyFav = isFavorited;
                       // optimistic update
                       setIsFavorited(!currentlyFav);
-                      
+
                       try {
                         if (currentlyFav) {
                           await removeUserFavorite(id!, token);
@@ -777,13 +764,13 @@ const ItemDetailsPage: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
                         {locationLoading ? (
-                        <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1">
                             <div className="w-3 h-3 border border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                          <TranslatedText text="Loading location..." />
+                            <TranslatedText text="Loading location..." />
                           </span>
                         ) : (
                           <>
-                          {itemLocation.city || <TranslatedText text="Unknown Location" />}{itemLocation.country ? `, ${itemLocation.country}` : ''}
+                            {itemLocation.city || <TranslatedText text="Unknown Location" />}{itemLocation.country ? `, ${itemLocation.country}` : ''}
                           </>
                         )}
                       </div>
@@ -846,8 +833,8 @@ const ItemDetailsPage: React.FC = () => {
                   )}
                   <div className="flex items-center gap-1 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm dark:bg-slate-800 dark:text-slate-200">
                     <Shield className="w-4 h-4" />
-                    {productPrices?.security_deposit && productPrices?.currency ? 
-                      `${formatCurrency(productPrices.security_deposit, productPrices.currency)} ` : 
+                    {productPrices?.security_deposit && productPrices?.currency ?
+                      `${formatCurrency(productPrices.security_deposit, productPrices.currency)} ` :
                       `$${item.security || 0} `
                     }
                     <TranslatedText text="Security Deposit" />
@@ -963,6 +950,21 @@ const ItemDetailsPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Reviews Section */}
+              <div className="mb-6">
+                <ReviewsSection
+                  reviews={productReviews}
+                  productId={item?.id || ''}
+                  ownerId={item?.owner_id || item?.user_id}
+                  onReviewAdded={() => {
+                    // Refetch reviews after a new review is added
+                    const token = localStorage.getItem('token') || undefined;
+                    fetchProductReviews(item.id, token).then((reviews) => {
+                      setProductReviews(Array.isArray(reviews) ? reviews : []);
+                    });
+                  }}
+                />
+              </div>
 
               {/* Recent Interactions */}
               {productInteractions.length > 0 && (
@@ -1013,8 +1015,8 @@ const ItemDetailsPage: React.FC = () => {
                     )}
                   </div>
                   <p className="text-sm text-gray-600 dark:text-slate-300">
-                    {productPrices?.min_rental_duration_hours ? 
-                      `Min rental: ${productPrices.min_rental_duration_hours} hours` : 
+                    {productPrices?.min_rental_duration_hours ?
+                      `Min rental: ${productPrices.min_rental_duration_hours} hours` :
                       'Item min rental period loading...'
                     }
                   </p>
@@ -1066,7 +1068,7 @@ const ItemDetailsPage: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-slate-300"><TranslatedText text="Security Deposit" /></span>
                       <span className="font-medium dark:text-white">
-                        {productPrices?.security_deposit && productPrices?.currency ? 
+                        {productPrices?.security_deposit && productPrices?.currency ?
                           formatCurrency(productPrices.security_deposit, productPrices.currency) :
                           formatPrice(item.securityDeposit || 0)
                         }
@@ -1105,8 +1107,8 @@ const ItemDetailsPage: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="flex-1 flex items-center justify-center gap-2"
                     onClick={() => setShowMessagingModal(true)}
                   >
@@ -1118,22 +1120,6 @@ const ItemDetailsPage: React.FC = () => {
                     <TranslatedText text="Call" />
                   </Button>
                 </div>
-
-                {/* Reviews Section */}
-                <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
-                  <ReviewsSection
-                    reviews={productReviews}
-                    productId={item?.id || ''}
-                    ownerId={item?.owner_id || item?.user_id}
-                    onReviewAdded={() => {
-                      // Refetch reviews after a new review is added
-                      const token = localStorage.getItem('token') || undefined;
-                      fetchProductReviews(item.id, token).then((reviews) => {
-                        setProductReviews(Array.isArray(reviews) ? reviews : []);
-                      });
-                    }}
-                  />
-                </div>
               </div>
             </div>
           </div>
@@ -1142,7 +1128,7 @@ const ItemDetailsPage: React.FC = () => {
 
       {/* More items to explore section */}
       {relatedProducts.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
               <TranslatedText text="More items to explore" />
@@ -1265,9 +1251,9 @@ const ItemDetailsPage: React.FC = () => {
           ownerName={ownerInfo.name}
           ownerAvatar={ownerInfo.avatar}
           productImage={images[0] || item.image}
-          productPrice={productPrices?.price_per_day && productPrices?.currency 
+          productPrice={productPrices?.price_per_day && productPrices?.currency
             ? formatCurrency(productPrices.price_per_day, productPrices.currency) + '/day'
-            : item.base_price_per_day 
+            : item.base_price_per_day
               ? `${item.base_price_per_day} ${item.base_currency}/day`
               : undefined
           }
@@ -1283,8 +1269,8 @@ const ItemDetailsPage: React.FC = () => {
             id: item.id,
             title: item.title || item.name || '',
             image: images[0],
-            pricePerDay: typeof productPrices.price_per_day === 'string' 
-              ? parseFloat(productPrices.price_per_day) 
+            pricePerDay: typeof productPrices.price_per_day === 'string'
+              ? parseFloat(productPrices.price_per_day)
               : (productPrices.price_per_day || parseFloat(item.base_price_per_day || '0')),
             currency: productPrices.currency || item.base_currency || 'USD',
             pickup_methods: item.pickup_methods,

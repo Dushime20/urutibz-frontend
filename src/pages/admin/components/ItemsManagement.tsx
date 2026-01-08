@@ -9,6 +9,7 @@ import { type ProductAvailability } from '../interfaces';
 import { filterCurrentAndFutureAvailability } from '../../../lib/utils';
 import { fetchCategoryById } from '../service';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../../../lib/utils';
+import { fetchProductPricesByProductId } from '../../my-account/service/api';
 import { fetchCategories } from '../service';
 import type { Category } from '../interfaces';
 import SkeletonTable from './SkeletonTable';
@@ -60,7 +61,7 @@ const AdminProductDetailModal: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [moderateOpen, setModerateOpen] = useState(false);
-  
+
   // New state for category and owner details
   const [categoryName, setCategoryName] = useState<string>('N/A');
   const [ownerName, setOwnerName] = useState<string>('Unknown');
@@ -96,154 +97,153 @@ const AdminProductDetailModal: React.FC<{
 
   useEffect(() => {
     if (!open || !productId) return;
-    
+
     setLoading(true);
     setError(null);
     setCurrentImageIndex(0);
-    
+
     // Reset moderation form state
     setModerationAction('approve');
     setModerationReason('');
     setModerateError(null);
     setModerationSuccess(false);
-    
+
     const token = localStorage.getItem('token') || undefined;
-    
+
     console.group('Product Details Fetch');
     console.log('Product ID:', productId);
     console.log('Token:', token ? 'Present' : 'Not provided');
-    
+
     Promise.all([
       getProductById(productId, token),
       fetchProductImages(productId, token)
     ])
-    .then(async ([productData, imagesData]) => {
-      console.log('Raw Product Data:', JSON.stringify(productData, null, 2));
-      console.log('Raw Images Data:', JSON.stringify(imagesData, null, 2));
-      
-      setProduct(productData);
+      .then(async ([productData, imagesData]) => {
+        console.log('Raw Product Data:', JSON.stringify(productData, null, 2));
+        console.log('Raw Images Data:', JSON.stringify(imagesData, null, 2));
 
-      // Resolve human-readable location from WKB hex if available
-      try {
-        const rawLocation = (productData as any)?.location;
-        if (typeof rawLocation === 'string' && rawLocation.length > 0) {
-          const latlng = wkbHexToLatLng(rawLocation);
-          if (latlng && Number.isFinite(latlng.lat) && Number.isFinite(latlng.lng)) {
-            const { city, country } = await getCityFromCoordinates(latlng.lat, latlng.lng);
-            if (city || country) {
-              setResolvedLocation([city, country].filter(Boolean).join(', '));
+        setProduct(productData);
+
+        // Resolve human-readable location from WKB hex if available
+        try {
+          const rawLocation = (productData as any)?.location;
+          if (typeof rawLocation === 'string' && rawLocation.length > 0) {
+            const latlng = wkbHexToLatLng(rawLocation);
+            if (latlng && Number.isFinite(latlng.lat) && Number.isFinite(latlng.lng)) {
+              const { city, country } = await getCityFromCoordinates(latlng.lat, latlng.lng);
+              if (city || country) {
+                setResolvedLocation([city, country].filter(Boolean).join(', '));
+              } else {
+                setResolvedLocation('Unknown');
+              }
             } else {
               setResolvedLocation('Unknown');
             }
           } else {
             setResolvedLocation('Unknown');
           }
-        } else {
+        } catch (e) {
+          console.warn('Failed to resolve product location', e);
           setResolvedLocation('Unknown');
         }
-      } catch (e) {
-        console.warn('Failed to resolve product location', e);
-        setResolvedLocation('Unknown');
-      }
 
-      // Fetch pricing for product and attach for display (daily/weekly/monthly, currency)
-      try {
-        const { fetchProductPricesByProductId } = await import('../../my-account/service/api');
-        const priceList = await fetchProductPricesByProductId(productId);
-        const firstPrice = Array.isArray(priceList?.data) ? priceList.data[0] : null;
-        if (firstPrice) {
-          setProduct((prev: any) => ({
-            ...prev,
-            base_price_per_day: firstPrice.price_per_day ?? prev?.base_price_per_day ?? null,
-            base_price_per_week: firstPrice.price_per_week ?? null,
-            base_price_per_month: firstPrice.price_per_month ?? null,
-            base_currency: firstPrice.currency ?? prev?.base_currency ?? null,
-          }));
-        }
-      } catch (e) {
-        console.warn('Failed to fetch product pricing for detail modal', e);
-      }
-      
-      // Normalize image data
-      let productImages: any[] = [];
-      if (Array.isArray(imagesData)) {
-        productImages = imagesData;
-      } else if (imagesData && typeof imagesData === 'object') {
-        // Check for nested data structures
-        productImages = 
-          (imagesData as any).data?.data || 
-          (imagesData as any).data || 
-          imagesData;
-      }
-
-      // Ensure productImages is an array
-      if (!Array.isArray(productImages)) {
-        productImages = [];
-      }
-
-      // Normalize image URLs
-      productImages = productImages.map((img: any) => 
-        img?.url || img?.image_url || img?.src || img
-      ).filter(Boolean);
-      
-      console.log('Normalized Product Images:', JSON.stringify(productImages, null, 2));
-      setImages(productImages);
-      
-      // Fetch category name
-      if (productData.category_id) {
+        // Fetch pricing for product and attach for display (daily/weekly/monthly, currency)
         try {
-          const categoryData = await fetchCategoryById(productData.category_id, token);
-          setCategoryName(categoryData.name || 'N/A');
-        } catch (err) {
-          console.error('Error fetching category:', err);
-          setCategoryName('N/A');
+          const priceList = await fetchProductPricesByProductId(productId);
+          const firstPrice = Array.isArray(priceList?.data) ? priceList.data[0] : null;
+          if (firstPrice) {
+            setProduct((prev: any) => ({
+              ...prev,
+              base_price_per_day: firstPrice.price_per_day ?? prev?.base_price_per_day ?? null,
+              base_price_per_week: firstPrice.price_per_week ?? null,
+              base_price_per_month: firstPrice.price_per_month ?? null,
+              base_currency: firstPrice.currency ?? prev?.base_currency ?? null,
+            }));
+          }
+        } catch (e) {
+          console.warn('Failed to fetch product pricing for detail modal', e);
         }
-      }
-      
-      // Fetch owner name
-      if (productData.owner_id) {
-        console.log('Attempting to fetch owner with ID:', productData.owner_id);
-        try {
-          const userData = await fetchUserById(productData.owner_id, token);
-          console.log('Raw User Data:', JSON.stringify(userData, null, 2));
-          
-          // More robust name extraction
-          const firstName = userData.data?.first_name || userData.data?.email?.split('@')[0] || 'Unknown';
-          const lastName = userData.data?.last_name || '';
-          const fullName = `${firstName} ${lastName}`.trim() || 'Unknown';
 
-          console.log('Extracted User Details:', {
-            firstName,
-            lastName,
-            fullName,
-            email: userData.data?.email
-          });
+        // Normalize image data
+        let productImages: any[] = [];
+        if (Array.isArray(imagesData)) {
+          productImages = imagesData;
+        } else if (imagesData && typeof imagesData === 'object') {
+          // Check for nested data structures
+          productImages =
+            (imagesData as any).data?.data ||
+            (imagesData as any).data ||
+            imagesData;
+        }
 
-          console.log('Constructed Full Name:', fullName);
-          
-          setOwnerName(fullName);
-        } catch (err: any) {
-          console.error('Detailed error fetching owner:', err);
-          console.error('Error details:', {
-            message: err?.message,
-            response: JSON.stringify(err?.response?.data, null, 2),
-            status: err?.response?.status
-          });
+        // Ensure productImages is an array
+        if (!Array.isArray(productImages)) {
+          productImages = [];
+        }
+
+        // Normalize image URLs
+        productImages = productImages.map((img: any) =>
+          img?.url || img?.image_url || img?.src || img
+        ).filter(Boolean);
+
+        console.log('Normalized Product Images:', JSON.stringify(productImages, null, 2));
+        setImages(productImages);
+
+        // Fetch category name
+        if (productData.category_id) {
+          try {
+            const categoryData = await fetchCategoryById(productData.category_id, token);
+            setCategoryName(categoryData.name || 'N/A');
+          } catch (err) {
+            console.error('Error fetching category:', err);
+            setCategoryName('N/A');
+          }
+        }
+
+        // Fetch owner name
+        if (productData.owner_id) {
+          console.log('Attempting to fetch owner with ID:', productData.owner_id);
+          try {
+            const userData = await fetchUserById(productData.owner_id, token);
+            console.log('Raw User Data:', JSON.stringify(userData, null, 2));
+
+            // More robust name extraction
+            const firstName = userData.data?.first_name || userData.data?.email?.split('@')[0] || 'Unknown';
+            const lastName = userData.data?.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim() || 'Unknown';
+
+            console.log('Extracted User Details:', {
+              firstName,
+              lastName,
+              fullName,
+              email: userData.data?.email
+            });
+
+            console.log('Constructed Full Name:', fullName);
+
+            setOwnerName(fullName);
+          } catch (err: any) {
+            console.error('Detailed error fetching owner:', err);
+            console.error('Error details:', {
+              message: err?.message,
+              response: JSON.stringify(err?.response?.data, null, 2),
+              status: err?.response?.status
+            });
+            setOwnerName('Unknown');
+          }
+        } else {
+          console.warn('No owner_id found in product data:', JSON.stringify(productData, null, 2));
           setOwnerName('Unknown');
         }
-      } else {
-        console.warn('No owner_id found in product data:', JSON.stringify(productData, null, 2));
-        setOwnerName('Unknown');
-      }
-    })
-    .catch((err) => {
-      console.error('Error fetching product details:', err);
-      setError('Failed to load product details.');
-    })
-    .finally(() => {
-      setLoading(false);
-      console.groupEnd();
-    });
+      })
+      .catch((err) => {
+        console.error('Error fetching product details:', err);
+        setError('Failed to load product details.');
+      })
+      .finally(() => {
+        setLoading(false);
+        console.groupEnd();
+      });
   }, [open, productId]);
 
   const nextImage = () => {
@@ -261,22 +261,22 @@ const AdminProductDetailModal: React.FC<{
     try {
       const token = localStorage.getItem('token') || undefined;
       await moderateAdminProduct(productId, { action: moderationAction, reason: moderationReason }, token);
-      
+
       // Show success message
       setModerationSuccess(true);
-      
+
       // Wait a moment to show success, then close all modals
       setTimeout(() => {
         setModerationSuccess(false);
         setModerateOpen(false);
         onClose();
-        
+
         // Optionally refresh product list or show a toast
         if (onApproved) {
           onApproved();
         }
       }, 1500);
-      
+
     } catch (err: any) {
       setModerateError(err.message || 'Failed to moderate product');
     } finally {
@@ -287,10 +287,10 @@ const AdminProductDetailModal: React.FC<{
   if (!open) return null;
 
   // Determine image URL with multiple fallback options
-  const currentImageUrl = 
-    images[currentImageIndex]?.url || 
-    images[currentImageIndex]?.image_url || 
-    images[currentImageIndex] || 
+  const currentImageUrl =
+    images[currentImageIndex]?.url ||
+    images[currentImageIndex]?.image_url ||
+    images[currentImageIndex] ||
     '/assets/img/404.png';
 
   return (
@@ -302,20 +302,18 @@ const AdminProductDetailModal: React.FC<{
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {product?.title || product?.name || tSync('Product Details')}
             </h2>
-            <div className={`inline-block px-2 py-1 rounded text-xs font-semibold mt-2 ${
-              product?.status === 'active' 
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
-                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-            }`}>
+            <div className={`inline-block px-2 py-1 rounded text-xs font-semibold mt-2 ${product?.status === 'active'
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+              }`}>
               {product?.status || 'Unknown'}
             </div>
           </div>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             disabled={moderateLoading || moderationSuccess}
-            className={`text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors ${
-              moderateLoading || moderationSuccess ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors ${moderateLoading || moderationSuccess ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
           >
             <X className="w-6 h-6" />
           </button>
@@ -341,14 +339,14 @@ const AdminProductDetailModal: React.FC<{
                     />
                     {images.length > 1 && (
                       <>
-                        <button 
-                          onClick={prevImage} 
+                        <button
+                          onClick={prevImage}
                           className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 shadow-md rounded-full p-2 z-10"
                         >
                           &#8592;
                         </button>
-                        <button 
-                          onClick={nextImage} 
+                        <button
+                          onClick={nextImage}
                           className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 shadow-md rounded-full p-2 z-10"
                         >
                           &#8594;
@@ -379,7 +377,7 @@ const AdminProductDetailModal: React.FC<{
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Basic Information</h3>
-                
+
                 <div className="grid grid-cols-1 gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -399,9 +397,9 @@ const AdminProductDetailModal: React.FC<{
                   <div>
                     <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Description</div>
                     <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded min-h-[60px]">
-                      {typeof product?.description === 'string' 
-                        ? product.description 
-                        : typeof product?.description === 'object' 
+                      {typeof product?.description === 'string'
+                        ? product.description
+                        : typeof product?.description === 'object'
                           ? JSON.stringify(product.description, null, 2)
                           : 'No description available'
                       }
@@ -524,7 +522,7 @@ const AdminProductDetailModal: React.FC<{
                   const currentUnavailableDates = productAvailability[productId]
                     ? filterCurrentAndFutureAvailability(productAvailability[productId], 'unavailable')
                     : [];
-                  
+
                   if (currentUnavailableDates.length > 0) {
                     return (
                       <div className="space-y-3">
@@ -680,20 +678,20 @@ const AdminProductDetailModal: React.FC<{
 
           {/* Action Buttons */}
           <div className="flex space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <button 
+            <button
               onClick={() => setModerateOpen(true)}
               className="flex-1 bg-my-primary text-white px-6 py-3 rounded-lg hover:bg-my-primary/90 transition-colors font-medium"
             >
               Moderate Product
             </button>
-            <button 
+            <button
               onClick={() => {
                 onClose();
                 // Open moderation history for this product
                 setTimeout(() => {
                   // Use a timeout to ensure the current modal closes first
-                  const event = new CustomEvent('openModerationHistory', { 
-                    detail: { productId, productTitle: product?.title || 'Product' } 
+                  const event = new CustomEvent('openModerationHistory', {
+                    detail: { productId, productTitle: product?.title || 'Product' }
                   });
                   window.dispatchEvent(event);
                 }, 100);
@@ -708,7 +706,7 @@ const AdminProductDetailModal: React.FC<{
 
         {/* Moderate Product Modal */}
         {moderateOpen && (
-          <div 
+          <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget && !moderateLoading && !moderationSuccess) {
@@ -760,27 +758,26 @@ const AdminProductDetailModal: React.FC<{
                 ) : (
                   <>
                     <div className="flex justify-end space-x-2">
-                                        <button
-                    onClick={() => {
-                      setModerateOpen(false);
-                      // Reset form when closing
-                      setModerationAction('approve');
-                      setModerationReason('');
-                      setModerateError(null);
-                    }}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    disabled={moderateLoading}
-                  >
-                    Cancel
-                  </button>
+                      <button
+                        onClick={() => {
+                          setModerateOpen(false);
+                          // Reset form when closing
+                          setModerationAction('approve');
+                          setModerationReason('');
+                          setModerateError(null);
+                        }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                        disabled={moderateLoading}
+                      >
+                        Cancel
+                      </button>
                       <button
                         onClick={handleModerate}
                         disabled={moderateLoading || moderationSuccess}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          moderateLoading || moderationSuccess
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-my-primary hover:bg-my-primary/90 text-white'
-                        }`}
+                        className={`px-4 py-2 rounded-lg transition-colors ${moderateLoading || moderationSuccess
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-my-primary hover:bg-my-primary/90 text-white'
+                          }`}
                       >
                         {moderateLoading ? (
                           <div className="flex items-center">
@@ -838,15 +835,15 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
     console.log('Products received:', products);
     console.log('Current itemFilter:', itemFilter);
     console.log('Current selectedLocation:', selectedLocation);
-    
+
     // Debug filtering
     const filteredByCategory = products.filter((item: Product) => itemFilter === 'all' || item.category_id === itemFilter);
     const filteredByLocation = filteredByCategory.filter((item: Product) => selectedLocation === 'all' || item.location === selectedLocation);
-    
+
     console.log('Total products:', products.length);
     console.log('After category filter:', filteredByCategory.length);
     console.log('After location filter:', filteredByLocation.length);
-    
+
     // Log some sample products to see their structure
     if (products.length > 0) {
       console.log('Sample product:', products[0]);
@@ -860,12 +857,12 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
       setImagesLoading(true);
       const token = localStorage.getItem('token') || undefined;
       const imagesMap: { [productId: string]: any[] } = {};
-      
+
       const PLACEHOLDER_IMAGE = '/assets/img/404.png';
-      
+
       console.group('Image Loading Process');
       console.log('Total Products:', products.length);
-      
+
       // Log product details before image fetching
       products.forEach(product => {
         console.log(`Product Details:`, {
@@ -879,62 +876,62 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
       await Promise.all(products.map(async (product) => {
         try {
           console.log(`Fetching images for product: ${product.id}`);
-          
+
           const imagesResponse = await fetchProductImages(product.id, token);
-          
+
           console.log(`Raw Images for product ${product.id}:`, imagesResponse);
-          
+
           // Normalize image data
           const productImages = imagesResponse.map((img: any) => {
             // Extract URL from different possible structures
-            const imageUrl = 
-              img?.url || 
-              img?.image_url || 
-              img?.src || 
+            const imageUrl =
+              img?.url ||
+              img?.image_url ||
+              img?.src ||
               img;
-          
-          console.log(`Processed image for product ${product.id}:`, imageUrl);
-          
-          return imageUrl;
-        }).filter(Boolean); // Remove any falsy values
 
-        // Combine API images with product-level images
-        const combinedImages = [
-          ...productImages,
-          ...(product.image ? [product.image] : []),
-          ...(product.images || [])
-        ].filter(Boolean); // Remove any falsy values
+            console.log(`Processed image for product ${product.id}:`, imageUrl);
 
-        console.log(`Combined images for product ${product.id}:`, combinedImages);
-        
-        imagesMap[product.id] = combinedImages.length > 0 
-          ? combinedImages 
-          : [PLACEHOLDER_IMAGE];
-      } catch (error) {
-        console.error(`Error fetching images for product ${product.id}:`, error);
-        
-        // Fallback to product-level images or placeholder
-        imagesMap[product.id] = [
-          ...(product.image ? [product.image] : []),
-          ...(product.images || []),
-          PLACEHOLDER_IMAGE
-        ].filter(Boolean);
-      }
-    }));
-    
-    console.log('Final Images Map:', imagesMap);
-    console.groupEnd();
-    
-    setProductImages(imagesMap);
-    setImagesLoading(false);
-  }
-  
-  if (products.length) {
-    loadImages();
-  } else {
-    setProductImages({});
-  }
-}, [products]);
+            return imageUrl;
+          }).filter(Boolean); // Remove any falsy values
+
+          // Combine API images with product-level images
+          const combinedImages = [
+            ...productImages,
+            ...(product.image ? [product.image] : []),
+            ...(product.images || [])
+          ].filter(Boolean); // Remove any falsy values
+
+          console.log(`Combined images for product ${product.id}:`, combinedImages);
+
+          imagesMap[product.id] = combinedImages.length > 0
+            ? combinedImages
+            : [PLACEHOLDER_IMAGE];
+        } catch (error) {
+          console.error(`Error fetching images for product ${product.id}:`, error);
+
+          // Fallback to product-level images or placeholder
+          imagesMap[product.id] = [
+            ...(product.image ? [product.image] : []),
+            ...(product.images || []),
+            PLACEHOLDER_IMAGE
+          ].filter(Boolean);
+        }
+      }));
+
+      console.log('Final Images Map:', imagesMap);
+      console.groupEnd();
+
+      setProductImages(imagesMap);
+      setImagesLoading(false);
+    }
+
+    if (products.length) {
+      loadImages();
+    } else {
+      setProductImages({});
+    }
+  }, [products]);
 
   useEffect(() => {
     async function loadAvailability() {
@@ -943,14 +940,14 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
 
       const token = localStorage.getItem('token') || undefined;
       const availabilityMap: { [productId: string]: ProductAvailability[] } = {};
-      
+
       await Promise.all(products.map(async (product) => {
         try {
           console.log(`Fetching availability for product: ${product.id}`);
           const data = await fetchProductAvailability(product.id, token);
-          
+
           console.log(`Availability data for product ${product.id}:`, data);
-          
+
           availabilityMap[product.id] = data;
         } catch (error) {
           console.error(`Error fetching availability for product ${product.id}:`, error);
@@ -1016,7 +1013,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
     };
 
     window.addEventListener('openModerationHistory', handleOpenModerationHistory as EventListener);
-    
+
     return () => {
       window.removeEventListener('openModerationHistory', handleOpenModerationHistory as EventListener);
     };
@@ -1026,11 +1023,11 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   useEffect(() => {
     async function loadProductPrices() {
       if (!products.length) return;
-      
+
       setPricesLoading(true);
       const token = localStorage.getItem('token') || undefined;
       const pricesMap: { [productId: string]: ProductPrice[] } = {};
-      
+
       try {
         await Promise.all(products.map(async (product) => {
           try {
@@ -1045,7 +1042,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             pricesMap[product.id] = [];
           }
         }));
-        
+
         setProductPrices(pricesMap);
       } catch (error) {
         console.error('Error loading product prices:', error);
@@ -1053,7 +1050,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
         setPricesLoading(false);
       }
     }
-    
+
     loadProductPrices();
   }, [products]);
 
@@ -1092,21 +1089,21 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
     const imageSources = [
       // 1. API-fetched images
       ...(productImages[item.id] || []),
-      
+
       // 2. Product-level image properties
       item.image,
       ...(item.images || []),
-      
+
       // 3. Hardcoded fallback
       PLACEHOLDER_IMAGE
     ];
 
     // Find the first valid, non-empty image URL
     const validImageUrl = imageSources.find(
-      (url) => url && 
-      typeof url === 'string' && 
-      url.trim() !== '' && 
-      !url.includes('undefined')
+      (url) => url &&
+        typeof url === 'string' &&
+        url.trim() !== '' &&
+        !url.includes('undefined')
     );
 
     console.log(`Image sources for product ${item.id}:`, {
@@ -1124,12 +1121,12 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   const isProductAvailable = (productId: string) => {
     const availability = productAvailability[productId] || [];
     const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+
     // Check if there are any unavailable dates from today onwards
-    const futureUnavailableDates = availability.filter(av => 
+    const futureUnavailableDates = availability.filter(av =>
       av.availability_type === 'unavailable' && av.date >= currentDate
     );
-    
+
     return futureUnavailableDates.length === 0;
   };
 
@@ -1148,8 +1145,8 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
         <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Items Management</h3>
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <select 
-              value={itemFilter} 
+            <select
+              value={itemFilter}
               onChange={(e) => setItemFilter(e.target.value)}
               className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
             >
@@ -1161,14 +1158,14 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               ))}
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z" /></svg>
             </div>
           </div>
           {/* Status Filter */}
           <div className="relative">
             <select
               value={(undefined as any)}
-              onChange={() => {}}
+              onChange={() => { }}
               className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary hidden"
             />
           </div>
@@ -1184,7 +1181,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               <option value="pending"><TranslatedText text="Pending" /></option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z" /></svg>
             </div>
           </div>
           {/* Availability Filter */}
@@ -1199,7 +1196,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               <option value="booked">Booked ({bookedCount})</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z" /></svg>
             </div>
           </div>
           {/* Sort */}
@@ -1213,10 +1210,10 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               <option value="oldest"><TranslatedText text="Oldest" /></option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z"/></svg>
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z" /></svg>
             </div>
           </div>
-          <Button 
+          <Button
             onClick={() => {
               setItemFilter('all');
               setAvailabilityFilter?.('all');
@@ -1227,7 +1224,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             <X className="w-4 h-4 mr-2" />
             <TranslatedText text="Reset Filters" />
           </Button>
-          <Button 
+          <Button
             onClick={() => {
               // Try opening if My Account dashboard is active; else route to My Account with query to auto-open
               const openListingModal = (window as any).__openNewListingModal;
@@ -1261,7 +1258,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
           </div>
         ))}
       </div> */}
-      
+
       {/* Filter Status Indicator */}
       {(itemFilter !== 'all' || selectedLocation !== 'all' || availabilityFilter !== 'all') && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1325,131 +1322,131 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {products
-                .filter((item: Product) => itemFilter === 'all' || item.category_id === itemFilter)
-                .filter((item: Product) => selectedLocation === 'all' || item.location === selectedLocation)
-                .filter((item: Product) => {
-                  if (availabilityFilter === 'all') return true;
-                  if (availabilityFilter === 'available') return isProductAvailable(item.id);
-                  if (availabilityFilter === 'booked') return !isProductAvailable(item.id);
-                  return true;
-                })
-                .map((item: Product, idx: number) => (
-                  <tr key={item.id} className="bg-white dark:bg-gray-900">
-                    <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3">
-                      {(() => {
-                        const src = getProductImageUrl(item, productImages);
-                        const noImage = !src || src.includes('404.png') || src.includes('placeholder');
-                        if (noImage) {
-                          return (
-                            <div className="h-12 w-12 rounded-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                              <Package className="w-5 h-5" />
-                            </div>
-                          );
-                        }
+              .filter((item: Product) => itemFilter === 'all' || item.category_id === itemFilter)
+              .filter((item: Product) => selectedLocation === 'all' || item.location === selectedLocation)
+              .filter((item: Product) => {
+                if (availabilityFilter === 'all') return true;
+                if (availabilityFilter === 'available') return isProductAvailable(item.id);
+                if (availabilityFilter === 'booked') return !isProductAvailable(item.id);
+                return true;
+              })
+              .map((item: Product, idx: number) => (
+                <tr key={item.id} className="bg-white dark:bg-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3">
+                    {(() => {
+                      const src = getProductImageUrl(item, productImages);
+                      const noImage = !src || src.includes('404.png') || src.includes('placeholder');
+                      if (noImage) {
                         return (
-                          <img
-                            key={item.id}
-                            className="h-12 w-12 rounded-md object-cover"
-                            src={src}
-                            alt={item.title || item.name || 'Product Image'}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                        );
-                      })()}
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-gray-100">{item.title || item.name}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{categoryNames[item.category_id ?? ''] || 'Loading...'}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{owners[item.owner_id]?.firstName || 'Loading...'}</span>
-                      {/* <span className="font-medium text-gray-900 dark:text-gray-100">{owners[item.owner_id]?.lastName || 'Loading...'}</span> */}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{item.status}</span>
-                    </td>
-                                          <td className="px-6 py-4 text-gray-900 dark:text-gray-100 text-md">
-                        <div className="space-y-1">
-                          {pricesLoading ? (
-                            <div className="flex items-center space-x-2">
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-my-primary"></div>
-                              <span className="text-sm text-gray-500">Loading prices...</span>
-                            </div>
-                          ) : productPrices[item.id]?.length > 0 ? (
-                            <>
-                              {/* Primary Price (Daily) */}
-                              <div className=" flex items-center">
-                                {/* <DollarSign className="w-4 h-4 text-green-600" /> */}
-                                <span>
-                                  {productPrices[item.id][0].price_per_day} {productPrices[item.id][0].currency}/day
-                                </span>
-                              </div>
-                              
-                              {/* Multiple Countries Indicator */}
-                              {productPrices[item.id].length > 1 && (
-                                <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                                  +{productPrices[item.id].length - 1} more countries
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="text-gray-500 italic text-center">-</div>
-                          )}
-                        </div>
-                      </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {(() => {
-                        // Filter only current and future unavailable dates using utility function
-                        const currentUnavailableDates = productAvailability[item.id]
-                          ? filterCurrentAndFutureAvailability(productAvailability[item.id], 'unavailable')
-                          : [];
-                        
-                        if (currentUnavailableDates.length > 0) {
-                          return <span className="text-xs text-red-600 font-medium">Booked</span>;
-                        } else {
-                          return <span className="text-xs text-green-600">Available</span>;
-                        }
-                      })()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium relative">
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="p-2 text-gray-400 hover:text-my-primary rounded-lg hover:bg-my-primary/10 transition-colors"
-                          aria-label="More actions"
-                          onClick={() => setActionMenuOpen(actionMenuOpen === item.id ? null : item.id)}
-                        >
-                          <MoreHorizontal className="w-5 h-5" />
-                        </button>
-                        {actionMenuOpen === item.id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                            <button
-                              onClick={() => {
-                                setActionMenuOpen(null);
-                                setViewProductId(item.id);
-                              }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                            >
-                              <TranslatedText text="View Details" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setActionMenuOpen(null);
-                                setModerationHistoryProductId(item.id);
-                              }}
-                              className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center"
-                            >
-                              <Shield className="w-4 h-4 mr-2" />
-                              Moderation History
-                            </button>
+                          <div className="h-12 w-12 rounded-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                            <Package className="w-5 h-5" />
                           </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                        );
+                      }
+                      return (
+                        <img
+                          key={item.id}
+                          className="h-12 w-12 rounded-md object-cover"
+                          src={src}
+                          alt={item.title || item.name || 'Product Image'}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      );
+                    })()}
+                    <div>
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">{item.title || item.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{categoryNames[item.category_id ?? ''] || 'Loading...'}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{owners[item.owner_id]?.firstName || 'Loading...'}</span>
+                    {/* <span className="font-medium text-gray-900 dark:text-gray-100">{owners[item.owner_id]?.lastName || 'Loading...'}</span> */}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{item.status}</span>
+                  </td>
+                  <td className="px-6 py-4 text-gray-900 dark:text-gray-100 text-md">
+                    <div className="space-y-1">
+                      {pricesLoading ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-my-primary"></div>
+                          <span className="text-sm text-gray-500">Loading prices...</span>
+                        </div>
+                      ) : productPrices[item.id]?.length > 0 ? (
+                        <>
+                          {/* Primary Price (Daily) */}
+                          <div className=" flex items-center">
+                            {/* <DollarSign className="w-4 h-4 text-green-600" /> */}
+                            <span>
+                              {productPrices[item.id][0].price_per_day} {productPrices[item.id][0].currency}/day
+                            </span>
+                          </div>
+
+                          {/* Multiple Countries Indicator */}
+                          {productPrices[item.id].length > 1 && (
+                            <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                              +{productPrices[item.id].length - 1} more countries
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-gray-500 italic text-center">-</div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {(() => {
+                      // Filter only current and future unavailable dates using utility function
+                      const currentUnavailableDates = productAvailability[item.id]
+                        ? filterCurrentAndFutureAvailability(productAvailability[item.id], 'unavailable')
+                        : [];
+
+                      if (currentUnavailableDates.length > 0) {
+                        return <span className="text-xs text-red-600 font-medium">Booked</span>;
+                      } else {
+                        return <span className="text-xs text-green-600">Available</span>;
+                      }
+                    })()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium relative">
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="p-2 text-gray-400 hover:text-my-primary rounded-lg hover:bg-my-primary/10 transition-colors"
+                        aria-label="More actions"
+                        onClick={() => setActionMenuOpen(actionMenuOpen === item.id ? null : item.id)}
+                      >
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                      {actionMenuOpen === item.id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                          <button
+                            onClick={() => {
+                              setActionMenuOpen(null);
+                              setViewProductId(item.id);
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          >
+                            <TranslatedText text="View Details" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setActionMenuOpen(null);
+                              setModerationHistoryProductId(item.id);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center"
+                          >
+                            <Shield className="w-4 h-4 mr-2" />
+                            Moderation History
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
             }
           </tbody>
         </table>
@@ -1469,7 +1466,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               ))}
             </select>
           </div>
-          
+
           {/* Pagination Component */}
           {onPageChange && (
             <Pagination
@@ -1483,10 +1480,10 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
           )}
         </div>
 
-        <AdminProductDetailModal 
-          open={!!viewProductId} 
-          onClose={() => setViewProductId(null)} 
-          productId={viewProductId || ''} 
+        <AdminProductDetailModal
+          open={!!viewProductId}
+          onClose={() => setViewProductId(null)}
+          productId={viewProductId || ''}
           productPrices={productPrices}
           productAvailability={productAvailability}
           onApproved={() => {
@@ -1497,7 +1494,7 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             // if you have access to a refresh function from the parent component
           }}
         />
-        
+
         {/* Moderation History Modal */}
         {moderationHistoryProductId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">

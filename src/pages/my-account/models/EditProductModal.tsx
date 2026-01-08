@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { X, Upload, MapPin, Plus, Trash2, Camera, DollarSign, Package, Info } from 'lucide-react';
-import { getProductById, updateProduct, createProductImage, getProductImagesByProductId, updateProductImage, fetchCategories, fetchCountries, fetchProductPricesByProductId } from '../service/api';
+import { getProductById, updateProduct, createProductImage, getProductImagesByProductId, updateProductImage, fetchCategories, fetchCountries, fetchProductPricesByProductId, updateProductPrice } from '../service/api';
 import { useToast } from '../../../contexts/ToastContext';
+import { logger } from '../../../lib/logger';
 
 interface EditProductModalProps {
   open: boolean;
@@ -77,7 +78,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     if (!open || !productId) return;
     setLoading(true);
     setError(null);
-    
+
     // Fetch product data and pricing data in parallel
     Promise.all([
       getProductById(productId),
@@ -131,7 +132,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           pickup_methods: Array.isArray(product.pickup_methods) ? product.pickup_methods : [],
           location,
         });
-        
+
         setExistingImages(images || []);
       })
       .catch(() => setError('Failed to load product details.'))
@@ -166,7 +167,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const newFiles = Array.from(e.dataTransfer.files);
       const existingNames = images.map((f: File) => f.name);
@@ -177,19 +178,19 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Only allow submission on the last step
     if (currentStep !== steps.length) {
       // If not on last step, just move to next step instead
       setCurrentStep(Math.min(steps.length, currentStep + 1));
       return;
     }
-    
+
     setIsSubmitting(true);
     setError(null);
     console.log("FORM SUBMITTED");
     if (!form) return;
-    
+
     try {
       const productPayload: any = {
         ...form,
@@ -206,13 +207,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
       if (Array.isArray(productPayload.included_accessories)) {
         productPayload.includedAccessories = productPayload.included_accessories;
       }
-      
+
       if ('base_price' in productPayload) delete (productPayload as any).base_price;
-      
+
       try {
         // Debug: log outgoing payload
         try {
-          const { logger } = await import('../../../lib/logger');
           logger.group('[DEBUG] Update Product Payload');
           logger.debug('productId:', productId);
           logger.debug('payload:', productPayload);
@@ -225,7 +225,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
         // After product core update, update pricing if we have a price row id
         try {
-          const { updateProductPrice } = await import('../service/api');
           if (priceRowId) {
             const pricingUpdatePayload: any = {
               currency: form.base_currency,
@@ -236,11 +235,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
             };
             await updateProductPrice(priceRowId, pricingUpdatePayload);
           }
-        } catch {}
+        } catch { }
 
         // Debug: log server response
         try {
-          const { logger } = await import('../../../lib/logger');
           logger.group('[DEBUG] Response from PUT /products/{id}');
           logger.debug('response:', updateRes);
           logger.groupEnd();
@@ -250,7 +248,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
       } catch (err) {
         // Also log error payload context
         try {
-          const { logger } = await import('../../../lib/logger');
           logger.group('[DEBUG] Update Product Error');
           logger.error('error:', (err as any)?.response?.data || (err as any)?.message || err);
           logger.error('sent payload:', productPayload);
@@ -261,7 +258,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
         }
         throw err;
       }
-      
+
       if (images && images.length > 0) {
         const imagePayload = {
           images,
@@ -272,7 +269,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
         };
         await createProductImage(imagePayload);
       }
-      
+
       showToast('Product updated!', 'success');
       onClose();
     } catch (err) {
@@ -414,7 +411,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           <div className="space-y-6">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Pricing Information</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
@@ -542,7 +539,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-my-primary/10 to-cyan-50 p-6 rounded-lg border border-my-primary/20">
               <h3 className="text-lg font-semibold text-my-primary mb-4">Product Features</h3>
-              
+
               <div className="space-y-4">
                 {(Array.isArray(form.features) ? form.features : []).map((feature: string, idx: number) => (
                   <div key={idx} className="flex gap-3 items-center">
@@ -559,9 +556,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     <button
                       type="button"
                       onClick={() => {
-                        setForm((f) => ({ 
-                          ...f!, 
-                          features: (Array.isArray(f!.features) ? f!.features : []).filter((_: any, i: number) => i !== idx) 
+                        setForm((f) => ({
+                          ...f!,
+                          features: (Array.isArray(f!.features) ? f!.features : []).filter((_: any, i: number) => i !== idx)
                         }));
                       }}
                       className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -570,12 +567,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     </button>
                   </div>
                 ))}
-                
+
                 <button
                   type="button"
-                  onClick={() => setForm((f) => ({ 
-                    ...f!, 
-                    features: [...(Array.isArray(f!.features) ? f!.features : []), ''] 
+                  onClick={() => setForm((f) => ({
+                    ...f!,
+                    features: [...(Array.isArray(f!.features) ? f!.features : []), '']
                   }))}
                   className="flex items-center gap-2 text-my-primary hover:text-my-primary/90 font-medium transition-colors"
                 >
@@ -604,9 +601,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     <button
                       type="button"
                       onClick={() => {
-                        setForm((f) => ({ 
-                          ...f!, 
-                          included_accessories: (Array.isArray(f!.included_accessories) ? f!.included_accessories : []).filter((_: any, i: number) => i !== idx) 
+                        setForm((f) => ({
+                          ...f!,
+                          included_accessories: (Array.isArray(f!.included_accessories) ? f!.included_accessories : []).filter((_: any, i: number) => i !== idx)
                         }));
                       }}
                       className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -618,9 +615,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
                 <button
                   type="button"
-                  onClick={() => setForm((f) => ({ 
-                    ...f!, 
-                    included_accessories: [...(Array.isArray(f!.included_accessories) ? f!.included_accessories : []), ''] 
+                  onClick={() => setForm((f) => ({
+                    ...f!,
+                    included_accessories: [...(Array.isArray(f!.included_accessories) ? f!.included_accessories : []), '']
                   }))}
                   className="flex items-center gap-2 text-my-primary hover:text-my-primary/90 font-medium transition-colors"
                 >
@@ -632,7 +629,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
             <div className="bg-gradient-to-r from-my-primary/10 to-cyan-50 p-6 rounded-lg border border-my-primary/20">
               <h3 className="text-lg font-semibold text-my-primary mb-4">Specifications</h3>
-              
+
               <div className="space-y-4">
                 {Object.entries(form.specifications || {}).map(([key, value], idx) => (
                   <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
@@ -684,7 +681,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                     </div>
                   </div>
                 ))}
-                
+
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({
@@ -706,7 +703,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-my-primary/10 to-cyan-50 p-6 rounded-lg border border-my-primary/20">
               <h3 className="text-lg font-semibold text-my-primary mb-4">Product Images</h3>
-              
+
               {/* Existing Images */}
               {existingImages && existingImages.length > 0 && (
                 <div className="mb-6">
@@ -747,11 +744,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
               <div>
                 <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">Add New Images</h4>
                 <div
-                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
-                    dragActive 
-                      ? 'border-my-primary bg-my-primary/10' 
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${dragActive
+                      ? 'border-my-primary bg-my-primary/10'
                       : 'border-gray-300 hover:border-gray-400'
-                  }`}
+                    }`}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
@@ -929,8 +925,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           ))}
         </div>
         {/* Scrollable form body and sticky footer now inside the form */}
-        <form 
-          onSubmit={handleSubmit} 
+        <form
+          onSubmit={handleSubmit}
           onKeyDown={(e) => {
             // Prevent Enter key from submitting form unless on last step
             if (e.key === 'Enter' && currentStep !== steps.length) {
@@ -970,14 +966,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 </button>
               ) : (
                 <button type="submit" disabled={isSubmitting} className="w-full bg-my-primary text-white py-3 rounded-lg font-semibold hover:bg-my-primary/90 transition-colors flex items-center justify-center gap-2">
-                {isSubmitting && (
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                  </svg>
-                )}
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </button>
+                  {isSubmitting && (
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                  )}
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
               )}
             </div>
           </div>
@@ -985,7 +981,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
         {error && <div className="text-red-500 text-sm mt-2 px-8">{error}</div>}
       </div>
 
-      
+
       {showEditImageModal && editingImage && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 dark:bg-black/60">
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-8 w-full max-w-md relative">
@@ -1032,9 +1028,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           </div>
         </div>
       )}
-  
+
     </div>
-    
+
   );
 };
 
