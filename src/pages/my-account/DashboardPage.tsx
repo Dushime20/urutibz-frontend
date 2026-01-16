@@ -85,7 +85,7 @@ const DashboardPage: React.FC = () => {
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
   const [cancelBookingTitle, setCancelBookingTitle] = useState<string | null>(null);
   const [isCancellingBooking, setIsCancellingBooking] = useState(false);
-  
+
   // Review cancellation modal state
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
@@ -176,6 +176,7 @@ const DashboardPage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editProductId, setEditProductId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [userBookings, setUserBookings] = useState<any[]>([]);
   const [bookingProducts, setBookingProducts] = useState<{ [bookingId: string]: any }>({});
   const [bookingImages, setBookingImages] = useState<{ [bookingId: string]: any[] }>({});
@@ -205,14 +206,14 @@ const DashboardPage: React.FC = () => {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [confirmingBookingId, setConfirmingBookingId] = useState<string | null>(null);
   const [recentlyConfirmedBookings, setRecentlyConfirmedBookings] = useState<Record<string, boolean>>({});
-  
+
   // Calculate recent bookings count (created in last 7 days)
   const recentBookingCount = useMemo(() => {
     if (!userBookings.length) return 0;
-    
+
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
+
     return userBookings.filter((booking) => {
       if (!booking.created_at) return false;
       try {
@@ -413,8 +414,8 @@ const DashboardPage: React.FC = () => {
             });
           }
         }
-              } catch (error) {
-          // Fallback to auth user if there's an error
+      } catch (error) {
+        // Fallback to auth user if there's an error
         if (authUser) {
           setRealUser({
             ...authUser,
@@ -590,7 +591,7 @@ const DashboardPage: React.FC = () => {
         const token = localStorage.getItem('token');
         const bookingsRes = await fetchUserBookings(token);
         const bookings = bookingsRes.data || [];
-        
+
         // Console log to debug status issue
         console.log('🔍 [DashboardPage] Bookings from API response:', {
           totalBookings: bookings.length,
@@ -605,7 +606,7 @@ const DashboardPage: React.FC = () => {
             fullBooking: b // Full booking object to inspect
           }))
         });
-        
+
         setUserBookings(bookings);
 
         // Fetch product details and images for each booking
@@ -896,9 +897,9 @@ const DashboardPage: React.FC = () => {
       if (params.get('new-listing') === '1') {
         setTimeout(() => setShowModal(true), 50);
       }
-    } catch {}
+    } catch { }
     return () => {
-      try { delete (window as any).__openNewListingModal; } catch {}
+      try { delete (window as any).__openNewListingModal; } catch { }
     };
   }, []);
 
@@ -979,7 +980,7 @@ const DashboardPage: React.FC = () => {
     const booking = userBookings.find(b => b.id === bookingId);
     const product = bookingProducts[bookingId];
     const title = product?.title || booking?.booking_number || 'Booking';
-    
+
     setCancelBookingId(bookingId);
     setCancelBookingTitle(title);
     setShowCancelModal(true);
@@ -988,7 +989,7 @@ const DashboardPage: React.FC = () => {
   // Execute the cancellation request
   const executeCancelBooking = async (reason: string) => {
     if (!cancelBookingId) return;
-    
+
     setIsCancellingBooking(true);
     try {
       const token = localStorage.getItem('token');
@@ -1017,7 +1018,7 @@ const DashboardPage: React.FC = () => {
   const handleReviewCancellation = (bookingId: string) => {
     const booking = userBookings.find(b => b.id === bookingId);
     const product = bookingProducts[bookingId];
-    
+
     setReviewBookingId(bookingId);
     setReviewBookingTitle(product?.title || booking?.booking_number || 'Booking');
     setReviewRenterReason(booking?.cancellation_reason || '');
@@ -1026,7 +1027,7 @@ const DashboardPage: React.FC = () => {
 
   const handleApproveCancellation = async (notes?: string) => {
     if (!reviewBookingId) return;
-    
+
     setIsReviewing(true);
     try {
       const token = localStorage.getItem('token');
@@ -1054,7 +1055,7 @@ const DashboardPage: React.FC = () => {
 
   const handleRejectCancellation = async (notes: string) => {
     if (!reviewBookingId) return;
-    
+
     setIsReviewing(true);
     try {
       const token = localStorage.getItem('token');
@@ -1103,7 +1104,7 @@ const DashboardPage: React.FC = () => {
     if (!window.confirm('Are you sure you want to complete the checkout?')) {
       return;
     }
-    
+
     try {
       const token = localStorage.getItem('token');
       const result = await checkOutBooking(bookingId, token ?? undefined);
@@ -1231,14 +1232,12 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
       {/* Top Navigation Bar - Hidden on mobile, visible on desktop */}
-      <div className="hidden md:block lg:sticky lg:top-0 z-50 backdrop-blur-xl border-b border-gray-200 bg-white dark:bg-slate-900 dark:border-slate-700">
+      <div className={`hidden md:block lg:sticky lg:top-0 z-50 backdrop-blur-xl border-b border-gray-200 bg-white dark:bg-slate-900 dark:border-slate-700 transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <div className="flex h-16">
-          {/* Sidebar Space */}
-         
           {/* Header Content - full width */}
           <div className="flex-1 flex items-center w-full">
-            <MyAccountHeader 
-              onToggleSidebar={() => setSidebarOpen(true)} 
+            <MyAccountHeader
+              onToggleSidebar={() => setSidebarOpen(true)}
               onNavigateToProfile={() => setActiveTab('profile')}
               onNavigateToNotifications={() => setActiveTab('notifications')}
             />
@@ -1252,13 +1251,13 @@ const DashboardPage: React.FC = () => {
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 flex md:hidden">
             <div className="fixed inset-0 bg-black/40" onClick={() => setSidebarOpen(false)}></div>
-            <div className="relative ml-0 h-full w-auto bg-white dark:bg-slate-900 shadow-xl transform transition-transform duration-300 translate-x-0">
-              <div className="p-3 flex justify-end">
-                <button onClick={() => setSidebarOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
+            <div className="relative ml-0 h-[calc(100%-82px)] w-auto bg-white dark:bg-slate-900 shadow-xl transform transition-transform duration-300 translate-x-0">
+              <div className="absolute top-2 right-2 z-50">
+                <button onClick={() => setSidebarOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:text-gray-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200">✕</button>
               </div>
-              <MyAccountSidebar 
-                activeTab={activeTab} 
-                setActiveTab={(tab: any) => { setActiveTab(tab); setSidebarOpen(false); }} 
+              <MyAccountSidebar
+                activeTab={activeTab}
+                setActiveTab={(tab: any) => { setActiveTab(tab); setSidebarOpen(false); }}
                 onNavigate={() => setSidebarOpen(false)}
               />
             </div>
@@ -1266,380 +1265,383 @@ const DashboardPage: React.FC = () => {
         )}
 
         {/* Desktop Sidebar */}
-        <div className="hidden md:block flex-shrink-0 relative">
-          <MyAccountSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="hidden md:block fixed top-0 left-0 h-full z-40">
+          <MyAccountSidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            isCollapsed={isSidebarCollapsed}
+            toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          />
         </div>
 
         {/* Main Content */}
-        <div ref={mainScrollRef} className="flex-1 overflow-y-auto scrollbar-hide">
+        <div ref={mainScrollRef} className={`flex-1 overflow-y-auto scrollbar-hide transition-all duration-300 ${isSidebarCollapsed ? 'ml-0 md:ml-16' : 'ml-0 md:ml-64'}`}>
           <div className="mx-auto px-4 sm:px-6 lg:px-4 py-8 pb-28 md:pb-12">
-        {/* Verification Banner */}
-        <div className="mb-8">
-          <VerificationBanner />
-        </div>
-
-        {/* Main Content Area - Full Width */}
-        <div className="w-full">
-          {activeTab === 'overview' && (
-            loadingDashboard ? (
-              <SkeletonMyAccountOverview />
-            ) : (
-              <OverviewSection
-                dashboardStats={dashboardStats}
-                recentDashboardBookings={recentDashboardBookings}
-                recentDashboardTransactions={recentDashboardTransactions}
-                onGoBookings={() => setActiveTab('bookings')}
-                onGoWallet={() => setActiveTab('wallet')}
-              />
-            )
-          )}
-
-          {activeTab === 'bookings' && (
-            <BookingsSection
-              loadingBookings={loadingBookings}
-              userBookings={userBookings}
-              navigateToBrowse={() => navigate('/browse')}
-              bookingProducts={bookingProducts}
-              bookingImages={bookingImages}
-              bookingReviewCounts={bookingReviewCounts}
-              onViewBookingReview={handleViewBookingReview}
-              onConfirmBooking={handleConfirmBooking}
-              onCancelBooking={handleCancelBooking}
-              onReviewCancellation={handleReviewCancellation}
-              onCheckIn={handleCheckIn}
-              onCheckOut={handleCheckOut}
-              confirmingBookingId={confirmingBookingId}
-              recentlyConfirmedBookings={recentlyConfirmedBookings}
-            />
-          )}
-
-          {activeTab === 'listings' && (
-            <ListingsSection
-              loading={loadingListings}
-              myListings={myListings}
-              productImages={productImages}
-              onRequestInspection={(productId) => {
-                setSelectedProductForInspection(productId);
-                setShowThirdPartyInspectionModal(true);
-              }}
-              onAddListing={handleOpenModal}
-              onOpenListing={(id) => { setSelectedProductId(id); setShowProductDetail(true); }}
-              openMenuId={openMenuId}
-              setOpenMenuId={setOpenMenuId}
-              setSelectedProductId={setSelectedProductId}
-              setShowProductDetail={setShowProductDetail}
-              setEditProductId={setEditProductId}
-              setShowEditModal={setShowEditModal}
-              onRefreshListings={async () => {
-                // Refresh listings after removing from market
-                try {
-                  setLoadingListings(true);
-                  const res = await getMyProducts();
-                  setMyListings(res || []);
-                } catch (error) {
-                  console.error('Error refreshing listings:', error);
-                } finally {
-                  setLoadingListings(false);
-                }
-              }}
-            />
-          )}
-
-
-
-          {/* Owner Pre-Inspection Form (Combined) */}
-          {showInspectionModal && (
-            <OwnerPreInspectionFormCombined
-              isOpen={showInspectionModal}
-              onClose={() => setShowInspectionModal(false)}
-              onSuccess={() => {
-                setShowInspectionModal(false);
-                loadUserInspections(); // Refresh inspections list
-                showToast('Pre-inspection created successfully!', 'success');
-              }}
-            />
-          )}
-
-          {/* Third-Party Inspection Request Modal */}
-          {showThirdPartyInspectionModal && (
-            <ThirdPartyInspectionRequestModal
-              isOpen={showThirdPartyInspectionModal}
-              onClose={() => {
-                setShowThirdPartyInspectionModal(false);
-                setSelectedProductForInspection(undefined);
-              }}
-              onSuccess={() => {
-                setShowThirdPartyInspectionModal(false);
-                setSelectedProductForInspection(undefined);
-                loadUserInspections(); // Refresh inspections list
-                showToast('Third-party inspection request created! Payment required.', 'success');
-              }}
-              onNavigateToPayment={(inspection) => {
-                // Set up payment modal with inspection data
-                const inspectionData = inspection.data || inspection;
-                setPaymentInspection({
-                  id: inspectionData.id,
-                  inspectionCost: inspectionData.inspection_cost || inspectionData.inspectionCost || 0,
-                  currency: inspectionData.currency || 'USD',
-                  inspectionTier: inspectionData.inspection_tier || inspectionData.inspectionTier || 'standard',
-                  scheduledAt: inspectionData.scheduled_at || inspectionData.scheduledAt,
-                  productId: inspectionData.product_id || inspectionData.productId,
-                  bookingId: inspectionData.booking_id || inspectionData.bookingId
-                });
-                setShowThirdPartyInspectionModal(false);
-                setSelectedProductForInspection(undefined);
-                setShowInspectionPaymentModal(true);
-                loadUserInspections(); // Refresh inspections list
-                showToast('Inspection request created! Please proceed with payment.', 'success');
-              }}
-              productId={selectedProductForInspection}
-            />
-          )}
-
-          {/* Inspection Payment Modal */}
-          {showInspectionPaymentModal && paymentInspection && (
-            <InspectionPaymentModal
-              isOpen={showInspectionPaymentModal}
-              onClose={() => {
-                setShowInspectionPaymentModal(false);
-                setPaymentInspection(null);
-              }}
-              onSuccess={() => {
-                setShowInspectionPaymentModal(false);
-                setPaymentInspection(null);
-                loadUserInspections(); // Refresh inspections list
-                showToast('Payment processed successfully! Inspection is now pending.', 'success');
-              }}
-              inspection={paymentInspection}
-            />
-          )}
-
-          {/* Dispute Modal */}
-          {showDisputeModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              <div className="absolute inset-0 bg-black/40" onClick={() => setShowDisputeModal(false)} />
-              <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4"><TranslatedText text="Raise Dispute" /></h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Dispute Type" /> *</label>
-                    <select
-                      value={disputeForm.disputeType}
-                      onChange={(e) => setDisputeForm(prev => ({ ...prev, disputeType: e.target.value as DisputeType }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                    >
-                      <option value={DisputeType.DAMAGE_ASSESSMENT}><TranslatedText text="Damage Assessment" /></option>
-                      <option value={DisputeType.COST_DISPUTE}><TranslatedText text="Cost Dispute" /></option>
-                      <option value={DisputeType.PROCEDURE_VIOLATION}><TranslatedText text="Procedure Violation" /></option>
-                      <option value={DisputeType.OTHER}><TranslatedText text="Other" /></option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Reason" /> *</label>
-                    <textarea
-                      value={disputeForm.reason}
-                      onChange={(e) => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder={tSync("Describe the reason for this dispute...")}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Evidence" /></label>
-                    <textarea
-                      value={disputeForm.evidence}
-                      onChange={(e) => setDisputeForm(prev => ({ ...prev, evidence: e.target.value }))}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder={tSync("Provide any supporting evidence or additional details...")}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Supporting Photos" /></label>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        setDisputeForm(prev => ({ ...prev, photos: files }));
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                    <p className="mt-1 text-sm text-gray-500"><TranslatedText text="Upload photos to support your dispute (optional)" /></p>
-                    {disputeForm.photos.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-600"><TranslatedText text="Selected files" />:</p>
-                        <ul className="mt-1 text-sm text-gray-500">
-                          {disputeForm.photos.map((file, index) => (
-                            <li key={index}>{file.name}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    onClick={() => setShowDisputeModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                  >
-                    <TranslatedText text="Cancel" />
-                  </button>
-
-                  <button
-                    onClick={handleRaiseDispute}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    <TranslatedText text="Raise Dispute" />
-                  </button>
-                </div>
-              </div>
+            {/* Verification Banner */}
+            <div className="mb-8">
+              <VerificationBanner />
             </div>
-          )}
 
-          {activeTab === 'wallet' && (
-            <WalletSection
-              dashboardStats={dashboardStats}
-              loadingWallet={loadingWallet}
-              userTransactions={userTransactions}
-              onViewAll={() => setActiveTab('wallet')}
-            />
-          )}
-          {activeTab === 'inspections' && (
-            <InspectionsSection
-              loading={inspectionsLoading}
-              userInspections={userInspections}
-              onViewInspection={(id: string) => {
-                // View inspection is now handled in InspectionsSection with modal
-                // This prop is kept for compatibility but not used
-              }}
-              onRequestInspection={(productId) => {
-                setSelectedProductForInspection(productId);
-                setShowThirdPartyInspectionModal(true);
-              }}
-            />
-          )}
-          {activeTab === 'profile' && (
-            <ProfileSection
-              realUser={realUser}
-              setRealUser={setRealUser}
-            />
-          )}
+            {/* Main Content Area - Full Width */}
+            <div className="w-full">
+              {activeTab === 'overview' && (
+                loadingDashboard ? (
+                  <SkeletonMyAccountOverview />
+                ) : (
+                  <OverviewSection
+                    dashboardStats={dashboardStats}
+                    recentDashboardBookings={recentDashboardBookings}
+                    recentDashboardTransactions={recentDashboardTransactions}
+                    onGoBookings={() => setActiveTab('bookings')}
+                    onGoWallet={() => setActiveTab('wallet')}
+                  />
+                )
+              )}
 
-          {activeTab === 'settings' && (
-            <SettingsSection
-              twoFactorStatus={twoFactorStatus}
-              show2FAModal={show2FAModal}
-              setShow2FAModal={setShow2FAModal}
-            />
-          )}
+              {activeTab === 'bookings' && (
+                <BookingsSection
+                  loadingBookings={loadingBookings}
+                  userBookings={userBookings}
+                  navigateToBrowse={() => navigate('/browse')}
+                  bookingProducts={bookingProducts}
+                  bookingImages={bookingImages}
+                  bookingReviewCounts={bookingReviewCounts}
+                  onViewBookingReview={handleViewBookingReview}
+                  onConfirmBooking={handleConfirmBooking}
+                  onCancelBooking={handleCancelBooking}
+                  onReviewCancellation={handleReviewCancellation}
+                  onCheckIn={handleCheckIn}
+                  onCheckOut={handleCheckOut}
+                  confirmingBookingId={confirmingBookingId}
+                  recentlyConfirmedBookings={recentlyConfirmedBookings}
+                />
+              )}
 
-          {activeTab === 'reviews' && (
-            <ReviewsSection
-              loadingReviews={loadingReviews}
-              userReviews={userReviews}
-              onViewReviewDetail={handleViewReviewDetail}
-              loadingReviewDetail={loadingReviewDetail}
-              onReviewsUpdated={loadUserReviews}
-            />
-          )}
+              {activeTab === 'listings' && (
+                <ListingsSection
+                  loading={loadingListings}
+                  myListings={myListings}
+                  productImages={productImages}
+                  onRequestInspection={(productId) => {
+                    setSelectedProductForInspection(productId);
+                    setShowThirdPartyInspectionModal(true);
+                  }}
+                  onAddListing={handleOpenModal}
+                  onOpenListing={(id) => { setSelectedProductId(id); setShowProductDetail(true); }}
+                  openMenuId={openMenuId}
+                  setOpenMenuId={setOpenMenuId}
+                  setSelectedProductId={setSelectedProductId}
+                  setShowProductDetail={setShowProductDetail}
+                  setEditProductId={setEditProductId}
+                  setShowEditModal={setShowEditModal}
+                  onRefreshListings={async () => {
+                    // Refresh listings after removing from market
+                    try {
+                      setLoadingListings(true);
+                      const res = await getMyProducts();
+                      setMyListings(res || []);
+                    } catch (error) {
+                      console.error('Error refreshing listings:', error);
+                    } finally {
+                      setLoadingListings(false);
+                    }
+                  }}
+                />
+              )}
 
-          {activeTab === 'messages' && (
-            <MessagesSection />
-          )}
 
-          {activeTab === 'notifications' && (
-            <NotificationsSection 
-              onNavigateToNotifications={() => {
-                // Always set the tab to notifications (even if already there, this ensures it's active)
-                setActiveTab('notifications');
-                // Scroll to top after a brief delay to ensure DOM is ready
-                setTimeout(() => {
-                  // Try multiple scroll targets
-                  const notificationsSection = document.getElementById('my-account-notifications');
-                  if (notificationsSection) {
-                    notificationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                  // Also scroll the main scrollable container
-                  const scrollContainer = document.querySelector('.overflow-y-auto, [class*="overflow"]');
-                  if (scrollContainer) {
-                    scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                  // Scroll window as fallback
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }, 150);
-              }}
-            />
-          )}
 
-          {activeTab === 'risk-assessment' && (
-            <div className="space-y-4 sm:space-y-6">
-              {/* Header */}
-              <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 dark:bg-slate-900 dark:border-slate-700">
-                <div className="mb-4 sm:mb-6">
-                  <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-slate-100 mb-1"><TranslatedText text="Risk Assessment" /></h2>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-300">
-                    <TranslatedText text="Evaluate risk for product-renter combinations and check compliance" />
-                  </p>
-                </div>
+              {/* Owner Pre-Inspection Form (Combined) */}
+              {showInspectionModal && (
+                <OwnerPreInspectionFormCombined
+                  isOpen={showInspectionModal}
+                  onClose={() => setShowInspectionModal(false)}
+                  onSuccess={() => {
+                    setShowInspectionModal(false);
+                    loadUserInspections(); // Refresh inspections list
+                    showToast('Pre-inspection created successfully!', 'success');
+                  }}
+                />
+              )}
 
-                {/* Risk Assessment Tabs */}
-                <div className="border-b border-gray-200 dark:border-slate-700">
-                  <nav className="-mb-px flex space-x-2 sm:space-x-4 md:space-x-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                    {[
-                      { id: 'assessment', label: tSync('Risk Assessment'), icon: TrendingUp },
-                      { id: 'compliance', label: tSync('Compliance Check'), icon: CheckCircle },
-                      { id: 'profile', label: tSync('Product Profile'), icon: Package }
-                    ].map((tab) => {
-                      const Icon = tab.icon;
-                      const isActive = riskAssessmentTab === tab.id;
-                      
-                      return (
-                        <button
-                          key={tab.id}
-                          onClick={() => setRiskAssessmentTab(tab.id as any)}
-                          className={`group inline-flex items-center py-2 sm:py-2.5 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm shrink-0 touch-manipulation min-h-[44px] sm:min-h-0 transition-colors ${
-                            isActive
-                              ? 'border-teal-500 text-teal-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 active:text-gray-900 active:border-gray-400 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600 dark:active:text-slate-100'
-                          }`}
+              {/* Third-Party Inspection Request Modal */}
+              {showThirdPartyInspectionModal && (
+                <ThirdPartyInspectionRequestModal
+                  isOpen={showThirdPartyInspectionModal}
+                  onClose={() => {
+                    setShowThirdPartyInspectionModal(false);
+                    setSelectedProductForInspection(undefined);
+                  }}
+                  onSuccess={() => {
+                    setShowThirdPartyInspectionModal(false);
+                    setSelectedProductForInspection(undefined);
+                    loadUserInspections(); // Refresh inspections list
+                    showToast('Third-party inspection request created! Payment required.', 'success');
+                  }}
+                  onNavigateToPayment={(inspection) => {
+                    // Set up payment modal with inspection data
+                    const inspectionData = inspection.data || inspection;
+                    setPaymentInspection({
+                      id: inspectionData.id,
+                      inspectionCost: inspectionData.inspection_cost || inspectionData.inspectionCost || 0,
+                      currency: inspectionData.currency || 'USD',
+                      inspectionTier: inspectionData.inspection_tier || inspectionData.inspectionTier || 'standard',
+                      scheduledAt: inspectionData.scheduled_at || inspectionData.scheduledAt,
+                      productId: inspectionData.product_id || inspectionData.productId,
+                      bookingId: inspectionData.booking_id || inspectionData.bookingId
+                    });
+                    setShowThirdPartyInspectionModal(false);
+                    setSelectedProductForInspection(undefined);
+                    setShowInspectionPaymentModal(true);
+                    loadUserInspections(); // Refresh inspections list
+                    showToast('Inspection request created! Please proceed with payment.', 'success');
+                  }}
+                  productId={selectedProductForInspection}
+                />
+              )}
+
+              {/* Inspection Payment Modal */}
+              {showInspectionPaymentModal && paymentInspection && (
+                <InspectionPaymentModal
+                  isOpen={showInspectionPaymentModal}
+                  onClose={() => {
+                    setShowInspectionPaymentModal(false);
+                    setPaymentInspection(null);
+                  }}
+                  onSuccess={() => {
+                    setShowInspectionPaymentModal(false);
+                    setPaymentInspection(null);
+                    loadUserInspections(); // Refresh inspections list
+                    showToast('Payment processed successfully! Inspection is now pending.', 'success');
+                  }}
+                  inspection={paymentInspection}
+                />
+              )}
+
+              {/* Dispute Modal */}
+              {showDisputeModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/40" onClick={() => setShowDisputeModal(false)} />
+                  <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4"><TranslatedText text="Raise Dispute" /></h3>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Dispute Type" /> *</label>
+                        <select
+                          value={disputeForm.disputeType}
+                          onChange={(e) => setDisputeForm(prev => ({ ...prev, disputeType: e.target.value as DisputeType }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                         >
-                          <Icon
-                            className={`-ml-0.5 mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 ${
-                              isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-slate-500 dark:group-hover:text-slate-300'
-                            }`}
-                          />
-                          <span className="whitespace-nowrap">{tab.label}</span>
-                        </button>
-                      );
-                    })}
-                  </nav>
+                          <option value={DisputeType.DAMAGE_ASSESSMENT}><TranslatedText text="Damage Assessment" /></option>
+                          <option value={DisputeType.COST_DISPUTE}><TranslatedText text="Cost Dispute" /></option>
+                          <option value={DisputeType.PROCEDURE_VIOLATION}><TranslatedText text="Procedure Violation" /></option>
+                          <option value={DisputeType.OTHER}><TranslatedText text="Other" /></option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Reason" /> *</label>
+                        <textarea
+                          value={disputeForm.reason}
+                          onChange={(e) => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                          placeholder={tSync("Describe the reason for this dispute...")}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Evidence" /></label>
+                        <textarea
+                          value={disputeForm.evidence}
+                          onChange={(e) => setDisputeForm(prev => ({ ...prev, evidence: e.target.value }))}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                          placeholder={tSync("Provide any supporting evidence or additional details...")}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1"><TranslatedText text="Supporting Photos" /></label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            setDisputeForm(prev => ({ ...prev, photos: files }));
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                        />
+                        <p className="mt-1 text-sm text-gray-500"><TranslatedText text="Upload photos to support your dispute (optional)" /></p>
+                        {disputeForm.photos.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-sm text-gray-600"><TranslatedText text="Selected files" />:</p>
+                            <ul className="mt-1 text-sm text-gray-500">
+                              {disputeForm.photos.map((file, index) => (
+                                <li key={index}>{file.name}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button
+                        onClick={() => setShowDisputeModal(false)}
+                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                      >
+                        <TranslatedText text="Cancel" />
+                      </button>
+
+                      <button
+                        onClick={handleRaiseDispute}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <TranslatedText text="Raise Dispute" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Tab Content */}
-              <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
-                {riskAssessmentTab === 'assessment' && <RiskAssessmentForm />}
-                {riskAssessmentTab === 'compliance' && <ComplianceChecker />}
-                {riskAssessmentTab === 'profile' && <ProductRiskProfile />}
-              </div>
-            </div>
-          )}
+              {activeTab === 'wallet' && (
+                <WalletSection
+                  dashboardStats={dashboardStats}
+                  loadingWallet={loadingWallet}
+                  userTransactions={userTransactions}
+                  onViewAll={() => setActiveTab('wallet')}
+                />
+              )}
+              {activeTab === 'inspections' && (
+                <InspectionsSection
+                  loading={inspectionsLoading}
+                  userInspections={userInspections}
+                  onViewInspection={(id: string) => {
+                    // View inspection is now handled in InspectionsSection with modal
+                    // This prop is kept for compatibility but not used
+                  }}
+                  onRequestInspection={(productId) => {
+                    setSelectedProductForInspection(productId);
+                    setShowThirdPartyInspectionModal(true);
+                  }}
+                />
+              )}
+              {activeTab === 'profile' && (
+                <ProfileSection
+                  realUser={realUser}
+                  setRealUser={setRealUser}
+                />
+              )}
 
-          {activeTab === 'handover-return' && (
-            <div className="space-y-6">
-              <HandoverReturnPage />
+              {activeTab === 'settings' && (
+                <SettingsSection
+                  twoFactorStatus={twoFactorStatus}
+                  show2FAModal={show2FAModal}
+                  setShow2FAModal={setShow2FAModal}
+                />
+              )}
+
+              {activeTab === 'reviews' && (
+                <ReviewsSection
+                  loadingReviews={loadingReviews}
+                  userReviews={userReviews}
+                  onViewReviewDetail={handleViewReviewDetail}
+                  loadingReviewDetail={loadingReviewDetail}
+                  onReviewsUpdated={loadUserReviews}
+                />
+              )}
+
+              {activeTab === 'messages' && (
+                <MessagesSection />
+              )}
+
+              {activeTab === 'notifications' && (
+                <NotificationsSection
+                  onNavigateToNotifications={() => {
+                    // Always set the tab to notifications (even if already there, this ensures it's active)
+                    setActiveTab('notifications');
+                    // Scroll to top after a brief delay to ensure DOM is ready
+                    setTimeout(() => {
+                      // Try multiple scroll targets
+                      const notificationsSection = document.getElementById('my-account-notifications');
+                      if (notificationsSection) {
+                        notificationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                      // Also scroll the main scrollable container
+                      const scrollContainer = document.querySelector('.overflow-y-auto, [class*="overflow"]');
+                      if (scrollContainer) {
+                        scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                      // Scroll window as fallback
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 150);
+                  }}
+                />
+              )}
+
+              {activeTab === 'risk-assessment' && (
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Header */}
+                  <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 dark:bg-slate-900 dark:border-slate-700">
+                    <div className="mb-4 sm:mb-6">
+                      <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-slate-100 mb-1"><TranslatedText text="Risk Assessment" /></h2>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-300">
+                        <TranslatedText text="Evaluate risk for product-renter combinations and check compliance" />
+                      </p>
+                    </div>
+
+                    {/* Risk Assessment Tabs */}
+                    <div className="border-b border-gray-200 dark:border-slate-700">
+                      <nav className="-mb-px flex space-x-2 sm:space-x-4 md:space-x-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                        {[
+                          { id: 'assessment', label: tSync('Risk Assessment'), icon: TrendingUp },
+                          { id: 'compliance', label: tSync('Compliance Check'), icon: CheckCircle },
+                          { id: 'profile', label: tSync('Product Profile'), icon: Package }
+                        ].map((tab) => {
+                          const Icon = tab.icon;
+                          const isActive = riskAssessmentTab === tab.id;
+
+                          return (
+                            <button
+                              key={tab.id}
+                              onClick={() => setRiskAssessmentTab(tab.id as any)}
+                              className={`group inline-flex items-center py-2 sm:py-2.5 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm shrink-0 touch-manipulation min-h-[44px] sm:min-h-0 transition-colors ${isActive
+                                ? 'border-teal-500 text-teal-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 active:text-gray-900 active:border-gray-400 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600 dark:active:text-slate-100'
+                                }`}
+                            >
+                              <Icon
+                                className={`-ml-0.5 mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 ${isActive ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-slate-500 dark:group-hover:text-slate-300'
+                                  }`}
+                              />
+                              <span className="whitespace-nowrap">{tab.label}</span>
+                            </button>
+                          );
+                        })}
+                      </nav>
+                    </div>
+                  </div>
+
+                  {/* Tab Content */}
+                  <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
+                    {riskAssessmentTab === 'assessment' && <RiskAssessmentForm />}
+                    {riskAssessmentTab === 'compliance' && <ComplianceChecker />}
+                    {riskAssessmentTab === 'profile' && <ProductRiskProfile />}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'handover-return' && (
+                <div className="space-y-6">
+                  <HandoverReturnPage />
+                </div>
+              )}
             </div>
-          )}
           </div>
         </div>
-      </div>
       </div>
 
       {/* Modal for new listing */}

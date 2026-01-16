@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Card } from '../ui/DesignSystem';
 import { Link } from 'react-router-dom';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  Phone, 
-  IdCard, 
+import {
+  AlertTriangle,
+  CheckCircle,
+  Phone,
+  IdCard,
   Clock,
   ArrowRight,
   Camera,
@@ -20,7 +20,7 @@ const fetchUserProfile = async (token: string) => {
     // Extract user ID from JWT token
     const tokenPayload = JSON.parse(atob(token.split('.')[1]));
     const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
-    
+
     if (!userId) return null;
 
     const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -29,9 +29,9 @@ const fetchUserProfile = async (token: string) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    
+
     if (!response.ok) return null;
-    
+
     const data = await response.json();
     return data.data || data;
   } catch (error) {
@@ -107,34 +107,9 @@ const VerificationBanner: React.FC = () => {
     );
   }
 
-  // If fully verified, show success banner
+  // If fully verified, hide banner (don't show success message)
   if (verification.isFullyVerified) {
-    const userName = realUserData ? 
-      `${realUserData.first_name || ''} ${realUserData.last_name || ''}`.trim() || realUserData.email :
-      user.name;
-      
-    return (
-      <Card className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 dark:from-slate-900 dark:to-slate-900 dark:border-slate-700">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-            <CheckCircle className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-green-800 dark:text-green-300">
-              Verification Complete! 🎉
-            </h3>
-            <p className="text-green-700 dark:text-slate-300">
-              Welcome {userName}! Your account is fully verified. You can now list items and rent from others.
-            </p>
-            {realUserData && (
-              <div className="mt-2 text-sm text-green-600 dark:text-slate-400">
-                ✓ KYC Status: {realUserData.kyc_status} | Email: {realUserData.email}
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
-    );
+    return null;
   }
 
   // Get verification requirements with real user data context
@@ -145,7 +120,7 @@ const VerificationBanner: React.FC = () => {
       icon: Phone,
       completed: verification.isFullyVerified,
       link: '/verify/phone',
-      description: realUserData ? 
+      description: realUserData ?
         `${realUserData.phone || 'No phone'} ${realUserData.phone_verified_at ? '(Verified)' : '(Unverified)'}` :
         'Add your phone number'
     },
@@ -175,7 +150,7 @@ const VerificationBanner: React.FC = () => {
       icon: IdCard,
       completed: verification.isIdVerified,
       link: '/verify/id',
-      description: realUserData ? 
+      description: realUserData ?
         `KYC Status: ${realUserData.kyc_status || 'pending'}` :
         'Government-issued ID'
     },
@@ -191,11 +166,11 @@ const VerificationBanner: React.FC = () => {
 
   const completedCount = requirements.filter(req => req.completed).length;
   const nextStep = requirements.find(req => !req.completed);
-  
+
   // Use real verification data for capabilities
   const canRent = realUserData ? verification.isFullyVerified : canRentItems();
-  const canList = realUserData ? 
-    verification.isFullyVerified : 
+  const canList = realUserData ?
+    verification.isFullyVerified :
     canListItems();
 
   return (
@@ -208,7 +183,7 @@ const VerificationBanner: React.FC = () => {
             <AlertTriangle className="w-6 h-6 text-white" />
           )}
         </div>
-        
+
         <div className="flex-1">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -224,7 +199,7 @@ const VerificationBanner: React.FC = () => {
                 )}
               </p>
             </div>
-            
+
             {nextStep && (
               <Link to="/verify/id">
                 <Button variant="primary" className="bg-amber-600 hover:bg-amber-700 px-1 py-1 dark:bg-amber-500 dark:hover:bg-amber-600">
@@ -242,7 +217,7 @@ const VerificationBanner: React.FC = () => {
               <span>{Math.round((completedCount / requirements.length) * 100)}%</span>
             </div>
             <div className="w-full bg-amber-200 rounded-full h-2 dark:bg-slate-700">
-              <div 
+              <div
                 className="bg-amber-600 h-2 rounded-full transition-all duration-300 dark:bg-amber-500"
                 style={{ width: `${(completedCount / requirements.length) * 100}%` }}
               />
@@ -254,19 +229,17 @@ const VerificationBanner: React.FC = () => {
             {requirements.map((req) => {
               const Icon = req.icon;
               return (
-                <div 
+                <div
                   key={req.key}
-                  className={`flex items-center gap-3 p-3 rounded-lg border ${
-                    req.completed 
-                      ? 'bg-green-50 border-green-200 dark:bg-slate-800 dark:border-slate-700' 
+                  className={`flex items-center gap-3 p-3 rounded-lg border ${req.completed
+                      ? 'bg-green-50 border-green-200 dark:bg-slate-800 dark:border-slate-700'
                       : 'bg-white border-amber-200 dark:bg-slate-900 dark:border-slate-700'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    req.completed 
-                      ? 'bg-green-500 text-white' 
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${req.completed
+                      ? 'bg-green-500 text-white'
                       : 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300'
-                  }`}>
+                    }`}>
                     {req.completed ? (
                       <CheckCircle className="w-4 h-4" />
                     ) : (
@@ -274,14 +247,12 @@ const VerificationBanner: React.FC = () => {
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className={`font-medium text-sm ${
-                      req.completed ? 'text-green-800 dark:text-green-300' : 'text-slate-800 dark:text-slate-200'
-                    }`}>
+                    <p className={`font-medium text-sm ${req.completed ? 'text-green-800 dark:text-green-300' : 'text-slate-800 dark:text-slate-200'
+                      }`}>
                       {req.label}
                     </p>
-                    <p className={`text-xs ${
-                      req.completed ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-slate-400'
-                    }`}>
+                    <p className={`text-xs ${req.completed ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-slate-400'
+                      }`}>
                       {req.description}
                     </p>
                   </div>
@@ -292,20 +263,18 @@ const VerificationBanner: React.FC = () => {
 
           {/* Current capabilities */}
           <div className="flex gap-4 text-sm">
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-              canRent 
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${canRent
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                 : 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300'
-            }`}>
+              }`}>
               <div className={`w-2 h-2 rounded-full ${canRent ? 'bg-green-500' : 'bg-gray-400 dark:bg-slate-500'}`} />
               Renting: {canRent ? 'Enabled' : 'Requires profile + email verification'}
             </div>
-            
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-              canList 
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${canList
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                 : 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300'
-            }`}>
+              }`}>
               <div className={`w-2 h-2 rounded-full ${canList ? 'bg-green-500' : 'bg-gray-400 dark:bg-slate-500'}`} />
               Listing: {canList ? 'Enabled' : 'Requires full verification'}
             </div>

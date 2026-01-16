@@ -10,7 +10,7 @@ import { LanguageSwitcher } from '../../../components/language-switcher';
 import useRealtime from '../../../hooks/useRealtime';
 import { useMessaging } from '../../../hooks/useMessaging';
 
-type HeaderProps = { 
+type HeaderProps = {
   onToggleSidebar?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToNotifications?: () => void;
@@ -35,12 +35,12 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   const modalQuery = useNotificationsQuery({ page: modalPage, limit: 50 });
   const { socket, isConnected } = useRealtime();
   const { onNewMessage, loadUnreadCount } = useMessaging();
-  
+
   // Listen for new messages and show notifications
   useEffect(() => {
     const handleNewMessageNotification = (message: any) => {
       const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null;
-      
+
       // Only show notification if message is from someone else
       if (message.sender_id !== user?.id) {
         const normalized = {
@@ -67,7 +67,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
           }
           return [normalized, ...prev].slice(0, 100);
         });
-        
+
         // Reload unread count
         loadUnreadCount();
       }
@@ -76,14 +76,14 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
     const cleanup = onNewMessage(handleNewMessageNotification);
     return cleanup;
   }, [onNewMessage, loadUnreadCount]);
-  
+
   const modalItems = (
     (modalQuery.data as any)?.items ??
     (modalQuery.data as any)?.data?.items ??
     (modalQuery.data as any)?.data?.data ??
     (Array.isArray(modalQuery.data) ? modalQuery.data : [])
   ) as any[];
-  
+
   // Use the full notifications data for dropdown
   const dropdownItems = notificationsData;
   const MAX_VISIBLE_NOTIFICATIONS = 3;
@@ -137,14 +137,14 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
       const useDark = saved ? saved === 'dark' : prefersDark;
       setIsDark(useDark);
       document.documentElement.classList.toggle('dark', useDark);
-    } catch {}
+    } catch { }
   }, []);
 
   const toggleTheme = () => {
     const next = !isDark;
     setIsDark(next);
     document.documentElement.classList.toggle('dark', next);
-    try { localStorage.setItem('theme', next ? 'dark' : 'light'); } catch {}
+    try { localStorage.setItem('theme', next ? 'dark' : 'light'); } catch { }
   };
 
   useEffect(() => {
@@ -249,7 +249,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
         if (url) setAvatarUrl(url);
         setUserName(name);
       }
-    } catch {}
+    } catch { }
   }, []);
 
   // Mirror Settings: fetch live profile using token and populate avatar/name
@@ -270,8 +270,8 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
           const existing = stored ? JSON.parse(stored) : {};
           const merged = { ...existing, name, avatar: url, profileImageUrl: url };
           localStorage.setItem('user', JSON.stringify(merged));
-        } catch {}
-      } catch {}
+        } catch { }
+      } catch { }
     })();
   }, []);
 
@@ -292,13 +292,13 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
       prev.map((notification) =>
         notification.id === id
           ? {
-              ...notification,
-              read: true,
-              is_read: true,
-              isRead: true,
-              read_at: notification.read_at || new Date().toISOString(),
-              readAt: notification.readAt || new Date().toISOString()
-            }
+            ...notification,
+            read: true,
+            is_read: true,
+            isRead: true,
+            read_at: notification.read_at || new Date().toISOString(),
+            readAt: notification.readAt || new Date().toISOString()
+          }
           : notification
       )
     );
@@ -311,13 +311,13 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
         isNotificationRead(notification)
           ? notification
           : {
-              ...notification,
-              read: true,
-              is_read: true,
-              isRead: true,
-              read_at: notification.read_at || new Date().toISOString(),
-              readAt: notification.readAt || new Date().toISOString()
-            }
+            ...notification,
+            read: true,
+            is_read: true,
+            isRead: true,
+            read_at: notification.read_at || new Date().toISOString(),
+            readAt: notification.readAt || new Date().toISOString()
+          }
       )
     );
   };
@@ -402,7 +402,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
       window.dispatchEvent(event);
       console.log('[MyAccountHeader] dispatched my-account-nav event');
       return true;
-    } catch {}
+    } catch { }
 
     console.log('[MyAccountHeader] fallback navigate to /my-account#notifications');
     navigate('/my-account#notifications');
@@ -430,18 +430,11 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 pl-4">
       {/* Desktop: Full header with all features - Hidden on mobile */}
       <div className="hidden md:block">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => onToggleSidebar?.()}
-              className="p-2.5 rounded-2xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
-              aria-label="Open navigation"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
             <div>
               <h1 className="font-bold text-lg sm:text-2xl tracking-tight text-gray-900 dark:text-slate-100">
                 My Account
@@ -449,40 +442,40 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => navigate('/browse')}
-            className="hidden sm:inline-flex px-4 py-2 rounded-2xl border text-sm font-semibold text-gray-700 hover:border-teal-400 hover:text-teal-600 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors"
-          >
-            Browse Items
-          </button>
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="p-2.5 rounded-2xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          <LanguageSwitcher
-            buttonClassName="p-2.5 rounded-2xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
-          />
-          <div className="relative" ref={notifRef} style={{ zIndex: 3000 }}>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsNotifOpen((v) => !v);
-              }}
-              className="relative p-2.5 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200 rounded-2xl border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
+              onClick={() => navigate('/browse')}
+              className="hidden sm:inline-flex px-4 py-2 rounded-2xl border text-sm font-semibold text-gray-700 hover:border-teal-400 hover:text-teal-600 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors"
             >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 ? (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              ) : (
-                <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-              )}
+              Browse Items
             </button>
-            {isNotifOpen && (
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="p-2.5 rounded-2xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <LanguageSwitcher
+              buttonClassName="p-2.5 rounded-2xl border text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
+            />
+            <div className="relative" ref={notifRef} style={{ zIndex: 3000 }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsNotifOpen((v) => !v);
+                }}
+                className="relative p-2.5 text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200 rounded-2xl border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                ) : (
+                  <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                )}
+              </button>
+              {isNotifOpen && (
                 <div
                   className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl dark:bg-slate-900 dark:border-slate-700"
                   style={{ zIndex: 3001, pointerEvents: 'auto' }}
@@ -494,7 +487,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                     <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">Notifications</span>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-500 dark:text-slate-400">{unreadCount} unread</span>
-                      <button 
+                      <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -519,9 +512,8 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                           key={n.id}
                           data-notification-item
                           onClick={() => handleNotificationClick(n.id)}
-                          className={`w-full text-left px-4 py-3 flex gap-3 items-start hover:bg-gray-50 dark:hover:bg-slate-800 ${
-                            isNotificationRead(n) ? '' : 'bg-primary-50/40 dark:bg-primary-900/10'
-                          }`}
+                          className={`w-full text-left px-4 py-3 flex gap-3 items-start hover:bg-gray-50 dark:hover:bg-slate-800 ${isNotificationRead(n) ? '' : 'bg-primary-50/40 dark:bg-primary-900/10'
+                            }`}
                         >
                           <div className={`mt-1 w-2 h-2 rounded-full ${isNotificationRead(n) ? 'bg-gray-300 dark:bg-slate-600' : 'bg-primary-500'}`}></div>
                           <div className="flex-1 min-w-0">
@@ -556,38 +548,38 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                     </button>
                   </div>
                 </div>
-            )}
-          </div>
-          <div className="relative" ref={avatarRef}>
-            <button
-              onClick={() => setIsAvatarMenuOpen((v) => !v)}
-              className="flex items-center gap-2 group"
-              aria-haspopup="menu"
-              aria-expanded={isAvatarMenuOpen}
-            >
-              <span className="hidden sm:block text-sm text-gray-700 group-hover:text-gray-900 max-w-[140px] truncate dark:text-slate-300 dark:group-hover:text-slate-100">
-                {userName}
-              </span>
-              <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 bg-gray-100 dark:border-slate-700 dark:bg-slate-800">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-base">
-                    <UserCircle />
-                  </div>
-                )}
-              </div>
-            </button>
-            {isAvatarMenuOpen && (
+              )}
+            </div>
+            <div className="relative" ref={avatarRef}>
+              <button
+                onClick={() => setIsAvatarMenuOpen((v) => !v)}
+                className="flex items-center gap-2 group"
+                aria-haspopup="menu"
+                aria-expanded={isAvatarMenuOpen}
+              >
+                <span className="hidden sm:block text-sm text-gray-700 group-hover:text-gray-900 max-w-[140px] truncate dark:text-slate-300 dark:group-hover:text-slate-100">
+                  {userName}
+                </span>
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 bg-gray-100 dark:border-slate-700 dark:bg-slate-800">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-base">
+                      <UserCircle />
+                    </div>
+                  )}
+                </div>
+              </button>
+              {isAvatarMenuOpen && (
                 <div role="menu" className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 dark:bg-slate-900 dark:border-slate-700">
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700">
                     <div className="text-sm font-semibold text-gray-900 truncate dark:text-slate-100">{userName}</div>
                   </div>
                   <div className="p-2">
                     <button
-                      onClick={() => { 
-                        setIsAvatarMenuOpen(false); 
-                        onNavigateToProfile?.(); 
+                      onClick={() => {
+                        setIsAvatarMenuOpen(false);
+                        onNavigateToProfile?.();
                       }}
                       className="w-full text-left px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700"
                     >
@@ -601,8 +593,8 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                     </button>
                   </div>
                 </div>
-            )}
-          </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -633,7 +625,7 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                         if (!isNotificationRead(n)) { markRead(n.id); }
                       }}
                     >
-                      <div className={`mt-1 w-2 h-2 rounded-full ${ isNotificationRead(n) ? 'bg-gray-300 dark:bg-slate-600' : 'bg-emerald-500'}`} />
+                      <div className={`mt-1 w-2 h-2 rounded-full ${isNotificationRead(n) ? 'bg-gray-300 dark:bg-slate-600' : 'bg-emerald-500'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium text-gray-900 dark:text-slate-100 truncate">{n.title || n.type || 'Notification'}</h4>
@@ -675,11 +667,10 @@ const MyAccountHeader: React.FC<HeaderProps> = ({ onToggleSidebar, onNavigateToP
                 key={item.key}
                 onClick={item.onPress}
                 disabled={item.disabled}
-                className={`flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-all touch-manipulation min-h-[56px] ${
-                  isActive
+                className={`flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-all touch-manipulation min-h-[56px] ${isActive
                     ? 'text-teal-600 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 shadow-inner shadow-teal-900/10'
                     : 'text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                } ${item.disabled ? 'opacity-50 pointer-events-none' : ''}`}
+                  } ${item.disabled ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 <span className="relative">
                   <Icon className={`w-5 h-5 ${isActive ? 'text-teal-600 dark:text-teal-300' : ''}`} />
