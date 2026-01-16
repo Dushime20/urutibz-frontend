@@ -6,6 +6,7 @@ import { TwoFactorManagement, TwoFactorVerification } from '../../../components/
 import ChangePasswordModal from '../../my-account/components/ChangePasswordModal';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import Portal from '../../../components/ui/Portal';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { getMyNotifications } from '../../../features/notifications/api';
@@ -21,6 +22,7 @@ interface AdminHeaderProps {
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelectedLocation, selectedLanguage, setSelectedLanguage, onMenuToggle }) => {
   const { language, setLanguage } = useTranslation();
+  const { logout: authLogout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState<AdminUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,12 +72,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   const activeLanguage =
     languageOptions.find((option) => option.code === selectedLanguage) || languageOptions[0];
 
-    // Fetch current user data
+  // Fetch current user data
   const fetchCurrentUser = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('No authentication token found');
@@ -92,7 +94,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
         if (enabled && !verified) {
           setShow2FAVerify(true);
         }
-      } catch {}
+      } catch { }
     } catch (error) {
       console.error('Error fetching user data:', error);
       setError('Failed to load profile. Using default data.');
@@ -160,7 +162,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   // Fetch notifications when dropdown opens
   useEffect(() => {
     if (!showNotifications) return;
-    
+
     const loadNotifications = async () => {
       try {
         setNotificationsLoading(true);
@@ -202,16 +204,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   };
 
   // Calculate unread count
-  const unreadCount = notifications.reduce((count, notification) => 
+  const unreadCount = notifications.reduce((count, notification) =>
     count + (isNotificationRead(notification) ? 0 : 1), 0
   );
 
   // Handle marking notification as read
   const handleMarkAsRead = (id: string) => {
     markRead(id);
-    setNotifications(prev => 
-      prev.map(n => 
-        n.id === id 
+    setNotifications(prev =>
+      prev.map(n =>
+        n.id === id
           ? { ...n, read: true, is_read: true, isRead: true }
           : n
       )
@@ -225,14 +227,13 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
         markRead(n.id);
       }
     });
-    setNotifications(prev => 
+    setNotifications(prev =>
       prev.map(n => ({ ...n, read: true, is_read: true, isRead: true }))
     );
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    authLogout();
     showToast('Logged out successfully', 'success');
     navigate('/login');
   };
@@ -248,10 +249,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
       setAvatarUploadSuccess(null);
 
       const result = await adminService.uploadUserAvatar(user.id, avatarFile);
-      
+
       // Update the user in local state
       setUser(prevUser => prevUser ? { ...prevUser, profileImageUrl: result.profileImageUrl } : null);
-      
+
       setAvatarUploadSuccess('Avatar uploaded successfully!');
       setTimeout(() => {
         setShowAvatarUpload(false);
@@ -330,9 +331,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
           </div>
           <div className="flex items-center gap-1">
             <div className="relative" ref={notificationRef}>
-              <button 
+              <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" 
+                className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 aria-label="Notifications"
               >
                 <Bell className="w-5 h-5" />
@@ -381,9 +382,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                         {notifications.map((notification) => (
                           <div
                             key={notification.id}
-                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                              !isNotificationRead(notification) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                            }`}
+                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!isNotificationRead(notification) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                              }`}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
@@ -394,11 +394,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                                   {notification.message || notification.content || notification.body || ''}
                                 </p>
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                  {notification.createdAt 
+                                  {notification.createdAt
                                     ? new Date(notification.createdAt).toLocaleString()
                                     : notification.created_at
-                                    ? new Date(notification.created_at).toLocaleString()
-                                    : ''}
+                                      ? new Date(notification.created_at).toLocaleString()
+                                      : ''}
                                 </p>
                               </div>
                               {!isNotificationRead(notification) && (
@@ -526,23 +526,23 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
             </div>
           </div>
-                      {error && (
-              <div className="flex items-center space-x-2 text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg text-sm">
-                <AlertCircle className="w-4 h-4" />
-                <span>{error}</span>
-                <button
-                  onClick={fetchCurrentUser}
-                  disabled={loading}
-                  className="ml-2 p-1 hover:bg-yellow-100 rounded transition-colors disabled:opacity-50"
-                  title="Retry loading profile"
-                >
-                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-            )}
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <select
+          {error && (
+            <div className="flex items-center space-x-2 text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg text-sm">
+              <AlertCircle className="w-4 h-4" />
+              <span>{error}</span>
+              <button
+                onClick={fetchCurrentUser}
+                disabled={loading}
+                className="ml-2 p-1 hover:bg-yellow-100 rounded transition-colors disabled:opacity-50"
+                title="Retry loading profile"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          )}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 className="bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
@@ -579,11 +579,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                             setSelectedLanguage(option.code); // Update local state (prop)
                             setShowLanguageDropdown(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2 text-sm text-left transition-colors ${
-                            selectedLanguage === option.code
-                              ? 'bg-my-primary/10 text-my-primary font-semibold'
-                              : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
+                          className={`w-full flex items-center gap-3 px-4 py-2 text-sm text-left transition-colors ${selectedLanguage === option.code
+                            ? 'bg-my-primary/10 text-my-primary font-semibold'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            }`}
                         >
                           <span className="text-lg">{option.flag}</span>
                           <div className="flex flex-col">
@@ -612,9 +611,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
               </button>
             </div>
             <div className="relative" ref={notificationRef}>
-              <button 
+              <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" 
+                className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 aria-label="Notifications"
               >
                 <Bell className="w-5 h-5" />
@@ -663,9 +662,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                         {notifications.map((notification) => (
                           <div
                             key={notification.id}
-                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                              !isNotificationRead(notification) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                            }`}
+                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!isNotificationRead(notification) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                              }`}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
@@ -676,11 +674,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                                   {notification.message || notification.content || notification.body || ''}
                                 </p>
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                  {notification.createdAt 
+                                  {notification.createdAt
                                     ? new Date(notification.createdAt).toLocaleString()
                                     : notification.created_at
-                                    ? new Date(notification.created_at).toLocaleString()
-                                    : ''}
+                                      ? new Date(notification.created_at).toLocaleString()
+                                      : ''}
                                 </p>
                               </div>
                               {!isNotificationRead(notification) && (
@@ -807,7 +805,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
             <Dialog.Title className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
               Upload Avatar
             </Dialog.Title>
-            
+
             <form onSubmit={handleAvatarUpload} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select Image</label>
@@ -820,7 +818,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Max size: 5MB. Supported formats: JPG, PNG, GIF</p>
               </div>
-              
+
               {avatarFile && (
                 <div className="flex items-center space-x-3">
                   <img
@@ -836,19 +834,19 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                   </div>
                 </div>
               )}
-              
+
               {avatarUploadError && (
                 <div className="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                   {avatarUploadError}
                 </div>
               )}
-              
+
               {avatarUploadSuccess && (
                 <div className="text-green-600 text-sm bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                   {avatarUploadSuccess}
                 </div>
               )}
-              
+
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
@@ -906,7 +904,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
               </div>
               <div className="p-3">
                 <div className="max-h-[70vh] overflow-y-auto scale-95 origin-top">
-                  <TwoFactorManagement onStatusChange={() => {}} />
+                  <TwoFactorManagement onStatusChange={() => { }} />
                 </div>
               </div>
             </div>

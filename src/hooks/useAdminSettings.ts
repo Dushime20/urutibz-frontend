@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAdminSettingsService } from '../services/adminSettings.service';
 import { analyticsService } from '../services/analyticsService';
+import { DEFAULT_ADMIN_SETTINGS } from '../types/adminSettings.types';
 import type { 
   AdminSettings, 
   SettingsSection, 
   SettingsExport, 
   SettingsImport,
   SystemHealthResponse,
-  BackupResponse 
+  BackupResponse
 } from '../types/adminSettings.types';
 
 interface UseAdminSettingsOptions {
@@ -105,10 +106,35 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
            (now - cacheRef.current.timestamp) < cacheTimeout;
   }, [cacheTimeout]);
 
-  // Load settings from API
   const loadSettings = useCallback(async (section?: SettingsSection) => {
+    // If no token, fetch public settings only
     if (!token) {
-      setError('Authentication token required');
+      try {
+        console.log('[useAdminSettings] No token found, loading public settings...');
+        setIsLoading(true);
+        // Create a temporary service instance without token
+        const { AdminSettingsService } = await import('../services/adminSettings.service');
+        const publicService = new AdminSettingsService();
+        const publicSettings = await publicService.fetchPublicSettings();
+        
+        console.log('[useAdminSettings] Public settings loaded:', publicSettings);
+        
+        setSettings(prev => {
+             // Merge with existing or default structure to prevent null access errors
+             const base = prev || {} as AdminSettings;
+             return { ...base, ...publicSettings } as AdminSettings;
+        });
+        
+        cacheRef.current = {
+          data: publicSettings as AdminSettings, // Type assertion, it's partial but sufficient for public view
+          timestamp: Date.now(),
+          isValid: true,
+        };
+      } catch (err) {
+        console.error('[useAdminSettings] Failed to load public settings:', err);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -146,22 +172,25 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
       
     } catch (err: any) {
       console.error('Failed to load settings:', err);
-      // Don't set error state for settings - just use fallback silently
-      // This prevents blocking the UI when settings API is unavailable
-      
       // Fallback to cache if available
       if (cacheRef.current.data) {
         setSettings(cacheRef.current.data);
       } else {
-        // Use default settings if no cache available
-        setSettings({
-          system: {},
-          theme: {},
-          security: {},
-          notifications: {},
-          platform: {},
-          'backup-recovery': {},
-        } as AdminSettings);
+        // Try to fetch public settings as a last resort fallback
+        try {
+          const { AdminSettingsService } = await import('../services/adminSettings.service');
+          const publicService = new AdminSettingsService();
+          const publicSettings = await publicService.fetchPublicSettings();
+          
+          setSettings({
+            ...DEFAULT_ADMIN_SETTINGS,
+            ...publicSettings
+          } as AdminSettings);
+        } catch (fallbackErr) {
+          console.warn('Failed to load public settings fallback:', fallbackErr);
+          // Use defaults if everything fails
+          setSettings(DEFAULT_ADMIN_SETTINGS);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -570,10 +599,10 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
 
   // Auto-load settings on mount
   useEffect(() => {
-    if (autoLoad && token) {
+    if (autoLoad) {
       loadSettings();
     }
-  }, [autoLoad, token, loadSettings]);
+  }, [autoLoad, loadSettings]);
 
   return {
     // Data

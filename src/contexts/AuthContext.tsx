@@ -59,16 +59,16 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   login: async () => false,
   register: async () => false,
-  logout: () => {},
-  updateUser: () => {},
-  updateVerificationStatus: () => {},
+  logout: () => { },
+  updateUser: () => { },
+  updateVerificationStatus: () => { },
   canListItems: () => false,
   canRentItems: () => false,
   isAdmin: () => false,
   isModerator: () => false,
   isInspector: () => false,
   error: null,
-  setAuthenticatedUser: () => {},
+  setAuthenticatedUser: () => { },
 });
 
 // Custom hook to use the auth context
@@ -90,25 +90,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        
+
         // If we have a token but no user, or if we have a user, try to verify/refresh
         if (token) {
           // If we have stored user, use it immediately for faster UI
           if (storedUser) {
             try {
               const parsedUser = JSON.parse(storedUser);
-              
+
               // Ensure verification object has all required properties
               if (parsedUser.verification) {
                 const verification = parsedUser.verification;
-                
+
                 // Set default values for missing verification properties
                 verification.isProfileComplete = verification.isProfileComplete ?? false;
                 verification.isEmailVerified = verification.isEmailVerified ?? false;
                 verification.isPhoneVerified = verification.isPhoneVerified ?? false;
                 verification.isIdVerified = verification.isIdVerified ?? false;
                 verification.isAddressVerified = verification.isAddressVerified ?? false;
-                
+
                 // Calculate isFullyVerified if not present
                 if (verification.isFullyVerified === undefined) {
                   verification.isFullyVerified = (
@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     verification.isAddressVerified
                   );
                 }
-                
+
                 // Set default verification step if not present
                 if (!verification.verificationStep) {
                   if (verification.isFullyVerified) {
@@ -139,16 +139,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   }
                 }
               }
-              
+
               // Ensure KYC status is set
               if (!parsedUser.kyc_status) {
                 parsedUser.kyc_status = 'pending';
               }
-              
+
               // Set user immediately from localStorage
               setUser(parsedUser);
               console.log('✅ [AuthContext] User loaded from localStorage:', { id: parsedUser.id, role: parsedUser.role });
-              
+
               // Optionally verify token with backend (non-blocking)
               try {
                 const { fetchUserProfile } = await import('../pages/auth/service/api');
@@ -226,7 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try { return parseInt(localStorage.getItem('security.sessionTimeout') || '0') || 0; } catch { return 0; }
     })();
     const timeoutSec = settings?.security?.sessionTimeout || settings?.system?.sessionTimeout || storedTimeout || 0;
-    
+
     // Only enable auto-logout if timeout is explicitly set and is reasonable (at least 5 minutes)
     if (!timeoutSec || timeoutSec < 300) {
       console.log('ℹ️ [AuthContext] Auto-logout disabled (timeout not set or too short)');
@@ -240,10 +240,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (timer) window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         console.warn(`⚠️ [AuthContext] Session timeout reached (${timeoutSec}s), logging out user`);
-        try { 
-          localStorage.removeItem('user'); 
+        try {
+          localStorage.removeItem('user');
           localStorage.removeItem('token');
-        } catch {}
+        } catch { }
         setUser(null);
       }, timeoutSec * 1000);
     };
@@ -252,16 +252,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const onActivity = () => {
       resetTimer();
     };
-    
+
     resetTimer();
-    
+
     // Add more activity listeners
     window.addEventListener('mousemove', onActivity);
     window.addEventListener('keydown', onActivity);
     window.addEventListener('click', onActivity);
     window.addEventListener('scroll', onActivity, { passive: true });
     window.addEventListener('touchstart', onActivity, { passive: true });
-    
+
     return () => {
       window.removeEventListener('mousemove', onActivity);
       window.removeEventListener('keydown', onActivity);
@@ -276,42 +276,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // This is a mock implementation
       // In a real app, you would call your API
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
+
       // Multiple mock users with different verification statuses
-             if (email === 'verified@example.com' && password === 'password') {
-         // Fully verified user (admin)
-         const mockUser: User = {
-           id: '1',
-           name: 'John Doe',
-           email: 'verified@example.com',
-           avatar: '/assets/img/profiles/avatar-01.jpg',
-           phone: '+256 712 345 678',
-           dateOfBirth: '1990-05-15',
-           address: {
-             street: '123 Main Street',
-             city: 'Kampala',
-             state: 'Central Region',
-             country: 'Uganda',
-             zipCode: '00000'
-           },
-           verification: {
-             isProfileComplete: true,
-             isEmailVerified: true,
-             isPhoneVerified: true,
-             isIdVerified: true,
-             isAddressVerified: true,
-             isFullyVerified: true,
-             verificationStep: 'complete'
-           },
-           role: 'admin',
-           joinedDate: '2023-01-15'
-         };
-        
+      if (email === 'verified@example.com' && password === 'password') {
+        // Fully verified user (admin)
+        const mockUser: User = {
+          id: '1',
+          name: 'John Doe',
+          email: 'verified@example.com',
+          avatar: '/assets/img/profiles/avatar-01.jpg',
+          phone: '+256 712 345 678',
+          dateOfBirth: '1990-05-15',
+          address: {
+            street: '123 Main Street',
+            city: 'Kampala',
+            state: 'Central Region',
+            country: 'Uganda',
+            zipCode: '00000'
+          },
+          verification: {
+            isProfileComplete: true,
+            isEmailVerified: true,
+            isPhoneVerified: true,
+            isIdVerified: true,
+            isAddressVerified: true,
+            isFullyVerified: true,
+            verificationStep: 'complete'
+          },
+          role: 'admin',
+          joinedDate: '2023-01-15'
+        };
+
         localStorage.setItem('user', JSON.stringify(mockUser));
         setUser(mockUser);
         return true;
@@ -335,7 +335,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           },
           joinedDate: '2023-05-20'
         };
-        
+
         localStorage.setItem('user', JSON.stringify(mockUser));
         setUser(mockUser);
         return true;
@@ -357,57 +357,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           },
           joinedDate: '2023-06-30'
         };
-        
+
         localStorage.setItem('user', JSON.stringify(mockUser));
         setUser(mockUser);
         return true;
-             } else if (email === 'user@example.com' && password === 'password') {
-         // Original user (keeping for backward compatibility)
-         const mockUser: User = {
-           id: '4',
-           name: 'John Smith',
-           email: 'user@example.com',
-           avatar: '/assets/img/profiles/avatar-04.jpg',
-           verification: {
-             isProfileComplete: false,
-             isEmailVerified: false,
-             isPhoneVerified: false,
-             isIdVerified: false,
-             isAddressVerified: false,
-             isFullyVerified: false,
-             verificationStep: 'profile'
-           },
-           joinedDate: new Date().toISOString()
-         };
-         
-         localStorage.setItem('user', JSON.stringify(mockUser));
-         setUser(mockUser);
-         return true;
-       } else if (email === 'kycverified@example.com' && password === 'password') {
-         // KYC verified user - can list items immediately
-         const mockUser: User = {
-           id: '5',
-           name: 'KYC Verified User',
-           email: 'kycverified@example.com',
-           avatar: '/assets/img/profiles/avatar-05.jpg',
-           verification: {
-             isProfileComplete: false,
-             isEmailVerified: false,
-             isPhoneVerified: false,
-             isIdVerified: false,
-             isAddressVerified: false,
-             isFullyVerified: false,
-             verificationStep: 'profile'
-           },
-           kyc_status: 'verified',
-           joinedDate: new Date().toISOString()
-         };
-         
-         localStorage.setItem('user', JSON.stringify(mockUser));
-         setUser(mockUser);
-         return true;
-       }
-      
+      } else if (email === 'user@example.com' && password === 'password') {
+        // Original user (keeping for backward compatibility)
+        const mockUser: User = {
+          id: '4',
+          name: 'John Smith',
+          email: 'user@example.com',
+          avatar: '/assets/img/profiles/avatar-04.jpg',
+          verification: {
+            isProfileComplete: false,
+            isEmailVerified: false,
+            isPhoneVerified: false,
+            isIdVerified: false,
+            isAddressVerified: false,
+            isFullyVerified: false,
+            verificationStep: 'profile'
+          },
+          joinedDate: new Date().toISOString()
+        };
+
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return true;
+      } else if (email === 'kycverified@example.com' && password === 'password') {
+        // KYC verified user - can list items immediately
+        const mockUser: User = {
+          id: '5',
+          name: 'KYC Verified User',
+          email: 'kycverified@example.com',
+          avatar: '/assets/img/profiles/avatar-05.jpg',
+          verification: {
+            isProfileComplete: false,
+            isEmailVerified: false,
+            isPhoneVerified: false,
+            isIdVerified: false,
+            isAddressVerified: false,
+            isFullyVerified: false,
+            verificationStep: 'profile'
+          },
+          kyc_status: 'verified',
+          joinedDate: new Date().toISOString()
+        };
+
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return true;
+      }
+
       setError('Invalid email or password');
       return false;
     } catch (err) {
@@ -422,12 +422,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // This is a mock implementation
       // In a real app, you would call your API
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
+
       // Simple validation
       if (email && password && name) {
         const mockUser: User = {
@@ -446,12 +446,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           },
           joinedDate: new Date().toISOString()
         };
-        
+
         localStorage.setItem('user', JSON.stringify(mockUser));
         setUser(mockUser);
         return true;
       }
-      
+
       setError('All fields are required');
       return false;
     } catch (err) {
@@ -465,6 +465,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setUser(null);
   };
 
@@ -481,9 +482,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateVerificationStatus = (updates: Partial<VerificationStatus>) => {
     if (user) {
       const updatedVerification = { ...user.verification, ...updates };
-      
+
       // Auto-calculate isFullyVerified based on individual verification states
-      const isFullyVerified = 
+      const isFullyVerified =
         updatedVerification.isProfileComplete &&
         updatedVerification.isEmailVerified &&
         updatedVerification.isPhoneVerified &&
@@ -491,7 +492,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         updatedVerification.isAddressVerified;
 
       updatedVerification.isFullyVerified = isFullyVerified;
-      
+
       // Update verification step based on completion
       if (isFullyVerified) {
         updatedVerification.verificationStep = 'complete';
@@ -514,19 +515,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user can list items (KYC verified users can list immediately, others need full verification)
   const canListItems = (): boolean => {
     if (!user || !user.verification) return false;
-    
+
     // Check KYC status first - if verified, allow listing immediately
     const kycStatus = user.kyc_status || 'pending';
     if (kycStatus === 'verified') return true;
-    
+
     // For non-verified KYC users, require full verification
     if (kycStatus !== 'approved') return false;
-    
+
     // Check if isFullyVerified exists, otherwise calculate it
     if (user.verification.isFullyVerified !== undefined) {
       return user.verification.isFullyVerified;
     }
-    
+
     // Calculate verification status if not explicitly set
     return (
       user.verification.isProfileComplete &&

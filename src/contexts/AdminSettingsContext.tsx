@@ -28,7 +28,7 @@ export const AdminSettingsProvider: React.FC<AdminSettingsProviderProps> = ({ ch
     error,
     updateSettings,
     loadSettings,
-  } = useAdminSettings({ token, autoLoad: Boolean(token), optimisticUpdates: true });
+  } = useAdminSettings({ token, autoLoad: true, optimisticUpdates: true });
 
   const [appliedTitle, setAppliedTitle] = useState<string | null>(null);
   const [appliedLang, setAppliedLang] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export const AdminSettingsProvider: React.FC<AdminSettingsProviderProps> = ({ ch
       try {
         document.documentElement.setAttribute('lang', lang);
         setAppliedLang(lang);
-      } catch {}
+      } catch { }
     }
   }, [settings, appliedLang, appliedTitle]);
 
@@ -84,7 +84,7 @@ export const AdminSettingsProvider: React.FC<AdminSettingsProviderProps> = ({ ch
       };
       // Uncomment to log once for debugging
       // console.log('maintenance flags', (window as any).__maintenanceFlags);
-    } catch {}
+    } catch { }
   }, [settings?.system?.maintenanceMode, settings?.notifications?.systemMaintenance?.enabled]);
 
   const updateSection = useCallback(async (section: SettingsSection, updates: Partial<AdminSettings>) => {

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Building, 
-  DollarSign, 
-  Globe, 
-  Phone, 
-  Mail, 
-  MapPin, 
+import {
+  Building,
+  DollarSign,
+  Globe,
+  Phone,
+  Mail,
+  MapPin,
   ExternalLink,
   Facebook,
   Twitter,
@@ -53,17 +53,17 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Handle logo file upload separately if there's a file and upload function is available
       if (formData.companyLogo && typeof formData.companyLogo === 'string' && formData.companyLogo.startsWith('data:') && onLogoUpload) {
         // Convert base64 to file
         const base64Data = formData.companyLogo.split(',')[1];
         const file = new File([Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))], 'logo.png', { type: 'image/png' });
-        
+
         // Upload logo to separate endpoint
         const logoResult = await onLogoUpload(file);
-        
+
         if (logoResult.success && logoResult.logoUrl) {
           // Update form data with the new logo URL
           const updatedFormData = { ...formData, companyLogo: logoResult.logoUrl };
@@ -106,18 +106,17 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
           <Building className="w-5 h-5 mr-2" />
           Company Information
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Company Name *
+              Company Name
             </label>
             <input
               type="text"
               value={formData.companyName}
               onChange={(e) => handleChange('companyName', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-my-primary focus:border-my-primary"
-              required
             />
           </div>
 
@@ -213,7 +212,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
           <DollarSign className="w-5 h-5 mr-2" />
           Financial Settings
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -297,7 +296,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Booking Settings
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -333,7 +332,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
           <Clock className="w-5 h-5 mr-2" />
           Timezone Settings
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -369,7 +368,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
           <Phone className="w-5 h-5 mr-2" />
           Contact Information
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -427,7 +426,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
           <Globe className="w-5 h-5 mr-2" />
           Social Media Links
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
@@ -492,7 +491,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Policies & Terms
         </h3>
-        
+
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

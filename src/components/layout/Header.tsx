@@ -79,6 +79,15 @@ const Header: React.FC = () => {
   const { language, tSync, t } = useTranslation();
   const { canInstall, isIOS, handleInstall } = usePWAInstall();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    console.log('[Header Debug] Full Settings:', settings);
+    console.log('[Header Debug] Business Logo:', settings?.business?.companyLogo);
+    console.log('[Header Debug] Platform Logo:', settings?.platform?.logoUrl);
+    console.log('[Header Debug] Company Name:', settings?.business?.companyName);
+    console.log('[Header Debug] Site Name:', settings?.platform?.siteName);
+  }, [settings]);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -845,13 +854,22 @@ const Header: React.FC = () => {
               {/* Mobile Header Layout */}
               <div className="md:hidden flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <Link to="/" className="flex items-center gap-3">
+                  <Link to="/" className="block w-20 h-20 bg-red-500">
                     <img
-                      src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'}
-                      alt={settings?.business?.companyName || settings?.platform?.siteName || 'UrutiBz'}
-                      className="h-10 object-contain"
+                      src={
+                        settings?.business?.companyLogo ||
+                        settings?.platform?.logoUrl ||
+                        '/assets/img/yacht/urutilogo2.png'
+                      }
+                      alt={
+                        settings?.business?.companyName ||
+                        settings?.platform?.siteName ||
+                        'UrutiBz'
+                      }
+                      className="w-full h-full object-cover"
                     />
                   </Link>
+
                   <div className="flex items-center gap-2">
                     <button
                       onClick={openMobileSearch}
@@ -888,14 +906,47 @@ const Header: React.FC = () => {
               <div className="hidden md:grid w-full grid-cols-1 gap-4 md:grid-cols-[auto_1fr_auto] md:items-center md:gap-4 lg:gap-6">
                 {/* Logo section */}
                 <div className="flex items-center gap-4 lg:gap-6 justify-between lg:justify-start">
-                  <Link to="/" className="flex items-center gap-3">
+                  <Link to="/" className="block w-20 h-20  ">
                     <img
-                      src={settings?.business?.companyLogo || settings?.platform?.logoUrl || '/assets/img/yacht/urutilogo2.png'}
-                      alt={settings?.business?.companyName || settings?.platform?.siteName || 'UrutiBz'}
-                      className="h-12 lg:h-14 object-contain text-2xl"
+                      src={
+                        settings?.business?.companyLogo ||
+                        settings?.platform?.logoUrl ||
+                        '/assets/img/yacht/urutilogo2.png'
+                      }
+                      alt={
+                        settings?.business?.companyName ||
+                        settings?.platform?.siteName ||
+                        'UrutiBz'
+                      }
+                      className="w-18 h-18 object-cover"
                     />
                   </Link>
                 </div>
+
+                {/* <Link to="/" className="flex items-center gap-3 h-16">
+                  <div className="h-full w-16">
+                    <img
+                      src={
+                        settings?.business?.companyLogo ||
+                        settings?.platform?.logoUrl ||
+                        '/assets/img/yacht/urutilogo2.png'
+                      }
+                      alt={
+                        settings?.business?.companyName ||
+                        settings?.platform?.siteName ||
+                        'UrutiBz'
+                      }
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+
+                  {settings?.business?.companyName && (
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">
+                      {settings.business.companyName}
+                    </span>
+                  )}
+                </Link> */}
+
 
                 {/* Search section - Hidden on mobile, handled separately below */}
                 <div className="hidden md:flex w-full px-0 justify-center relative">

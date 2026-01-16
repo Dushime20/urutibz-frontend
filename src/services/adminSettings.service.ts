@@ -753,17 +753,7 @@ export class AdminSettingsService {
    */
   async fetchAllSettings(): Promise<AdminSettings> {
     try {
-      const [
-        themeSettings,
-        businessSettings,
-        systemSettings,
-        securitySettings,
-        notificationSettings,
-        platformSettings,
-        backupSettings,
-        // TODO: Add other settings when implemented
-        // analyticsSettings,
-      ] = await Promise.all([
+      const results = await Promise.allSettled([
         this.fetchThemeSettings(),
         this.fetchBusinessSettings(),
         this.fetchSystemSettings(),
@@ -771,25 +761,58 @@ export class AdminSettingsService {
         this.fetchNotificationSettings(),
         this.fetchPlatformSettings(),
         this.fetchBackupSettings(),
-        // TODO: Add other settings when implemented
-        // this.fetchAnalyticsSettings(),
       ]);
 
+      const [
+        themeResult,
+        businessResult,
+        systemResult,
+        securityResult,
+        notificationResult,
+        platformResult,
+        backupResult,
+      ] = results;
+
+      // Helper to extract value or default
+      const getValue = <T>(result: PromiseSettledResult<T>, defaultValue: Partial<T> = {}): T => {
+        if (result.status === 'fulfilled') {
+          return result.value;
+        }
+        console.warn('Failed to fetch setting section:', result.reason);
+        return defaultValue as T;
+      };
+
       return {
-        theme: themeSettings,
-        business: businessSettings,
-        system: systemSettings,
-        security: securitySettings,
-        notifications: notificationSettings,
-        platform: platformSettings,
-        backup: backupSettings,
-        // TODO: Add other settings when implemented
-        // analytics: analyticsSettings,
+        theme: getValue(themeResult),
+        business: getValue(businessResult),
+        system: getValue(systemResult),
+        security: getValue(securityResult),
+        notifications: getValue(notificationResult),
+        platform: getValue(platformResult),
+        backup: getValue(backupResult),
       } as AdminSettings;
     } catch (error) {
-      console.error('Failed to fetch all settings:', error);
+      console.error('Failed to fetch all settings (critical error):', error);
       throw error;
     }
+  }
+
+  /**
+   * Fetch public settings (no auth required)
+   */
+  async fetchPublicSettings(): Promise<Partial<AdminSettings>> {
+    const response = await this.apiCall<{ 
+      success: boolean;
+      message: string;
+      data: Record<string, Record<string, any>> 
+    }>('GET', '/system/public-settings');
+    
+    // Transform data
+    // The backend returns { business: { ... }, platform: { ... } }
+    // which matches AdminSettings structure partially
+    const settings = response.data;
+    
+    return settings as unknown as Partial<AdminSettings>;
   }
 }
 
