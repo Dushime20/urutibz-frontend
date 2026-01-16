@@ -854,7 +854,7 @@ const Header: React.FC = () => {
               {/* Mobile Header Layout */}
               <div className="md:hidden flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <Link to="/" className="block w-20 h-20 bg-red-500">
+                  <Link to="/" className="block w-20 h-20">
                     <img
                       src={
                         settings?.business?.companyLogo ||

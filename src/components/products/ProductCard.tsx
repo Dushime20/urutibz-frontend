@@ -88,7 +88,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-sm font-medium"><TranslatedText text="No Image" /></span>
             </div>
             {/* Action Buttons */}
-            <div className="absolute top-3 right-3 flex flex-col gap-2 z-50 pointer-events-none">
+            <div className="absolute top-3 right-3 flex flex-col gap-2 z-10 pointer-events-none">
               {/* Heart Icon - Favorites */}
               <button
                 type="button"

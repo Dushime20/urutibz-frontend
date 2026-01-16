@@ -42,8 +42,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   const { mutate: markRead } = useMarkReadMutation();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const profileButtonRef = useRef<HTMLButtonElement | null>(null);
-  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  // Separate refs for mobile and desktop to prevent conflicts
+  const mobileProfileButtonRef = useRef<HTMLButtonElement | null>(null);
+  const mobileProfileMenuRef = useRef<HTMLDivElement | null>(null);
+  const desktopProfileButtonRef = useRef<HTMLButtonElement | null>(null);
+  const desktopProfileMenuRef = useRef<HTMLDivElement | null>(null);
   const languageButtonRef = useRef<HTMLButtonElement | null>(null);
   const languageDropdownRef = useRef<HTMLDivElement | null>(null);
   const notificationRef = useRef<HTMLDivElement | null>(null);
@@ -135,9 +138,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
     const handleDocumentMouseDown = (e: MouseEvent) => {
       if (!profileOpen) return;
       const target = e.target as Node | null;
-      const withinButton = profileButtonRef.current?.contains(target as Node) ?? false;
-      const withinMenu = profileMenuRef.current?.contains(target as Node) ?? false;
-      if (!withinButton && !withinMenu) {
+
+      // Check mobile elements
+      const withinMobileButton = mobileProfileButtonRef.current?.contains(target) ?? false;
+      const withinMobileMenu = mobileProfileMenuRef.current?.contains(target) ?? false;
+
+      // Check desktop elements
+      const withinDesktopButton = desktopProfileButtonRef.current?.contains(target) ?? false;
+      const withinDesktopMenu = desktopProfileMenuRef.current?.contains(target) ?? false;
+
+      if (!withinMobileButton && !withinMobileMenu && !withinDesktopButton && !withinDesktopMenu) {
         setProfileOpen(false);
       }
     };
@@ -232,10 +242,30 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
     );
   };
 
-  const handleLogout = () => {
-    authLogout();
-    showToast('Logged out successfully', 'success');
-    navigate('/login');
+  const handleLogout = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    console.log('Logging out...');
+    try {
+      // 1. Clear context state
+      authLogout();
+
+      // 2. Clear local storage explicitly (redundant but safe)
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+
+      // 3. Show feedback
+      showToast('Logged out successfully', 'success');
+
+      // 4. Navigate to login
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Logout failed:', error);
+      navigate('/login', { replace: true });
+    }
   };
 
 
@@ -425,7 +455,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 onClick={() => setProfileOpen((open) => !open)}
                 aria-label="Open profile menu"
                 tabIndex={0}
-                ref={profileButtonRef}
+                ref={mobileProfileButtonRef}
               >
                 {user?.profileImageUrl ? (
                   <img
@@ -445,7 +475,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
               </button>
               {profileOpen && (
                 <div
-                  ref={profileMenuRef}
+                  ref={mobileProfileMenuRef}
                   className="absolute right-0 top-10 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-50 transition-all duration-200"
                   tabIndex={-1}
                   role="menu"
@@ -705,7 +735,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 onClick={() => setProfileOpen((open) => !open)}
                 aria-label="Open profile menu"
                 tabIndex={0}
-                ref={profileButtonRef}
+                ref={desktopProfileButtonRef}
               >
                 {user?.profileImageUrl ? (
                   <img
@@ -730,7 +760,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
               {/* Enhanced Dropdown with user details */}
-              <div ref={profileMenuRef} className={`absolute right-0 top-10 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-50 transition-all duration-200 ${profileOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+              <div ref={desktopProfileMenuRef} className={`absolute right-0 top-10 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-50 transition-all duration-200 ${profileOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
                 tabIndex={-1}
                 role="menu"
               >
