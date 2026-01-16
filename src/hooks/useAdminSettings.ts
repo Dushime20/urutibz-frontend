@@ -107,34 +107,31 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
   }, [cacheTimeout]);
 
   const loadSettings = useCallback(async (section?: SettingsSection) => {
-    // If no token, fetch public settings only
+    // Always fetch public settings as a baseline to ensure logo/business name are available
+    // even if the user is authenticated but doesn't have admin permissions for full settings
+    let publicSettings: Partial<AdminSettings> = {};
+    try {
+      const { AdminSettingsService } = await import('../services/adminSettings.service');
+      const publicService = new AdminSettingsService();
+      publicSettings = await publicService.fetchPublicSettings();
+      console.log('[useAdminSettings] Public settings loaded:', publicSettings);
+    } catch (err) {
+      console.warn('[useAdminSettings] Failed to load public settings baseline:', err);
+    }
+
+    // If no token, use public settings only
     if (!token) {
-      try {
-        console.log('[useAdminSettings] No token found, loading public settings...');
-        setIsLoading(true);
-        // Create a temporary service instance without token
-        const { AdminSettingsService } = await import('../services/adminSettings.service');
-        const publicService = new AdminSettingsService();
-        const publicSettings = await publicService.fetchPublicSettings();
-        
-        console.log('[useAdminSettings] Public settings loaded:', publicSettings);
-        
-        setSettings(prev => {
-             // Merge with existing or default structure to prevent null access errors
-             const base = prev || {} as AdminSettings;
-             return { ...base, ...publicSettings } as AdminSettings;
-        });
-        
-        cacheRef.current = {
-          data: publicSettings as AdminSettings, // Type assertion, it's partial but sufficient for public view
-          timestamp: Date.now(),
-          isValid: true,
-        };
-      } catch (err) {
-        console.error('[useAdminSettings] Failed to load public settings:', err);
-      } finally {
-        setIsLoading(false);
-      }
+      setIsLoading(true);
+      setSettings(prev => {
+        const base = prev || {} as AdminSettings;
+        return { ...base, ...publicSettings } as AdminSettings;
+      });
+      cacheRef.current = {
+        data: { ...DEFAULT_ADMIN_SETTINGS, ...publicSettings } as AdminSettings,
+        timestamp: Date.now(),
+        isValid: true,
+      };
+      setIsLoading(false);
       return;
     }
 
@@ -147,24 +144,32 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
       
       if (section) {
         // Load specific section
-        const sectionData = await settingsService.fetchAllSettings();
+        const sectionData = await settingsService.fetchAllSettings(); // fetchAllSettings handles all sections
         newSettings = sectionData;
       } else {
         // Load all settings
         newSettings = await settingsService.fetchAllSettings();
       }
       
-      setSettings(newSettings);
-      // Persist key security values for runtime fallbacks (e.g., session timeout)
+      // Merge authenticated settings on top of public baseline
+      // This is crucial for regular users who fail to fetch full business/platform sections
+      const mergedSettings = {
+        ...newSettings,
+        business: { ...publicSettings.business, ...newSettings.business },
+        platform: { ...publicSettings.platform, ...newSettings.platform }
+      } as AdminSettings;
+
+      setSettings(mergedSettings);
+      
+      // Persist key security values for runtime fallbacks
       try {
-        if (newSettings?.security?.sessionTimeout != null) {
-          localStorage.setItem('security.sessionTimeout', String(newSettings.security.sessionTimeout));
+        if (mergedSettings?.security?.sessionTimeout != null) {
+          localStorage.setItem('security.sessionTimeout', String(mergedSettings.security.sessionTimeout));
         }
       } catch {}
-      // Persist key platform flags for unauthenticated contexts (e.g., header/register before login)
-      // Do not persist registration flags to localStorage; rely on API-driven context only
+
       cacheRef.current = {
-        data: newSettings,
+        data: mergedSettings,
         timestamp: Date.now(),
         isValid: true,
       };
@@ -172,25 +177,14 @@ export const useAdminSettings = (options: UseAdminSettingsOptions = {}): UseAdmi
       
     } catch (err: any) {
       console.error('Failed to load settings:', err);
-      // Fallback to cache if available
+      // Fallback to cache if available, merged with public settings
       if (cacheRef.current.data) {
         setSettings(cacheRef.current.data);
       } else {
-        // Try to fetch public settings as a last resort fallback
-        try {
-          const { AdminSettingsService } = await import('../services/adminSettings.service');
-          const publicService = new AdminSettingsService();
-          const publicSettings = await publicService.fetchPublicSettings();
-          
-          setSettings({
-            ...DEFAULT_ADMIN_SETTINGS,
-            ...publicSettings
-          } as AdminSettings);
-        } catch (fallbackErr) {
-          console.warn('Failed to load public settings fallback:', fallbackErr);
-          // Use defaults if everything fails
-          setSettings(DEFAULT_ADMIN_SETTINGS);
-        }
+        setSettings({
+          ...DEFAULT_ADMIN_SETTINGS,
+          ...publicSettings
+        } as AdminSettings);
       }
     } finally {
       setIsLoading(false);
