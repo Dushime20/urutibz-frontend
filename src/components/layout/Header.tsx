@@ -102,7 +102,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [searchSuggestions, setSearchSuggestions] = useState<Array<{ type: 'product' | 'category'; name: string; id?: string }>>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<Array<{ type: 'product' | 'category' | 'deep_search'; name: string; id?: string; categoryId?: string; queryText?: string }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -229,22 +229,57 @@ const Header: React.FC = () => {
     }
   }, [location.search]);
 
-  const generateSearchSuggestions = useCallback((query: string): Array<{ type: 'product' | 'category'; name: string; id?: string }> => {
+  const generateSearchSuggestions = useCallback((query: string): Array<{ type: 'product' | 'category' | 'deep_search'; name: string; id?: string; categoryId?: string; queryText?: string }> => {
     if (!query || query.length < 2) return [];
 
     const queryLower = query.toLowerCase();
     const queryWords = queryLower.split(' ').filter(w => w.length > 0);
 
-    const suggestions: Array<{ type: 'product' | 'category'; name: string; id?: string }> = [];
+    const suggestions: Array<{ type: 'product' | 'category' | 'deep_search'; name: string; id?: string; categoryId?: string; queryText?: string }> = [];
 
-    // Search in product names
+    // 1. Deep Search Logic (Alibaba style)
+    // Use the smart search parser to see if we can detect a category甚至within a complex string
+    const categoryList = allCategories.length > 0
+      ? allCategories.map(c => ({ id: (c.id || c.slug || "").toString(), name: (c.name || "").toString() }))
+      : topCategories.map(c => ({ id: (c.id || "").toString(), name: (c.label || "").toString() }));
+
+    const parsed = parseSearchQuery(query, categoryList);
+
+    if (parsed.filters.category) {
+      const activeCat = allCategories.find(c => (c.id || c.slug || "").toString() === parsed.filters.category) ||
+        topCategories.find(c => (c.id || "").toString() === parsed.filters.category);
+      if (activeCat) {
+        const catName = (activeCat as any).name || (activeCat as any).label || 'Category';
+        const catId = (activeCat as any).id || (activeCat as any).slug;
+
+        // Option 1: Search for the remaining text in this category
+        if (parsed.q && parsed.q.length > 0) {
+          suggestions.push({
+            type: 'deep_search',
+            name: `Search for "${parsed.q}" in ${catName}`,
+            queryText: parsed.q,
+            categoryId: catId
+          });
+        } else {
+          // Option 2: Just search the category itself
+          suggestions.push({
+            type: 'deep_search',
+            name: `Search in ${catName}`,
+            queryText: '',
+            categoryId: catId
+          });
+        }
+      }
+    }
+
+    // 2. Regular Search in product names
     const productMatches = allProducts
       .filter((product: any) => {
         const productName = (product.title || product.name || '').toString().toLowerCase();
         return productName.includes(queryLower) ||
           queryWords.some((word) => productName.includes(word));
       })
-      .slice(0, 5)
+      .slice(0, suggestions.length > 0 ? 3 : 5)
       .map((product: any) => ({
         type: 'product' as const,
         name: product.title || product.name || 'Product',
@@ -253,12 +288,13 @@ const Header: React.FC = () => {
 
     suggestions.push(...productMatches);
 
-    // Search in category names
+    // 3. Regular Search in category names (if not already found in deep search)
     const categoryMatches = allCategories
       .filter((category: any) => {
         const categoryName = (category.name || category.label || '').toString().toLowerCase();
-        return categoryName.includes(queryLower) ||
-          queryWords.some((word) => categoryName.includes(word));
+        return (categoryName.includes(queryLower) ||
+          queryWords.some((word) => categoryName.includes(word))) &&
+          !suggestions.some(s => s.type === 'deep_search' && s.categoryId === (category.id || category.slug));
       })
       .slice(0, 3)
       .map((category: any) => ({
@@ -398,7 +434,7 @@ const Header: React.FC = () => {
     setShowSuggestions(false);
   }, []);
 
-  const handleSuggestionClick = (e: React.MouseEvent, suggestion: string | { type: 'product' | 'category'; name: string; id?: string }) => {
+  const handleSuggestionClick = (e: React.MouseEvent, suggestion: string | { type: 'product' | 'category' | 'deep_search'; name: string; id?: string; categoryId?: string; queryText?: string }) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -408,11 +444,17 @@ const Header: React.FC = () => {
       // Navigate to search results
       performAutoSearch({ q: suggestion }, false);
     } else {
-      if (suggestion.type === 'category' && suggestion.id) {
-        setQ(suggestion.name);
-        setCategory(suggestion.id);
+      if (suggestion.type === 'category' && (suggestion.id || suggestion.categoryId)) {
+        const catId = suggestion.id || suggestion.categoryId;
+        setQ('');
+        setCategory(catId!);
         setShowSuggestions(false);
-        performAutoSearch({ q: suggestion.name, category: suggestion.id }, false);
+        performAutoSearch({ q: '', category: catId }, false);
+      } else if (suggestion.type === 'deep_search' && (suggestion.categoryId)) {
+        setQ(suggestion.queryText || '');
+        setCategory(suggestion.categoryId);
+        setShowSuggestions(false);
+        performAutoSearch({ q: suggestion.queryText || '', category: suggestion.categoryId }, false);
       } else if (suggestion.type === 'product' && suggestion.id) {
         // For products, navigate directly to product page
         setShowSuggestions(false);
@@ -434,13 +476,41 @@ const Header: React.FC = () => {
   /* -------------------------------------------------------------------------- */
   const submitSearch = () => {
     if (q.length >= 2) {
-      performAutoSearchOnQuery();
+      // Alibaba-style: parse the query for categories before submitting
+      const categoryList = allCategories.length > 0
+        ? allCategories.map(c => ({ id: (c.id || c.slug || "").toString(), name: (c.name || "").toString() }))
+        : topCategories.map(c => ({ id: (c.id || "").toString(), name: (c.label || "").toString() }));
+
+      const parsed = parseSearchQuery(q, categoryList);
+
+      // If we found a category, we should use the parsed query text (which has category name removed)
+      // If no category found, we use the cleaned query text (parsed.q) or original q
+      const isPerfectCategoryMatch = parsed.filters.category && (!parsed.q || parsed.q.trim().length === 0);
+      const finalQ = isPerfectCategoryMatch ? "" : (parsed.q || q);
+
+      const searchParams: any = { q: finalQ };
+
+      if (parsed.filters.category) {
+        searchParams.category = parsed.filters.category;
+        setCategory(parsed.filters.category);
+      }
+
+      // Support other smart filters (Deep Search)
+      if (parsed.filters.minPrice) searchParams.priceMin = String(parsed.filters.minPrice);
+      if (parsed.filters.maxPrice) searchParams.priceMax = String(parsed.filters.maxPrice);
+      if (parsed.filters.sort) searchParams.sort = parsed.filters.sort;
+
+      // Update local state to reflect what we're actually searching for
+      setQ(finalQ);
+
+      performAutoSearch(searchParams);
+
       // After navigation, refocus input to allow continued searching
       setTimeout(() => {
         if (searchInputRef.current) {
           searchInputRef.current.focus();
           // Show suggestions again for the current query
-          setSearchSuggestions(generateSearchSuggestions(q));
+          setSearchSuggestions(generateSearchSuggestions(finalQ));
           setShowSuggestions(true);
         }
       }, 300);
@@ -501,19 +571,37 @@ const Header: React.FC = () => {
               <button
                 key={index}
                 onMouseDown={(e) => handleSuggestionClick(e, suggestion)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                className={`w-full text-left px-3 py-2.5 text-sm rounded-xl transition-all flex items-center gap-3 mb-1 group ${suggestion.type === 'deep_search'
+                  ? 'bg-teal-50/50 dark:bg-teal-900/10 border border-teal-100/50 dark:border-teal-800/30 hover:bg-teal-100/70 dark:hover:bg-teal-800/40'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
               >
                 {suggestion.type === 'product' ? (
                   <>
                     <Package className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
                     <span className="flex-1"><TranslatedText text={suggestion.name} /></span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Product" /></span>
+                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold"><TranslatedText text="Product" /></span>
+                  </>
+                ) : suggestion.type === 'deep_search' ? (
+                  <>
+                    <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-teal-200 dark:shadow-none">
+                      <Search className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 flex flex-col">
+                      <span className="font-semibold text-teal-700 dark:text-teal-400 leading-tight">
+                        {suggestion.name.split(' in ')[0]}
+                      </span>
+                      <span className="text-[11px] text-teal-600/70 dark:text-teal-500/70">
+                        {suggestion.name.split(' in ')[1] && `in ${suggestion.name.split(' in ')[1]}`}
+                      </span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-teal-400 group-hover:translate-x-1 transition-transform" />
                   </>
                 ) : (
                   <>
                     <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <span className="flex-1"><TranslatedText text={suggestion.name} /></span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400"><TranslatedText text="Category" /></span>
+                    <span className="flex-1 font-medium"><TranslatedText text={suggestion.name} /></span>
+                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold"><TranslatedText text="Category" /></span>
                   </>
                 )}
               </button>

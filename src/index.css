@@ -287,6 +287,10 @@ html, body {
   .font-outfit {
     font-family: 'Outfit', sans-serif;
   }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* Theme-aware classes */

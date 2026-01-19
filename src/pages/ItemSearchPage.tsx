@@ -3,7 +3,7 @@ import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-do
 import { Star, Heart, MapPin, Calendar, Clock, Shield, TrendingUp, Eye, MousePointer, ThumbsUp, Search, Filter, X, Camera, Laptop, Car, Gamepad2, Headphones, Watch, Package, Grid, List, ChevronDown, AlertCircle, Truck, ShoppingCart, Check, Sparkles } from 'lucide-react';
 import MapSearchView from '../components/map/MapSearchView';
 
-import { fetchAvailableProducts, fetchActiveDailyPrice, fetchCategories, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
+import { fetchAvailableProducts, fetchAllProducts, fetchActiveDailyPrice, fetchCategories, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
 import { getProductImagesByProductId } from './my-account/service/api';
 import { ImageSearchResult } from './admin/service/imageSearch';
 import { wkbHexToLatLng, getCityFromCoordinates } from '../lib/utils';
@@ -96,18 +96,18 @@ const ItemSearchPage: React.FC = () => {
 
   // Sync state with URL parameters when URL changes (e.g., from AI Modal navigation)
   useEffect(() => {
-    const q = searchParams.get('q');
-    const cat = searchParams.get('category');
-    const loc = searchParams.get('location');
-    const min = searchParams.get('priceMin');
-    const max = searchParams.get('priceMax');
+    const q = searchParams.get('q') || '';
+    const cat = searchParams.get('category') || 'all';
+    const loc = searchParams.get('location') || 'all';
+    const min = searchParams.get('priceMin') || '0';
+    const max = searchParams.get('priceMax') || '0';
 
-    if (q !== null && q !== searchQuery) setSearchQuery(q);
-    if (cat !== null && cat !== selectedCategory) setSelectedCategory(cat);
-    if (loc !== null && loc !== selectedLocation) setSelectedLocation(loc);
-    if (min !== null && Number(min) !== priceRange.min) setPriceRange(prev => ({ ...prev, min: Number(min) }));
-    if (max !== null && Number(max) !== priceRange.max) setPriceRange(prev => ({ ...prev, max: Number(max) }));
-  }, [searchParams]); // No need to depend on state variables here to avoid loops
+    if (q !== searchQuery) setSearchQuery(q);
+    if (cat !== selectedCategory) setSelectedCategory(cat);
+    if (loc !== selectedLocation) setSelectedLocation(loc);
+    if (Number(min) !== priceRange.min) setPriceRange(prev => ({ ...prev, min: Number(min) }));
+    if (Number(max) !== priceRange.max) setPriceRange(prev => ({ ...prev, max: Number(max) }));
+  }, [searchParams]); // Synchronize all parameters correctly including absent ones
 
   // Results state
   const [items, setItems] = useState<Product[]>([]);
@@ -117,6 +117,7 @@ const ItemSearchPage: React.FC = () => {
   const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
   const [itemLocations, setItemLocations] = useState<{ [id: string]: { city: string | null, country: string | null } }>({});
   const [locationsLoading, setLocationsLoading] = useState<Record<string, boolean>>({});
+  const [relatedCategories, setRelatedCategories] = useState<any[]>([]);
   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
   const [selectedProductForCart, setSelectedProductForCart] = useState<Product | null>(null);
@@ -234,31 +235,56 @@ const ItemSearchPage: React.FC = () => {
             params: { prompt: aiPrompt, limit: 100 }
           });
           if (res.data?.success) {
-            // Handle both nested paginated structure and flat array
             productList = res.data.data?.data || (Array.isArray(res.data.data) ? res.data.data : []);
             total = res.data.data?.total || res.data.pagination?.total || productList.length;
-
             // If AI derived filters, we could optionally update local filter state here
             // to reflect what AI "chose"
           } else {
             throw new Error(res.data?.message || 'AI Search failed');
           }
         } else {
-          // Standard Mode
-          // Fetch ALL active products (both booked and non-booked)
-          // Always skip availability check to show all products
-          const result = await fetchAvailableProducts(token, true);
+          // Standard Mode with Server-side Filtering
+          console.log('Fetching filtered products:', {
+            searchQuery,
+            selectedCategory,
+            priceRange,
+            mapLocation,
+            sortBy
+          });
+
+          const result = await fetchAllProducts(
+            token,
+            false,
+            1,
+            100, // Fetch first 100 for now
+            'active',
+            sortBy,
+            searchQuery,
+            selectedCategory,
+            priceRange.min,
+            priceRange.max,
+            mapLocation?.lat,
+            mapLocation?.lng,
+            mapLocation?.radiusKm
+          );
 
           if (result.error) {
             console.error('Error fetching products:', result.error);
             setError(result.error);
-            // Don't return - continue with empty array to show empty state
             setItems([]);
             setTotalResults(0);
+            setRelatedCategories([]);
             return;
           }
           productList = result.data || [];
           total = result.total || productList.length;
+
+          // Capture related categories from metadata
+          if (result.meta?.relatedCategories) {
+            setRelatedCategories(result.meta.relatedCategories);
+          } else {
+            setRelatedCategories([]);
+          }
         }
 
         setTotalResults(total);
@@ -320,7 +346,7 @@ const ItemSearchPage: React.FC = () => {
     };
 
     fetchItems();
-  }, [searchType, aiPrompt]);
+  }, [searchType, aiPrompt, searchQuery, selectedCategory, sortBy, priceRange.min, priceRange.max, mapLocation]);
 
   // Resolve city/country from product.location or product.geometry
   // Note: Locations load sequentially to avoid overwhelming the geocoding API
@@ -671,7 +697,7 @@ const ItemSearchPage: React.FC = () => {
                   className="appearance-none pl-4 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-my-primary focus:border-my-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 min-w-48 cursor-pointer transition-all duration-200"
                   aria-label="Select category"
                 >
-                  <option value="all"><TranslatedText text="All Categories" /></option>
+                  <option value="all">All Categories</option>
                   {itemCategories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.icon} {translatedCategoryNames[category.id] || category.name}
@@ -688,7 +714,7 @@ const ItemSearchPage: React.FC = () => {
                   className="appearance-none pl-4 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-my-primary focus:border-my-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 min-w-40 cursor-pointer transition-all duration-200"
                   aria-label="Select location"
                 >
-                  <option value="all"><TranslatedText text="All Locations" /></option>
+                  <option value="all">All Locations</option>
                   <option value="Kigali">🇷🇼 Kigali</option>
                   <option value="Butare">🇷🇼 Butare</option>
                   <option value="Kampala">🇺🇬 Kampala</option>
@@ -812,35 +838,135 @@ const ItemSearchPage: React.FC = () => {
           </div>
         )}
 
-        {/* Results Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">
-              {searchMode === 'image' ? (
-                <div className="flex items-center gap-3">
-                  <Camera className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                  <span><TranslatedText text="Similar Products Found" /></span>
-                </div>
-              ) : searchQuery ? (
-                <><TranslatedText text="Results for" /> "{searchQuery}"</>
-              ) : (
-                <TranslatedText text="Browse Rentals" />
-              )}
-            </h1>
-            {searchType === 'ai' && (
-              <div className="mb-2 flex items-center gap-2 text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-3 py-1.5 rounded-lg w-fit text-sm font-medium border border-teal-100 dark:border-teal-800">
+        {/* Results Header & Summary */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-1">
+                {searchMode === 'image' ? (
+                  <div className="flex items-center gap-3">
+                    <Camera className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+                    <span><TranslatedText text="Similar Results" /></span>
+                  </div>
+                ) : searchType === 'ai' ? (
+                  <><TranslatedText text="AI Search Results" /></>
+                ) : (
+                  <TranslatedText text="Marketplace" />
+                )}
+              </h1>
+
+              <div className="text-gray-600 dark:text-slate-400 flex flex-wrap items-center gap-1.5 text-lg">
+                <span>{totalResults} <TranslatedText text="results" /></span>
+                {(searchQuery || selectedCategory !== 'all' || priceRange.min > 0 || priceRange.max > 0) && (
+                  <>
+                    <span className="mx-1">•</span>
+                    <TranslatedText text="for" />
+                    {searchQuery && (
+                      <span className="font-bold text-gray-900 dark:text-white mx-1">"{searchQuery}"</span>
+                    )}
+                    {selectedCategory !== 'all' && (
+                      <>
+                        <TranslatedText text="in" />
+                        <span className="font-bold text-gray-900 dark:text-white mx-1">
+                          {itemCategories.find(c => c.id === selectedCategory)?.name || selectedCategory}
+                        </span>
+                      </>
+                    )}
+                    {(priceRange.min > 0 || priceRange.max > 0) && (
+                      <>
+                        <span className="mx-1">at</span>
+                        <span className="font-bold text-gray-900 dark:text-white">
+                          {priceRange.min > 0 && priceRange.max > 0
+                            ? `${priceRange.min}-${priceRange.max}`
+                            : priceRange.min > 0
+                              ? `> ${priceRange.min}`
+                              : `< ${priceRange.max}`}
+                        </span>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {searchType === 'ai' && aiPrompt && (
+              <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-3 py-1.5 rounded-lg text-sm font-medium border border-teal-100 dark:border-teal-800">
                 <Sparkles className="w-4 h-4" />
-                <span>AI results for: "{aiPrompt}"</span>
+                <span>AI Prompt: "{aiPrompt}"</span>
               </div>
             )}
-            <p className="text-gray-600 dark:text-slate-400">
-              {loading ? <TranslatedText text="Searching..." /> : (
-                <>
-                  {filteredItems.length} {searchMode === 'image' ? <TranslatedText text="similar products" /> : <TranslatedText text="items available" />}
-                </>
-              )}
-            </p>
           </div>
+
+          {/* Active Filter Chips (Alibaba Style) */}
+          {(selectedCategory !== 'all' || selectedLocation !== 'all' || priceRange.min > 0 || priceRange.max > 0 || mapLocation) && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {selectedCategory !== 'all' && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-my-primary/10 dark:bg-my-primary/20 text-my-primary dark:text-teal-300 rounded-full text-sm font-medium border border-my-primary/20">
+                  <span>Category: {itemCategories.find(c => c.id === selectedCategory)?.name || selectedCategory}</span>
+                  <button onClick={() => setSelectedCategory('all')} className="hover:text-red-500 transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {selectedLocation !== 'all' && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-full text-sm font-medium border border-blue-100 dark:border-blue-800">
+                  <span>Location: {selectedLocation}</span>
+                  <button onClick={() => setSelectedLocation('all')} className="hover:text-red-500 transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {(priceRange.min > 0 || priceRange.max > 0) && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 rounded-full text-sm font-medium border border-amber-100 dark:border-amber-800">
+                  <span>Price: {priceRange.min}-{priceRange.max || 'Any'}</span>
+                  <button onClick={() => setPriceRange({ min: 0, max: 0 })} className="hover:text-red-500 transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {mapLocation && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300 rounded-full text-sm font-medium border border-teal-100 dark:border-teal-800">
+                  <span>Near Me ({mapLocation.radiusKm}km)</span>
+                  <button onClick={() => setMapLocation(null)} className="hover:text-red-500 transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={clearAllFilters}
+                className="text-sm text-gray-500 hover:text-my-primary dark:text-slate-400 dark:hover:text-teal-400 font-medium px-2 py-1.5 underline underline-offset-4 decoration-dotted"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+
+          {/* Related Category Suggestions (Refine Search) - Alibaba Style */}
+          {relatedCategories.length > 0 && selectedCategory === 'all' && (
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700/50">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5" />
+                  Refine:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {relatedCategories.map((cat: any) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className="px-3 py-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 hover:border-my-primary dark:hover:border-teal-500 hover:text-my-primary dark:hover:text-teal-400 transition-all duration-200 shadow-sm"
+                    >
+                      {cat.name} <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">({cat.count})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Category Quick Filters */}
@@ -866,6 +992,29 @@ const ItemSearchPage: React.FC = () => {
             <div className="w-12 h-12 border-4 border-my-primary dark:border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-gray-600 dark:text-slate-400 font-medium"><TranslatedText text="Loading items..." /></p>
           </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="bg-gray-100 dark:bg-slate-800 p-6 rounded-full mb-6">
+              <Search className="w-12 h-12 text-gray-400 dark:text-slate-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
+              <TranslatedText text="No items found" />
+            </h3>
+            <p className="text-gray-600 dark:text-slate-400 max-w-md mx-auto mb-8">
+              <TranslatedText text="We couldn't find any items matching your search. Try adjusting your filters or search terms." />
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('all');
+                setSelectedLocation('all');
+                setPriceRange({ min: 0, max: 0 });
+              }}
+              className="px-6 py-3 bg-my-primary dark:bg-teal-600 text-white rounded-xl font-semibold hover:bg-my-primary/90 dark:hover:bg-teal-500 transition-colors shadow-lg shadow-my-primary/20"
+            >
+              <TranslatedText text="Clear all filters" />
+            </button>
+          </div>
         ) : viewMode === 'map' ? (
           <div className="relative" style={{ height: 'calc(100vh - 300px)', minHeight: '600px' }}>
             <MapSearchView
@@ -888,7 +1037,7 @@ const ItemSearchPage: React.FC = () => {
               height="100%"
             />
           </div>
-        ) : filteredItems.length > 0 ? (
+        ) : (
           <div className={viewMode === 'grid'
             ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'
             : 'space-y-6'
@@ -1252,52 +1401,38 @@ const ItemSearchPage: React.FC = () => {
               );
             })}
           </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 max-w-md mx-auto">
-              <Package className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-              <h3 className="text-xl font-bold text-gray-900 mb-3"><TranslatedText text="No Items Found" /></h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                <TranslatedText text="Try adjusting your search filters or browse different categories." />
-              </p>
-              <Button
-                onClick={clearAllFilters}
-                className="px-6 py-3 bg-[#00aaa9] hover:bg-[#008b8a] text-white rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <TranslatedText text="Clear All" />
-              </Button>
-            </div>
-          </div>
         )}
       </div>
 
       {/* Add to Cart Modal */}
-      {showAddToCartModal && selectedProductForCart && (
-        <AddToCartModal
-          isOpen={showAddToCartModal}
-          onClose={() => {
-            setShowAddToCartModal(false);
-            setSelectedProductForCart(null);
-          }}
-          product={{
-            id: selectedProductForCart.id,
-            title: selectedProductForCart.title || selectedProductForCart.name || '',
-            image: productImages[selectedProductForCart.id]?.[0],
-            pricePerDay: typeof selectedProductForCart.base_price_per_day === 'string'
-              ? parseFloat(selectedProductForCart.base_price_per_day)
-              : (selectedProductForCart.base_price_per_day || 0),
-            currency: selectedProductForCart.base_currency || 'USD',
-            pickup_methods: selectedProductForCart.pickup_methods,
-            address_line: selectedProductForCart.address_line,
-            location: selectedProductForCart.location,
-            ownerId: selectedProductForCart.owner_id || '',
-            categoryId: selectedProductForCart.category_id,
-            pickupAvailable: true,
-            deliveryAvailable: selectedProductForCart.deliveryAvailable === true,
-          }}
-        />
-      )}
-    </div>
+      {
+        showAddToCartModal && selectedProductForCart && (
+          <AddToCartModal
+            isOpen={showAddToCartModal}
+            onClose={() => {
+              setShowAddToCartModal(false);
+              setSelectedProductForCart(null);
+            }}
+            product={{
+              id: selectedProductForCart.id,
+              title: selectedProductForCart.title || selectedProductForCart.name || '',
+              image: productImages[selectedProductForCart.id]?.[0],
+              pricePerDay: typeof selectedProductForCart.base_price_per_day === 'string'
+                ? parseFloat(selectedProductForCart.base_price_per_day)
+                : (selectedProductForCart.base_price_per_day || 0),
+              currency: selectedProductForCart.base_currency || 'USD',
+              pickup_methods: selectedProductForCart.pickup_methods,
+              address_line: selectedProductForCart.address_line,
+              location: selectedProductForCart.location,
+              ownerId: selectedProductForCart.owner_id || '',
+              categoryId: selectedProductForCart.category_id,
+              pickupAvailable: true,
+              deliveryAvailable: selectedProductForCart.deliveryAvailable === true,
+            }}
+          />
+        )
+      }
+    </div >
   );
 };
 

@@ -70,7 +70,7 @@ const ItemDetailsPage: React.FC = () => {
   const [productInteractions, setProductInteractions] = useState<any[]>([]);
   const [productReviews, setProductReviews] = useState<any[]>([]);
   const [showMessagingModal, setShowMessagingModal] = useState(false);
-  const [ownerInfo, setOwnerInfo] = useState<{ id: string; name: string; avatar?: string } | null>(null);
+  const [ownerInfo, setOwnerInfo] = useState<{ id: string; name: string; avatar?: string; phone?: string } | null>(null);
 
   // Related products state
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
@@ -158,6 +158,15 @@ const ItemDetailsPage: React.FC = () => {
 
         if (result.data) {
           const owner = result.data;
+
+          // Debug: Log the entire owner object to see what fields are available
+          console.log('Owner data from API:', owner);
+          console.log('Available phone fields:', {
+            phone: owner.phone,
+            phone_number: owner.phone_number,
+            phoneNumber: owner.phoneNumber
+          });
+
           const ownerName = owner.first_name && owner.last_name
             ? `${owner.first_name} ${owner.last_name}`
             : owner.email || 'Product Owner';
@@ -165,7 +174,8 @@ const ItemDetailsPage: React.FC = () => {
           setOwnerInfo({
             id: owner.id,
             name: ownerName,
-            avatar: owner.profile_image || owner.profileImageUrl || owner.avatar || item.ownerAvatar
+            avatar: owner.profile_image || owner.profileImageUrl || owner.avatar || item.ownerAvatar,
+            phone: owner.phone
           });
         }
       } catch (err) {
@@ -625,7 +635,7 @@ const ItemDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-9xl mx-auto px-10 pt-4 lg:px-20 space-y-12 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
+    <div className="max-w-9xl mx-auto px-10 pt-4 lg:px-20 pb-24 lg:pb-12 space-y-12 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
 
 
       <div className="">
@@ -1090,21 +1100,8 @@ const ItemDetailsPage: React.FC = () => {
 
               {/* Host Information */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mt-6 dark:bg-slate-900 dark:border-slate-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4"><TranslatedText text="Your Host" /></h3>
-                <div className="flex items-center gap-4 mb-4">
-                  <img
-                    src={item.ownerAvatar}
-                    alt={item.ownerName}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">{item.ownerName}</h4>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600 dark:text-slate-300">{item.ownerRating} ({item.ownerReviews} reviews)</span>
-                    </div>
-                  </div>
-                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4"><TranslatedText text="Message Host" /></h3>
+
 
                 <div className="flex gap-2">
                   <Button
@@ -1115,7 +1112,20 @@ const ItemDetailsPage: React.FC = () => {
                     <MessageCircle className="w-4 h-4" />
                     <TranslatedText text="Message" />
                   </Button>
-                  <Button variant="outline" className="flex-1 flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 flex items-center justify-center gap-2"
+                    onClick={() => {
+                      if (ownerInfo?.phone) {
+                        // Remove any non-digit characters from phone number
+                        const cleanPhone = ownerInfo.phone.replace(/\D/g, '');
+                        // Open WhatsApp with the owner's phone number
+                        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+                      } else {
+                        t('Owner phone number not available').then(msg => showToast(msg, 'info'));
+                      }
+                    }}
+                  >
                     <Phone className="w-4 h-4" />
                     <TranslatedText text="Call" />
                   </Button>
@@ -1283,6 +1293,49 @@ const ItemDetailsPage: React.FC = () => {
           }}
         />
       )}
+      {/* Sticky Bottom Bar for Mobile */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-50 lg:hidden safe-area-bottom">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col">
+            <div className="text-xl font-bold text-gray-900 dark:text-white">
+              {productPrices?.price_per_day && productPrices?.currency ? (
+                <>
+                  {formatCurrency(productPrices.price_per_day, productPrices.currency)}
+                </>
+              ) : item.base_price_per_day != null && item.base_currency ? (
+                <>
+                  {item.base_price_per_day} {item.base_currency}
+                </>
+              ) : (
+                <span className="text-gray-500 text-sm"><TranslatedText text="N/A" /></span>
+              )}
+              <span className="text-sm font-normal text-gray-500 ml-1">/<TranslatedText text="day" /></span>
+            </div>
+            {item.average_rating && (
+              <div className="flex items-center gap-1 text-xs">
+                <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                <span className="font-medium text-gray-900 dark:text-gray-100">{item.average_rating}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 flex-1 max-w-[240px]">
+            <button
+              onClick={() => setShowAddToCartModal(true)}
+              className="flex-1 py-3 px-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center"
+              aria-label="Add to Cart"
+            >
+              <ShoppingCart className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            </button>
+            <Button
+              onClick={handleBookNow}
+              className="flex-[2] py-3 btn-primary text-white rounded-xl font-semibold text-sm whitespace-nowrap"
+            >
+              <TranslatedText text="Book Now" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

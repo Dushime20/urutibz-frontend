@@ -25,11 +25,18 @@ export async function fetchAllProducts(
   page?: number,
   limit?: number,
   status?: string,
-  sort?: 'newest' | 'oldest'
+  sort?: string,
+  search?: string,
+  category?: string,
+  priceMin?: number,
+  priceMax?: number,
+  lat?: number,
+  lng?: number,
+  radiusKm?: number
 ) {
   // If admin dashboard, use admin endpoint
   if (isAdminDashboard) {
-    return fetchAdminProducts(token, page, limit, status, sort);
+    return fetchAdminProducts(token, page, limit, status, sort as any);
   }
 
   // Public endpoint - only returns active products
@@ -38,6 +45,14 @@ export async function fetchAllProducts(
   if (limit) params.append('limit', String(limit));
   if (status && status !== 'all') params.append('status', status);
   if (sort) params.append('sort', sort);
+  if (search) params.append('search', search);
+  if (category && category !== 'all') params.append('category_id', category);
+  if (priceMin !== undefined) params.append('priceMin', String(priceMin));
+  if (priceMax !== undefined) params.append('priceMax', String(priceMax));
+  if (lat !== undefined) params.append('lat', String(lat));
+  if (lng !== undefined) params.append('lng', String(lng));
+  if (radiusKm !== undefined) params.append('radiusKm', String(radiusKm));
+  
   const url = `${API_BASE_URL}/products${params.toString() ? `?${params.toString()}` : ''}`;
   try {
     const headers = createAuthHeaders(token);

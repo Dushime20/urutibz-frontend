@@ -52,7 +52,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <Link to="/" className="inline-block mb-6">
-              <img src="/assets/img/yacht/urutilogo2.png" alt={platform?.siteName || tSync('UrutiBz')} className="h-10 w-auto object-contain drop-shadow" />
+              <img src={business?.companyLogo || "/assets/img/yacht/urutilogo2.png"} alt={business?.companyName || platform?.siteName || tSync('UrutiBz')} className="h-10 w-auto object-contain drop-shadow" />
             </Link>
             <p className="text-white/80 mb-4">
               {(platform?.siteDescription) || <TranslatedText text="Your trusted platform for renting and sharing items. Connect with a community of renters and owners." />}
@@ -119,8 +119,8 @@ const Footer: React.FC = () => {
             </ul>
             <div className="mt-4 flex gap-2">
               {/* Currency selector */}
-              <CurrencySelector 
-                currencies={currencies} 
+              <CurrencySelector
+                currencies={currencies}
                 className="bg-white text-platform-dark-grey rounded-platform px-2 py-1 text-sm border border-white/20 focus:outline-none"
                 aria-label={tSync('Select Currency')}
               />
@@ -140,11 +140,11 @@ const Footer: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between text-white/70 text-sm">
           <p>© {new Date().getFullYear()} {(platform?.siteName || business?.companyName || <TranslatedText text="UrutiBz" />)}. <TranslatedText text="All rights reserved" /></p>
           <div className="mt-4 md:mt-0 flex items-center gap-3">
-            <img src="/assets/img/yacht/urutilogo2.png" alt={platform?.siteName || tSync('UrutiBz')} className="h-6 w-auto opacity-90" />
+            <img src={business?.companyLogo || "/assets/img/yacht/urutilogo2.png"} alt={business?.companyName || platform?.siteName || tSync('UrutiBz')} className="h-6 w-auto opacity-90" />
             <span className="hidden sm:inline">{platform?.siteTagline || <TranslatedText text="Rent. Share. Connect." />}</span>
           </div>
         </div>

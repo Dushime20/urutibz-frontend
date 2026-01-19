@@ -66,7 +66,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         className="group block h-full w-full"
         onClick={handleProductClick}
       >
-        <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-300 border border-gray-100 dark:border-slate-700 h-full flex flex-col w-full">
+        <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-300 border border-gray-100 dark:border-slate-700 flex flex-col w-full h-full">
           {/* Image Container */}
           <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
             {productImages[product.id]?.[0] ? (
@@ -94,14 +94,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 type="button"
                 aria-label={favoriteMap[product.id] ? 'Remove from favorites' : 'Add to favorites'}
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${favoriteMap[product.id]
-                    ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
                   }`}
                 onClick={handleFavoriteClick}
               >
                 <Heart className={`w-5 h-5 transition-all ${favoriteMap[product.id]
-                    ? 'text-white fill-current'
-                    : 'text-gray-700 dark:text-slate-300'
+                  ? 'text-white fill-current'
+                  : 'text-gray-700 dark:text-slate-300'
                   }`} />
               </button>
               {/* Add to Cart Icon */}
@@ -110,8 +110,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   type="button"
                   aria-label="Add to cart"
                   className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg pointer-events-auto cursor-pointer ${isInCart(product.id)
-                      ? 'bg-teal-600 hover:bg-teal-700'
-                      : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
+                    ? 'bg-teal-600 hover:bg-teal-700'
+                    : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm'
                     }`}
                   onClick={handleAddToCartClick}
                   onMouseDown={(e) => {
@@ -124,8 +124,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   }}
                 >
                   <ShoppingCart className={`w-5 h-5 transition-all ${isInCart(product.id)
-                      ? 'text-white fill-current'
-                      : 'text-gray-700 dark:text-slate-300'
+                    ? 'text-white fill-current'
+                    : 'text-gray-700 dark:text-slate-300'
                     }`} />
                 </button>
               )}
@@ -133,10 +133,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* Content */}
-          <div className="p-3 space-y-1 flex-1 flex flex-col min-h-0">
+          <div className="p-3 space-y-1 flex flex-col overflow-hidden">
             {/* Title and Rating */}
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 min-h-[2.5rem] line-clamp-2">
+              <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 line-clamp-1">
                 <TranslatedText text={product.title || product.name || 'Product'} />
               </h3>
               <div className="flex items-center space-x-1 flex-shrink-0">
@@ -148,7 +148,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </div>
 
             {/* Location */}
-            <div className="text-gray-600 dark:text-slate-400 text-sm">
+            <div className="text-gray-600 dark:text-slate-400 text-sm line-clamp-1">
               {locationsLoading[product.id] ? (
                 <span className="flex items-center gap-1">
                   <span className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin inline-block"></span>
