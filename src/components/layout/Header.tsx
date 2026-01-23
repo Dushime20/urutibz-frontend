@@ -42,7 +42,6 @@ import ImageSearchModal from '../products/ImageSearchModal';
 import { ImageSearchResult } from '../../pages/admin/service/imageSearch';
 import CartIcon from '../cart/CartIcon';
 import CartDrawer from '../cart/CartDrawer';
-import AIChatbotModal from './AIChatbotModal';
 import { parseSearchQuery } from '../../utils/smartSearch';
 
 type HeaderCategory = { id: string; label: string };
@@ -116,29 +115,9 @@ const Header: React.FC = () => {
   const [tickerIndex, setTickerIndex] = useState(0);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAiSearchOpen, setIsAiSearchOpen] = useState(false);
 
-  // Translated attributes for accessibility
-  const [translatedAttrs, setTranslatedAttrs] = useState<Record<string, string>>({});
 
-  // Translate attribute strings on language change
-  useEffect(() => {
-    const translateAttrs = async () => {
-      const attrs = {
-        'Search inventory': await t('Search inventory'),
-        'Toggle theme': await t('Toggle theme'),
-        'Toggle menu': await t('Toggle menu'),
-        'Search by image': await t('Search by image'),
-        'Search': await t('Search'),
-        'Browse categories': await t('Browse categories'),
-        'Navigation menu': await t('Navigation menu'),
-        'Close menu': await t('Close menu'),
-        'Close search': await t('Close search'),
-        'Search inventory, suppliers, SKU...': await t('Search inventory, suppliers, SKU...'),
-      };
-      setTranslatedAttrs(attrs);
-    };
-    translateAttrs();
-  }, [language, t]);
 
   const roleDestination =
     user?.role === 'admin'
@@ -178,7 +157,6 @@ const Header: React.FC = () => {
   const [radiusKm, setRadiusKm] = useState<number>(Number(params.get('radiusKm') || 25));
   const [priceMin, setPriceMin] = useState<string>(params.get('priceMin') || '');
   const [priceMax, setPriceMax] = useState<string>(params.get('priceMax') || '');
-  const [isAiModalOpen, setIsAiModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -389,14 +367,23 @@ const Header: React.FC = () => {
       searchTimeoutRef.current = window.setTimeout(() => {
         if (query.length >= 2) {
           setIsSearching(true);
-          setSearchSuggestions(generateSearchSuggestions(query));
+          const suggestions = generateSearchSuggestions(query);
+          
+          // Add AI Deep Search suggestion for complex queries
+          if (query.length >= 10 || /\b(in|at|least|cost|price|rwf|usd)\b/i.test(query)) {
+            suggestions.unshift({
+              type: 'deep_search',
+              name: `🔍 AI Search: "${query}"`,
+              queryText: query
+            });
+          }
+          
+          setSearchSuggestions(suggestions);
           setShowSuggestions(true);
-          // Removed auto-search - users will manually trigger search or click suggestions
         } else if (query.length === 0) {
           setSearchSuggestions([]);
           setShowSuggestions(false);
         } else {
-          // For single character, keep suggestions hidden
           setSearchSuggestions([]);
           setShowSuggestions(false);
         }
@@ -476,41 +463,42 @@ const Header: React.FC = () => {
   /* -------------------------------------------------------------------------- */
   const submitSearch = () => {
     if (q.length >= 2) {
-      // Alibaba-style: parse the query for categories before submitting
-      const categoryList = allCategories.length > 0
-        ? allCategories.map(c => ({ id: (c.id || c.slug || "").toString(), name: (c.name || "").toString() }))
-        : topCategories.map(c => ({ id: (c.id || "").toString(), name: (c.label || "").toString() }));
+      // Check if query looks like natural language (has location, price keywords, etc)
+      const isNaturalLanguage = /\b(in|at|from|near|least|cost|price|minimum|maximum|rwf|usd|which|that)\b/i.test(q);
+      
+      if (isNaturalLanguage) {
+        // Use AI search with prompt parameter
+        const searchParams = new URLSearchParams({ prompt: q });
+        navigate(`/items?${searchParams.toString()}`);
+      } else {
+        // Use traditional search parsing
+        const categoryList = allCategories.length > 0
+          ? allCategories.map(c => ({ id: (c.id || c.slug || "").toString(), name: (c.name || "").toString() }))
+          : topCategories.map(c => ({ id: (c.id || "").toString(), name: (c.label || "").toString() }));
 
-      const parsed = parseSearchQuery(q, categoryList);
+        const parsed = parseSearchQuery(q, categoryList);
+        const isPerfectCategoryMatch = parsed.filters.category && (!parsed.q || parsed.q.trim().length === 0);
+        const finalQ = isPerfectCategoryMatch ? "" : (parsed.q || q);
 
-      // If we found a category, we should use the parsed query text (which has category name removed)
-      // If no category found, we use the cleaned query text (parsed.q) or original q
-      const isPerfectCategoryMatch = parsed.filters.category && (!parsed.q || parsed.q.trim().length === 0);
-      const finalQ = isPerfectCategoryMatch ? "" : (parsed.q || q);
+        const searchParams: any = { q: finalQ };
 
-      const searchParams: any = { q: finalQ };
+        if (parsed.filters.category) {
+          searchParams.category = parsed.filters.category;
+          setCategory(parsed.filters.category);
+        }
 
-      if (parsed.filters.category) {
-        searchParams.category = parsed.filters.category;
-        setCategory(parsed.filters.category);
+        if (parsed.filters.minPrice) searchParams.priceMin = String(parsed.filters.minPrice);
+        if (parsed.filters.maxPrice) searchParams.priceMax = String(parsed.filters.maxPrice);
+        if (parsed.filters.sort) searchParams.sort = parsed.filters.sort;
+
+        setQ(finalQ);
+        performAutoSearch(searchParams);
       }
 
-      // Support other smart filters (Deep Search)
-      if (parsed.filters.minPrice) searchParams.priceMin = String(parsed.filters.minPrice);
-      if (parsed.filters.maxPrice) searchParams.priceMax = String(parsed.filters.maxPrice);
-      if (parsed.filters.sort) searchParams.sort = parsed.filters.sort;
-
-      // Update local state to reflect what we're actually searching for
-      setQ(finalQ);
-
-      performAutoSearch(searchParams);
-
-      // After navigation, refocus input to allow continued searching
       setTimeout(() => {
         if (searchInputRef.current) {
           searchInputRef.current.focus();
-          // Show suggestions again for the current query
-          setSearchSuggestions(generateSearchSuggestions(finalQ));
+          setSearchSuggestions(generateSearchSuggestions(q));
           setShowSuggestions(true);
         }
       }, 300);
@@ -962,7 +950,7 @@ const Header: React.FC = () => {
                     <button
                       onClick={openMobileSearch}
                       className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                      aria-label={translatedAttrs['Search inventory'] || 'Search inventory'}
+                      aria-label="Search inventory"
                     >
                       <Search className="w-4 h-4" />
                     </button>
@@ -975,14 +963,14 @@ const Header: React.FC = () => {
                     <button
                       onClick={toggleDarkMode}
                       className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                      aria-label={translatedAttrs['Toggle theme'] || 'Toggle theme'}
+                      aria-label="Toggle theme"
                     >
                       {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                     </button>
                     <button
                       onClick={() => setIsMenuOpen(!isMenuOpen)}
                       className="p-2 rounded-full border border-gray-200 dark:border-gray-700"
-                      aria-label={translatedAttrs['Toggle menu'] || 'Toggle menu'}
+                      aria-label="Toggle menu"
                     >
                       {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
@@ -1039,11 +1027,11 @@ const Header: React.FC = () => {
                 {/* Search section - Hidden on mobile, handled separately below */}
                 <div className="hidden md:flex w-full px-0 justify-center relative">
                   <div className="w-full max-w-3xl mx-auto flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm hover:shadow-md focus-within:shadow-[0_1px_6px_rgba(32,33,36,0.28)] transition-all duration-200 px-4 h-12 relative">
-                    {/* Visual AI Toggle */}
+                    {/* AI Search Button */}
                     <button
-                      onClick={() => setIsAiModalOpen(true)}
-                      className="mr-2 p-1.5 rounded-full text-teal-600 hover:bg-teal-50 hover:scale-110 transition-all"
-                      title="AI Smart Search"
+                      onClick={() => setIsAiSearchOpen(true)}
+                      className="mr-2 p-1.5 rounded-full text-teal-600 hover:bg-teal-50 transition-all"
+                      title={tSync('AI Search')}
                     >
                       <Sparkles className="w-5 h-5 fill-teal-100" />
                     </button>
@@ -1076,7 +1064,7 @@ const Header: React.FC = () => {
                           }
                         }, 300);
                       }}
-                      placeholder={translatedAttrs['Search inventory...'] || 'Search inventory...'}
+                      placeholder={tSync('Search ....')}
                       className="flex-1 bg-transparent text-[16px] text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none h-full ml-1"
                     />
 
@@ -1103,8 +1091,8 @@ const Header: React.FC = () => {
                         type="button"
                         onClick={() => setIsImageSearchOpen(true)}
                         className="p-2 text-teal-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none"
-                        aria-label={translatedAttrs['Search by image'] || 'Search by image'}
-                        title={translatedAttrs['Search by image'] || 'Search by image'}
+                        aria-label="Search by image"
+                        title="Search by image"
                       >
                         <Camera className="w-5 h-5" />
                       </button>
@@ -1112,7 +1100,7 @@ const Header: React.FC = () => {
                       <button
                         onClick={submitSearch}
                         className="p-2 text-teal-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-colors focus:outline-none rounded-full ml-1"
-                        aria-label={translatedAttrs['Search'] || 'Search'}
+                        aria-label="Search"
                       >
                         <Search className="w-5 h-5" />
                       </button>
@@ -1135,7 +1123,7 @@ const Header: React.FC = () => {
                   <button
                     onClick={toggleDarkMode}
                     className="inline-flex p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                    aria-label={translatedAttrs['Toggle theme'] || 'Toggle theme'}
+                    aria-label="Toggle theme"
                   >
                     {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   </button>
@@ -1229,7 +1217,7 @@ const Header: React.FC = () => {
                   }`}
                 aria-haspopup="true"
                 aria-expanded={isCategoriesOpen}
-                aria-label={translatedAttrs['Browse categories'] || 'Browse categories'}
+                aria-label="Browse categories"
               >
                 <span className={`flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-xl transition-all ${isCategoriesOpen
                   ? 'bg-white/20 text-white shadow-inner shadow-teal-900/30'
@@ -1389,7 +1377,7 @@ const Header: React.FC = () => {
           </div>
 
           {isMenuOpen && (
-            <div className="md:hidden fixed inset-0 z-[20]" role="dialog" aria-modal="true" aria-label={translatedAttrs['Navigation menu'] || 'Navigation menu'}>
+            <div className="md:hidden fixed inset-0 z-[20]" role="dialog" aria-modal="true" aria-label="Navigation menu">
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
               <div className="absolute inset-0 h-screen">
                 <div className="h-full bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border border-white/20 dark:border-gray-800 pt-4 pb-48 px-4 overflow-y-auto safe-area-bottom space-y-6">
@@ -1398,7 +1386,7 @@ const Header: React.FC = () => {
                     <button
                       onClick={() => setIsMenuOpen(false)}
                       className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                      aria-label={translatedAttrs['Close menu'] || 'Close menu'}
+                      aria-label="Close menu"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -1570,21 +1558,18 @@ const Header: React.FC = () => {
                 <button
                   onClick={closeMobileSearch}
                   className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200"
-                  aria-label={translatedAttrs['Close search'] || 'Close search'}
+                  aria-label="Close search"
                 >
                   <X className="w-5 h-5" />
                 </button>
 
                 {/* Mobile Search "Pill" inside Modal */}
                 <div className="flex-1 flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm focus-within:shadow-[0_1px_6px_rgba(32,33,36,0.28)] transition-all duration-200 px-4 h-12 relative">
-                  {/* AI Smart Search Button */}
+                  {/* AI Search Button */}
                   <button
-                    onClick={() => {
-                      setIsAiModalOpen(true);
-                      closeMobileSearch();
-                    }}
+                    onClick={() => setIsAiSearchOpen(true)}
                     className="mr-2 p-1 rounded-full text-teal-600 hover:bg-teal-50 transition-all"
-                    title="AI Smart Search"
+                    title={tSync('AI Search')}
                   >
                     <Sparkles className="w-4 h-4 fill-teal-100" />
                   </button>
@@ -1608,7 +1593,7 @@ const Header: React.FC = () => {
                       }
                       setShowSuggestions(q.length >= 2 || recentSearches.length > 0);
                     }}
-                    placeholder={translatedAttrs['Search inventory...'] || 'Search inventory...'}
+                    placeholder={tSync('Search ...')}
                     className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none"
                   />
 
@@ -1634,7 +1619,7 @@ const Header: React.FC = () => {
                         closeMobileSearch();
                       }}
                       className="p-2 text-teal-600"
-                      aria-label={translatedAttrs['Search by image'] || 'Search by image'}
+                      aria-label="Search by image"
                     >
                       <Camera className="w-4 h-4" />
                     </button>
@@ -1645,7 +1630,7 @@ const Header: React.FC = () => {
                         closeMobileSearch();
                       }}
                       className="p-2 text-teal-600"
-                      aria-label={translatedAttrs['Search'] || 'Search'}
+                      aria-label="Search"
                     >
                       <Search className="w-4 h-4" />
                     </button>
@@ -1669,13 +1654,81 @@ const Header: React.FC = () => {
         onNavigateToResults={handleImageSearchResults}
       />
 
-      <AIChatbotModal
-        isOpen={isAiModalOpen}
-        onClose={() => setIsAiModalOpen(false)}
-      />
-
       {/* Cart Drawer */}
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+      {/* AI Search Modal */}
+      {isAiSearchOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsAiSearchOpen(false)} />
+          <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-teal-600 rounded-xl">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white"><TranslatedText text="AI Search" /></h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400"><TranslatedText text="Describe what you're looking for" /></p>
+                </div>
+              </div>
+              <button onClick={() => setIsAiSearchOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder={tSync('e.g., camera in Kigali under 30000 rwf')}
+                className="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-2xl py-4 pl-6 pr-14 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-teal-500 outline-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    const query = e.currentTarget.value.trim();
+                    setQ(query);
+                    setIsAiSearchOpen(false);
+                    const searchParams = new URLSearchParams({ prompt: query });
+                    navigate(`/items?${searchParams.toString()}`);
+                  }
+                }}
+                autoFocus
+              />
+              <button
+                onClick={() => {
+                  const input = searchInputRef.current;
+                  if (input && input.value.trim()) {
+                    const query = input.value.trim();
+                    setQ(query);
+                    setIsAiSearchOpen(false);
+                    const searchParams = new URLSearchParams({ prompt: query });
+                    navigate(`/items?${searchParams.toString()}`);
+                  }
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg transition-all"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <p className="w-full text-xs text-gray-500 dark:text-gray-400 mb-1"><TranslatedText text="Try these examples:" /></p>
+              {['camera in Kigali', 'laptop under 50000 rwf', 'new phone'].map((example) => (
+                <button
+                  key={example}
+                  onClick={() => {
+                    if (searchInputRef.current) {
+                      searchInputRef.current.value = example;
+                      searchInputRef.current.focus();
+                    }
+                  }}
+                  className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-600 transition-colors"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
