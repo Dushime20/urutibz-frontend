@@ -115,7 +115,7 @@ const Header: React.FC = () => {
   const [tickerIndex, setTickerIndex] = useState(0);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isAiSearchOpen, setIsAiSearchOpen] = useState(false);
+  const [isAiMode, setIsAiMode] = useState(true);
 
 
 
@@ -463,10 +463,9 @@ const Header: React.FC = () => {
   /* -------------------------------------------------------------------------- */
   const submitSearch = () => {
     if (q.length >= 2) {
-      // Check if query looks like natural language (has location, price keywords, etc)
       const isNaturalLanguage = /\b(in|at|from|near|least|cost|price|minimum|maximum|rwf|usd|which|that)\b/i.test(q);
       
-      if (isNaturalLanguage) {
+      if (isAiMode || isNaturalLanguage) {
         // Use AI search with prompt parameter
         const searchParams = new URLSearchParams({ prompt: q });
         navigate(`/items?${searchParams.toString()}`);
@@ -1027,13 +1026,13 @@ const Header: React.FC = () => {
                 {/* Search section - Hidden on mobile, handled separately below */}
                 <div className="hidden md:flex w-full px-0 justify-center relative">
                   <div className="w-full max-w-3xl mx-auto flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm hover:shadow-md focus-within:shadow-[0_1px_6px_rgba(32,33,36,0.28)] transition-all duration-200 px-4 h-12 relative">
-                    {/* AI Search Button */}
+                    {/* AI/Normal Toggle */}
                     <button
-                      onClick={() => setIsAiSearchOpen(true)}
-                      className="mr-2 p-1.5 rounded-full text-teal-600 hover:bg-teal-50 transition-all"
-                      title={tSync('AI Search')}
+                      onClick={() => setIsAiMode(!isAiMode)}
+                      className={`mr-2 p-1.5 rounded-full transition-all ${isAiMode ? 'bg-teal-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                      title={isAiMode ? tSync('AI Search') : tSync('Normal Search')}
                     >
-                      <Sparkles className="w-5 h-5 fill-teal-100" />
+                      <Sparkles className="w-5 h-5" />
                     </button>
                     <input
                       ref={searchInputRef}
@@ -1064,7 +1063,7 @@ const Header: React.FC = () => {
                           }
                         }, 300);
                       }}
-                      placeholder={tSync('Search ....')}
+                      placeholder={isAiMode ? tSync('AI: camera in Kigali under 30k...') : tSync('Search ....')}
                       className="flex-1 bg-transparent text-[16px] text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none h-full ml-1"
                     />
 
@@ -1565,13 +1564,13 @@ const Header: React.FC = () => {
 
                 {/* Mobile Search "Pill" inside Modal */}
                 <div className="flex-1 flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm focus-within:shadow-[0_1px_6px_rgba(32,33,36,0.28)] transition-all duration-200 px-4 h-12 relative">
-                  {/* AI Search Button */}
+                  {/* AI/Normal Toggle */}
                   <button
-                    onClick={() => setIsAiSearchOpen(true)}
-                    className="mr-2 p-1 rounded-full text-teal-600 hover:bg-teal-50 transition-all"
-                    title={tSync('AI Search')}
+                    onClick={() => setIsAiMode(!isAiMode)}
+                    className={`mr-2 p-1 rounded-full transition-all ${isAiMode ? 'bg-teal-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    title={isAiMode ? tSync('AI Search') : tSync('Normal Search')}
                   >
-                    <Sparkles className="w-4 h-4 fill-teal-100" />
+                    <Sparkles className="w-4 h-4" />
                   </button>
 
                   <input
@@ -1593,7 +1592,7 @@ const Header: React.FC = () => {
                       }
                       setShowSuggestions(q.length >= 2 || recentSearches.length > 0);
                     }}
-                    placeholder={tSync('Search ...')}
+                    placeholder={isAiMode ? tSync('AI: camera in Kigali under 30k...') : tSync('Search ...')}
                     className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none"
                   />
 
@@ -1656,79 +1655,6 @@ const Header: React.FC = () => {
 
       {/* Cart Drawer */}
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-
-      {/* AI Search Modal */}
-      {isAiSearchOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsAiSearchOpen(false)} />
-          <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-teal-600 rounded-xl">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white"><TranslatedText text="AI Search" /></h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400"><TranslatedText text="Describe what you're looking for" /></p>
-                </div>
-              </div>
-              <button onClick={() => setIsAiSearchOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="relative">
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder={tSync('e.g., camera in Kigali under 30000 rwf')}
-                className="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-2xl py-4 pl-6 pr-14 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-teal-500 outline-none"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    const query = e.currentTarget.value.trim();
-                    setQ(query);
-                    setIsAiSearchOpen(false);
-                    const searchParams = new URLSearchParams({ prompt: query });
-                    navigate(`/items?${searchParams.toString()}`);
-                  }
-                }}
-                autoFocus
-              />
-              <button
-                onClick={() => {
-                  const input = searchInputRef.current;
-                  if (input && input.value.trim()) {
-                    const query = input.value.trim();
-                    setQ(query);
-                    setIsAiSearchOpen(false);
-                    const searchParams = new URLSearchParams({ prompt: query });
-                    navigate(`/items?${searchParams.toString()}`);
-                  }
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg transition-all"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <p className="w-full text-xs text-gray-500 dark:text-gray-400 mb-1"><TranslatedText text="Try these examples:" /></p>
-              {['camera in Kigali', 'laptop under 50000 rwf', 'new phone'].map((example) => (
-                <button
-                  key={example}
-                  onClick={() => {
-                    if (searchInputRef.current) {
-                      searchInputRef.current.value = example;
-                      searchInputRef.current.focus();
-                    }
-                  }}
-                  className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-600 transition-colors"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
