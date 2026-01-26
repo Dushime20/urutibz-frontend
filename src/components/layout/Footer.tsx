@@ -47,7 +47,7 @@ const Footer: React.FC = () => {
     setLanguage(newLanguage);
   };
   return (
-    <footer className="bg-gray-100 dark:bg-gray-800 text-[#0b0d0f] dark:text-gray-200">
+    <footer className="bg-gray-200 dark:bg-gray-800 text-[#0b0d0f] dark:text-gray-200">
       <div className=" mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
