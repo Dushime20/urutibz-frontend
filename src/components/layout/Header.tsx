@@ -368,7 +368,7 @@ const Header: React.FC = () => {
         if (query.length >= 2) {
           setIsSearching(true);
           const suggestions = generateSearchSuggestions(query);
-          
+
           // Add AI Deep Search suggestion for complex queries
           if (query.length >= 10 || /\b(in|at|least|cost|price|rwf|usd)\b/i.test(query)) {
             suggestions.unshift({
@@ -377,7 +377,7 @@ const Header: React.FC = () => {
               queryText: query
             });
           }
-          
+
           setSearchSuggestions(suggestions);
           setShowSuggestions(true);
         } else if (query.length === 0) {
@@ -437,11 +437,34 @@ const Header: React.FC = () => {
         setCategory(catId!);
         setShowSuggestions(false);
         performAutoSearch({ q: '', category: catId }, false);
-      } else if (suggestion.type === 'deep_search' && (suggestion.categoryId)) {
-        setQ(suggestion.queryText || '');
-        setCategory(suggestion.categoryId);
-        setShowSuggestions(false);
-        performAutoSearch({ q: suggestion.queryText || '', category: suggestion.categoryId }, false);
+      } else if (suggestion.type === 'deep_search') {
+        if (suggestion.categoryId) {
+          setQ(suggestion.queryText || '');
+          setCategory(suggestion.categoryId);
+          setShowSuggestions(false);
+          performAutoSearch({ q: suggestion.queryText || '', category: suggestion.categoryId }, false);
+        } else {
+          // General AI Search - extract the actual query from the suggestion name
+          let queryText = suggestion.queryText || '';
+          
+          // If queryText is empty, try to extract from suggestion.name
+          if (!queryText && suggestion.name) {
+            // Remove the AI Search prefix if present
+            const match = suggestion.name.match(/🔍\s*AI\s*Search:\s*["']?(.+?)["']?$/i);
+            if (match && match[1]) {
+              queryText = match[1].trim();
+            } else {
+              queryText = suggestion.name;
+            }
+          }
+          
+          setQ(queryText);
+          setShowSuggestions(false);
+          const sp = new URLSearchParams();
+          sp.set('prompt', queryText);
+          sp.set('searchType', 'ai');
+          navigate(`/items?${sp.toString()}`);
+        }
       } else if (suggestion.type === 'product' && suggestion.id) {
         // For products, navigate directly to product page
         setShowSuggestions(false);
@@ -464,11 +487,13 @@ const Header: React.FC = () => {
   const submitSearch = () => {
     if (q.length >= 2) {
       const isNaturalLanguage = /\b(in|at|from|near|least|cost|price|minimum|maximum|rwf|usd|which|that)\b/i.test(q);
-      
+
       if (isAiMode || isNaturalLanguage) {
         // Use AI search with prompt parameter
-        const searchParams = new URLSearchParams({ prompt: q });
-        navigate(`/items?${searchParams.toString()}`);
+        const sp = new URLSearchParams();
+        sp.set('prompt', q);
+        sp.set('searchType', 'ai');
+        navigate(`/items?${sp.toString()}`);
       } else {
         // Use traditional search parsing
         const categoryList = allCategories.length > 0

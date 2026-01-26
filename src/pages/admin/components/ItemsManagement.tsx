@@ -15,7 +15,7 @@ import type { Category } from '../interfaces';
 import SkeletonTable from './SkeletonTable';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
-import { moderateAdminProduct } from '../service';
+import { moderateAdminProduct, softDeleteProduct } from '../service';
 import ProductModerationHistory from './ProductModerationHistory';
 import { PricingService } from '../service/pricingService';
 import type { ProductPrice } from '../types/pricing';
@@ -44,6 +44,7 @@ interface ItemsManagementProps {
   hasPrev?: boolean;
   onPageChange?: (page: number) => void;
   onLimitChange?: (limit: number) => void;
+  onRefresh?: () => void;
 }
 
 const AdminProductDetailModal: React.FC<{
@@ -807,7 +808,8 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   availabilityFilter = 'all', setAvailabilityFilter,
   page = 1, limit = 20, total = 0, totalPages = 1, hasNext = false, hasPrev = false,
   onPageChange,
-  onLimitChange
+  onLimitChange,
+  onRefresh
 }) => {
   const { tSync } = useTranslation();
   // Derive pagination state if parent didn't pass explicit flags
@@ -830,6 +832,9 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   // Add pricing state
   const [productPrices, setProductPrices] = useState<{ [productId: string]: ProductPrice[] }>({});
   const [pricesLoading, setPricesLoading] = useState(false);
+  // Add soft delete state
+  const [softDeleteLoading, setSoftDeleteLoading] = useState<string | null>(null);
+  const [softDeleteError, setSoftDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('Products received:', products);
@@ -1056,6 +1061,36 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
 
   // Optionally, you can manage error state here if not passed as prop
   // const [error, setError] = useState<string | null>(null);
+
+  // Handle soft delete
+  const handleSoftDelete = async (productId: string, productName: string) => {
+    if (!confirm(`Are you sure you want to soft delete "${productName}"? This will hide it from all public pages.`)) {
+      return;
+    }
+
+    setSoftDeleteLoading(productId);
+    setSoftDeleteError(null);
+    setActionMenuOpen(null);
+
+    try {
+      const token = localStorage.getItem('token') || undefined;
+      await softDeleteProduct(productId, token);
+      
+      // Show success message
+      alert('Product soft deleted successfully!');
+      
+      // Refresh the product list
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to soft delete product';
+      setSoftDeleteError(errorMsg);
+      alert(`Error: ${errorMsg}`);
+    } finally {
+      setSoftDeleteLoading(null);
+    }
+  };
 
   if (loading || imagesLoading || pricesLoading) {
     return (
@@ -1441,6 +1476,23 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                             <Shield className="w-4 h-4 mr-2" />
                             Moderation History
                           </button>
+                          <button
+                            onClick={() => handleSoftDelete(item.id, item.title || item.name)}
+                            disabled={softDeleteLoading === item.id}
+                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed border-t border-gray-100"
+                          >
+                            {softDeleteLoading === item.id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                                Deleting...
+                              </>
+                            ) : (
+                              <>
+                                <X className="w-4 h-4 mr-2" />
+                                <TranslatedText text="Soft Delete" />
+                              </>
+                            )}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1487,11 +1539,10 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
           productPrices={productPrices}
           productAvailability={productAvailability}
           onApproved={() => {
-            // Refresh the product list after successful moderation
-            // This will trigger a re-render of the component
             setViewProductId(null);
-            // You can also add a callback here to refresh the main product list
-            // if you have access to a refresh function from the parent component
+            if (onRefresh) {
+              onRefresh();
+            }
           }}
         />
 

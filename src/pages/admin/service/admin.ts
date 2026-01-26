@@ -338,6 +338,18 @@ export async function moderateAdminProduct(productId: string, data: { action: 'a
   }
 }
 
+export async function softDeleteProduct(productId: string, token?: string) {
+  try {
+    const response = await axios.patch(`${API_BASE_URL}/admin/products/${productId}/soft-delete`, {}, { 
+      headers: createAuthHeaders(token) 
+    });
+    return response.data;
+  } catch (err: any) {
+    console.error('Error soft deleting product:', err);
+    throw new Error(handleApiError(err, 'Failed to soft delete product'));
+  }
+}
+
 // Recent Data Functions
 export async function fetchRecentUsers(limit: number = 5, token?: string): Promise<RecentUser[]> {
   try {

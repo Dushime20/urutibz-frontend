@@ -1343,6 +1343,25 @@ const AdminDashboardPage: React.FC = () => {
                         hasPrev={itemMeta.hasPrev}
                         onPageChange={setItemPage}
                         onLimitChange={(l) => { setItemLimit(l); setItemPage(1); }}
+                        onRefresh={() => {
+                          setLoadingProducts(true);
+                          const token = localStorage.getItem('token') || undefined;
+                          fetchAllProducts(token, true, itemPage, itemLimit, itemStatus, itemSort)
+                            .then(async (result) => {
+                              if (!result.error) {
+                                setProducts(result.data || []);
+                                if (result.meta) {
+                                  setItemMeta({
+                                    total: Number(result.meta.total ?? 0),
+                                    totalPages: Number(result.meta.totalPages ?? 1),
+                                    hasNext: Boolean(result.meta.hasNext),
+                                    hasPrev: Boolean(result.meta.hasPrev),
+                                  });
+                                }
+                              }
+                            })
+                            .finally(() => setLoadingProducts(false));
+                        }}
                       />
                     );
                   case 'users':
