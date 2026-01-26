@@ -835,6 +835,15 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
   // Add soft delete state
   const [softDeleteLoading, setSoftDeleteLoading] = useState<string | null>(null);
   const [softDeleteError, setSoftDeleteError] = useState<string | null>(null);
+  // Add enable product state
+  const [enableLoading, setEnableLoading] = useState<string | null>(null);
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    type: 'delete' | 'enable';
+    productId: string;
+    productName: string;
+  } | null>(null);
 
   useEffect(() => {
     console.log('Products received:', products);
@@ -1064,31 +1073,45 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
 
   // Handle soft delete
   const handleSoftDelete = async (productId: string, productName: string) => {
-    if (!confirm(`Are you sure you want to soft delete "${productName}"? This will hide it from all public pages.`)) {
-      return;
-    }
-
-    setSoftDeleteLoading(productId);
-    setSoftDeleteError(null);
+    setConfirmModal({ open: true, type: 'delete', productId, productName });
     setActionMenuOpen(null);
+  };
 
-    try {
-      const token = localStorage.getItem('token') || undefined;
-      await softDeleteProduct(productId, token);
-      
-      // Show success message
-      alert('Product soft deleted successfully!');
-      
-      // Refresh the product list
-      if (onRefresh) {
-        onRefresh();
+  // Handle enable product
+  const handleEnableProduct = async (productId: string, productName: string) => {
+    setConfirmModal({ open: true, type: 'enable', productId, productName });
+    setActionMenuOpen(null);
+  };
+
+  // Execute action after confirmation
+  const executeAction = async () => {
+    if (!confirmModal) return;
+
+    const { type, productId, productName } = confirmModal;
+    setConfirmModal(null);
+
+    if (type === 'delete') {
+      setSoftDeleteLoading(productId);
+      try {
+        const token = localStorage.getItem('token') || undefined;
+        await softDeleteProduct(productId, token);
+        if (onRefresh) onRefresh();
+      } catch (err: any) {
+        setSoftDeleteError(err.message || 'Failed to soft delete product');
+      } finally {
+        setSoftDeleteLoading(null);
       }
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to soft delete product';
-      setSoftDeleteError(errorMsg);
-      alert(`Error: ${errorMsg}`);
-    } finally {
-      setSoftDeleteLoading(null);
+    } else {
+      setEnableLoading(productId);
+      try {
+        const token = localStorage.getItem('token') || undefined;
+        await moderateAdminProduct(productId, { action: 'approve', reason: 'Product enabled by admin' }, token);
+        if (onRefresh) onRefresh();
+      } catch (err: any) {
+        alert(`Error: ${err.message || 'Failed to enable product'}`);
+      } finally {
+        setEnableLoading(null);
+      }
     }
   };
 
@@ -1476,23 +1499,43 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                             <Shield className="w-4 h-4 mr-2" />
                             Moderation History
                           </button>
-                          <button
-                            onClick={() => handleSoftDelete(item.id, item.title || item.name)}
-                            disabled={softDeleteLoading === item.id}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed border-t border-gray-100"
-                          >
-                            {softDeleteLoading === item.id ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
-                                Deleting...
-                              </>
-                            ) : (
-                              <>
-                                <X className="w-4 h-4 mr-2" />
-                                <TranslatedText text="Soft Delete" />
-                              </>
-                            )}
-                          </button>
+                          {item.status === 'deleted' || item.status === 'inactive' ? (
+                            <button
+                              onClick={() => handleEnableProduct(item.id, item.title || item.name)}
+                              disabled={enableLoading === item.id}
+                              className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed border-t border-gray-100"
+                            >
+                              {enableLoading === item.id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                                  Enabling...
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="w-4 h-4 mr-2" />
+                                  <TranslatedText text="Enable Product" />
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleSoftDelete(item.id, item.title || item.name)}
+                              disabled={softDeleteLoading === item.id}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed border-t border-gray-100"
+                            >
+                              {softDeleteLoading === item.id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                                  Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <X className="w-4 h-4 mr-2" />
+                                  <TranslatedText text="Soft Delete" />
+                                </>
+                              )}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1555,6 +1598,40 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
                 productTitle={products.find(p => p.id === moderationHistoryProductId)?.title || 'Product'}
                 onClose={() => setModerationHistoryProductId(null)}
               />
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Modal */}
+        {confirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                {confirmModal.type === 'delete' ? 'Soft Delete Product' : 'Enable Product'}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                {confirmModal.type === 'delete'
+                  ? `Are you sure you want to soft delete "${confirmModal.productName}"? This will hide it from all public pages.`
+                  : `Enable "${confirmModal.productName}"? This will make it visible on public pages.`}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmModal(null)}
+                  className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeAction}
+                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                    confirmModal.type === 'delete'
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {confirmModal.type === 'delete' ? 'Delete' : 'Enable'}
+                </button>
+              </div>
             </div>
           </div>
         )}
