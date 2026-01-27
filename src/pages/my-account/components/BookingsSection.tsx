@@ -415,90 +415,87 @@ const BookingsSection: React.FC<Props> = ({
             return (
               <div 
                 key={booking.id} 
-                className="group bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
-                onClick={() => {
-                  setSelectedBooking(booking);
-                  setShowBookingModal(true);
-                }}
+                className="group bg-white dark:bg-slate-900 rounded-2xl border-2 border-gray-100 dark:border-slate-700 overflow-hidden hover:border-[#0c9488]/30 hover:shadow-xl transition-all duration-300"
               >
                 {/* Card Header */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 px-4 py-2.5 border-b border-gray-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-                        <Hash className="w-3.5 h-3.5 text-[#0c9488]" />
+                <div className="bg-gradient-to-r from-[#0c9488]/5 via-white to-[#0c9488]/5 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 px-6 py-4 border-b-2 border-gray-100 dark:border-slate-700">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2.5 bg-gradient-to-br from-[#0c9488] to-[#0a7a70] rounded-xl shadow-lg">
+                        <Hash className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Booking Number</p>
-                        <p className="text-xs font-bold text-gray-900 dark:text-slate-100 font-mono">{booking.booking_number || `#${booking.id.slice(0, 8).toUpperCase()}`}</p>
+                        <p className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Booking ID</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-slate-100 font-mono">{booking.booking_number || `#${booking.id.slice(0, 8).toUpperCase()}`}</p>
                       </div>
                     </div>
-                    <div className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg ${statusConfig.bg} ${statusConfig.text} border ${
-                      booking.status === 'pending' ? 'border-yellow-200 dark:border-yellow-800' :
-                      booking.status === 'confirmed' ? 'border-blue-200 dark:border-blue-800' :
-                      booking.status === 'cancellation_requested' ? 'border-orange-200 dark:border-orange-800' :
-                      booking.status === 'in_progress' ? 'border-purple-200 dark:border-purple-800' :
-                      booking.status === 'completed' ? 'border-green-200 dark:border-green-800' :
-                      booking.status === 'cancelled' ? 'border-red-200 dark:border-red-800' :
-                      booking.status === 'disputed' ? 'border-orange-200 dark:border-orange-800' :
-                      'border-gray-200 dark:border-gray-700'
+                    <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl ${statusConfig.bg} ${statusConfig.text} border-2 shadow-sm ${
+                      booking.status === 'pending' ? 'border-yellow-300 dark:border-yellow-700' :
+                      booking.status === 'confirmed' ? 'border-blue-300 dark:border-blue-700' :
+                      booking.status === 'cancellation_requested' ? 'border-orange-300 dark:border-orange-700' :
+                      booking.status === 'in_progress' ? 'border-purple-300 dark:border-purple-700' :
+                      booking.status === 'completed' ? 'border-green-300 dark:border-green-700' :
+                      booking.status === 'cancelled' ? 'border-red-300 dark:border-red-700' :
+                      booking.status === 'disputed' ? 'border-orange-300 dark:border-orange-700' :
+                      'border-gray-300 dark:border-gray-600'
                     }`}>
-                      <StatusIcon className={`w-3.5 h-3.5 ${booking.status === 'pending' ? 'animate-spin' : ''}`} />
-                      <span className="text-xs font-semibold">{statusConfig.label}</span>
+                      <StatusIcon className={`w-4 h-4 ${booking.status === 'pending' ? 'animate-spin' : ''}`} />
+                      <span className="text-sm font-bold">{statusConfig.label}</span>
                     </div>
                   </div>
                 </div>
                 
                 {/* Card Body */}
-                <div className="p-4">
-                  <div className="flex flex-col lg:flex-row gap-4">
+                <div className="p-6">
+                  <div className="flex flex-col lg:flex-row gap-6">
                     {/* Product Image */}
                     <div className="flex-shrink-0">
-                      <div className="relative w-full lg:w-36 h-36 rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800 shadow-md group-hover:shadow-xl transition-shadow">
+                      <div className="relative w-full lg:w-44 h-44 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 shadow-lg group-hover:shadow-2xl transition-all duration-300 ring-2 ring-gray-200 dark:ring-slate-600">
                         <img 
                           src={images[0]?.image_url || '/assets/img/placeholder-image.png'} 
                           alt={product?.title || 'Product'} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                         />
                         {images.length > 1 && (
-                          <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
+                          <div className="absolute top-3 right-3 bg-gradient-to-br from-black/70 to-black/50 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-semibold shadow-lg">
                             +{images.length - 1}
                           </div>
                         )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
                     </div>
                     
                     {/* Product Details */}
                     <div className="flex-1 min-w-0">
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {/* Product Title */}
-                        <div>
-                          <h3 className="text-base font-bold text-gray-900 dark:text-slate-100 mb-1 line-clamp-2">
+                        <div className="pb-3 border-b border-gray-100 dark:border-slate-700">
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 mb-2 line-clamp-2 group-hover:text-[#0c9488] transition-colors">
                             {product?.title || 'Product'}
                           </h3>
                           {product?.location && (
-                            <div className="flex items-center space-x-1 text-xs text-gray-600 dark:text-slate-400">
-                              <MapPin className="w-3 h-3" />
-                              <span>{product.location}</span>
+                            <div className="flex items-center space-x-1.5 text-sm text-gray-600 dark:text-slate-400">
+                              <MapPin className="w-4 h-4 text-[#0c9488]" />
+                              <span className="font-medium">{product.location}</span>
                             </div>
                           )}
                         </div>
                         
                         {/* Booking Details Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {/* Start Date */}
-                          <div className="flex items-start space-x-2 p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
-                            <div className="p-1 bg-[#0c9488]/10 rounded-lg">
-                              <Calendar className="w-3.5 h-3.5 text-[#0c9488]" />
+                          <div className="flex items-start space-x-3 p-3 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800 dark:to-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-[#0c9488]/30 transition-colors">
+                            <div className="p-2 bg-gradient-to-br from-[#0c9488]/10 to-[#0c9488]/5 rounded-lg">
+                              <Calendar className="w-4 h-4 text-[#0c9488]" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Start Date</p>
-                              <p className="text-xs font-semibold text-gray-900 dark:text-slate-100">
+                              <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Start Date</p>
+                              <p className="text-sm font-bold text-gray-900 dark:text-slate-100">
                                 {booking.start_date ? formatDate(booking.start_date) : 'N/A'}
                               </p>
                               {startTime && (
-                                <p className="text-[10px] text-[#0c9488] dark:text-[#0c9488] font-medium mt-0.5 flex items-center space-x-1">
-                                  <Clock className="w-2.5 h-2.5" />
+                                <p className="text-xs text-[#0c9488] font-semibold mt-1 flex items-center space-x-1">
+                                  <Clock className="w-3 h-3" />
                                   <span>{startTime}</span>
                                 </p>
                               )}
@@ -506,18 +503,18 @@ const BookingsSection: React.FC<Props> = ({
                           </div>
                           
                           {/* End Date */}
-                          <div className="flex items-start space-x-2 p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
-                            <div className="p-1 bg-[#0c9488]/10 rounded-lg">
-                              <Calendar className="w-3.5 h-3.5 text-[#0c9488]" />
+                          <div className="flex items-start space-x-3 p-3 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800 dark:to-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-[#0c9488]/30 transition-colors">
+                            <div className="p-2 bg-gradient-to-br from-[#0c9488]/10 to-[#0c9488]/5 rounded-lg">
+                              <Calendar className="w-4 h-4 text-[#0c9488]" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">End Date</p>
-                              <p className="text-xs font-semibold text-gray-900 dark:text-slate-100">
+                              <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">End Date</p>
+                              <p className="text-sm font-bold text-gray-900 dark:text-slate-100">
                                 {booking.end_date ? formatDate(booking.end_date) : 'N/A'}
                               </p>
                               {endTime && (
-                                <p className="text-[10px] text-[#0c9488] dark:text-[#0c9488] font-medium mt-0.5 flex items-center space-x-1">
-                                  <Clock className="w-2.5 h-2.5" />
+                                <p className="text-xs text-[#0c9488] font-semibold mt-1 flex items-center space-x-1">
+                                  <Clock className="w-3 h-3" />
                                   <span>{endTime}</span>
                                 </p>
                               )}
@@ -525,13 +522,13 @@ const BookingsSection: React.FC<Props> = ({
                           </div>
                           
                           {/* Duration */}
-                          <div className="flex items-start space-x-2 p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
-                            <div className="p-1 bg-[#0c9488]/10 rounded-lg">
-                              <Clock className="w-3.5 h-3.5 text-[#0c9488]" />
+                          <div className="flex items-start space-x-3 p-3 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800 dark:to-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-[#0c9488]/30 transition-colors">
+                            <div className="p-2 bg-gradient-to-br from-[#0c9488]/10 to-[#0c9488]/5 rounded-lg">
+                              <Clock className="w-4 h-4 text-[#0c9488]" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Duration</p>
-                              <p className="text-xs font-semibold text-gray-900 dark:text-slate-100">
+                              <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Duration</p>
+                              <p className="text-sm font-bold text-gray-900 dark:text-slate-100">
                                 {isHourlyBooking && startTime && endTime ? (
                                   (() => {
                                     try {
@@ -548,7 +545,7 @@ const BookingsSection: React.FC<Props> = ({
                                 )}
                               </p>
                               {isHourlyBooking && (
-                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                                <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold mt-1">
                                   Hourly Rate
                                 </p>
                               )}
@@ -556,13 +553,13 @@ const BookingsSection: React.FC<Props> = ({
                           </div>
                           
                           {/* Payment Status */}
-                          <div className="flex items-start space-x-2 p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
-                            <div className="p-1 bg-[#0c9488]/10 rounded-lg">
-                              <DollarSign className="w-3.5 h-3.5 text-[#0c9488]" />
+                          <div className="flex items-start space-x-3 p-3 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800 dark:to-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-[#0c9488]/30 transition-colors">
+                            <div className="p-2 bg-gradient-to-br from-[#0c9488]/10 to-[#0c9488]/5 rounded-lg">
+                              <DollarSign className="w-4 h-4 text-[#0c9488]" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Payment</p>
-                              <p className={`text-xs font-semibold ${
+                              <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">Payment</p>
+                              <p className={`text-sm font-bold ${
                                 booking.payment_status === 'paid' ? 'text-green-600 dark:text-green-400' :
                                 booking.payment_status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' :
                                 'text-gray-900 dark:text-slate-100'
@@ -574,45 +571,41 @@ const BookingsSection: React.FC<Props> = ({
                         </div>
                         
                         {/* Price Section */}
-                        <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#0c9488]/5 to-[#0c9488]/10 dark:from-[#0c9488]/10 dark:to-[#0c9488]/20 rounded-lg border border-[#0c9488]/20">
-                          <div>
-                            <p className="text-[10px] font-medium text-gray-600 dark:text-slate-400">Total Amount</p>
-                            <p className="text-lg font-bold text-[#0c9488] dark:text-[#0c9488]">
-                              {booking.total_amount ? formatCurrency(booking.total_amount) : 
-                               product?.base_price_per_day ? formatCurrency(totalPrice) : 'N/A'}
-                            </p>
-                            <div className="flex items-center space-x-2 mt-0.5">
-                              {isHourlyBooking && product?.base_price_per_hour ? (
-                                <p className="text-[10px] text-gray-500 dark:text-slate-500">
-                                  {formatCurrency(product.base_price_per_hour)} per hour
-                                </p>
-                              ) : product?.base_price_per_day ? (
-                                <p className="text-[10px] text-gray-500 dark:text-slate-500">
-                                  {formatCurrency(product.base_price_per_day)} per day
-                                </p>
-                              ) : null}
-                              {isHourlyBooking && product?.base_price_per_day && (
-                                <span className="text-[10px] text-gray-400 dark:text-slate-500">•</span>
-                              )}
-                              {isHourlyBooking && product?.base_price_per_day && (
-                                <p className="text-[10px] text-gray-500 dark:text-slate-500">
-                                  {formatCurrency(product.base_price_per_day)} per day
-                                </p>
-                              )}
+                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#0c9488] via-[#0a7a70] to-[#087068] p-4 shadow-lg">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
+                          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
+                          <div className="relative flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-semibold text-white/80 mb-1">Total Amount</p>
+                              <p className="text-2xl font-black text-white">
+                                {booking.total_amount ? formatCurrency(booking.total_amount) : 
+                                 product?.base_price_per_day ? formatCurrency(totalPrice) : 'N/A'}
+                              </p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                {isHourlyBooking && product?.base_price_per_hour ? (
+                                  <p className="text-xs text-white/90 font-medium">
+                                    {formatCurrency(product.base_price_per_hour)} per hour
+                                  </p>
+                                ) : product?.base_price_per_day ? (
+                                  <p className="text-xs text-white/90 font-medium">
+                                    {formatCurrency(product.base_price_per_day)} per day
+                                  </p>
+                                ) : null}
+                              </div>
                             </div>
+                            {String(booking.renter_id || booking.renterId) === String(currentUserId) && (
+                              <div className="flex items-center space-x-2 px-3 py-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                                <User className="w-4 h-4 text-white" />
+                                <span className="text-xs font-bold text-white">Renter</span>
+                              </div>
+                            )}
+                            {String(booking.owner_id || booking.ownerId) === String(currentUserId) && (
+                              <div className="flex items-center space-x-2 px-3 py-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                                <User className="w-4 h-4 text-white" />
+                                <span className="text-xs font-bold text-white">Owner</span>
+                              </div>
+                            )}
                           </div>
-                          {String(booking.renter_id || booking.renterId) === String(currentUserId) && (
-                            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-slate-400">
-                              <User className="w-4 h-4" />
-                              <span>You are the Renter</span>
-                            </div>
-                          )}
-                          {String(booking.owner_id || booking.ownerId) === String(currentUserId) && (
-                            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-slate-400">
-                              <User className="w-4 h-4" />
-                              <span>You are the Owner</span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -625,7 +618,22 @@ const BookingsSection: React.FC<Props> = ({
                     {/* Review Section */}
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => onViewBookingReview(booking.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedBooking(booking);
+                          setShowBookingModal(true);
+                        }}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium text-white bg-[#0c9488] hover:bg-[#0a7a70] border border-[#0c9488] rounded-lg transition-colors shadow-sm"
+                        title="View booking details"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span><TranslatedText text="View Details" /></span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewBookingReview(booking.id);
+                        }}
                         className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                       >
                         <span><TranslatedText text="View Review" /></span>
@@ -654,7 +662,8 @@ const BookingsSection: React.FC<Props> = ({
                           <>
                             {isPending && isRenterView && booking.payment_status === 'pending' && (
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   const ownerConfirmedValue = String(ownerConfirmed || ownerStatus === 'confirmed').toLowerCase();
                                   window.location.href = `/booking/item/${booking.product_id}?bookingId=${booking.id}&step=1&ownerConfirmed=${ownerConfirmedValue}&ownerStatus=${ownerStatus}`;
                                 }}
@@ -671,7 +680,10 @@ const BookingsSection: React.FC<Props> = ({
                               <>
                                 {onConfirmBooking && !isRecentlyConfirmed && (
                                   <button
-                                    onClick={() => onConfirmBooking(booking.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onConfirmBooking(booking.id);
+                                    }}
                                     disabled={isConfirmingThisBooking}
                                     className={`px-3 py-1.5 text-xs font-semibold text-white rounded-lg transition-all duration-200 transform shadow-md hover:shadow-lg ${
                                       isConfirmingThisBooking
@@ -689,7 +701,10 @@ const BookingsSection: React.FC<Props> = ({
                                 )}
                                 {onCancelBooking && !isRecentlyConfirmed && (
                                   <button
-                                    onClick={() => onCancelBooking(booking.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onCancelBooking(booking.id);
+                                    }}
                                     className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
                                   >
                                     <TranslatedText text="Reject" />
@@ -705,7 +720,10 @@ const BookingsSection: React.FC<Props> = ({
                         <>
                           {onCheckIn && (
                             <button
-                              onClick={() => onCheckIn(booking.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onCheckIn(booking.id);
+                              }}
                               className="px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
                             >
                               <TranslatedText text="Check In" />
@@ -717,7 +735,10 @@ const BookingsSection: React.FC<Props> = ({
                             const isBeforeStartDate = now < startDate;
                             return isBeforeStartDate ? (
                               <button
-                                onClick={() => onCancelBooking(booking.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onCancelBooking(booking.id);
+                                }}
                                 className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
                               >
                                 <TranslatedText text="Cancel Booking" />
@@ -729,7 +750,10 @@ const BookingsSection: React.FC<Props> = ({
                       
                       {booking.status === 'in_progress' && onCheckOut && (
                         <button
-                          onClick={() => onCheckOut(booking.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCheckOut(booking.id);
+                          }}
                           className="px-3 py-1.5 text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
                         >
                           <TranslatedText text="Check Out" />
@@ -738,7 +762,10 @@ const BookingsSection: React.FC<Props> = ({
                       
                       {booking.status === 'cancellation_requested' && String(booking.owner_id || booking.ownerId) === String(currentUserId) && onReviewCancellation && (
                         <button
-                          onClick={() => onReviewCancellation(booking.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onReviewCancellation(booking.id);
+                          }}
                           className="px-3 py-1.5 text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
                         >
                           🔍 <TranslatedText text="Review Cancellation" />
