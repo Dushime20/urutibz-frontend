@@ -1,18 +1,20 @@
-import React from 'react';
-import { Wallet } from 'lucide-react';
-import { useTranslation } from '../../../hooks/useTranslation';
+import React, { useState } from 'react';
+import { Wallet, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { TranslatedText } from '../../../components/translated-text';
 
 interface Props {
   dashboardStats: { totalEarnings: number; totalTransactions: number; preferredCurrency?: string };
   loadingWallet: boolean;
   userTransactions: any[];
+  receivedTransactions: any[];
   onViewAll: () => void;
 }
 
-const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTransactions, onViewAll }) => {
-  const { tSync } = useTranslation();
-  console.log(loadingWallet,'all user transactions')
+const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTransactions, receivedTransactions, onViewAll }) => {
+  const [activeTab, setActiveTab] = useState<'payments' | 'received'>('payments');
+
+  const transactionsToDisplay = activeTab === 'payments' ? userTransactions : receivedTransactions;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -47,26 +49,47 @@ const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTra
       </div>
 
       <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:bg-slate-900 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-6">
-          <h4 className="text-lg font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Payment Transactions" /></h4>
-          {userTransactions.length > 0 && <span className="text-sm text-gray-500 dark:text-slate-400">{userTransactions.length} <TranslatedText text="total" /></span>}
+        <div className="flex flex-col space-y-4 mb-6">
+          <div className="flex items-center justify-between">
+            <h4 className="text-lg font-bold text-gray-900 dark:text-slate-100"><TranslatedText text="Wallet Transactions" /></h4>
+          </div>
+
+          <div className="flex space-x-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'payments' ? 'bg-white text-active shadow-sm dark:bg-slate-700 dark:text-active' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
+            >
+              <TranslatedText text="Payment Transactions" />
+            </button>
+            <button
+              onClick={() => setActiveTab('received')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'received' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-emerald-400' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
+            >
+              <TranslatedText text="Received Transactions" />
+            </button>
+          </div>
         </div>
+
         {loadingWallet ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             <span className="ml-3 text-gray-600 dark:text-slate-400"><TranslatedText text="Loading transactions..." /></span>
           </div>
-        ) : userTransactions.length === 0 ? (
+        ) : transactionsToDisplay.length === 0 ? (
           <div className="text-center py-12">
             <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
             <p className="text-gray-500 text-lg font-medium dark:text-slate-400"><TranslatedText text="No transactions found" /></p>
-            <p className="text-gray-500 text-sm dark:text-slate-400"><TranslatedText text="Your payment history will appear here" /></p>
+            <p className="text-gray-500 text-sm dark:text-slate-400">
+              <TranslatedText text={activeTab === 'payments' ? "Your payment history will appear here" : "Earnings from your listings will appear here"} />
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {userTransactions.map((transaction) => (
-
+            {transactionsToDisplay.map((transaction) => (
               <div key={transaction.id} className="flex items-center space-x-4 p-3 sm:p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors dark:border-slate-700 dark:hover:border-slate-600">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'payments' ? 'bg-red-50 text-red-500 dark:bg-red-900/20' : 'bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20'}`}>
+                  {activeTab === 'payments' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <h4 className="font-semibold text-gray-900 capitalize dark:text-slate-100">{transaction.transaction_type?.replace(/_/g, ' ') || <TranslatedText text="Payment" />}</h4>
@@ -76,11 +99,10 @@ const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTra
                   {transaction.metadata?.description && <p className="text-xs text-gray-400 mt-1 dark:text-slate-500">{transaction.metadata.description}</p>}
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-lg text-gray-900 dark:text-slate-100">{parseFloat(transaction.amount).toLocaleString()} {transaction.currency}</p>
+                  <p className={`font-bold text-lg ${activeTab === 'payments' ? 'text-gray-900 dark:text-slate-100' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {activeTab === 'payments' ? '-' : '+'}{parseFloat(transaction.amount).toLocaleString()} {transaction.currency}
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-slate-500"><TranslatedText text="via" /> {transaction.provider}</p>
-                  {transaction.metadata?.is_converted && (
-                    <p className="text-xs text-my-primary"><TranslatedText text="Originally" /> {transaction.metadata.original_amount} {transaction.metadata.original_currency}</p>
-                  )}
                 </div>
               </div>
             ))}

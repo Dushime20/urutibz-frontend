@@ -26,7 +26,7 @@ export async function changePassword(token: string, currentPassword: string, new
     // Extract user ID from JWT token
     const tokenPayload = JSON.parse(atob(token.split('.')[1]));
     const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
-    
+
     if (!userId) {
       return {
         data: null,
@@ -62,7 +62,7 @@ export async function fetchLoginHistory(token: string, page = 1, limit = 20) {
     // Extract user ID from JWT token
     const tokenPayload = JSON.parse(atob(token.split('.')[1]));
     const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
-    
+
     if (!userId) {
       return {
         data: null,
@@ -72,7 +72,7 @@ export async function fetchLoginHistory(token: string, page = 1, limit = 20) {
     }
 
     console.log('Fetching login history for user:', userId, 'page:', page, 'limit:', limit);
-    
+
     const response = await axios.get(`${API_BASE_URL}/users/${userId}/login-history`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -200,7 +200,7 @@ export async function fetchDashboardStats(token: string) {
     // Get user ID from token
     const tokenPayload = JSON.parse(atob(token.split('.')[1]));
     const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
-    
+
     if (!userId) {
       return {
         activeBookings: 0,
@@ -209,7 +209,7 @@ export async function fetchDashboardStats(token: string) {
         wishlistItems: 0
       };
     }
-    
+
     // Get user-specific data from user endpoints
     const [bookingsRes, myProductsRes] = await Promise.all([
       axios.get(`${API_BASE_URL}/bookings`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -236,31 +236,31 @@ export async function fetchDashboardStats(token: string) {
           const u = JSON.parse(cached);
           preferredCurrency = (u?.preferred_currency || u?.preferredCurrency || preferredCurrency).toString().toUpperCase();
         }
-      } catch {}
+      } catch { }
     }
 
     // Calculate user-specific stats
-    const activeBookings = bookings.filter((booking: any) => 
+    const activeBookings = bookings.filter((booking: any) =>
       booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'active'
     ).length;
 
     // Fetch wallet balance using the dedicated API endpoint
     let totalEarnings = 0;
     let potentialEarnings = 0;
-    
+
     try {
       const walletResponse = await axios.get(`${API_BASE_URL}/wallet/balance/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (walletResponse.data?.success && walletResponse.data?.data) {
         const walletData = walletResponse.data.data;
         const walletBalance = parseFloat(walletData.balance) || 0;
         const walletCurrency = walletData.currency || 'USD';
-        
+
         // Convert wallet balance to user's preferred currency (actual earnings)
         totalEarnings = convertCurrency(walletBalance, walletCurrency, preferredCurrency);
-        
+
         // Calculate potential earnings from debug info (including pending bookings)
         if (walletData.debug?.all_booking_statuses) {
           const allBookings = walletData.debug.all_booking_statuses;
@@ -268,17 +268,17 @@ export async function fetchDashboardStats(token: string) {
             const amount = parseFloat(booking.amount) || 0;
             return sum + amount;
           }, 0);
-          
+
           // Convert potential earnings to preferred currency
           potentialEarnings = convertCurrency(totalPotentialAmount, walletCurrency, preferredCurrency);
         }
       }
     } catch (walletError) {
       // Fallback to transaction-based calculation
-      const completedTransactions = transactions.filter((transaction: any) => 
+      const completedTransactions = transactions.filter((transaction: any) =>
         transaction.status === 'completed'
       );
-      
+
       totalEarnings = completedTransactions
         .reduce((sum: number, transaction: any) => {
           const amount = parseFloat(transaction.amount) || 0;
@@ -289,10 +289,10 @@ export async function fetchDashboardStats(token: string) {
     }
 
     // Calculate transaction volume from completed transactions only
-    const completedTransactions = transactions.filter((transaction: any) => 
+    const completedTransactions = transactions.filter((transaction: any) =>
       transaction.status === 'completed'
     );
-    
+
     const totalTransactions = completedTransactions
       .reduce((sum: number, transaction: any) => {
         const amount = parseFloat(transaction.amount) || 0;
@@ -302,7 +302,7 @@ export async function fetchDashboardStats(token: string) {
       }, 0);
 
     // Count user's active products as wishlist proxy
-    const wishlistItems = myProducts.filter((product: any) => 
+    const wishlistItems = myProducts.filter((product: any) =>
       product.status === 'active' || product.status === 'available'
     ).length;
 
@@ -318,7 +318,7 @@ export async function fetchDashboardStats(token: string) {
     return userStats;
   } catch (error) {
     console.error('Error fetching user dashboard stats:', error);
-    
+
     // Return zeros if everything fails
     return {
       activeBookings: 0,
@@ -374,7 +374,7 @@ export async function createProductPricing(pricingData: any) {
       price_per_day: typeof pricingData?.price_per_day,
     });
     logger.groupEnd();
-  } catch {}
+  } catch { }
   // Build a whitelist payload with only accepted fields
   const safePayload = {
     product_id: String(pricingData?.product_id ?? ''),
@@ -410,7 +410,7 @@ export async function createProductPricing(pricingData: any) {
       logger.error('status:', error?.response?.status);
       logger.error('data:', error?.response?.data);
       logger.groupEnd();
-    } catch {}
+    } catch { }
     throw error;
   }
 }
@@ -418,7 +418,7 @@ export async function createProductPricing(pricingData: any) {
 export async function createProductImage(imageData: any) {
   const token = localStorage.getItem('token');
   const formData = new FormData();
-  
+
   // Append each image file as 'images'
   if (Array.isArray(imageData.images)) {
     for (const file of imageData.images) {
@@ -450,7 +450,7 @@ export async function createProductImage(imageData: any) {
     }
     logger.debug('formData entries:', entries);
     logger.groupEnd();
-  } catch {}
+  } catch { }
 
   try {
     const response = await axios.post(
@@ -470,7 +470,7 @@ export async function createProductImage(imageData: any) {
       logger.error('status:', error?.response?.status);
       logger.error('data:', error?.response?.data);
       logger.groupEnd();
-    } catch {}
+    } catch { }
     throw error;
   }
 }
@@ -553,7 +553,7 @@ export async function fetchProductPricesByProductId(productId: string, options?:
 }
 
 // Convenience: get the active/first price for display (daily rate + currency)
-export async function fetchActiveDailyPrice(productId: string): Promise<{ pricePerDay: number | null; currency: string | null; raw?: any }>{
+export async function fetchActiveDailyPrice(productId: string): Promise<{ pricePerDay: number | null; currency: string | null; raw?: any }> {
   const res = await fetchProductPricesByProductId(productId, { page: 1, limit: 1 });
   if (!res.success || !res.data || res.data.length === 0) {
     return { pricePerDay: null, currency: null };
@@ -573,7 +573,7 @@ export async function updateProduct(productId: string, productData: any) {
     logger.debug('payload keys:', Object.keys(productData || {}));
     logger.debug('payload:', productData);
     logger.groupEnd();
-  } catch {}
+  } catch { }
 
   const response = await axios.put(`${API_BASE_URL}/products/${productId}`, productData, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -585,7 +585,7 @@ export async function updateProduct(productId: string, productData: any) {
     logger.debug('status:', response.status);
     logger.debug('data:', response.data);
     logger.groupEnd();
-  } catch {}
+  } catch { }
 
   return response.data;
 }
@@ -645,13 +645,13 @@ export async function fetchBookingsByRole(role: 'renter' | 'owner', page = 1, li
     const items = payload?.data ?? [];
     const meta = payload
       ? {
-          page: payload.page,
-          limit: payload.limit,
-          total: payload.total,
-          totalPages: payload.totalPages,
-          hasNext: payload.hasNext,
-          hasPrev: payload.hasPrev,
-        }
+        page: payload.page,
+        limit: payload.limit,
+        total: payload.total,
+        totalPages: payload.totalPages,
+        hasNext: payload.hasNext,
+        hasPrev: payload.hasPrev,
+      }
       : {};
     return { data: items, meta };
   } catch (error) {
@@ -687,9 +687,9 @@ export async function confirmBooking(bookingId: string, token?: string | null) {
     return { success: true, data: response.data?.data || response.data };
   } catch (error: any) {
     console.error('Error confirming booking:', error);
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to confirm booking' 
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to confirm booking'
     };
   }
 }
@@ -706,9 +706,9 @@ export async function cancelBooking(bookingId: string, reason?: string, token?: 
     return { success: true, data: response.data?.data || response.data };
   } catch (error: any) {
     console.error('Error cancelling booking:', error);
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to cancel booking' 
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to cancel booking'
     };
   }
 }
@@ -725,9 +725,9 @@ export async function checkInBooking(bookingId: string, token?: string | null) {
     return { success: true, data: response.data?.data || response.data };
   } catch (error: any) {
     console.error('Error checking in booking:', error);
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to check in' 
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to check in'
     };
   }
 }
@@ -744,9 +744,9 @@ export async function checkOutBooking(bookingId: string, token?: string | null) 
     return { success: true, data: response.data?.data || response.data };
   } catch (error: any) {
     console.error('Error checking out booking:', error);
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to check out' 
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to check out'
     };
   }
 }
@@ -764,9 +764,9 @@ export async function requestCancellation(bookingId: string, reason: string, tok
     return { success: true, data: response.data?.data || response.data };
   } catch (error: any) {
     console.error('Error requesting cancellation:', error);
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to request cancellation' 
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to request cancellation'
     };
   }
 }
@@ -783,9 +783,9 @@ export async function reviewCancellation(bookingId: string, action: 'approve' | 
     return { success: true, data: response.data?.data || response.data };
   } catch (error: any) {
     console.error('Error reviewing cancellation:', error);
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to review cancellation' 
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to review cancellation'
     };
   }
 }
@@ -802,9 +802,9 @@ export async function adminCancelBooking(bookingId: string, reason: string, admi
     return { success: true, data: response.data?.data || response.data };
   } catch (error: any) {
     console.error('Error with admin cancel:', error);
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to admin cancel booking' 
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to admin cancel booking'
     };
   }
 }
@@ -821,9 +821,9 @@ export async function processRefund(bookingId: string, refundAmount?: number, ca
     return { success: true, data: response.data?.data || response.data };
   } catch (error: any) {
     console.error('Error processing refund:', error);
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to process refund' 
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to process refund'
     };
   }
 }
@@ -906,7 +906,7 @@ export async function fetchProductReviews(productId: string, token?: string) {
     // Try the primary endpoint first
     const url = `${API_BASE_URL}/review/product/${encodeURIComponent(cleanProductId)}`;
     console.log('Fetching reviews for product:', cleanProductId, 'URL:', url);
-    
+
     const response = await axios.get(url, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
@@ -927,7 +927,7 @@ export async function fetchProductReviews(productId: string, token?: string) {
         message: error.message,
         response: error.response?.data
       });
-      
+
       // If the endpoint doesn't exist, try alternative approach
       if (error.response?.status === 404 || error.code === 'ERR_BAD_REQUEST') {
         console.log('Product reviews endpoint not available, returning empty array');
@@ -961,7 +961,7 @@ export async function fetchUserTransactions(userId: string, token: string) {
     const response = await axios.get(`${API_BASE_URL}/payment-transactions/user/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    
+
     return {
       data: response.data?.data || [],
       count: response.data?.count || 0,
@@ -978,6 +978,29 @@ export async function fetchUserTransactions(userId: string, token: string) {
   }
 }
 
+// Fetch received transactions (where user is receiver/owner)
+export async function fetchReceivedTransactions(userId: string, token: string) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/payment-transactions/received/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    return {
+      data: response.data?.data || [],
+      count: response.data?.count || 0,
+      success: response.data?.success || false
+    };
+  } catch (error) {
+    console.error('Error fetching received transactions:', error);
+    return {
+      data: [],
+      count: 0,
+      success: false,
+      error: error
+    };
+  }
+}
+
 // Fetch user-specific inspections
 export async function fetchUserInspections(userId: string, token: string) {
   try {
@@ -985,7 +1008,7 @@ export async function fetchUserInspections(userId: string, token: string) {
     const response = await axios.get(`${API_BASE_URL}/inspections/user/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    
+
     return {
       data: response.data?.data || [],
       count: response.data?.count || 0,
@@ -998,7 +1021,7 @@ export async function fetchUserInspections(userId: string, token: string) {
         const response = await axios.get(`${API_BASE_URL}/inspections?userId=${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         return {
           data: response.data?.data || [],
           count: response.data?.count || 0,
@@ -1014,7 +1037,7 @@ export async function fetchUserInspections(userId: string, token: string) {
         };
       }
     }
-    
+
     console.error('Error fetching user inspections:', error);
     return {
       data: [],

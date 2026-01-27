@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Star, XCircle, TrendingUp, Package, CheckCircle, LayoutGrid, Calendar, Wallet, User as UserIcon, Menu, Bell } from 'lucide-react';
+import { Star, XCircle, TrendingUp, Package, CheckCircle, LayoutGrid, Calendar, Wallet, Menu, Bell } from 'lucide-react';
 import VerificationBanner from '../../components/verification/VerificationBanner';
 import {
   createProduct,
@@ -14,6 +14,7 @@ import {
   fetchRecentBookings,
   fetchRecentTransactions,
   fetchUserTransactions,
+  fetchReceivedTransactions,
   fetchReviewById,
   fetchReviewByBookingId,
   fetchUserProfile,
@@ -201,6 +202,7 @@ const DashboardPage: React.FC = () => {
   const [loadingBookingReviews, setLoadingBookingReviews] = useState<{ [bookingId: string]: boolean }>({});
   const [bookingReviewCounts, setBookingReviewCounts] = useState<{ [bookingId: string]: number }>({});
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
+  const [receivedTransactions, setReceivedTransactions] = useState<any[]>([]);
   const [loadingWallet, setLoadingWallet] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -516,7 +518,7 @@ const DashboardPage: React.FC = () => {
           return;
         }
 
-        // Decode token to get user ID (or get it from your auth context)
+        // Decode token to get user ID
         const tokenPayload = JSON.parse(atob(token.split('.')[1]));
         const userId = tokenPayload.sub || tokenPayload.userId || tokenPayload.id;
 
@@ -524,11 +526,21 @@ const DashboardPage: React.FC = () => {
           return;
         }
 
-        const transactionData = await fetchUserTransactions(userId, token);
+        // Fetch both sent and received transactions
+        const [sentRes, receivedRes] = await Promise.all([
+          fetchUserTransactions(userId, token),
+          fetchReceivedTransactions(userId, token)
+        ]);
 
-        if (transactionData.success) {
-          setUserTransactions(transactionData.data);
-        } else {
+        if (sentRes.success) {
+          setUserTransactions(sentRes.data);
+        }
+
+        if (receivedRes.success) {
+          setReceivedTransactions(receivedRes.data);
+        }
+
+        if (!sentRes.success && !receivedRes.success) {
           showToast('Failed to load transactions', 'error');
         }
       } catch (error) {
@@ -1512,6 +1524,7 @@ const DashboardPage: React.FC = () => {
                   dashboardStats={dashboardStats}
                   loadingWallet={loadingWallet}
                   userTransactions={userTransactions}
+                  receivedTransactions={receivedTransactions}
                   onViewAll={() => setActiveTab('wallet')}
                 />
               )}
