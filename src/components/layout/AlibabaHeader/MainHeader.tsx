@@ -34,24 +34,16 @@ const MainHeader: React.FC<MainHeaderProps> = ({
         <div className="bg-white dark:bg-gray-800 py-4 px-4 border-b border-gray-100 dark:border-gray-700">
             <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-8">
 
-                {/* Logo */}
-                <Link to="/" className="flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl">
-                           U
-                        </div>
-                        <span className="text-2xl font-black text-gray-900 dark:text-gray-100 hidden lg:block tracking-tighter">
-                            URUTIBIZ<span className="text-teal-600">.COM</span>
-                        </span>
-                    </div>
+                {/* Logo - Always Visible */}
+                <Link to="/" className="flex items-center gap-3 flex-shrink-0">
+<div className="bg-teal-600 font-bold text-white w-8 h-8 rounded-md flex items-center justify-center">
+                    U
+                   </div>
+                    <span className="font-bold text-xl text-teal-600 hidden lg:block whitespace-nowrap">URUTIBUZ</span>
                 </Link>
-
-             
-
-                 {/* Logo */}
                                   
 
-                {/* Search Bar - Center */}
+                {/* Search Bar - Visible on All Devices */}
                 <div className="flex-1 max-w-[800px]">
                     <SearchBar
                         q={q}
@@ -69,8 +61,8 @@ const MainHeader: React.FC<MainHeaderProps> = ({
                     />
                 </div>
 
-                {/* User Actions - Right */}
-                <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
+                {/* User Actions - Hidden on Mobile, Visible on Desktop */}
+                <div className="hidden md:flex items-center gap-4 lg:gap-8 flex-shrink-0">
 
 
                     {/* Cart */}
@@ -99,8 +91,8 @@ const MainHeader: React.FC<MainHeaderProps> = ({
 
                 </div>
 
-                {/* Mobile Menu Icon */}
-                <button onClick={onOpenMenu} className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                {/* Mobile Menu Icon - Hidden */}
+                <button onClick={onOpenMenu} className="hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
                     <Menu className="w-7 h-7 text-gray-700 dark:text-gray-200" />
                 </button>
 

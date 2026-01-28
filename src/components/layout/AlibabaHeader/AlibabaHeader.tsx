@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { X, ChevronRight, LogOut, User as UserIcon, MessageCircle, ClipboardList, Package } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
 import axios from '../../../lib/http';
@@ -9,9 +8,12 @@ import { fetchAvailableProducts } from '../../../pages/admin/service';
 import TopBar from './TopBar';
 import MainHeader from './MainHeader';
 import NavBar from './NavBar';
+import MobileHeader from './MobileHeader';
+import MobileMenuDrawer from './MobileMenuDrawer';
 import CartDrawer from '../../cart/CartDrawer';
 import ImageSearchModal from '../../products/ImageSearchModal';
 import { ImageSearchResult } from '../../../pages/admin/service/imageSearch';
+import { X, UserIcon, Package, ChevronRight, MessageCircle, ClipboardList, LogOut } from 'lucide-react';
 
 export type HeaderCategory = { id: string; label: string };
 
@@ -185,7 +187,7 @@ const AlibabaHeader: React.FC = () => {
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
                     <div className="absolute inset-y-0 left-0 w-[85%] max-w-[320px] bg-white dark:bg-gray-900 shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
 
-                        {/* Drawer Header */}
+                                              {/* Drawer Header */}
                         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 bg-teal-600 rounded flex items-center justify-center text-white font-bold">U</div>
@@ -195,6 +197,7 @@ const AlibabaHeader: React.FC = () => {
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
+
 
                         {/* Drawer Content */}
                         <div className="flex-1 overflow-y-auto py-4">
