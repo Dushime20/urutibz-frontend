@@ -36,6 +36,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import DashboardMobileNav from '../../components/dashboard/DashboardMobileNav';
+import DashboardMobileHeader from '../../components/layout/DashboardMobileHeader';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 const ModeratorDashboardPage: React.FC = () => {
@@ -240,6 +241,14 @@ const ModeratorDashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-28 md:pb-0">
+      {/* Mobile Header - Only visible on small screens */}
+      <DashboardMobileHeader 
+        title="Moderator Console"
+        showSearch={false}
+        showCart={false}
+        onMenuClick={() => setSidebarOpen(true)}
+      />
+
       {/* Professional Sidebar */}
       <div className={`
         fixed top-0 left-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700

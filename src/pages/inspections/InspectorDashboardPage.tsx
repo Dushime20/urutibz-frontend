@@ -71,6 +71,7 @@ import InspectorInspectionDetailsModal from './components/InspectorInspectionDet
 import { useTranslation } from '../../hooks/useTranslation';
 import { TranslatedText } from '../../components/translated-text';
 import DashboardMobileNav from '../../components/dashboard/DashboardMobileNav';
+import DashboardMobileHeader from '../../components/layout/DashboardMobileHeader';
 
 const InspectorDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -796,6 +797,14 @@ const InspectorDashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+      {/* Mobile Header - Only visible on small screens */}
+      <DashboardMobileHeader 
+        title="Inspector Console"
+        showSearch={false}
+        showCart={false}
+        onMenuClick={() => setSidebarOpen(true)}
+      />
+
       {/* Professional Sidebar */}
       <InspectorSidebar 
         activeTab={activeTab}

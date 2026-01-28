@@ -20,7 +20,8 @@ import {
   Tag,
   ArrowRight,
   Camera,
-  Package
+  Package,
+  ShoppingCart
 } from 'lucide-react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
@@ -42,6 +43,7 @@ import ImageSearchModal from '../products/ImageSearchModal';
 import { ImageSearchResult } from '../../pages/admin/service/imageSearch';
 import CartIcon from '../cart/CartIcon';
 import CartDrawer from '../cart/CartDrawer';
+import LoginSignupModal from '../auth/LoginSignupModal';
 import { parseSearchQuery } from '../../utils/smartSearch';
 
 type HeaderCategory = { id: string; label: string };
@@ -116,6 +118,7 @@ const Header: React.FC = () => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAiMode, setIsAiMode] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
 
 
@@ -950,57 +953,106 @@ const Header: React.FC = () => {
         <div className="relative">
           <div className="w-full px-6 lg:px-20 mx-auto">
             <div className="py-6 lg:py-4 space-y-3 md:space-y-0">
-              {/* Mobile compact header - Only for small mobile devices */}
-              {/* Mobile Header Layout */}
-              <div className="md:hidden flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <Link to="/" className="block w-20 h-20">
+              {/* Improved Mobile Header Layout - Alibaba Style */}
+              <div className="md:hidden">
+                {/* Top Row: Logo, Search, Actions */}
+                <div className="flex items-center justify-between mb-3">
+                  {/* Logo */}
+                  <Link to="/" className="flex items-center gap-2">
                     <img
                       src={
                         settings?.business?.companyLogo ||
                         settings?.platform?.logoUrl ||
-                        '/assets/img/yacht/urutilogo2.png'
+                        '/assets/img/urutibuz-logo.png'
                       }
                       alt={
                         settings?.business?.companyName ||
                         settings?.platform?.siteName ||
-                        'UrutiBz'
+                        'URUTIBUZ'
                       }
-                      className="w-full h-full object-cover"
+                      className="w-8 h-8 object-contain"
                     />
+                    <span className="font-bold text-lg text-teal-600">URUTIBUZ</span>
                   </Link>
 
+                  {/* Right Actions */}
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={openMobileSearch}
-                      className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                      aria-label="Search inventory"
-                    >
-                      <Search className="w-4 h-4" />
-                    </button>
-                    {isAuthenticated && (
-                      <div className="flex items-center gap-3">
+                    {isAuthenticated ? (
+                      <>
                         <CartIcon onClick={() => setIsCartOpen(true)} />
                         <RealtimeNotifications />
-                      </div>
+                        <button
+                          onClick={() => setIsProfileOpen(!isProfileOpen)}
+                          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          {user?.avatar ? (
+                            <img src={user.avatar} alt={user.name} className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <User className="w-5 h-5" />
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowLoginModal(true)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-full text-sm font-medium hover:bg-teal-600 transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>Login</span>
+                      </button>
                     )}
                     <button
                       onClick={toggleDarkMode}
-                      className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-slate-200 hover:text-teal-600 transition-colors"
-                      aria-label="Toggle theme"
+                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                     >
                       {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                     </button>
                     <button
                       onClick={() => setIsMenuOpen(!isMenuOpen)}
-                      className="p-2 rounded-full border border-gray-200 dark:border-gray-700"
-                      aria-label="Toggle menu"
+                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                     >
                       {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
 
+                {/* Search Bar Row */}
+                <div className="mb-3">
+                  <button
+                    onClick={openMobileSearch}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-gray-100 dark:bg-slate-800 rounded-full text-left"
+                  >
+                    <Search className="w-5 h-5 text-gray-400" />
+                    <span className="text-gray-500 dark:text-slate-400 text-sm flex-1">
+                      {isAiMode ? 'AI: camera in Kigali under 30k...' : 'Search for products...'}
+                    </span>
+                    <Camera className="w-5 h-5 text-teal-500" />
+                  </button>
+                </div>
+
+                {/* Quick Categories Row - Horizontal Scroll */}
+                {topCategories.length > 0 && (
+                  <div className="overflow-x-auto scrollbar-hide">
+                    <div className="flex gap-2 pb-2">
+                      <Link
+                        to="/items"
+                        className="flex items-center gap-2 px-3 py-2 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 rounded-full text-sm font-medium whitespace-nowrap border border-teal-200 dark:border-teal-800"
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                        <span>All</span>
+                      </Link>
+                      {topCategories.slice(0, 8).map((cat) => (
+                        <Link
+                          key={cat.id}
+                          to={`/items?category=${encodeURIComponent(cat.id)}`}
+                          className="px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-full text-sm text-gray-700 dark:text-slate-300 hover:border-teal-300 dark:hover:border-teal-600 transition-colors whitespace-nowrap"
+                        >
+                          <TranslatedText text={cat.label} />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="hidden md:grid w-full grid-cols-1 gap-4 md:grid-cols-[auto_1fr_auto] md:items-center md:gap-4 lg:gap-6">
@@ -1113,7 +1165,13 @@ const Header: React.FC = () => {
 
                       <button
                         type="button"
-                        onClick={() => setIsImageSearchOpen(true)}
+                        onClick={() => {
+                          if (!isAuthenticated) {
+                            setShowLoginModal(true);
+                            return;
+                          }
+                          setIsImageSearchOpen(true);
+                        }}
                         className="p-2 text-teal-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors focus:outline-none"
                         aria-label="Search by image"
                         title="Search by image"
@@ -1214,13 +1272,19 @@ const Header: React.FC = () => {
                     </div>
                   ) : (
                     <div className="hidden sm:flex items-center gap-2">
-                      <Link to="/login" className="px-3 md:px-4 py-2 rounded-full border border-gray-200 text-xs md:text-sm font-semibold text-slate-600 hover:border-teal-400 whitespace-nowrap">
+                      <button
+                        onClick={() => setShowLoginModal(true)}
+                        className="px-3 md:px-4 py-2 rounded-full border border-gray-200 text-xs md:text-sm font-semibold text-slate-600 hover:border-teal-400 whitespace-nowrap"
+                      >
                         <TranslatedText text="Log in" />
-                      </Link>
+                      </button>
                       {(settings?.platform?.allowUserRegistration && (settings?.system as any)?.registrationEnabled) && (
-                        <Link to="/register" className="px-3 md:px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-sky-500 text-white text-xs md:text-sm font-semibold shadow-lg hover:opacity-90 whitespace-nowrap">
+                        <button
+                          onClick={() => setShowLoginModal(true)}
+                          className="px-3 md:px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-sky-500 text-white text-xs md:text-sm font-semibold shadow-lg hover:opacity-90 whitespace-nowrap"
+                        >
                           <TranslatedText text="Create account" />
-                        </Link>
+                        </button>
                       )}
                     </div>
                   )}
@@ -1529,6 +1593,15 @@ const Header: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          setShowLoginModal(true);
+                          setIsMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 text-white text-center font-semibold shadow-lg"
+                      >
+                        <TranslatedText text="Sign In / Sign Up" />
+                      </button>
                       <Link
                         to="/login"
                         onClick={() => setIsMenuOpen(false)}
@@ -1540,7 +1613,7 @@ const Header: React.FC = () => {
                         <Link
                           to="/register"
                           onClick={() => setIsMenuOpen(false)}
-                          className="block px-4 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-sky-500 text-white text-center font-semibold shadow-lg"
+                          className="block px-4 py-3 rounded-2xl bg-gray-100 dark:bg-slate-800 text-center text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700"
                         >
                           <TranslatedText text="Create account" />
                         </Link>
@@ -1639,6 +1712,11 @@ const Header: React.FC = () => {
 
                     <button
                       onClick={() => {
+                        if (!isAuthenticated) {
+                          setShowLoginModal(true);
+                          closeMobileSearch();
+                          return;
+                        }
                         setIsImageSearchOpen(true);
                         closeMobileSearch();
                       }}
@@ -1680,6 +1758,15 @@ const Header: React.FC = () => {
 
       {/* Cart Drawer */}
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+      {/* Login/Signup Modal */}
+      <LoginSignupModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => {
+          showToast('Welcome! You can now access all features.', 'success');
+        }}
+      />
     </>
   );
 };

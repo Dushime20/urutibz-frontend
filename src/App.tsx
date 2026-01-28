@@ -139,8 +139,8 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    <Route path="it/:id" element={<ItemDetailsPage />} />
-                    <Route path="alibaba/:id" element={<AlibabaItemDetailsPage />} />
+                    {/* <Route path="it/:id" element={<ItemDetailsPage />} /> */}
+                    <Route path="it/:id" element={<AlibabaItemDetailsPage />} />
 
                     <Route path="demo" element={<DemoPage />} />
                     <Route path="faq" element={<FaqPage />} />

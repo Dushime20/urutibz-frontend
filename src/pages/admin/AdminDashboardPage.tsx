@@ -51,6 +51,7 @@ import RiskManagementPage from '../risk-management/RiskManagementPage';
 import HandoverReturnPage from '../handover-return/HandoverReturnPage';
 import SettingsPage from './SettingsPage';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
+import DashboardMobileHeader from '../../components/layout/DashboardMobileHeader';
 
 import SkeletonPricingStats from './components/SkeletonPricingStats';
 import SkeletonAdminStats from '../../components/ui/SkeletonAdminStats';
@@ -786,6 +787,14 @@ const AdminDashboardPage: React.FC = () => {
 
   return (
     <>
+      {/* Mobile Header - Only visible on small screens */}
+      <DashboardMobileHeader 
+        title="Admin Console"
+        showSearch={false}
+        showCart={false}
+        onMenuClick={handleMenuToggle}
+      />
+
       {/* Admin Header - Hidden on mobile, visible on desktop */}
       <div className="hidden md:block sticky top-0 z-[100]">
         <AdminHeader

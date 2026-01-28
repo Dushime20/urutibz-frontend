@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Star, Heart, ShoppingCart } from 'lucide-react';
 import { TranslatedText } from '../translated-text';
-import AddToCartModal from '../cart/AddToCartModal';
+import AlibabaModal from '../cart/AlibabaModal';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ProductCardProps {
   product: any;
@@ -33,6 +34,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
   const { isInCart } = useCart();
+  const { isAuthenticated } = useAuth();
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -104,8 +106,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   : 'text-gray-700 dark:text-slate-300'
                   }`} />
               </button>
-              {/* Add to Cart Icon */}
-              {pricePerDay > 0 && (
+              {/* Add to Cart Icon - Only show for authenticated users */}
+              {pricePerDay > 0 && isAuthenticated && (
                 <button
                   type="button"
                   aria-label="Add to cart"
@@ -184,7 +186,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </Link>
       {showAddToCartModal && pricePerDay > 0 && typeof document !== 'undefined' && createPortal(
-        <AddToCartModal
+        <AlibabaModal
           isOpen={showAddToCartModal}
           onClose={() => setShowAddToCartModal(false)}
           product={{

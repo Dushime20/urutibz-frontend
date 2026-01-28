@@ -696,7 +696,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <div className="space-y-8 sm:space-y-10">
+      <div className="space-y-8 sm:space-y-10 max-w-9xl mx-auto px-6 lg:px-20">
         {/* Hero Section */}
 
          {/* Products Sections */}

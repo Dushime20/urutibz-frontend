@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { Menu, Store, TreePalm } from 'lucide-react';
 import { User } from '../../../contexts/AuthContext';
 import SearchBar from './AlibabaSearchBar';
 import CartIcon from '../../cart/CartIcon';
@@ -38,13 +38,18 @@ const MainHeader: React.FC<MainHeaderProps> = ({
                 <Link to="/" className="flex-shrink-0">
                     <div className="flex items-center gap-2">
                         <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl">
-                            U
+                           U
                         </div>
                         <span className="text-2xl font-black text-gray-900 dark:text-gray-100 hidden lg:block tracking-tighter">
                             URUTIBIZ<span className="text-teal-600">.COM</span>
                         </span>
                     </div>
                 </Link>
+
+             
+
+                 {/* Logo */}
+                                  
 
                 {/* Search Bar - Center */}
                 <div className="flex-1 max-w-[800px]">

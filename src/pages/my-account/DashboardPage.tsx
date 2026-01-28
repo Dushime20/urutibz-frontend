@@ -33,6 +33,7 @@ import MyAccountSidebar from './components/MyAccountSidebar';
 import OverviewSection from './components/OverviewSection';
 import SkeletonMyAccountOverview from '../../components/ui/SkeletonMyAccountOverview';
 import DashboardMobileNav from '../../components/dashboard/DashboardMobileNav';
+import DashboardMobileHeader from '../../components/layout/DashboardMobileHeader';
 import BookingsSection from './components/BookingsSection';
 import CancelBookingModal from './components/CancelBookingModal';
 import ReviewCancellationModal from './components/ReviewCancellationModal';
@@ -1243,6 +1244,14 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
+      {/* Mobile Header - Only visible on small screens */}
+      <DashboardMobileHeader 
+        title="My Account"
+        showSearch={false}
+        showCart={true}
+        onMenuClick={() => setSidebarOpen(true)}
+      />
+
       {/* Top Navigation Bar - Hidden on mobile, visible on desktop */}
       <div className={`hidden md:block lg:sticky lg:top-0 z-50 backdrop-blur-xl border-b border-gray-200 bg-white dark:bg-slate-900 dark:border-slate-700 transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <div className="flex h-16">

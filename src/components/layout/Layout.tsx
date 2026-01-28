@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AlibabaHeader from './AlibabaHeader';
 import Footer from './Footer';
+import BottomNav from './BottomNav';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 
 const Layout: React.FC = () => {
@@ -16,7 +17,7 @@ const Layout: React.FC = () => {
         </div>
       )}
       {!isAdmin && <AlibabaHeader />}
-      <main className="flex-1 relative">
+      <main className="flex-1 relative pb-16 md:pb-0">
         <Outlet />
         {(settings?.system?.maintenanceMode || settings?.notifications?.systemMaintenance?.enabled) && !isAdmin && (
           <div className="absolute inset-0 z-30 bg-black/40 backdrop-blur-sm flex items-center justify-center">
@@ -29,6 +30,7 @@ const Layout: React.FC = () => {
         )}
       </main>
       {!isAdmin && <Footer />}
+      {!isAdmin && <BottomNav />}
     </div>
   );
 };

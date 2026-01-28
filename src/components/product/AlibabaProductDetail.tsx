@@ -11,7 +11,11 @@ import {
   Truck, 
   Plus,
   Minus,
-  CheckCircle
+  CheckCircle,
+  Menu,
+  Search,
+  User,
+  ShoppingCart
 } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,6 +25,7 @@ import ProductImageGallery from './ProductImageGallery';
 import SupplierCard from './SupplierCard';
 import ProductTabs from './ProductTabs';
 import RelatedProducts from './RelatedProducts';
+import LoginSignupModal from '../auth/LoginSignupModal';
 import { getProductImagesByProductId } from '../../pages/my-account/service/api';
 import { fetchProductPricesByProductId, fetchUserById } from '../../pages/admin/service';
 
@@ -47,6 +52,7 @@ const AlibabaProductDetail: React.FC = () => {
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
   const [ownerLoading, setOwnerLoading] = useState(false);
   const [productPrices, setProductPrices] = useState<any>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -145,8 +151,7 @@ const AlibabaProductDetail: React.FC = () => {
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
-      showToast('Please log in to add items to cart', 'info');
-      navigate('/login', { state: { from: `/alibaba/${id}` } });
+      setShowLoginModal(true);
       return;
     }
     if (product) {
@@ -179,15 +184,27 @@ const AlibabaProductDetail: React.FC = () => {
   };
 
   const toggleFavorite = () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     setIsFavorite(!isFavorite);
     showToast(isFavorite ? 'Removed from favorites' : 'Added to favorites', 'success');
   };
 
   const handleContactSupplier = () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     showToast('Opening chat with supplier...', 'info');
   };
 
   const handleCallSupplier = () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     showToast('Initiating call with supplier...', 'info');
   };
 
@@ -224,7 +241,7 @@ const AlibabaProductDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900">
       {/* Breadcrumb Navigation - Alibaba Style */}
-      <div className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+      <div className="hidden lg:block bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <nav className="flex items-center space-x-1 text-xs text-gray-600 dark:text-slate-300">
             <Link to="/" className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors">Home</Link>
@@ -238,36 +255,36 @@ const AlibabaProductDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
         {/* Product Header Section - Alibaba Style */}
         <motion.div 
-          className="mb-6"
+          className="mb-4 lg:mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4">
             <div className="flex-1">
-              <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-white mb-3 leading-tight">{product.title || product.name}</h1>
-              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-slate-300 mb-2">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-white mb-2 lg:mb-3 leading-tight">{product.title || product.name}</h1>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-slate-300 mb-2">
                 <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">{product.average_rating || '0.0'}</span>
                   <span className="text-gray-500 dark:text-slate-400">({product.review_count || 0} Reviews)</span>
                 </div>
-                <span className="text-gray-400 dark:text-slate-500">|</span>
+                <span className="text-gray-400 dark:text-slate-500 hidden sm:inline">|</span>
                 <span className="text-gray-600 dark:text-slate-300">{product.view_count || 0} Views</span>
-                <span className="text-gray-400 dark:text-slate-500">|</span>
+                <span className="text-gray-400 dark:text-slate-500 hidden sm:inline">|</span>
                 <div className="flex items-center space-x-1">
-                  <MapPin className="w-4 h-4" />
+                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>{product.district || product.sector || product.address_line || 'Rwanda'}</span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-2 mt-2 lg:mt-0">
+            <div className="flex items-center space-x-2 mt-2 lg:mt-0 w-full lg:w-auto">
               <motion.button
                 onClick={toggleFavorite}
-                className={`flex items-center space-x-1 px-3 py-1.5 text-sm border rounded transition-colors ${
+                className={`flex items-center space-x-1 px-3 py-1.5 text-xs sm:text-sm border rounded transition-colors flex-1 lg:flex-none justify-center ${
                   isFavorite 
                     ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400' 
                     : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-teal-300 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400'
@@ -275,16 +292,16 @@ const AlibabaProductDetail: React.FC = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${isFavorite ? 'fill-current' : ''}`} />
                 <span>Favorite</span>
               </motion.button>
               <motion.button
                 onClick={handleShare}
-                className="flex items-center space-x-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
+                className="flex items-center space-x-1 px-3 py-1.5 text-xs sm:text-sm border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors flex-1 lg:flex-none justify-center"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Share</span>
               </motion.button>
             </div>
@@ -292,12 +309,12 @@ const AlibabaProductDetail: React.FC = () => {
         </motion.div>
 
         {/* Main Product Section - 3 Column Layout like your ItemDetailsPage */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 xl:gap-8">
           {/* Left Column - Images and Details (2/3 width) */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {/* Image Gallery */}
             <motion.div 
-              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4"
+              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 lg:p-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
@@ -326,28 +343,28 @@ const AlibabaProductDetail: React.FC = () => {
 
           {/* Right Column - Pricing & Supplier (1/3 width) */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8 space-y-4">
+            <div className="lg:sticky lg:top-8 space-y-3 lg:space-y-4">
               {/* Price & Basic Info */}
               <motion.div 
-                className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-6"
+                className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4 lg:p-6"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
               >
                 {/* Price Section */}
-                <div className="mb-6">
+                <div className="mb-4 lg:mb-6">
                   <div className="flex items-baseline space-x-2 mb-2">
-                    <span className="text-3xl font-bold text-red-600">
+                    <span className="text-2xl lg:text-3xl font-bold text-red-600">
                       {currency} {formatPrice(price)}
                     </span>
                     <span className="text-gray-500 dark:text-slate-400 text-sm">/ day</span>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300 mb-4">
+                  <div className="text-sm text-gray-600 dark:text-slate-300 mb-3 lg:mb-4">
                     <span className="font-medium">MOQ:</span> 1 day
                   </div>
                   
                   {/* Price Range Table */}
-                  <div className="border border-gray-200 dark:border-slate-600 rounded text-sm mb-6">
+                  <div className="border border-gray-200 dark:border-slate-600 rounded text-sm mb-4 lg:mb-6">
                     <div className="bg-gray-50 dark:bg-slate-800 px-3 py-2 border-b border-gray-200 dark:border-slate-600 font-medium text-gray-700 dark:text-slate-300">
                       Rental Duration Pricing
                     </div>
@@ -373,13 +390,13 @@ const AlibabaProductDetail: React.FC = () => {
                 </div>
 
                 {/* Quantity & Actions */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
+                <div className="space-y-3 lg:space-y-4">
+                  <div className="flex items-center space-x-3 lg:space-x-4">
                     <span className="text-sm font-medium text-gray-700 dark:text-slate-300 min-w-[60px]">Days:</span>
                     <div className="flex items-center border border-gray-300 dark:border-slate-600 rounded">
                       <motion.button
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-r border-gray-300 dark:border-slate-600"
+                        className="px-2 lg:px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-r border-gray-300 dark:border-slate-600"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -389,11 +406,11 @@ const AlibabaProductDetail: React.FC = () => {
                         type="number" 
                         value={quantity}
                         onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-16 px-2 py-1 text-center border-0 focus:outline-none bg-transparent dark:text-white"
+                        className="w-12 lg:w-16 px-2 py-1 text-center border-0 focus:outline-none bg-transparent dark:text-white text-sm"
                       />
                       <motion.button
                         onClick={() => setQuantity(quantity + 1)}
-                        className="px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-l border-gray-300 dark:border-slate-600"
+                        className="px-2 lg:px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-l border-gray-300 dark:border-slate-600"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -408,7 +425,7 @@ const AlibabaProductDetail: React.FC = () => {
                     <motion.button
                       onClick={handleAddToCart}
                       disabled={isInCart(product.id)}
-                      className="w-full bg-teal-500 hover:bg-teal-600 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded transition-colors text-sm"
+                      className="w-full bg-teal-500 hover:bg-teal-600 disabled:bg-gray-400 text-white font-medium py-2.5 lg:py-3 px-4 rounded transition-colors text-sm"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -416,7 +433,7 @@ const AlibabaProductDetail: React.FC = () => {
                     </motion.button>
                     <motion.button 
                       onClick={handleContactSupplier}
-                      className="w-full border border-teal-500 text-teal-500 hover:bg-teal-50 font-medium py-3 px-4 rounded transition-colors text-sm"
+                      className="w-full border border-teal-500 text-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 font-medium py-2.5 lg:py-3 px-4 rounded transition-colors text-sm"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -426,29 +443,29 @@ const AlibabaProductDetail: React.FC = () => {
                 </div>
 
                 {/* Trust Badges */}
-                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-600">
+                <div className="mt-4 lg:mt-6 pt-4 border-t border-gray-200 dark:border-slate-600">
                   <div className="grid grid-cols-1 gap-2 text-xs text-gray-600 dark:text-slate-300">
                     {product.is_featured && (
                       <div className="flex items-center space-x-2">
-                        <Shield className="w-4 h-4 text-green-600" />
+                        <Shield className="w-4 h-4 text-green-600 flex-shrink-0" />
                         <span>Featured Product</span>
                       </div>
                     )}
                     {product.delivery_available && (
                       <div className="flex items-center space-x-2">
-                        <Truck className="w-4 h-4 text-blue-600" />
+                        <Truck className="w-4 h-4 text-blue-600 flex-shrink-0" />
                         <span>Delivery available</span>
                       </div>
                     )}
                     {product.pickup_available && (
                       <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
                         <span>Pickup available</span>
                       </div>
                     )}
                     {securityDeposit > 0 && (
                       <div className="flex items-center space-x-2">
-                        <Shield className="w-4 h-4 text-teal-600" />
+                        <Shield className="w-4 h-4 text-teal-600 flex-shrink-0" />
                         <span>Security deposit: {currency} {formatPrice(securityDeposit, 0)}</span>
                       </div>
                     )}
@@ -515,13 +532,13 @@ const AlibabaProductDetail: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.5 }}
-          className="mt-12"
+          className="mt-8 lg:mt-12"
         >
           <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">You May Also Like</h3>
+            <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">You May Also Like</h3>
             </div>
-            <div className="p-6">
+            <div className="p-4 lg:p-6">
               <RelatedProducts
                 currentProductId={product.id}
                 categoryId={product.category_id}
@@ -531,6 +548,15 @@ const AlibabaProductDetail: React.FC = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Login/Signup Modal */}
+      <LoginSignupModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => {
+          showToast('Welcome! You can now continue with your rental.', 'success');
+        }}
+      />
     </div>
   );
 };
