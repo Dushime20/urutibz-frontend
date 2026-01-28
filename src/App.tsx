@@ -28,6 +28,7 @@ const FaqPage = lazy(() => import('./pages/FaqPage'));
 const CreateListingPage = lazy(() => import('./pages/CreateListingPage'));
 const ItemSearchPage = lazy(() => import('./pages/ItemSearchPage'));
 const ItemDetailsPage = lazy(() => import('./pages/ItemDetailsPage'));
+const AlibabaItemDetailsPage = lazy(() => import('./pages/AlibabaItemDetailsPage'));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
 const SuppliersPage = lazy(() => import('./pages/SuppliersPage'));
 const EnterprisePage = lazy(() => import('./pages/EnterprisePage'));
@@ -139,6 +140,7 @@ function App() {
                     } />
 
                     <Route path="it/:id" element={<ItemDetailsPage />} />
+                    <Route path="alibaba/:id" element={<AlibabaItemDetailsPage />} />
 
                     <Route path="demo" element={<DemoPage />} />
                     <Route path="faq" element={<FaqPage />} />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import Header from './Header';
+import AlibabaHeader from './AlibabaHeader';
 import Footer from './Footer';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
 
@@ -15,7 +15,7 @@ const Layout: React.FC = () => {
           {settings?.notifications?.systemMaintenance?.message || 'System is in maintenance mode. Some features may be unavailable.'}
         </div>
       )}
-      {!isAdmin && <Header />}
+      {!isAdmin && <AlibabaHeader />}
       <main className="flex-1 relative">
         <Outlet />
         {(settings?.system?.maintenanceMode || settings?.notifications?.systemMaintenance?.enabled) && !isAdmin && (
