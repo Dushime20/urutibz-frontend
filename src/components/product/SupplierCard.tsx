@@ -69,7 +69,7 @@ const SupplierCard: React.FC<SupplierCardProps> = ({
               }}
             />
           ) : null}
-          <div className={`${avatar ? 'hidden' : ''} w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+          <div className={`${avatar ? 'hidden' : ''} w-12 h-12 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-bold text-lg`}>
             {supplierInitial}
           </div>
           {isVerified && (

@@ -26,6 +26,7 @@ import SupplierCard from './SupplierCard';
 import ProductTabs from './ProductTabs';
 import RelatedProducts from './RelatedProducts';
 import LoginSignupModal from '../auth/LoginSignupModal';
+import MessagingModal from '../messaging/MessagingModal';
 import { getProductImagesByProductId } from '../../pages/my-account/service/api';
 import { fetchProductPricesByProductId, fetchUserById } from '../../pages/admin/service';
 
@@ -53,6 +54,8 @@ const AlibabaProductDetail: React.FC = () => {
   const [ownerLoading, setOwnerLoading] = useState(false);
   const [productPrices, setProductPrices] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMessagingModal, setShowMessagingModal] = useState(false);
+  const [showStickyAddToCart, setShowStickyAddToCart] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -145,6 +148,18 @@ const AlibabaProductDetail: React.FC = () => {
     fetchPrices();
   }, [product?.id]);
 
+  // Sticky Add to Cart - Show when scrolling down
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const shouldShow = scrollY > 400; // Show after scrolling 400px
+      setShowStickyAddToCart(shouldShow);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleImageSelect = (image: string, index: number) => {
     setSelectedImageIndex(index);
   };
@@ -197,7 +212,7 @@ const AlibabaProductDetail: React.FC = () => {
       setShowLoginModal(true);
       return;
     }
-    showToast('Opening chat with supplier...', 'info');
+    setShowMessagingModal(true);
   };
 
   const handleCallSupplier = () => {
@@ -205,7 +220,29 @@ const AlibabaProductDetail: React.FC = () => {
       setShowLoginModal(true);
       return;
     }
-    showToast('Initiating call with supplier...', 'info');
+
+    if (!ownerInfo?.phone) {
+      showToast('Owner phone number not available', 'error');
+      return;
+    }
+
+    // Clean phone number (remove any non-digit characters except +)
+    const cleanPhone = ownerInfo.phone.replace(/[^\d+]/g, '');
+    
+    // Create professional WhatsApp message
+    const productName = product?.title || product?.name || 'Product';
+    const message = `Hello! I'm interested in renting your "${productName}" listed on URUTIBUZ. Could you please provide more details about availability and rental terms? Thank you!`;
+    
+    // Encode message for URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Create WhatsApp URL
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+    
+    // Open WhatsApp in new tab
+    window.open(whatsappUrl, '_blank');
+    
+    showToast('Redirecting to WhatsApp...', 'success');
   };
 
   const handleTabChange = (tab: 'overview' | 'specifications' | 'reviews' | 'shipping' | 'faq') => {
@@ -343,137 +380,139 @@ const AlibabaProductDetail: React.FC = () => {
 
           {/* Right Column - Pricing & Supplier (1/3 width) */}
           <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-8 space-y-3 lg:space-y-4">
-              {/* Price & Basic Info */}
-              <motion.div 
-                className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4 lg:p-6"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-              >
-                {/* Price Section */}
-                <div className="mb-4 lg:mb-6">
-                  <div className="flex items-baseline space-x-2 mb-2">
-                    <span className="text-2xl lg:text-3xl font-bold text-red-600">
-                      {currency} {formatPrice(price)}
-                    </span>
-                    <span className="text-gray-500 dark:text-slate-400 text-sm">/ day</span>
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300 mb-3 lg:mb-4">
-                    <span className="font-medium">MOQ:</span> 1 day
-                  </div>
-                  
-                  {/* Price Range Table */}
-                  <div className="border border-gray-200 dark:border-slate-600 rounded text-sm mb-4 lg:mb-6">
-                    <div className="bg-gray-50 dark:bg-slate-800 px-3 py-2 border-b border-gray-200 dark:border-slate-600 font-medium text-gray-700 dark:text-slate-300">
-                      Rental Duration Pricing
+            <div className="space-y-3 lg:space-y-4">
+              {/* Sticky Pricing Section Only - Always visible */}
+              <div className="lg:sticky lg:top-8">
+                <motion.div 
+                  className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4 lg:p-6"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  {/* Price Section */}
+                  <div className="mb-4 lg:mb-6">
+                    <div className="flex items-baseline space-x-2 mb-2">
+                      <span className="text-2xl lg:text-3xl font-bold text-red-600">
+                        {currency} {formatPrice(price)}
+                      </span>
+                      <span className="text-gray-500 dark:text-slate-400 text-sm">/ day</span>
                     </div>
-                    <div className="divide-y divide-gray-200 dark:divide-slate-600">
-                      <div className="flex justify-between px-3 py-2">
-                        <span className="text-gray-600 dark:text-slate-300">1-6 days</span>
-                        <span className="font-medium dark:text-white">{currency} {formatPrice(price)}/day</span>
+                    <div className="text-sm text-gray-600 dark:text-slate-300 mb-3 lg:mb-4">
+                      <span className="font-medium">MOQ:</span> 1 day
+                    </div>
+                    
+                    {/* Price Range Table */}
+                    <div className="border border-gray-200 dark:border-slate-600 rounded text-sm mb-4 lg:mb-6">
+                      <div className="bg-gray-50 dark:bg-slate-800 px-3 py-2 border-b border-gray-200 dark:border-slate-600 font-medium text-gray-700 dark:text-slate-300">
+                        Rental Duration Pricing
                       </div>
-                      {productPrices?.price_per_week && !isNaN(Number(productPrices.price_per_week)) && (
+                      <div className="divide-y divide-gray-200 dark:divide-slate-600">
                         <div className="flex justify-between px-3 py-2">
-                          <span className="text-gray-600 dark:text-slate-300">7+ days (weekly)</span>
-                          <span className="font-medium dark:text-white">{currency} {formatPrice(Number(productPrices.price_per_week) / 7)}/day</span>
+                          <span className="text-gray-600 dark:text-slate-300">1-6 days</span>
+                          <span className="font-medium dark:text-white">{currency} {formatPrice(price)}/day</span>
+                        </div>
+                        {productPrices?.price_per_week && !isNaN(Number(productPrices.price_per_week)) && (
+                          <div className="flex justify-between px-3 py-2">
+                            <span className="text-gray-600 dark:text-slate-300">7+ days (weekly)</span>
+                            <span className="font-medium dark:text-white">{currency} {formatPrice(Number(productPrices.price_per_week) / 7)}/day</span>
+                          </div>
+                        )}
+                        {productPrices?.price_per_month && !isNaN(Number(productPrices.price_per_month)) && (
+                          <div className="flex justify-between px-3 py-2">
+                            <span className="text-gray-600 dark:text-slate-300">30+ days (monthly)</span>
+                            <span className="font-medium dark:text-white">{currency} {formatPrice(Number(productPrices.price_per_month) / 30)}/day</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quantity & Actions */}
+                  <div className="space-y-3 lg:space-y-4">
+                    <div className="flex items-center space-x-3 lg:space-x-4">
+                      <span className="text-sm font-medium text-gray-700 dark:text-slate-300 min-w-[60px]">Days:</span>
+                      <div className="flex items-center border border-gray-300 dark:border-slate-600 rounded">
+                        <motion.button
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          className="px-2 lg:px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-r border-gray-300 dark:border-slate-600"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </motion.button>
+                        <input 
+                          type="number" 
+                          value={quantity}
+                          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-12 lg:w-16 px-2 py-1 text-center border-0 focus:outline-none bg-transparent dark:text-white text-sm"
+                        />
+                        <motion.button
+                          onClick={() => setQuantity(quantity + 1)}
+                          className="px-2 lg:px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-l border-gray-300 dark:border-slate-600"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </motion.button>
+                      </div>
+                      <span className="text-sm text-gray-500 dark:text-slate-400">days rental</span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                      <motion.button
+                        onClick={handleAddToCart}
+                        disabled={isInCart(product.id)}
+                        className="w-full bg-teal-500 hover:bg-teal-600 disabled:bg-gray-400 text-white font-medium py-2.5 lg:py-3 px-4 rounded transition-colors text-sm"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {isInCart(product.id) ? 'In Cart' : 'Add to Cart'}
+                      </motion.button>
+                      <motion.button 
+                        onClick={handleContactSupplier}
+                        className="w-full border border-teal-500 text-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 font-medium py-2.5 lg:py-3 px-4 rounded transition-colors text-sm"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Contact Supplier
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* Trust Badges */}
+                  <div className="mt-4 lg:mt-6 pt-4 border-t border-gray-200 dark:border-slate-600">
+                    <div className="grid grid-cols-1 gap-2 text-xs text-gray-600 dark:text-slate-300">
+                      {product.is_featured && (
+                        <div className="flex items-center space-x-2">
+                          <Shield className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          <span>Featured Product</span>
                         </div>
                       )}
-                      {productPrices?.price_per_month && !isNaN(Number(productPrices.price_per_month)) && (
-                        <div className="flex justify-between px-3 py-2">
-                          <span className="text-gray-600 dark:text-slate-300">30+ days (monthly)</span>
-                          <span className="font-medium dark:text-white">{currency} {formatPrice(Number(productPrices.price_per_month) / 30)}/day</span>
+                      {product.delivery_available && (
+                        <div className="flex items-center space-x-2">
+                          <Truck className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <span>Delivery available</span>
+                        </div>
+                      )}
+                      {product.pickup_available && (
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          <span>Pickup available</span>
+                        </div>
+                      )}
+                      {securityDeposit > 0 && (
+                        <div className="flex items-center space-x-2">
+                          <Shield className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                          <span>Security deposit: {currency} {formatPrice(securityDeposit, 0)}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
+              </div>
 
-                {/* Quantity & Actions */}
-                <div className="space-y-3 lg:space-y-4">
-                  <div className="flex items-center space-x-3 lg:space-x-4">
-                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300 min-w-[60px]">Days:</span>
-                    <div className="flex items-center border border-gray-300 dark:border-slate-600 rounded">
-                      <motion.button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="px-2 lg:px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-r border-gray-300 dark:border-slate-600"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </motion.button>
-                      <input 
-                        type="number" 
-                        value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-12 lg:w-16 px-2 py-1 text-center border-0 focus:outline-none bg-transparent dark:text-white text-sm"
-                      />
-                      <motion.button
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="px-2 lg:px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-l border-gray-300 dark:border-slate-600"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </motion.button>
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-slate-400">days rental</span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="space-y-2">
-                    <motion.button
-                      onClick={handleAddToCart}
-                      disabled={isInCart(product.id)}
-                      className="w-full bg-teal-500 hover:bg-teal-600 disabled:bg-gray-400 text-white font-medium py-2.5 lg:py-3 px-4 rounded transition-colors text-sm"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {isInCart(product.id) ? 'In Cart' : 'Add to Cart'}
-                    </motion.button>
-                    <motion.button 
-                      onClick={handleContactSupplier}
-                      className="w-full border border-teal-500 text-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 font-medium py-2.5 lg:py-3 px-4 rounded transition-colors text-sm"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Contact Supplier
-                    </motion.button>
-                  </div>
-                </div>
-
-                {/* Trust Badges */}
-                <div className="mt-4 lg:mt-6 pt-4 border-t border-gray-200 dark:border-slate-600">
-                  <div className="grid grid-cols-1 gap-2 text-xs text-gray-600 dark:text-slate-300">
-                    {product.is_featured && (
-                      <div className="flex items-center space-x-2">
-                        <Shield className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span>Featured Product</span>
-                      </div>
-                    )}
-                    {product.delivery_available && (
-                      <div className="flex items-center space-x-2">
-                        <Truck className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                        <span>Delivery available</span>
-                      </div>
-                    )}
-                    {product.pickup_available && (
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span>Pickup available</span>
-                      </div>
-                    )}
-                    {securityDeposit > 0 && (
-                      <div className="flex items-center space-x-2">
-                        <Shield className="w-4 h-4 text-teal-600 flex-shrink-0" />
-                        <span>Security deposit: {currency} {formatPrice(securityDeposit, 0)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Supplier Card */}
+              {/* Supplier Card - Not sticky, scrolls normally */}
               {ownerInfo ? (
                 <SupplierCard
                   supplierId={ownerInfo.id}
@@ -549,6 +588,103 @@ const AlibabaProductDetail: React.FC = () => {
         </motion.div>
       </div>
 
+      {/* Sticky Add to Cart Modal - Shows when scrolling */}
+      {showStickyAddToCart && product && (
+        <motion.div
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -100, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 shadow-lg"
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between">
+              {/* Product Info */}
+              <div className="flex items-center space-x-3 flex-1">
+                <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
+                  {images[selectedImageIndex] ? (
+                    <img 
+                      src={images[selectedImageIndex]} 
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {product.title}
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg font-bold text-red-600">
+                      {currency} {formatPrice(price)}
+                    </span>
+                    <span className="text-gray-500 dark:text-slate-400 text-xs">/ day</span>
+                    <span className="text-gray-400 dark:text-slate-500">•</span>
+                    <span className="text-xs text-gray-600 dark:text-slate-300">MOQ: 1 day</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quantity & Add to Cart */}
+              <div className="flex items-center space-x-3 flex-shrink-0">
+                {/* Quantity Selector */}
+                <div className="flex items-center border border-gray-300 dark:border-slate-600 rounded">
+                  <motion.button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="px-2 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-r border-gray-300 dark:border-slate-600"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Minus className="w-3 h-3" />
+                  </motion.button>
+                  <input 
+                    type="number" 
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-12 px-2 py-1 text-center border-0 focus:outline-none bg-transparent dark:text-white text-sm"
+                  />
+                  <motion.button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="px-2 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-l border-gray-300 dark:border-slate-600"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </motion.button>
+                </div>
+
+                {/* Add to Cart Button */}
+                <motion.button
+                  onClick={handleAddToCart}
+                  disabled={isInCart(product.id)}
+                  className="bg-teal-500 hover:bg-teal-600 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded transition-colors text-sm flex items-center space-x-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>{isInCart(product.id) ? 'In Cart' : 'Add to Cart'}</span>
+                </motion.button>
+
+                {/* Contact Supplier Button - Hidden on small screens */}
+                <motion.button 
+                  onClick={handleContactSupplier}
+                  className="hidden sm:flex border border-teal-500 text-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 font-medium py-2 px-4 rounded transition-colors text-sm items-center space-x-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Contact</span>
+                </motion.button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Login/Signup Modal */}
       <LoginSignupModal
         isOpen={showLoginModal}
@@ -557,6 +693,26 @@ const AlibabaProductDetail: React.FC = () => {
           showToast('Welcome! You can now continue with your rental.', 'success');
         }}
       />
+
+      {/* Messaging Modal */}
+      {product && ownerInfo && (
+        <MessagingModal
+          isOpen={showMessagingModal}
+          onClose={() => setShowMessagingModal(false)}
+          productId={product.id}
+          productTitle={product.title || product.name || ''}
+          ownerId={ownerInfo.id}
+          ownerName={ownerInfo.name}
+          ownerAvatar={ownerInfo.avatar}
+          productImage={images[0]}
+          productPrice={productPrices?.price_per_day && productPrices?.currency
+            ? `${productPrices.currency} ${productPrices.price_per_day}/day`
+            : product.base_price_per_day
+              ? `${product.base_price_per_day} ${product.base_currency}/day`
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 };

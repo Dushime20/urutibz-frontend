@@ -4,11 +4,21 @@ import AlibabaHeader from './AlibabaHeader';
 import Footer from './Footer';
 import BottomNav from './BottomNav';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
+import { useAuthReminder } from '../../hooks/useAuthReminder';
+import AuthReminderPopup from '../auth/AuthReminderPopup';
 
 const Layout: React.FC = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
   const { settings } = useAdminSettingsContext();
+  
+  // Global auth reminder for all non-admin pages
+  const { showPopup, closePopup, currentTrigger } = useAuthReminder({
+    interval: 30000,      // Show every 30 seconds after first one
+    maxReminders: 5,      // Max 5 reminders per session
+    autoHide: 8000        // Auto-hide after 8 seconds
+  });
+  
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
       {(settings?.system?.maintenanceMode || settings?.notifications?.systemMaintenance?.enabled) && (
@@ -31,6 +41,16 @@ const Layout: React.FC = () => {
       </main>
       {!isAdmin && <Footer />}
       {!isAdmin && <BottomNav />}
+      
+      {/* Global Auth Reminder - Shows on all non-admin pages */}
+      {!isAdmin && (
+        <AuthReminderPopup
+          isOpen={showPopup}
+          onClose={closePopup}
+          trigger={currentTrigger}
+          autoHideAfter={8}
+        />
+      )}
     </div>
   );
 };

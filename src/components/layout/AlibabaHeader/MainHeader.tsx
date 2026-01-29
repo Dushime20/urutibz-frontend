@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, Store, TreePalm } from 'lucide-react';
+import { Heart, Menu, Store, TreePalm } from 'lucide-react';
 import { User } from '../../../contexts/AuthContext';
 import SearchBar from './AlibabaSearchBar';
 import CartIcon from '../../cart/CartIcon';
@@ -36,7 +36,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({
 
                 {/* Logo - Always Visible */}
                 <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-<div className="bg-teal-600 font-bold text-white w-8 h-8 rounded-md flex items-center justify-center">
+                <div className="bg-teal-600 font-bold text-white w-8 h-8 rounded-md flex items-center justify-center">
                     U
                    </div>
                     <span className="font-bold text-xl text-teal-600 hidden lg:block whitespace-nowrap">URUTIBUZ</span>
@@ -63,13 +63,19 @@ const MainHeader: React.FC<MainHeaderProps> = ({
 
                 {/* User Actions - Hidden on Mobile, Visible on Desktop */}
                 <div className="hidden md:flex items-center gap-4 lg:gap-8 flex-shrink-0">
-
+                      {/* favorite */}
+                    
+                       <Link to={'/favorites'} className='flex flex-col items-center group cursor-pointer relative'> <Heart />
+                        <span className="text-[11px] text-gray-600 dark:text-gray-400 group-hover:text-teal-600 transition-colors mt-0.5">Favorite</span>
+                        </Link>
+               
 
                     {/* Cart */}
                     <div className="flex flex-col items-center group cursor-pointer relative">
                         <CartIcon onClick={() => setIsCartOpen(true)} />
                         <span className="text-[11px] text-gray-600 dark:text-gray-400 group-hover:text-teal-600 transition-colors mt-0.5">Cart</span>
                     </div>
+                   
 
                     {/* User / Login */}
                     {!isAuthenticated ? (
@@ -79,8 +85,40 @@ const MainHeader: React.FC<MainHeaderProps> = ({
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
-                            <span className="font-medium text-gray-800 dark:text-gray-200">Hi, {user?.name || 'User'}</span>
-                            <button onClick={logout} className="hover:text-red-500 font-semibold">Sign Out</button>
+                            {/* Role-based Panel Links */}
+                            {user?.role === 'admin' && (
+                                <Link 
+                                    to="/admin" 
+                                    className="font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+                                >
+                                    Admin Panel
+                                </Link>
+                            )}
+                            {user?.role === 'moderator' && (
+                                <Link 
+                                    to="/moderator" 
+                                    className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                                >
+                                    Moderator Panel
+                                </Link>
+                            )}
+                            {user?.role === 'inspector' && (
+                                <Link 
+                                    to="/inspector" 
+                                    className="font-semibold text-purple-600 hover:text-purple-700 transition-colors"
+                                >
+                                    Inspector Panel
+                                </Link>
+                            )}
+                            {(!user?.role || user?.role === 'user') && (
+                                <Link 
+                                    to="/dashboard" 
+                                    className="font-semibold text-gray-700 dark:text-gray-300 hover:text-teal-600 transition-colors"
+                                >
+                                    Customer Dashboard
+                                </Link>
+                            )}
+                            <button onClick={logout} className="hover:text-red-500 font-semibold transition-colors">Sign Out</button>
                         </div>
                     )}
 

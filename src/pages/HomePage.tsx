@@ -105,6 +105,7 @@ const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  
   const [products, setProducts] = useState<any[]>([]);
   const [productImages, setProductImages] = useState<Record<string, string[]>>({});
   const [itemLocations, setItemLocations] = useState<Record<string, { city: string | null; country: string | null }>>({});
