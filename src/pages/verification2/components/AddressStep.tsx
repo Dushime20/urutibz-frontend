@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapPin, Navigation } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Navigation, Loader2 } from 'lucide-react';
 
 interface AddressStepProps {
   addressForm: any;
@@ -9,6 +9,17 @@ interface AddressStepProps {
 }
 
 const AddressStep: React.FC<AddressStepProps> = ({ addressForm, setAddressForm, onUseCurrentLocation }) => {
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  const handleLocationClick = async () => {
+    setIsGettingLocation(true);
+    try {
+      await onUseCurrentLocation();
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -25,19 +36,45 @@ const AddressStep: React.FC<AddressStepProps> = ({ addressForm, setAddressForm, 
           <option value="male">Male</option>
           <option value="female">Female</option>
         </select>
-        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Province" value={addressForm.province || ''} onChange={e => setAddressForm({...addressForm, province: e.target.value})} />
-        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="District" value={addressForm.district || ''} onChange={e => setAddressForm({...addressForm, district: e.target.value})} />
-        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Sector" value={addressForm.sector || ''} onChange={e => setAddressForm({...addressForm, sector: e.target.value})} />
-        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Cell" value={addressForm.cell || ''} onChange={e => setAddressForm({...addressForm, cell: e.target.value})} />
-        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Village" value={addressForm.village || ''} onChange={e => setAddressForm({...addressForm, village: e.target.value})} />
-        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Street" value={addressForm.address_line || ''} onChange={e => setAddressForm({...addressForm, address_line: e.target.value})} />
-        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Latitude" value={addressForm.location_lat || ''} onChange={e => setAddressForm({...addressForm, location_lat: e.target.value})} />
-        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Longitude" value={addressForm.location_lng || ''} onChange={e => setAddressForm({...addressForm, location_lng: e.target.value})} />
+        
+        {/* Global Address Fields */}
+        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 md:col-span-2" placeholder="Street Address" value={addressForm.street_address || ''} onChange={e => setAddressForm({...addressForm, street_address: e.target.value})} />
+        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="City" value={addressForm.city || ''} onChange={e => setAddressForm({...addressForm, city: e.target.value})} />
+        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="State/Province" value={addressForm.state_province || ''} onChange={e => setAddressForm({...addressForm, state_province: e.target.value})} />
+        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Postal/ZIP Code" value={addressForm.postal_code || ''} onChange={e => setAddressForm({...addressForm, postal_code: e.target.value})} />
+        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Country" value={addressForm.country || ''} onChange={e => setAddressForm({...addressForm, country: e.target.value})} />
+        
+        {/* Optional Location Coordinates */}
+        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Latitude (Optional)" value={addressForm.location_lat || ''} onChange={e => setAddressForm({...addressForm, location_lat: e.target.value})} />
+        <input className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="Longitude (Optional)" value={addressForm.location_lng || ''} onChange={e => setAddressForm({...addressForm, location_lng: e.target.value})} />
       </div>
-      <button type="button" onClick={onUseCurrentLocation} className="w-full px-4 py-2 rounded-md bg-[#01aaa7] text-white hover:bg-[#019c98] flex items-center justify-center gap-2">
-        <Navigation className="w-5 h-5" />
-        Use Current Location
+      
+      <button 
+        type="button" 
+        onClick={handleLocationClick} 
+        disabled={isGettingLocation}
+        className="w-full px-4 py-2 rounded-md bg-[#01aaa7] text-white hover:bg-[#019c98] disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+      >
+        {isGettingLocation ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Getting Location...
+          </>
+        ) : (
+          <>
+            <Navigation className="w-5 h-5" />
+            Use Current Location
+          </>
+        )}
       </button>
+      
+      {/* Location coordinates display */}
+      {(addressForm.location_lat && addressForm.location_lng) && (
+        <div className="text-center text-sm text-gray-600 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
+          <MapPin className="w-4 h-4 inline mr-1" />
+          Location detected: {parseFloat(addressForm.location_lat).toFixed(6)}, {parseFloat(addressForm.location_lng).toFixed(6)}
+        </div>
+      )}
     </div>
   );
 };

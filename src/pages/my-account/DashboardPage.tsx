@@ -597,6 +597,30 @@ const DashboardPage: React.FC = () => {
     fetchListings();
   }, []);
 
+  // Function to refetch products (can be called after creating/updating/deleting)
+  const refetchMyProducts = async () => {
+    setLoadingListings(true);
+    try {
+      const res = await getMyProducts();
+      setMyListings(res || []);
+      // Fetch images for only the first 5 products, with a delay between requests
+      for (const product of (res || []).slice(0, 5)) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 200));
+          const imgRes = await getProductImagesByProductId(product.id);
+          setProductImages(prev => ({ ...prev, [product.id]: imgRes || [] }));
+        } catch (imgErr) {
+          setProductImages(prev => ({ ...prev, [product.id]: [] }));
+        }
+      }
+    } catch (err) {
+      console.error('Error refetching products:', err);
+      setMyListings([]);
+    } finally {
+      setLoadingListings(false);
+    }
+  };
+
   useEffect(() => {
     const fetchBookings = async () => {
       setLoadingBookings(true);
@@ -876,7 +900,9 @@ const DashboardPage: React.FC = () => {
         location: { latitude: '', longitude: '' },
       });
       setShowModal(false);
-      // Optionally refresh listings here
+      
+      // Refetch products to update the UI with the new product
+      await refetchMyProducts();
     } catch (err) {
       showToast('Failed to create listing. Please try again.', 'error');
     } finally {
@@ -1355,18 +1381,7 @@ const DashboardPage: React.FC = () => {
                   setShowProductDetail={setShowProductDetail}
                   setEditProductId={setEditProductId}
                   setShowEditModal={setShowEditModal}
-                  onRefreshListings={async () => {
-                    // Refresh listings after removing from market
-                    try {
-                      setLoadingListings(true);
-                      const res = await getMyProducts();
-                      setMyListings(res || []);
-                    } catch (error) {
-                      console.error('Error refreshing listings:', error);
-                    } finally {
-                      setLoadingListings(false);
-                    }
-                  }}
+                  onRefreshListings={refetchMyProducts}
                 />
               )}
 
@@ -1690,6 +1705,7 @@ const DashboardPage: React.FC = () => {
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
         productId={editProductId || ''}
+        onSuccess={refetchMyProducts}
       />
 
       {/* Review Detail Modal */}

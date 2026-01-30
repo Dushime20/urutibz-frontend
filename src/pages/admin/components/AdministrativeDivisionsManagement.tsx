@@ -374,44 +374,46 @@ export default function AdministrativeDivisionsManagement() {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
         <div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Administrative Divisions</h3>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Manage hierarchical administrative structures and regions
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+          <div className="relative min-w-0 flex-shrink-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search divisions..."
-              className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-64"
+              className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full sm:w-64"
             />
           </div>
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-colors flex items-center"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            Filter
-          </button>
-          <button 
-            onClick={() => { setShowTree(true); loadTree(); }} 
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-colors flex items-center"
-          >
-            <Network className="w-4 h-4 mr-2" />
-            Tree
-          </button>
-          <button 
-            onClick={onCreateOpen} 
-            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl transition-colors flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-colors flex items-center whitespace-nowrap"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Filter
+            </button>
+            <button 
+              onClick={() => { setShowTree(true); loadTree(); }} 
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-colors flex items-center whitespace-nowrap"
+            >
+              <Network className="w-4 h-4 mr-2" />
+              Tree
+            </button>
+            <button 
+              onClick={onCreateOpen} 
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl transition-colors flex items-center whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create
+            </button>
+          </div>
         </div>
       </div>
 

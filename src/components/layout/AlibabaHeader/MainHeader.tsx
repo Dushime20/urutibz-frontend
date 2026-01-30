@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Menu, Store, TreePalm } from 'lucide-react';
+import { Heart, Menu, LayoutDashboard, Shield, UserCheck, Settings } from 'lucide-react';
 import { User } from '../../../contexts/AuthContext';
 import SearchBar from './AlibabaSearchBar';
 import CartIcon from '../../cart/CartIcon';
@@ -75,6 +75,33 @@ const MainHeader: React.FC<MainHeaderProps> = ({
                         <CartIcon onClick={() => setIsCartOpen(true)} />
                         <span className="text-[11px] text-gray-600 dark:text-gray-400 group-hover:text-teal-600 transition-colors mt-0.5">Cart</span>
                     </div>
+
+                    {/* Dashboard - Role Based Icon */}
+                    {isAuthenticated && (
+                        <div className="flex flex-col items-center group cursor-pointer relative">
+                            {user?.role === 'admin' ? (
+                                <Link to="/admin" className="flex flex-col items-center group">
+                                    <Shield className="w-6 h-6 text-gray-600 dark:text-gray-400 group-hover:text-teal-600 transition-colors" />
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-400 group-hover:text-teal-600 transition-colors mt-0.5">Admin</span>
+                                </Link>
+                            ) : user?.role === 'moderator' ? (
+                                <Link to="/moderator" className="flex flex-col items-center group">
+                                    <UserCheck className="w-6 h-6 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 transition-colors" />
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-400 group-hover:text-blue-600 transition-colors mt-0.5">Moderator</span>
+                                </Link>
+                            ) : user?.role === 'inspector' ? (
+                                <Link to="/inspector" className="flex flex-col items-center group">
+                                    <Settings className="w-6 h-6 text-gray-600 dark:text-gray-400 group-hover:text-purple-600 transition-colors" />
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-400 group-hover:text-purple-600 transition-colors mt-0.5">Inspector</span>
+                                </Link>
+                            ) : (
+                                <Link to="/dashboard" className="flex flex-col items-center group">
+                                    <LayoutDashboard className="w-6 h-6 text-gray-600 dark:text-gray-400 group-hover:text-teal-600 transition-colors" />
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-400 group-hover:text-teal-600 transition-colors mt-0.5">Dashboard</span>
+                                </Link>
+                            )}
+                        </div>
+                    )}
                    
 
                     {/* User / Login */}
@@ -85,47 +112,9 @@ const MainHeader: React.FC<MainHeaderProps> = ({
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
-                            {/* Role-based Panel Links */}
-                            {user?.role === 'admin' && (
-                                <Link 
-                                    to="/admin" 
-                                    className="font-semibold text-teal-600 hover:text-teal-700 transition-colors"
-                                >
-                                    Admin Panel
-                                </Link>
-                            )}
-                            {user?.role === 'moderator' && (
-                                <Link 
-                                    to="/moderator" 
-                                    className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                                >
-                                    Moderator Panel
-                                </Link>
-                            )}
-                            {user?.role === 'inspector' && (
-                                <Link 
-                                    to="/inspector" 
-                                    className="font-semibold text-purple-600 hover:text-purple-700 transition-colors"
-                                >
-                                    Inspector Panel
-                                </Link>
-                            )}
-                            {(!user?.role || user?.role === 'user') && (
-                                <Link 
-                                    to="/dashboard" 
-                                    className="font-semibold text-gray-700 dark:text-gray-300 hover:text-teal-600 transition-colors"
-                                >
-                                    Customer Dashboard
-                                </Link>
-                            )}
                             <button onClick={logout} className="hover:text-red-500 font-semibold transition-colors">Sign Out</button>
                         </div>
                     )}
-
-
-
-
-
 
                 </div>
 

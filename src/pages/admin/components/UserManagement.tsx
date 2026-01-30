@@ -467,15 +467,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
         <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100"><TranslatedText text="User Management" /></h3>
-        <div className="flex items-center space-x-3">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
             <TranslatedText text="Total Users" />: {totalUsers} | <TranslatedText text="Showing" />: {filteredUsers.length}
           </span>
           <button
             onClick={() => setShowUserFilters(!showUserFilters)}
-            className={`inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium transition-colors ${
+            className={`inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
               showUserFilters || hasActiveUserFilters
                 ? 'bg-my-primary text-white border-my-primary'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -492,7 +492,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ Button }) => {
           {activeTab === 'users' && (
             <button
               onClick={() => setRegistrationModalOpen(true)}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center"
+              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition-colors flex items-center whitespace-nowrap"
             >
               <Plus className="w-4 h-4 mr-2" />
               <TranslatedText text="Register User" />

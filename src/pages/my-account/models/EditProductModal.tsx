@@ -8,6 +8,7 @@ interface EditProductModalProps {
   open: boolean;
   onClose: () => void;
   productId: string;
+  onSuccess?: () => void; // Callback after successful update
 }
 
 type FormState = {
@@ -38,7 +39,7 @@ type FormState = {
   address_line?: string;
 };
 
-const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, productId }) => {
+const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, productId, onSuccess }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState<Partial<FormState> | null>(null);
   const [images, setImages] = useState<File[]>([]);
@@ -272,6 +273,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
       showToast('Product updated!', 'success');
       onClose();
+      
+      // Call onSuccess callback to refetch products
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err) {
       setError('Failed to update product.');
       showToast('Failed to update product.', 'error');

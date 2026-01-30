@@ -19,6 +19,7 @@ import PhoneStep from './components/PhoneStep';
 import EmailStep from './components/EmailStep';
 import CompletionStep from './components/CompletionStep';
 import AddressStep from './components/AddressStep';
+import LocationPermissionDialog from '../../components/LocationPermissionDialog';
 import { useToast } from '../../contexts/ToastContext';
 import { Link } from 'react-router-dom';
 
@@ -197,6 +198,7 @@ const UrutiBzVerification = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [aiProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [hasAddress, setHasAddress] = useState(false);
   const [selfieRejected, setSelfieRejected] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -235,7 +237,7 @@ const UrutiBzVerification = () => {
       if (userStr) {
         const u = JSON.parse(userStr);
         const has = Boolean(
-          u?.province || u?.address_line || u?.district || u?.sector || u?.cell || u?.village ||
+          u?.street_address || u?.city || u?.state_province || u?.country ||
           (u?.location && (u.location.lat != null && u.location.lng != null))
         );
         setHasAddress(has);
@@ -883,38 +885,118 @@ const UrutiBzVerification = () => {
     lastName: '',
     date_of_birth: '',
     gender: '',
-    province: '',
-    address_line: '',
-    district: '',
-    sector: '',
-    cell: '',
-    village: '',
+    street_address: '',
+    city: '',
+    state_province: '',
+    postal_code: '',
+    country: '',
     location_lat: '',
     location_lng: '',
   });
 
-  const useCurrentLocation = () => {
+  const checkLocationPermission = async () => {
+    if (!navigator.permissions) {
+      return 'unknown';
+    }
+    
+    try {
+      const permission = await navigator.permissions.query({ name: 'geolocation' });
+      return permission.state; // 'granted', 'denied', or 'prompt'
+    } catch (error) {
+      console.warn('Could not check geolocation permission:', error);
+      return 'unknown';
+    }
+  };
+
+  // Force location access with multiple fallback methods
+  const forceLocationAccess = () => {
     if (!navigator.geolocation) {
       showToast('Geolocation is not supported by this browser.', 'error');
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setAddressForm(prev => ({ ...prev, location_lat: String(latitude), location_lng: String(longitude) }));
-        showToast('Location detected', 'success');
-      },
-      () => showToast('Unable to fetch location. Please allow permission.', 'error'),
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+
+    showToast('Forcing location access...', 'info');
+
+    // Method 1: High accuracy, no cache, long timeout
+    const highAccuracyOptions = {
+      enableHighAccuracy: true,
+      timeout: 30000,
+      maximumAge: 0
+    };
+
+    // Method 2: Lower accuracy, shorter timeout as fallback
+    const fallbackOptions = {
+      enableHighAccuracy: false,
+      timeout: 10000,
+      maximumAge: 60000 // 1 minute cache
+    };
+
+    let attemptCount = 0;
+    const maxAttempts = 3;
+
+    const tryGetLocation = (options: PositionOptions, method: string) => {
+      attemptCount++;
+      console.log(`Attempting location access (${method}, attempt ${attemptCount})`);
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          console.log(`Location obtained: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
+          
+          setAddressForm(prev => ({ 
+            ...prev, 
+            location_lat: String(latitude), 
+            location_lng: String(longitude) 
+          }));
+          
+          showToast(`Location detected! Accuracy: ${Math.round(accuracy)}m`, 'success');
+        },
+        (error) => {
+          console.error(`Location error (${method}, attempt ${attemptCount}):`, error);
+          
+          if (error.code === error.PERMISSION_DENIED) {
+            if (attemptCount === 1) {
+              // First attempt denied, show dialog
+              setShowLocationDialog(true);
+            } else {
+              showToast('Location access denied. Please enable location permissions.', 'error');
+            }
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            if (attemptCount < maxAttempts) {
+              // Try with fallback options
+              setTimeout(() => tryGetLocation(fallbackOptions, 'fallback'), 2000);
+              showToast(`Location unavailable, trying alternative method... (${attemptCount}/${maxAttempts})`, 'info');
+            } else {
+              showToast('Unable to determine location. Please check your GPS settings.', 'error');
+            }
+          } else if (error.code === error.TIMEOUT) {
+            if (attemptCount < maxAttempts) {
+              // Retry with same options
+              setTimeout(() => tryGetLocation(options, method), 1000);
+              showToast(`Location timeout, retrying... (${attemptCount}/${maxAttempts})`, 'info');
+            } else {
+              showToast('Location request timed out. Please try again.', 'error');
+            }
+          } else {
+            showToast('Location error. Please try again or enter manually.', 'error');
+          }
+        },
+        options
+      );
+    };
+
+    // Start with high accuracy method
+    tryGetLocation(highAccuracyOptions, 'high-accuracy');
   };
+
+  const useCurrentLocation = forceLocationAccess;
 
   const submitAddress = async () => {
     try {
       // Validate required address fields
       const fieldErrors: Record<string, string> = {};
       const requiredFields: Array<keyof typeof addressForm> = [
-        'firstName', 'lastName', 'province', 'address_line', 'district', 'sector', 'cell', 'village'
+        'firstName', 'lastName', 'street_address', 'city', 'state_province', 'country'
       ];
       requiredFields.forEach((k) => {
         const v = (addressForm as any)[k];
@@ -945,12 +1027,11 @@ const UrutiBzVerification = () => {
         lastName: addressForm.lastName || undefined,
         date_of_birth: addressForm.date_of_birth || undefined,
         gender: addressForm.gender || undefined,
-        province: addressForm.province || undefined,
-        address_line: addressForm.address_line || undefined,
-        district: addressForm.district || undefined,
-        sector: addressForm.sector || undefined,
-        cell: addressForm.cell || undefined,
-        village: addressForm.village || undefined,
+        street_address: addressForm.street_address || undefined,
+        city: addressForm.city || undefined,
+        state_province: addressForm.state_province || undefined,
+        postal_code: addressForm.postal_code || undefined,
+        country: addressForm.country || undefined,
         location: (addressForm.location_lat && addressForm.location_lng)
           ? { lat: Number(addressForm.location_lat), lng: Number(addressForm.location_lng) }
           : undefined,
@@ -1041,7 +1122,7 @@ const UrutiBzVerification = () => {
       addressLine: '',
       city: '',
       country: '',
-      district: '',
+      stateProvince: '',
     });
 
   // When ocrResults are updated, sync to reviewData
@@ -1053,7 +1134,7 @@ const UrutiBzVerification = () => {
         addressLine: (extracted as any).addressLine || '',
         city: (extracted as any).city || '',
         country: extracted.nationality || '',
-        district: (extracted as any).district || '',
+        stateProvince: (extracted as any).stateProvince || '',
       });
     }
   }, [verificationData.ocrResults]);
@@ -1331,6 +1412,12 @@ const UrutiBzVerification = () => {
       {/* Toast notification */}
       {/* Loading message */}
       
+      {/* Location Permission Dialog */}
+      <LocationPermissionDialog
+        isOpen={showLocationDialog}
+        onClose={() => setShowLocationDialog(false)}
+        onRetry={useCurrentLocation}
+      />
     </div>
   );
 };

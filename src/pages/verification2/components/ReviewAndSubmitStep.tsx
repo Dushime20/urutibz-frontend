@@ -6,7 +6,7 @@ interface ReviewAndSubmitStepProps {
     addressLine: string;
     city: string;
     country: string;
-    district: string;
+    stateProvince: string;
   };
   documentImage: string | null;
   selfieImage: string | null;
@@ -68,11 +68,11 @@ const ReviewAndSubmitStep: React.FC<ReviewAndSubmitStepProps> = ({
           />
         </label>
         <label className="block">
-          <span className="font-medium">District</span>
+          <span className="font-medium">State/Province</span>
           <input
             type="text"
-            value={extractedData.district}
-            onChange={e => onChange('district', e.target.value)}
+            value={extractedData.stateProvince}
+            onChange={e => onChange('stateProvince', e.target.value)}
             className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2"
           />
         </label>

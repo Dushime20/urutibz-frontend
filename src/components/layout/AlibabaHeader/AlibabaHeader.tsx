@@ -83,21 +83,73 @@ const AlibabaHeader: React.FC = () => {
 
         const suggests: any[] = [];
 
-        if (query.length >= 10 || /\b(in|at|least|cost|price|rwf|usd)\b/i.test(query)) {
-            suggests.push({ type: 'deep_search', name: `🔍 AI Search: "${query}"`, queryText: query });
+        // Enhanced AI/Deep Search Detection
+        const hasNaturalLanguageKeywords = /\b(in|at|from|near|least|most|cost|price|minimum|maximum|under|over|between|rwf|usd|frw|which|that|where|when|how|what|find|show|get|need|want|looking|search)\b/i.test(query);
+        const hasNumericPrice = /\d+\s*(rwf|usd|frw|k|thousand|million)/i.test(query);
+        const hasLocationKeywords = /\b(kigali|rwanda|nyarugenge|gasabo|kicukiro|musanze|huye|rubavu|muhanga|karongi|rusizi|bugesera|rwamagana|kayonza|kirehe|ngoma|nyagatare|gatsibo|gicumbi|rulindo|gakenke|ngororero|kamonyi|ruhango|nyanza|gisagara|nyamagabe|nyaruguru|burera|rutsiro|nyamasheke)\b/i.test(query);
+        const hasComparisonWords = /\b(best|cheapest|affordable|expensive|quality|top|better|worse|compare|versus|vs)\b/i.test(query);
+        const isQuestion = /^(what|where|when|how|which|who|why)\b/i.test(query);
+        
+        // Trigger AI search for complex queries
+        if (
+            query.length >= 10 || 
+            hasNaturalLanguageKeywords || 
+            hasNumericPrice || 
+            (hasLocationKeywords && query.split(' ').length >= 3) ||
+            hasComparisonWords ||
+            isQuestion
+        ) {
+            suggests.push({ 
+                type: 'deep_search', 
+                name: `🔍 AI Deep Search: "${query}"`, 
+                queryText: query,
+                description: 'Smart search with natural language understanding'
+            });
         }
 
+        // Product matches
         const prodMatches = allProducts
             .filter(p => (p.title || p.name || '').toLowerCase().includes(queryLower))
             .slice(0, 3)
-            .map(p => ({ type: 'product', name: p.title || p.name, id: p.id }));
+            .map(p => ({ 
+                type: 'product', 
+                name: p.title || p.name, 
+                id: p.id,
+                price: p.base_price_per_day || p.price,
+                currency: p.base_currency || p.currency || 'RWF'
+            }));
         suggests.push(...prodMatches);
 
+        // Category matches
         const catMatches = allCategories
             .filter(c => (c.name || '').toLowerCase().includes(queryLower))
             .slice(0, 3)
-            .map(c => ({ type: 'category', name: c.name, id: c.id || c.slug }));
+            .map(c => ({ 
+                type: 'category', 
+                name: c.name, 
+                id: c.id || c.slug,
+                count: c.product_count || 0
+            }));
         suggests.push(...catMatches);
+
+        // Smart suggestions based on query patterns
+        if (hasNumericPrice && !suggests.some(s => s.type === 'deep_search')) {
+            suggests.unshift({ 
+                type: 'deep_search', 
+                name: `💰 Price-based search: "${query}"`, 
+                queryText: query,
+                description: 'Find products within your budget'
+            });
+        }
+
+        if (hasLocationKeywords && !suggests.some(s => s.type === 'deep_search')) {
+            suggests.unshift({ 
+                type: 'deep_search', 
+                name: `📍 Location search: "${query}"`, 
+                queryText: query,
+                description: 'Find products near you'
+            });
+        }
 
         return suggests;
     }, [allProducts, allCategories]);
@@ -115,7 +167,20 @@ const AlibabaHeader: React.FC = () => {
     }, [q, generateSuggestions]);
 
     const handleSearch = (query: string, categoryId: string = 'all') => {
-        const isNaturalLanguage = /\b(in|at|from|near|least|cost|price|minimum|maximum|rwf|usd|which|that)\b/i.test(query);
+        // Enhanced natural language detection
+        const hasNaturalLanguageKeywords = /\b(in|at|from|near|least|most|cost|price|minimum|maximum|under|over|between|rwf|usd|frw|which|that|where|when|how|what|find|show|get|need|want|looking|search)\b/i.test(query);
+        const hasNumericPrice = /\d+\s*(rwf|usd|frw|k|thousand|million)/i.test(query);
+        const hasLocationKeywords = /\b(kigali|rwanda|nyarugenge|gasabo|kicukiro|musanze|huye|rubavu)\b/i.test(query);
+        const hasComparisonWords = /\b(best|cheapest|affordable|expensive|quality|top|better|worse|compare)\b/i.test(query);
+        const isQuestion = /^(what|where|when|how|which|who|why)\b/i.test(query);
+        
+        const isNaturalLanguage = 
+            hasNaturalLanguageKeywords || 
+            hasNumericPrice || 
+            hasLocationKeywords || 
+            hasComparisonWords || 
+            isQuestion ||
+            query.split(' ').length >= 4; // 4+ words likely natural language
 
         if (isAiMode || isNaturalLanguage) {
             const sp = new URLSearchParams();
@@ -236,6 +301,38 @@ const AlibabaHeader: React.FC = () => {
                                     <div className="flex items-center gap-3"><ClipboardList className="w-5 h-5 text-gray-400" /> Orders</div>
                                     <ChevronRight className="w-4 h-4 text-gray-300" />
                                 </Link>
+                                
+                                {/* Dashboard Link - Role Based */}
+                                {isAuthenticated && (
+                                    <>
+                                        <div className="h-[1px] bg-gray-100 dark:bg-gray-800 mx-6 my-2"></div>
+                                        <p className="px-6 text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2">Dashboard</p>
+                                        {user?.role === 'admin' && (
+                                            <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white">
+                                                <div className="flex items-center gap-3"><UserIcon className="w-5 h-5 text-teal-500" /> Admin Panel</div>
+                                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                                            </Link>
+                                        )}
+                                        {user?.role === 'moderator' && (
+                                            <Link to="/moderator" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white">
+                                                <div className="flex items-center gap-3"><UserIcon className="w-5 h-5 text-blue-500" /> Moderator Panel</div>
+                                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                                            </Link>
+                                        )}
+                                        {user?.role === 'inspector' && (
+                                            <Link to="/inspector" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white">
+                                                <div className="flex items-center gap-3"><UserIcon className="w-5 h-5 text-purple-500" /> Inspector Panel</div>
+                                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                                            </Link>
+                                        )}
+                                        {(!user?.role || user?.role === 'user') && (
+                                            <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white">
+                                                <div className="flex items-center gap-3"><UserIcon className="w-5 h-5 text-gray-500" /> My Dashboard</div>
+                                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                                            </Link>
+                                        )}
+                                    </>
+                                )}
                             </div>
 
                             <div className="mt-6 space-y-1">

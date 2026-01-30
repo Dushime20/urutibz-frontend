@@ -1199,14 +1199,14 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
         <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Items Management</h3>
-        <div className="flex items-center space-x-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+          <div className="relative min-w-0 flex-shrink-0">
             <select
               value={itemFilter}
               onChange={(e) => setItemFilter(e.target.value)}
-              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
+              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary w-full sm:w-auto min-w-[140px]"
             >
               <option value="all">All Categories</option>
               {categories.map((category) => (
@@ -1220,17 +1220,17 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             </div>
           </div>
           {/* Status Filter */}
-          <div className="relative">
+          <div className="relative min-w-0 flex-shrink-0">
             <select
               value={(undefined as any)}
               onChange={() => { }}
               className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary hidden"
             />
           </div>
-          <div className="relative">
+          <div className="relative min-w-0 flex-shrink-0">
             <select
               onChange={(e) => (window as any).__setItemStatus?.(e.target.value)}
-              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
+              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary w-full sm:w-auto min-w-[120px]"
               defaultValue="all"
             >
               <option value="all"><TranslatedText text="All Status" /></option>
@@ -1243,11 +1243,11 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             </div>
           </div>
           {/* Availability Filter */}
-          <div className="relative">
+          <div className="relative min-w-0 flex-shrink-0">
             <select
               value={availabilityFilter}
               onChange={(e) => setAvailabilityFilter?.(e.target.value)}
-              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
+              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary w-full sm:w-auto min-w-[160px]"
             >
               <option value="all">All Availability ({products.length})</option>
               <option value="available">Available ({availableCount})</option>
@@ -1258,10 +1258,10 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
             </div>
           </div>
           {/* Sort */}
-          <div className="relative">
+          <div className="relative min-w-0 flex-shrink-0">
             <select
               onChange={(e) => (window as any).__setItemSort?.(e.target.value)}
-              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary"
+              className="appearance-none bg-gray-100 dark:bg-gray-800 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-my-primary w-full sm:w-auto min-w-[100px]"
               defaultValue="newest"
             >
               <option value="newest"><TranslatedText text="Newest" /></option>
@@ -1271,32 +1271,34 @@ const ItemsManagement: React.FC<ItemsManagementProps> = ({
               <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.42l2.904-2.872c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.616l-3.694 3.664c-.436.446-1.144.446-1.58 0L5.516 9.164c-.436-.446-.436-1.17 0-1.616z" /></svg>
             </div>
           </div>
-          <Button
-            onClick={() => {
-              setItemFilter('all');
-              setAvailabilityFilter?.('all');
-              // Reset other filters if available
-            }}
-            className="bg-red-100 hover:bg-red-200 border border-red-200 text-red-700 px-4 py-2 rounded-xl transition-colors flex items-center"
-          >
-            <X className="w-4 h-4 mr-2" />
-            <TranslatedText text="Reset Filters" />
-          </Button>
-          <Button
-            onClick={() => {
-              // Try opening if My Account dashboard is active; else route to My Account with query to auto-open
-              const openListingModal = (window as any).__openNewListingModal;
-              if (typeof openListingModal === 'function') {
-                openListingModal();
-              } else {
-                window.location.href = '/my-account?new-listing=1';
-              }
-            }}
-            className="bg-my-primary hover:bg-my-primary/90 text-white px-6 py-2 rounded-xl transition-colors flex items-center shadow-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            <TranslatedText text="Add Item" />
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={() => {
+                setItemFilter('all');
+                setAvailabilityFilter?.('all');
+                // Reset other filters if available
+              }}
+              className="bg-red-100 hover:bg-red-200 border border-red-200 text-red-700 px-4 py-2 rounded-xl transition-colors flex items-center whitespace-nowrap"
+            >
+              <X className="w-4 h-4 mr-2" />
+              <TranslatedText text="Reset Filters" />
+            </Button>
+            <Button
+              onClick={() => {
+                // Try opening if My Account dashboard is active; else route to My Account with query to auto-open
+                const openListingModal = (window as any).__openNewListingModal;
+                if (typeof openListingModal === 'function') {
+                  openListingModal();
+                } else {
+                  window.location.href = '/my-account?new-listing=1';
+                }
+              }}
+              className="bg-my-primary hover:bg-my-primary/90 text-white px-6 py-2 rounded-xl transition-colors flex items-center shadow-sm whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              <TranslatedText text="Add Item" />
+            </Button>
+          </div>
         </div>
       </div>
       {/* Items Categories Overview */}

@@ -83,7 +83,9 @@ const AlibabaSearchBar: React.FC<SearchBarProps> = ({
                     onChange={(e) => setQ(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onFocus={() => setShowSuggestions(true)}
-                    placeholder={isAiMode ? "Try: camera in Kigali under 30,000 RWF" : "Search products..."}
+                    placeholder={isAiMode 
+                        ? "Try: camera in Kigali under 30,000 RWF or best laptop for students" 
+                        : "Search products by name or keyword..."}
                     className="flex-1 px-4 py-2 text-sm bg-transparent border-none focus:ring-0 text-gray-900 dark:text-gray-100 placeholder-gray-500"
                 />
 
@@ -110,28 +112,66 @@ const AlibabaSearchBar: React.FC<SearchBarProps> = ({
                 <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl shadow-2xl overflow-hidden z-[70]">
                     <div className="p-4">
                         <div className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-3 uppercase tracking-wider px-2">
-                            Suggestions
+                            {isAiMode ? '🤖 AI-Powered Suggestions' : 'Search Suggestions'}
                         </div>
-                        {suggestions.map((s, i) => (
-                            <div
-                                key={i}
-                                className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-2xl cursor-pointer group transition-colors"
-                                onClick={() => onSearch(s.queryText || s.name, s.categoryId || 'all')}
-                            >
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.type === 'deep_search' ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-500'
+                        {suggestions.length > 0 ? (
+                            suggestions.map((s, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-2xl cursor-pointer group transition-colors"
+                                    onClick={() => onSearch(s.queryText || s.name, s.categoryId || 'all')}
+                                >
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                        s.type === 'deep_search' 
+                                            ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-sm' 
+                                            : s.type === 'product'
+                                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                                            : 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
                                     }`}>
-                                    {s.type === 'product' ? <Package className="w-4 h-4" /> :
-                                        s.type === 'category' ? <LayoutGrid className="w-4 h-4" /> :
-                                            <Sparkles className="w-4 h-4" />}
+                                        {s.type === 'product' ? <Package className="w-4 h-4" /> :
+                                            s.type === 'category' ? <LayoutGrid className="w-4 h-4" /> :
+                                                <Sparkles className="w-4 h-4" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{s.name}</div>
+                                        {s.type === 'deep_search' && (
+                                            <div className="text-[11px] text-teal-600 dark:text-teal-400 font-medium">
+                                                {s.description || 'AI-Powered deep search'}
+                                            </div>
+                                        )}
+                                        {s.type === 'product' && s.price && (
+                                            <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                {s.currency} {s.price}/day
+                                            </div>
+                                        )}
+                                        {s.type === 'category' && s.count > 0 && (
+                                            <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                {s.count} products
+                                            </div>
+                                        )}
+                                    </div>
+                                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-teal-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
                                 </div>
-                                <div className="flex-1">
-                                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">{s.name}</div>
-                                    {s.type === 'deep_search' && <div className="text-[11px] text-teal-600/70">AI-Powered deep search</div>}
-                                </div>
-                                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-teal-600 group-hover:translate-x-1 transition-all" />
+                            ))
+                        ) : (
+                            <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+                                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">Start typing to see suggestions</p>
                             </div>
-                        ))}
+                        )}
                     </div>
+                    
+                    {/* AI Mode Tip */}
+                    {isAiMode && (
+                        <div className="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 px-4 py-3 border-t border-teal-100 dark:border-teal-800">
+                            <div className="flex items-start gap-2">
+                                <Sparkles className="w-4 h-4 text-teal-600 dark:text-teal-400 mt-0.5 flex-shrink-0" />
+                                <div className="text-xs text-gray-600 dark:text-gray-300">
+                                    <span className="font-semibold">AI Search Tips:</span> Try natural language like "camera in Kigali under 30k RWF" or "best laptop for students"
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

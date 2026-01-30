@@ -48,6 +48,7 @@ import ModerationDashboardPage from './ModerationDashboardPage';
 import AIAnalyticsDashboard from './components/AIAnalyticsDashboard';
 import InspectionsManagement from './components/InspectionsManagement';
 import RiskManagementPage from '../risk-management/RiskManagementPage';
+import RentalRemindersManagement from './components/RentalRemindersManagement';
 import HandoverReturnPage from '../handover-return/HandoverReturnPage';
 import SettingsPage from './SettingsPage';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
@@ -96,7 +97,7 @@ const AdminDashboardPage: React.FC = () => {
   const { formatCurrency, formatDate, settings } = useAdminSettingsContext();
   const { showToast } = useToast();
   const { tSync, language, setLanguage } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'admin-settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'pricing' | 'reports' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'administrativeDivisions' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'admin-settings' | 'rental-reminders'>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemFilter, setItemFilter] = useState<string>('all');
@@ -805,9 +806,9 @@ const AdminDashboardPage: React.FC = () => {
           onMenuToggle={handleMenuToggle}
         />
       </div>
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Sidebar - Desktop and Mobile */}
-        <div className={`fixed left-0 z-[70] xl:z-auto xl:flex-shrink-0 top-0 bottom-[88px] md:top-0 md:bottom-0 xl:top-16 xl:bottom-0 xl:pt-2 ${!isMobileMenuOpen ? 'pointer-events-none xl:pointer-events-auto' : 'pointer-events-auto'}`}>
+        <div className={`fixed left-0 z-[70] xl:z-auto xl:flex-shrink-0 top-0 bottom-[88px] lg:bottom-0 xl:top-16 xl:bottom-0 xl:pt-2 ${!isMobileMenuOpen ? 'pointer-events-none xl:pointer-events-auto' : 'pointer-events-auto'}`}>
           <AdminSidebar
             activeTab={activeTab}
             setActiveTab={(tab: any) => { 
@@ -1450,6 +1451,8 @@ const AdminDashboardPage: React.FC = () => {
                     return <RiskManagementPage />;
                   case 'handover-return':
                     return <HandoverReturnPage />;
+                  case 'rental-reminders':
+                    return <RentalRemindersManagement />;
                   case 'admin-settings':
                     return <SettingsPage />;
                   case 'profile':

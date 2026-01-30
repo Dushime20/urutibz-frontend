@@ -17,7 +17,10 @@ import {
   Activity,
   BarChart3,
   FileText,
-  HardDrive
+  HardDrive,
+  Calendar,
+  Clock,
+  Trash2
 } from 'lucide-react';
 import { Button } from '../../../components/ui/DesignSystem';
 import { 
@@ -40,7 +43,7 @@ interface SettingsManagementProps {
 }
 
 const SettingsManagement: React.FC<SettingsManagementProps> = () => {
-  const [activeTab, setActiveTab] = useState<'platform' | 'security' | 'notifications' | 'system'>('platform');
+  const [activeTab, setActiveTab] = useState<'platform' | 'security' | 'notifications' | 'system' | 'bookings'>('platform');
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
@@ -107,6 +110,23 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
     apiRateLimit: 1000,
     maxConcurrentUsers: 10000,
   });
+
+  // Booking Expiration Settings State
+  const [bookingExpirationSettings, setBookingExpirationSettings] = useState({
+    booking_expiration_hours: 4,
+    booking_expiration_enabled: true,
+    booking_expiration_last_run: null as string | null,
+  });
+
+  // Booking Expiration Stats State
+  const [expirationStats, setExpirationStats] = useState({
+    total_expired: 0,
+    recent_expired: 0,
+    upcoming_expired: 0,
+  });
+
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [isTriggering, setIsTriggering] = useState(false);
 
   // Mirror requireTwoFactor to localStorage so route guards react immediately
   useEffect(() => {
@@ -208,6 +228,112 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
       }
     }
   };
+
+  // Booking Expiration Functions
+  const loadBookingExpirationSettings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/booking-expiration/settings', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBookingExpirationSettings(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading booking expiration settings:', error);
+    }
+  };
+
+  const loadExpirationStats = async () => {
+    try {
+      setIsLoadingStats(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/booking-expiration/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setExpirationStats(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading expiration stats:', error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
+  const updateBookingExpirationSettings = async (settings: Partial<typeof bookingExpirationSettings>) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/booking-expiration/settings', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBookingExpirationSettings(data.data);
+        showToast('Booking expiration settings updated successfully', 'success');
+        // Reload stats after settings change
+        loadExpirationStats();
+      } else {
+        throw new Error('Failed to update settings');
+      }
+    } catch (error) {
+      console.error('Error updating booking expiration settings:', error);
+      showToast('Failed to update booking expiration settings', 'error');
+    }
+  };
+
+  const triggerManualCleanup = async () => {
+    try {
+      setIsTriggering(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/booking-expiration/cleanup', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showToast(`Cleanup completed: ${data.data.expired_count} bookings expired`, 'success');
+        // Reload stats and settings after cleanup
+        loadExpirationStats();
+        loadBookingExpirationSettings();
+      } else {
+        throw new Error('Failed to trigger cleanup');
+      }
+    } catch (error) {
+      console.error('Error triggering manual cleanup:', error);
+      showToast('Failed to trigger manual cleanup', 'error');
+    } finally {
+      setIsTriggering(false);
+    }
+  };
+
+  // Load booking expiration settings when bookings tab is active
+  useEffect(() => {
+    if (activeTab === 'bookings') {
+      loadBookingExpirationSettings();
+      loadExpirationStats();
+    }
+  }, [activeTab]);
 
   const TabButton: React.FC<{
     icon: React.ComponentType<{ className?: string }>;
@@ -341,6 +467,12 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
           label="System"
           active={activeTab === 'system'}
           onClick={() => setActiveTab('system')}
+        />
+        <TabButton
+          icon={Calendar}
+          label="Bookings"
+          active={activeTab === 'bookings'}
+          onClick={() => setActiveTab('bookings')}
         />
       </div>
 
@@ -986,6 +1118,143 @@ const SettingsManagement: React.FC<SettingsManagementProps> = () => {
                   />
                   <span className="text-sm font-medium text-gray-700">Enable Debug Mode</span>
                 </label>
+              </div>
+            </SettingCard>
+          </div>
+        )}
+
+        {activeTab === 'bookings' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Booking Expiration Settings */}
+            <SettingCard
+              icon={Clock}
+              title="Booking Expiration Settings"
+              description="Configure automatic expiration of unbooked confirmed bookings"
+            >
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Expiration Time (Hours)
+                  </label>
+                  <select
+                    value={bookingExpirationSettings.booking_expiration_hours}
+                    onChange={(e) => {
+                      const hours = parseInt(e.target.value);
+                      setBookingExpirationSettings(prev => ({ ...prev, booking_expiration_hours: hours }));
+                      updateBookingExpirationSettings({ booking_expiration_hours: hours });
+                    }}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value={2}>2 hours</option>
+                    <option value={4}>4 hours</option>
+                    <option value={8}>8 hours</option>
+                    <option value={12}>12 hours</option>
+                    <option value={24}>24 hours</option>
+                    <option value={48}>48 hours</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Confirmed bookings will be automatically deleted if not paid within this time
+                  </p>
+                </div>
+                
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={bookingExpirationSettings.booking_expiration_enabled}
+                    onChange={(e) => {
+                      const enabled = e.target.checked;
+                      setBookingExpirationSettings(prev => ({ ...prev, booking_expiration_enabled: enabled }));
+                      updateBookingExpirationSettings({ booking_expiration_enabled: enabled });
+                    }}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Enable Booking Expiration</span>
+                </label>
+
+                {bookingExpirationSettings.booking_expiration_last_run && (
+                  <div className="text-xs text-gray-500">
+                    Last cleanup: {new Date(bookingExpirationSettings.booking_expiration_last_run).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            </SettingCard>
+
+            {/* Expiration Statistics */}
+            <SettingCard
+              icon={BarChart3}
+              title="Expiration Statistics"
+              description="View booking expiration statistics and trends"
+            >
+              <div className="space-y-4">
+                {isLoadingStats ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-gray-900">{expirationStats.total_expired}</div>
+                      <div className="text-xs text-gray-500">Total Expired</div>
+                    </div>
+                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-600">{expirationStats.recent_expired}</div>
+                      <div className="text-xs text-gray-500">Last 24h</div>
+                    </div>
+                    <div className="text-center p-3 bg-red-50 rounded-lg">
+                      <div className="text-2xl font-bold text-red-600">{expirationStats.upcoming_expired}</div>
+                      <div className="text-xs text-gray-500">Expiring Soon</div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={triggerManualCleanup}
+                    disabled={isTriggering}
+                    className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {isTriggering ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                    {isTriggering ? 'Running Cleanup...' : 'Trigger Manual Cleanup'}
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Manually trigger expiration cleanup (normally runs every 5 minutes)
+                  </p>
+                </div>
+              </div>
+            </SettingCard>
+
+            {/* Booking Lifecycle Information */}
+            <SettingCard
+              icon={Activity}
+              title="Booking Lifecycle"
+              description="How booking expiration works"
+              className="lg:col-span-2"
+            >
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">How It Works</h4>
+                  <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>When a booking is confirmed by the owner, an expiration timer starts</li>
+                    <li>If the booking remains unpaid after the configured time, it's automatically deleted</li>
+                    <li>The system runs cleanup every 5 minutes to check for expired bookings</li>
+                    <li>All deletions are logged for auditing purposes</li>
+                    <li>Reserved product availability is freed when bookings expire</li>
+                  </ol>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h4 className="font-medium text-amber-900 mb-2">Important Notes</h4>
+                  <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+                    <li>Only confirmed but unpaid bookings are affected</li>
+                    <li>Paid or active bookings are never deleted</li>
+                    <li>Expiration can be disabled if needed</li>
+                    <li>Manual cleanup can be triggered for immediate processing</li>
+                  </ul>
+                </div>
               </div>
             </SettingCard>
           </div>

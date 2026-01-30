@@ -51,8 +51,8 @@ interface AdminNavigationItemProps {
 }
 
 interface AdminSidebarProps {
-  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'admin-settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return';
-  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'admin-settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return') => void;
+  activeTab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'admin-settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'rental-reminders';
+  setActiveTab: (tab: 'overview' | 'items' | 'users' | 'bookings' | 'finances' | 'transactions' | 'categories' | 'countries' | 'paymentMethods' | 'paymentProviders' | 'insuranceProviders' | 'categoryRegulations' | 'administrativeDivisions' | 'pricing' | 'reports' | 'admin-settings' | 'profile' | 'locations' | 'languages' | 'messaging' | 'notifications' | 'moderation' | 'ai-analytics' | 'inspections' | 'risk-management' | 'handover-return' | 'rental-reminders') => void;
   AdminNavigationItem: React.FC<AdminNavigationItemProps>;
   isMobileMenuOpen?: boolean;
   onMobileMenuClose?: () => void;
@@ -178,7 +178,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: MessageSquare,
       items: [
         { icon: MessageSquare, label: 'Messaging', tab: 'messaging' },
-        { icon: Bell, label: 'Notifications', tab: 'notifications' }
+        { icon: Bell, label: 'Notifications', tab: 'notifications' },
+        { icon: Bell, label: 'Rental Reminders', tab: 'rental-reminders' }
       ]
     }
   ];
@@ -232,7 +233,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           shadow-sm border-r border-gray-100 dark:border-gray-800 
           overflow-y-auto scrollbar-hide
           transition-all duration-300
-          h-full xl:h-[calc(100vh-3rem)] xl:max-h-[calc(100vh-3rem)]
+          h-full
           xl:static
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
         `}
