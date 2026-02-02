@@ -1292,7 +1292,7 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Main Layout with Sidebar */}
-      <div className="flex h-screen">
+      <div className="flex min-h-screen">
         {/* Mobile Sidebar Drawer */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 flex md:hidden">
@@ -1322,7 +1322,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Main Content */}
         <div ref={mainScrollRef} className={`flex-1 overflow-y-auto scrollbar-hide transition-all duration-300 ${isSidebarCollapsed ? 'ml-0 md:ml-16' : 'ml-0 md:ml-64'}`}>
-          <div className="mx-auto px-4 sm:px-6 lg:px-4 py-8 pb-28 md:pb-12">
+          <div className="mx-auto px-4 sm:px-6 lg:px-4 py-8 pb-24 lg:pb-8">
             {/* Verification Banner */}
             <div className="mb-8">
               <VerificationBanner />

@@ -21,7 +21,7 @@ const DashboardMobileNav: React.FC<DashboardMobileNavProps> = ({ items, classNam
 
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsLargeScreen(window.innerWidth >= 768); // md breakpoint (tablet and above)
+      setIsLargeScreen(window.innerWidth >= 1024); // lg breakpoint (desktop and above)
     };
 
     checkScreenSize();
@@ -35,7 +35,7 @@ const DashboardMobileNav: React.FC<DashboardMobileNavProps> = ({ items, classNam
   return (
     <nav
       aria-label="Mobile dashboard navigation"
-      className={`md:hidden fixed bottom-0 inset-x-0 z-[80] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 backdrop-blur safe-area-bottom shadow-[0_-8px_30px_rgba(15,23,42,0.12)] ${className ?? ''}`}
+      className={`lg:hidden fixed bottom-0 inset-x-0 z-[80] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 backdrop-blur safe-area-bottom shadow-[0_-8px_30px_rgba(15,23,42,0.12)] ${className ?? ''}`}
     >
       <div className="px-4 py-3 grid grid-cols-5 gap-2">
         {items.map((item) => {

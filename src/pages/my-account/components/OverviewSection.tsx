@@ -214,7 +214,7 @@ const OverviewSection: React.FC<Props> = ({ dashboardStats, recentDashboardBooki
   };
 
   return (
-    <div className="space-y-8 bg-gradient-to-br from-gray-50/50 to-teal-50/20 dark:from-slate-900 dark:to-slate-800 min-h-screen px-3 py-4 sm:p-6">
+    <div className="space-y-8 bg-gradient-to-br from-gray-50/50 to-teal-50/20 dark:from-slate-900 dark:to-slate-800 px-3 py-4 sm:p-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
