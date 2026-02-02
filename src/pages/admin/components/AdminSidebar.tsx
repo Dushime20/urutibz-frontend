@@ -227,13 +227,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Sidebar */}
       <div 
         className={`
-          flex flex-col relative z-40
+          flex flex-col relative z-40 mt-0
           ${isCollapsed && !isMobileMenuOpen ? 'w-16' : 'w-72'}
           bg-white dark:bg-gray-900 
           shadow-sm border-r border-gray-100 dark:border-gray-800 
           overflow-y-auto scrollbar-hide
           transition-all duration-300
           h-full
+          top-0
           xl:static
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
         `}
@@ -252,7 +253,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         </button>
 
         {/* Header */}
-        <div className={`border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex-shrink-0 ${isCollapsed ? 'p-3' : 'p-6'}`}>
+        <div className={`border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0 ${isCollapsed ? 'p-3' : 'p-6'}`}>
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
             <div className={`rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`} style={{ backgroundColor: '#00aaa7' }}>
               {isCollapsed ? (

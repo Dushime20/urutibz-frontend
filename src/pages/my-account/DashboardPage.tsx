@@ -210,21 +210,20 @@ const DashboardPage: React.FC = () => {
   const [confirmingBookingId, setConfirmingBookingId] = useState<string | null>(null);
   const [recentlyConfirmedBookings, setRecentlyConfirmedBookings] = useState<Record<string, boolean>>({});
 
-  // Calculate recent bookings count (created in last 7 days)
-  const recentBookingCount = useMemo(() => {
+  // Calculate bookings that need attention (pending, confirmed, requiring action)
+  const bookingsNeedingAttention = useMemo(() => {
     if (!userBookings.length) return 0;
 
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
     return userBookings.filter((booking) => {
-      if (!booking.created_at) return false;
-      try {
-        const bookingDate = new Date(booking.created_at);
-        return bookingDate >= weekAgo && bookingDate <= now;
-      } catch {
-        return false;
-      }
+      // Show badge for bookings that need user attention
+      const status = booking.status?.toLowerCase();
+      return (
+        status === 'pending' ||           // Pending approval
+        status === 'confirmed' ||         // Confirmed but not started
+        status === 'payment_pending' ||   // Waiting for payment
+        status === 'cancellation_requested' || // Cancellation needs review
+        (status === 'active' && !booking.checked_in) // Active but not checked in
+      );
     }).length;
   }, [userBookings]);
 
@@ -260,7 +259,7 @@ const DashboardPage: React.FC = () => {
         icon: Calendar,
         onPress: () => setActiveTab('bookings'),
         active: activeTab === 'bookings',
-        badge: recentBookingCount
+        badge: bookingsNeedingAttention > 0 ? bookingsNeedingAttention : null
       },
       {
         key: 'wallet',
@@ -284,7 +283,7 @@ const DashboardPage: React.FC = () => {
         onPress: () => setSidebarOpen(true)
       }
     ],
-    [activeTab, recentBookingCount, unreadNotificationCount, tSync]
+    [activeTab, bookingsNeedingAttention, unreadNotificationCount, tSync]
   );
 
   useEffect(() => {
@@ -448,7 +447,7 @@ const DashboardPage: React.FC = () => {
         const stats = await fetchDashboardStats(token);
         setDashboardStats({
           activeBookings: stats.activeBookings || 0,
-          totalEarnings: (stats as any).potentialEarnings || stats.totalEarnings || 0,
+          totalEarnings: stats.totalEarnings || 0, // Only show completed paid amounts
           totalTransactions: stats.totalTransactions || 0,
           activeInspections: 0,
           preferredCurrency: (stats as any).preferredCurrency || 'USD',

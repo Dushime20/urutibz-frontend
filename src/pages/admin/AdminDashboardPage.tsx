@@ -808,7 +808,7 @@ const AdminDashboardPage: React.FC = () => {
       </div>
       <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Sidebar - Desktop and Mobile */}
-        <div className={`fixed left-0 z-[70] xl:z-auto xl:flex-shrink-0 top-0 bottom-[88px] lg:bottom-0 xl:top-16 xl:bottom-0 xl:pt-2 ${!isMobileMenuOpen ? 'pointer-events-none xl:pointer-events-auto' : 'pointer-events-auto'}`}>
+        <div className={`fixed left-0 z-[70] xl:z-auto xl:flex-shrink-0 top-0 bottom-[88px] lg:bottom-0 xl:top-0 xl:bottom-0 xl:pt-2 ${!isMobileMenuOpen ? 'pointer-events-none xl:pointer-events-auto' : 'pointer-events-auto'}`}>
           <AdminSidebar
             activeTab={activeTab}
             setActiveTab={(tab: any) => { 

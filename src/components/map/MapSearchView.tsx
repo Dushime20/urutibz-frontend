@@ -258,30 +258,65 @@ const MapSearchView: React.FC<MapSearchViewProps> = ({
     }
   }, [onLocationSelect]);
 
-  // Get current location
+  // Get current location with enhanced error handling and user feedback
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      alert('Geolocation is not supported by your browser. Please select a location on the map manually.');
       return;
     }
 
     setIsGettingLocation(true);
+    
+    // Enhanced geolocation options for better accuracy
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 15000, // 15 seconds timeout
+      maximumAge: 300000, // 5 minutes cache
+    };
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude: lat, longitude: lng } = position.coords;
-        handleLocationSelect(lat, lng, radiusKm);
+        const { latitude: lat, longitude: lng, accuracy } = position.coords;
+        
+        // Calculate appropriate radius based on GPS accuracy
+        let searchRadius = radiusKm;
+        if (accuracy) {
+          // If GPS accuracy is poor (>1000m), use larger search radius
+          if (accuracy > 1000) {
+            searchRadius = Math.max(radiusKm, 10); // At least 10km for poor accuracy
+          } else if (accuracy > 100) {
+            searchRadius = Math.max(radiusKm, 5); // At least 5km for moderate accuracy
+          }
+        }
+        
+        handleLocationSelect(lat, lng, searchRadius);
         setIsGettingLocation(false);
+        
+        // Optional: Show success feedback
+        console.log(`Location found with ${accuracy ? Math.round(accuracy) + 'm' : 'unknown'} accuracy`);
       },
       (error) => {
         console.error('Geolocation error:', error);
-        alert('Unable to get your location. Please select a location on the map.');
         setIsGettingLocation(false);
+        
+        let errorMessage = 'Unable to get your location. ';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Location access was denied. Please enable location services and try again, or select a location on the map manually.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Location information is unavailable. Please check your internet connection or select a location on the map manually.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Location request timed out. Please try again or select a location on the map manually.';
+            break;
+          default:
+            errorMessage += 'An unknown error occurred. Please select a location on the map manually.';
+            break;
+        }
+        alert(errorMessage);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
+      options
     );
   }, [handleLocationSelect, radiusKm]);
 
@@ -415,9 +450,22 @@ const MapSearchView: React.FC<MapSearchViewProps> = ({
   const handleSearchThisArea = useCallback(() => {
     if (mapRef.current && onLocationSelect) {
       const center = mapRef.current.getCenter();
-      handleLocationSelect(center.lat, center.lng, radiusKm);
+      const bounds = mapRef.current.getBounds();
+      
+      // Calculate radius based on map bounds for more accurate search area
+      const northEast = bounds.getNorthEast();
+      const southWest = bounds.getSouthWest();
+      const mapRadiusKm = Math.max(
+        calculateDistance(center.lat, center.lng, northEast.lat, northEast.lng),
+        calculateDistance(center.lat, center.lng, southWest.lat, southWest.lng)
+      );
+      
+      // Use calculated radius or user-selected radius, whichever is more appropriate
+      const searchRadius = Math.min(Math.max(mapRadiusKm * 0.7, 5), 50); // Between 5-50km
+      
+      handleLocationSelect(center.lat, center.lng, Math.round(searchRadius));
     }
-  }, [mapRef, onLocationSelect, handleLocationSelect, radiusKm]);
+  }, [mapRef, onLocationSelect, handleLocationSelect]);
 
   return (
     <>
@@ -552,10 +600,11 @@ const MapSearchView: React.FC<MapSearchViewProps> = ({
             {onLocationSelect && (
               <button
                 onClick={handleSearchThisArea}
-                className="bg-white z-13 dark:bg-gray-900 rounded-full ml-16 px-3 md:px-4 py-2 md:py-2.5 shadow-lg border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all text-xs md:text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap"
+                className="bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-full px-4 md:px-6 py-2.5 md:py-3 shadow-lg hover:shadow-xl transition-all text-sm md:text-base font-semibold whitespace-nowrap flex items-center gap-2 border-2 border-gray-900 dark:border-white"
               >
+                <Search className="w-4 h-4" />
                 <span className="hidden sm:inline">Search this area</span>
-                <span className="sm:hidden">Search</span>
+                <span className="sm:hidden">Search area</span>
               </button>
             )}
 
@@ -563,10 +612,16 @@ const MapSearchView: React.FC<MapSearchViewProps> = ({
             <button
               onClick={getCurrentLocation}
               disabled={isGettingLocation}
-              className="bg-white ml-16 dark:bg-gray-900 rounded-full p-2.5 md:p-3 shadow-lg border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all disabled:opacity-50"
-              title="My location"
+              className={`bg-white dark:bg-gray-900 rounded-full p-2.5 md:p-3 shadow-lg border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                isGettingLocation ? 'animate-pulse' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+              title={isGettingLocation ? "Getting your location..." : "Use my current location"}
             >
-              <Navigation className="w-4 h-4 md:w-5 md:h-5 text-gray-900 dark:text-white" />
+              {isGettingLocation ? (
+                <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-gray-400 border-t-gray-900 dark:border-t-white rounded-full animate-spin" />
+              ) : (
+                <Navigation className="w-4 h-4 md:w-5 md:h-5 text-gray-900 dark:text-white" />
+              )}
             </button>
           </div>
 

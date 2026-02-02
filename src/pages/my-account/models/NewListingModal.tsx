@@ -100,6 +100,119 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
     fetchData();
   }, []);
 
+  // Handle use my location
+  const handleUseMyLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
+          setForm((f: FormState) => ({
+            ...f,
+            location: {
+              latitude: lat.toString(),
+              longitude: lng.toString()
+            }
+          }));
+          
+          // Optionally reverse geocode to get address
+          handleReverseGeocode(lat, lng);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          let errorMessage = 'Unable to get your location. ';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage += 'Please allow location access and try again.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage += 'Location information is unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMessage += 'Location request timed out.';
+              break;
+            default:
+              errorMessage += 'An unknown error occurred.';
+              break;
+          }
+          
+          alert(errorMessage);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by this browser.');
+    }
+  };
+
+  // Handle reverse geocoding to get address from coordinates
+  const handleReverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+      );
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result && result.display_name) {
+          setForm((f: FormState) => ({
+            ...f,
+            address_line: result.display_name
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+      // Don't show error to user for reverse geocoding failure
+    }
+  };
+
+  // Handle location search
+  const handleLocationSearch = async (query: string) => {
+    try {
+      // Use a geocoding service to search for the location
+      // This is a simple implementation using OpenStreetMap Nominatim API
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`
+      );
+      
+      if (response.ok) {
+        const results = await response.json();
+        if (results && results.length > 0) {
+          const result = results[0];
+          const lat = parseFloat(result.lat);
+          const lng = parseFloat(result.lon);
+          
+          // Update form with the found location
+          setForm((f: FormState) => ({
+            ...f,
+            location: {
+              latitude: lat.toString(),
+              longitude: lng.toString()
+            },
+            address_line: result.display_name || query
+          }));
+          
+          // Show success message (you can add a toast notification here)
+          console.log('Location found:', result.display_name);
+        } else {
+          // Show error message for no results
+          console.log('No location found for:', query);
+          alert('No location found. Please try a different search term.');
+        }
+      }
+    } catch (error) {
+      console.error('Error searching location:', error);
+      alert('Error searching for location. Please try again.');
+    }
+  };
+
   // Clear validation errors when form changes
   useEffect(() => {
     setValidationErrors({});
@@ -839,8 +952,57 @@ const NewListingModal: React.FC<NewListingModalProps> = ({
               </h3>
               
               <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
-                Click on the map to select your product location, or use the "Use My Location" button to automatically detect your current location.
+                Search for a location, click on the map to select your product location, or use the "Use My Location" button to automatically detect your current location.
               </p>
+
+              {/* Location Search */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                  Search Location
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search for a place, address, or landmark..."
+                    className="w-full px-4 py-3 pl-10 border rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border-gray-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all duration-200"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const query = (e.target as HTMLInputElement).value;
+                        if (query.trim()) {
+                          handleLocationSearch(query);
+                        }
+                      }
+                    }}
+                  />
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.querySelector('input[placeholder*="Search for a place"]') as HTMLInputElement;
+                      if (input && input.value.trim()) {
+                        handleLocationSearch(input.value);
+                      }
+                    }}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-slate-900 text-white text-sm rounded-md hover:bg-slate-800 transition-colors"
+                  >
+                    Search
+                  </button>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    Press Enter or click Search to find the location on the map
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleUseMyLocation}
+                    className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium flex items-center gap-1 transition-colors"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    Use My Location
+                  </button>
+                </div>
+              </div>
 
               {/* Interactive Map */}
               <div className="mb-6">

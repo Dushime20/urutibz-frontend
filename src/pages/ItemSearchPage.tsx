@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Star, Heart, MapPin, Calendar, Clock, Shield, TrendingUp, Eye, MousePointer, ThumbsUp, Search, Filter, X, Camera, Laptop, Car, Gamepad2, Headphones, Watch, Package, Grid, List, ChevronDown, AlertCircle, Truck, ShoppingCart, Check, Sparkles } from 'lucide-react';
+import { Star, Heart, MapPin, Calendar, Clock, Shield, TrendingUp, Eye, MousePointer, ThumbsUp, Search, Filter, X, Camera, Laptop, Car, Gamepad2, Headphones, Watch, Package, Grid, List, ChevronDown, AlertCircle, Truck, ShoppingCart, Check, Sparkles, Navigation } from 'lucide-react';
 import MapSearchView from '../components/map/MapSearchView';
 
 import { fetchAvailableProducts, fetchAllProducts, fetchActiveDailyPrice, fetchCategories, addUserFavorite, removeUserFavorite, getUserFavorites } from './admin/service';
@@ -60,6 +60,69 @@ interface ProductImage {
   path?: string;
 }
 
+
+// Calculate distance between two coordinates (Haversine formula)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Extract coordinates from product location
+function extractProductCoordinates(product: Product): { lat: number; lng: number } | null {
+  let lat: number | undefined;
+  let lng: number | undefined;
+
+  const locationSources = [product.location, (product as any).geometry];
+
+  for (const source of locationSources) {
+    if (!source) continue;
+
+    if (typeof source === 'string') {
+      const coords = wkbHexToLatLng(source);
+      if (coords) {
+        lat = coords.lat;
+        lng = coords.lng;
+        break;
+      }
+    } else if (source && typeof source === 'object') {
+      lat = (source as any).lat ?? (source as any).latitude ?? (source as any).y;
+      lng = (source as any).lng ?? (source as any).longitude ?? (source as any).x;
+
+      if ((source as any).coordinates && Array.isArray((source as any).coordinates)) {
+        const coords = (source as any).coordinates;
+        if (coords.length >= 2) {
+          lng = coords[0];
+          lat = coords[1];
+        }
+      }
+
+      if (lat != null && lng != null) break;
+    }
+  }
+
+  if (lat != null && lng != null) {
+    return { lat, lng };
+  }
+  return null;
+}
+
+// Format distance for display
+function formatDistance(distanceKm: number): string {
+  if (distanceKm < 1) {
+    return `${Math.round(distanceKm * 1000)}m`;
+  } else if (distanceKm < 10) {
+    return `${distanceKm.toFixed(1)}km`;
+  } else {
+    return `${Math.round(distanceKm)}km`;
+  }
+}
 
 // Note: wkbHexToLatLng and getCityFromCoordinates are imported from ../lib/utils
 
@@ -630,11 +693,16 @@ const ItemSearchPage: React.FC = () => {
     setSelectedLocation('all');
     setPriceRange({ min: 0, max: 0 });
     setSortBy('relevance');
+    setMapLocation(null); // Clear location-based filtering
 
     // Clear AI search parameters from URL
     const params = new URLSearchParams(searchParams);
     params.delete('searchType');
     params.delete('prompt');
+    params.delete('lat');
+    params.delete('lng');
+    params.delete('radiusKm');
+    params.delete('nearMe');
     setSearchParams(params);
   };
 
@@ -731,6 +799,84 @@ const ItemSearchPage: React.FC = () => {
               >
                 <Filter className="w-4 h-4" />
                 <span className="hidden sm:inline"><TranslatedText text="More" /></span>
+              </button>
+
+              {/* Search Near Me Button */}
+              <button
+                onClick={() => {
+                  if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by your browser. Please use the map to select a location.');
+                    return;
+                  }
+
+                  const options = {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 300000, // 5 minutes cache
+                  };
+
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      const { latitude: lat, longitude: lng, accuracy } = position.coords;
+                      
+                      // Calculate appropriate radius based on GPS accuracy
+                      let searchRadius = 25; // Default 25km
+                      if (accuracy) {
+                        if (accuracy > 1000) {
+                          searchRadius = 50; // 50km for poor accuracy
+                        } else if (accuracy > 100) {
+                          searchRadius = 25; // 25km for moderate accuracy
+                        } else {
+                          searchRadius = 10; // 10km for good accuracy
+                        }
+                      }
+                      
+                      setMapLocation({ lat, lng, radiusKm: searchRadius });
+                      
+                      // Switch to map view to show results
+                      setViewMode('map');
+                      
+                      // Show success message
+                      t('Searching for products near your location...').then(msg => showToast(msg, 'success'));
+                    },
+                    (error) => {
+                      console.error('Geolocation error:', error);
+                      
+                      let errorMessage = 'Unable to get your location. ';
+                      switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                          errorMessage += 'Please enable location services and try again.';
+                          break;
+                        case error.POSITION_UNAVAILABLE:
+                          errorMessage += 'Location information is unavailable.';
+                          break;
+                        case error.TIMEOUT:
+                          errorMessage += 'Location request timed out.';
+                          break;
+                        default:
+                          errorMessage += 'An unknown error occurred.';
+                          break;
+                      }
+                      
+                      t(errorMessage).then(msg => showToast(msg, 'error'));
+                    },
+                    options
+                  );
+                }}
+                className={`px-4 py-3 border rounded-xl flex items-center gap-2 transition-all duration-200 font-medium ${
+                  mapLocation 
+                    ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30' 
+                    : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+                aria-label="Search for products near my location"
+              >
+                <Navigation className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  {mapLocation ? <TranslatedText text="Near Me Active" /> : <TranslatedText text="Search Near Me" />}
+                </span>
+                <span className="sm:hidden">
+                  {mapLocation ? <TranslatedText text="Near Me" /> : <TranslatedText text="Near Me" />}
+                </span>
               </button>
 
               {/* View Toggle */}
@@ -929,7 +1075,8 @@ const ItemSearchPage: React.FC = () => {
 
               {mapLocation && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300 rounded-full text-sm font-medium border border-teal-100 dark:border-teal-800">
-                  <span>Near Me ({mapLocation.radiusKm}km)</span>
+                  <Navigation className="w-3.5 h-3.5" />
+                  <span>Within {mapLocation.radiusKm}km of your location</span>
                   <button onClick={() => setMapLocation(null)} className="hover:text-red-500 transition-colors">
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -1192,10 +1339,29 @@ const ItemSearchPage: React.FC = () => {
                           <TranslatedText text="Loading location..." />
                         </span>
                       ) : (
-                        <>
-                          {itemLocations[item.id]?.city || <TranslatedText text="Unknown Location" />}
-                          {itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
-                        </>
+                        <span className="flex items-center justify-between">
+                          <span>
+                            {itemLocations[item.id]?.city || <TranslatedText text="Unknown Location" />}
+                            {itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
+                          </span>
+                          {mapLocation && (() => {
+                            const productCoords = extractProductCoordinates(item);
+                            if (productCoords) {
+                              const distance = calculateDistance(
+                                mapLocation.lat,
+                                mapLocation.lng,
+                                productCoords.lat,
+                                productCoords.lng
+                              );
+                              return (
+                                <span className="text-xs font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-2 py-0.5 rounded-full">
+                                  {formatDistance(distance)}
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </span>
                       )}
                     </p>
 
@@ -1344,6 +1510,23 @@ const ItemSearchPage: React.FC = () => {
                           <span className="truncate">
                             {itemLocations[item.id]?.city || <TranslatedText text="Unknown Location" />}{itemLocations[item.id]?.country ? `, ${itemLocations[item.id]?.country}` : ''}
                           </span>
+                          {mapLocation && (() => {
+                            const productCoords = extractProductCoordinates(item);
+                            if (productCoords) {
+                              const distance = calculateDistance(
+                                mapLocation.lat,
+                                mapLocation.lng,
+                                productCoords.lat,
+                                productCoords.lng
+                              );
+                              return (
+                                <span className="text-xs font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-2 py-0.5 rounded-full ml-2">
+                                  {formatDistance(distance)}
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                       </div>
 

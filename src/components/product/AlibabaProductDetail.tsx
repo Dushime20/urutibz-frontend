@@ -15,7 +15,8 @@ import {
   Menu,
   Search,
   User,
-  ShoppingCart
+  ShoppingCart,
+  Calendar
 } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -48,7 +49,8 @@ const AlibabaProductDetail: React.FC = () => {
   const [images, setImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'specifications' | 'reviews' | 'shipping' | 'faq'>('overview');
-  const [quantity, setQuantity] = useState(1);
+  const [startDate, setStartDate] = useState(new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]); // Tomorrow
+  const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); // Next week
   const [isFavorite, setIsFavorite] = useState(false);
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
   const [ownerLoading, setOwnerLoading] = useState(false);
@@ -174,9 +176,9 @@ const AlibabaProductDetail: React.FC = () => {
         productId: product.id,
         productTitle: product.title,
         productImage: images[selectedImageIndex] || images[0],
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        pricePerDay: price,
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
+        pricePerDay: dynamicPricePerDay,
         currency: currency,
         ownerId: product.owner_id,
         categoryId: product.category_id
@@ -245,8 +247,53 @@ const AlibabaProductDetail: React.FC = () => {
     showToast('Redirecting to WhatsApp...', 'success');
   };
 
+  // Calculate rental days and dynamic pricing
+  const calculateDays = () => {
+    if (!startDate || !endDate) return 1;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+  };
+
+  const calculateDynamicPrice = () => {
+    const days = calculateDays();
+    const basePrice = Number(productPrices?.price_per_day || product?.base_price_per_day || product?.price || 0);
+    
+    // Apply pricing tiers based on duration
+    if (days >= 30 && productPrices?.price_per_month) {
+      // Monthly rate (30+ days)
+      return Number(productPrices.price_per_month) / 30;
+    } else if (days >= 7 && productPrices?.price_per_week) {
+      // Weekly rate (7+ days)
+      return Number(productPrices.price_per_week) / 7;
+    } else {
+      // Daily rate (1-6 days)
+      return basePrice;
+    }
+  };
+
+  // Calculate current values
+  const rentalDays = calculateDays();
+  const dynamicPricePerDay = calculateDynamicPrice();
+  const totalPrice = dynamicPricePerDay * rentalDays;
+
   const handleTabChange = (tab: 'overview' | 'specifications' | 'reviews' | 'shipping' | 'faq') => {
     setActiveTab(tab);
+  };
+
+  const handleDateChange = (type: 'start' | 'end', value: string) => {
+    if (type === 'start') {
+      setStartDate(value);
+      // If start date is after end date, adjust end date
+      if (value >= endDate) {
+        const newEndDate = new Date(value);
+        newEndDate.setDate(newEndDate.getDate() + 1);
+        setEndDate(newEndDate.toISOString().split('T')[0]);
+      }
+    } else {
+      setEndDate(value);
+    }
   };
 
   if (loading) {
@@ -274,6 +321,7 @@ const AlibabaProductDetail: React.FC = () => {
   const price = Number(productPrices?.price_per_day || product?.base_price_per_day || product?.price || 0);
   const currency = productPrices?.currency || product?.base_currency || product?.currency || 'RWF';
   const securityDeposit = Number(productPrices?.security_deposit || product?.security_deposit || 0);
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900">
@@ -393,9 +441,15 @@ const AlibabaProductDetail: React.FC = () => {
                   <div className="mb-4 lg:mb-6">
                     <div className="flex items-baseline space-x-2 mb-2">
                       <span className="text-2xl lg:text-3xl font-bold text-red-600">
-                        {currency} {formatPrice(price)}
+                        {currency} {formatPrice(dynamicPricePerDay)}
                       </span>
                       <span className="text-gray-500 dark:text-slate-400 text-sm">/ day</span>
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300 mb-2">
+                      <span className="font-medium">Total for {rentalDays} {rentalDays === 1 ? 'day' : 'days'}:</span> 
+                      <span className="text-lg font-bold text-teal-600 ml-2">
+                        {currency} {formatPrice(totalPrice)}
+                      </span>
                     </div>
                     <div className="text-sm text-gray-600 dark:text-slate-300 mb-3 lg:mb-4">
                       <span className="font-medium">MOQ:</span> 1 day
@@ -407,55 +461,79 @@ const AlibabaProductDetail: React.FC = () => {
                         Rental Duration Pricing
                       </div>
                       <div className="divide-y divide-gray-200 dark:divide-slate-600">
-                        <div className="flex justify-between px-3 py-2">
+                        <div className={`flex justify-between px-3 py-2 ${rentalDays >= 1 && rentalDays <= 6 ? 'bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-500' : ''}`}>
                           <span className="text-gray-600 dark:text-slate-300">1-6 days</span>
-                          <span className="font-medium dark:text-white">{currency} {formatPrice(price)}/day</span>
+                          <span className={`font-medium ${rentalDays >= 1 && rentalDays <= 6 ? 'text-teal-600 dark:text-teal-400' : 'dark:text-white'}`}>
+                            {currency} {formatPrice(price)}/day
+                          </span>
                         </div>
                         {productPrices?.price_per_week && !isNaN(Number(productPrices.price_per_week)) && (
-                          <div className="flex justify-between px-3 py-2">
-                            <span className="text-gray-600 dark:text-slate-300">7+ days (weekly)</span>
-                            <span className="font-medium dark:text-white">{currency} {formatPrice(Number(productPrices.price_per_week) / 7)}/day</span>
+                          <div className={`flex justify-between px-3 py-2 ${rentalDays >= 7 && rentalDays < 30 ? 'bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-500' : ''}`}>
+                            <span className="text-gray-600 dark:text-slate-300">7-29 days (weekly)</span>
+                            <span className={`font-medium ${rentalDays >= 7 && rentalDays < 30 ? 'text-teal-600 dark:text-teal-400' : 'dark:text-white'}`}>
+                              {currency} {formatPrice(Number(productPrices.price_per_week) / 7)}/day
+                            </span>
                           </div>
                         )}
                         {productPrices?.price_per_month && !isNaN(Number(productPrices.price_per_month)) && (
-                          <div className="flex justify-between px-3 py-2">
+                          <div className={`flex justify-between px-3 py-2 ${rentalDays >= 30 ? 'bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-500' : ''}`}>
                             <span className="text-gray-600 dark:text-slate-300">30+ days (monthly)</span>
-                            <span className="font-medium dark:text-white">{currency} {formatPrice(Number(productPrices.price_per_month) / 30)}/day</span>
+                            <span className={`font-medium ${rentalDays >= 30 ? 'text-teal-600 dark:text-teal-400' : 'dark:text-white'}`}>
+                              {currency} {formatPrice(Number(productPrices.price_per_month) / 30)}/day
+                            </span>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Quantity & Actions */}
+                  {/* Date Selection & Actions */}
                   <div className="space-y-3 lg:space-y-4">
-                    <div className="flex items-center space-x-3 lg:space-x-4">
-                      <span className="text-sm font-medium text-gray-700 dark:text-slate-300 min-w-[60px]">Days:</span>
-                      <div className="flex items-center border border-gray-300 dark:border-slate-600 rounded">
-                        <motion.button
-                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                          className="px-2 lg:px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-r border-gray-300 dark:border-slate-600"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </motion.button>
-                        <input 
-                          type="number" 
-                          value={quantity}
-                          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-12 lg:w-16 px-2 py-1 text-center border-0 focus:outline-none bg-transparent dark:text-white text-sm"
-                        />
-                        <motion.button
-                          onClick={() => setQuantity(quantity + 1)}
-                          className="px-2 lg:px-3 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-l border-gray-300 dark:border-slate-600"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </motion.button>
+                    {/* Date Selection */}
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Calendar className="w-4 h-4 text-teal-600" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Rental Period:</span>
                       </div>
-                      <span className="text-sm text-gray-500 dark:text-slate-400">days rental</span>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
+                            Start Date
+                          </label>
+                          <input
+                            type="date"
+                            value={startDate}
+                            min={today}
+                            onChange={(e) => handleDateChange('start', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
+                            End Date
+                          </label>
+                          <input
+                            type="date"
+                            value={endDate}
+                            min={startDate || today}
+                            onChange={(e) => handleDateChange('end', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Duration Display */}
+                      <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg p-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-teal-700 dark:text-teal-300 font-medium">
+                            Duration: {rentalDays} {rentalDays === 1 ? 'day' : 'days'}
+                          </span>
+                          <span className="text-teal-600 dark:text-teal-400 font-bold">
+                            {currency} {formatPrice(totalPrice)} total
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Action Buttons */}
@@ -620,41 +698,25 @@ const AlibabaProductDetail: React.FC = () => {
                   </h3>
                   <div className="flex items-center space-x-2">
                     <span className="text-lg font-bold text-red-600">
-                      {currency} {formatPrice(price)}
+                      {currency} {formatPrice(dynamicPricePerDay)}
                     </span>
                     <span className="text-gray-500 dark:text-slate-400 text-xs">/ day</span>
                     <span className="text-gray-400 dark:text-slate-500">•</span>
-                    <span className="text-xs text-gray-600 dark:text-slate-300">MOQ: 1 day</span>
+                    <span className="text-xs text-gray-600 dark:text-slate-300">{rentalDays} {rentalDays === 1 ? 'day' : 'days'}</span>
+                    <span className="text-gray-400 dark:text-slate-500">•</span>
+                    <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
+                      {currency} {formatPrice(totalPrice)} total
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Quantity & Add to Cart */}
+              {/* Date Display & Add to Cart */}
               <div className="flex items-center space-x-3 flex-shrink-0">
-                {/* Quantity Selector */}
-                <div className="flex items-center border border-gray-300 dark:border-slate-600 rounded">
-                  <motion.button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-2 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-r border-gray-300 dark:border-slate-600"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Minus className="w-3 h-3" />
-                  </motion.button>
-                  <input 
-                    type="number" 
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-12 px-2 py-1 text-center border-0 focus:outline-none bg-transparent dark:text-white text-sm"
-                  />
-                  <motion.button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-2 py-1 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-l border-gray-300 dark:border-slate-600"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Plus className="w-3 h-3" />
-                  </motion.button>
+                {/* Compact Date Display */}
+                <div className="hidden sm:flex items-center text-xs text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  <span>{new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}</span>
                 </div>
 
                 {/* Add to Cart Button */}
@@ -706,7 +768,7 @@ const AlibabaProductDetail: React.FC = () => {
           ownerAvatar={ownerInfo.avatar}
           productImage={images[0]}
           productPrice={productPrices?.price_per_day && productPrices?.currency
-            ? `${productPrices.currency} ${productPrices.price_per_day}/day`
+            ? `${productPrices.currency} ${formatPrice(dynamicPricePerDay)}/day (${rentalDays} days = ${formatPrice(totalPrice)} total)`
             : product.base_price_per_day
               ? `${product.base_price_per_day} ${product.base_currency}/day`
               : undefined

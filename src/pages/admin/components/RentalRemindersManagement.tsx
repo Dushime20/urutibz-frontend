@@ -21,6 +21,8 @@ import {
 import { Button } from '../../../components/ui/DesignSystem';
 import { useToast } from '../../../contexts/ToastContext';
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
 interface ReminderConfiguration {
   id: string;
   name: string;
@@ -116,9 +118,9 @@ const RentalRemindersManagement: React.FC = () => {
       };
 
       const [configsRes, statsRes, cronRes] = await Promise.all([
-        fetch('/api/v1/rental-reminders/configurations', { headers }),
-        fetch('/api/v1/rental-reminders/stats', { headers }),
-        fetch('/api/v1/rental-reminders/cron/status', { headers })
+        fetch(`${API_BASE_URL}/rental-reminders/configurations`, { headers }),
+        fetch(`${API_BASE_URL}/rental-reminders/stats`, { headers }),
+        fetch(`${API_BASE_URL}/rental-reminders/cron/status`, { headers })
       ]);
 
       if (configsRes.ok) {
@@ -155,7 +157,7 @@ const RentalRemindersManagement: React.FC = () => {
       if (channelFilter) params.append('channel', channelFilter);
       if (reminderTypeFilter) params.append('reminder_type', reminderTypeFilter);
 
-      const response = await fetch(`/api/v1/rental-reminders/logs?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/rental-reminders/logs?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -177,7 +179,7 @@ const RentalRemindersManagement: React.FC = () => {
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/rental-reminders/process', {
+      const response = await fetch(`${API_BASE_URL}/rental-reminders/process`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -203,7 +205,7 @@ const RentalRemindersManagement: React.FC = () => {
   const updateConfiguration = async (configId: string, updates: Partial<ReminderConfiguration>) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/v1/rental-reminders/configurations/${configId}`, {
+      const response = await fetch(`${API_BASE_URL}/rental-reminders/configurations/${configId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -11,7 +11,7 @@ interface Props {
 }
 
 const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTransactions, receivedTransactions, onViewAll }) => {
-  const [activeTab, setActiveTab] = useState<'payments' | 'received'>('payments');
+  const [activeTab, setActiveTab] = useState<'payments' | 'received'>('received'); // Changed default to 'received'
 
   const transactionsToDisplay = activeTab === 'payments' ? userTransactions : receivedTransactions;
 
@@ -56,16 +56,16 @@ const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTra
 
           <div className="flex space-x-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
             <button
-              onClick={() => setActiveTab('payments')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'payments' ? 'bg-white text-active shadow-sm dark:bg-slate-700 dark:text-active' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
-            >
-              <TranslatedText text="Payment Transactions" />
-            </button>
-            <button
               onClick={() => setActiveTab('received')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'received' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-emerald-400' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
             >
               <TranslatedText text="Received Transactions" />
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'payments' ? 'bg-white text-active shadow-sm dark:bg-slate-700 dark:text-active' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
+            >
+              <TranslatedText text="Payment Transactions" />
             </button>
           </div>
         </div>
@@ -80,15 +80,15 @@ const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTra
             <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-4 dark:text-slate-500" />
             <p className="text-gray-500 text-lg font-medium dark:text-slate-400"><TranslatedText text="No transactions found" /></p>
             <p className="text-gray-500 text-sm dark:text-slate-400">
-              <TranslatedText text={activeTab === 'payments' ? "Your payment history will appear here" : "Earnings from your listings will appear here"} />
+              <TranslatedText text={activeTab === 'received' ? "Earnings from your listings will appear here" : "Your payment history will appear here"} />
             </p>
           </div>
         ) : (
           <div className="space-y-4">
             {transactionsToDisplay.map((transaction) => (
               <div key={transaction.id} className="flex items-center space-x-4 p-3 sm:p-4 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors dark:border-slate-700 dark:hover:border-slate-600">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'payments' ? 'bg-red-50 text-red-500 dark:bg-red-900/20' : 'bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20'}`}>
-                  {activeTab === 'payments' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === 'received' ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20' : 'bg-red-50 text-red-500 dark:bg-red-900/20'}`}>
+                  {activeTab === 'received' ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
@@ -99,8 +99,8 @@ const WalletSection: React.FC<Props> = ({ dashboardStats, loadingWallet, userTra
                   {transaction.metadata?.description && <p className="text-xs text-gray-400 mt-1 dark:text-slate-500">{transaction.metadata.description}</p>}
                 </div>
                 <div className="text-right">
-                  <p className={`font-bold text-lg ${activeTab === 'payments' ? 'text-gray-900 dark:text-slate-100' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                    {activeTab === 'payments' ? '-' : '+'}{parseFloat(transaction.amount).toLocaleString()} {transaction.currency}
+                  <p className={`font-bold text-lg ${activeTab === 'received' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-slate-100'}`}>
+                    {activeTab === 'received' ? '+' : '-'}{parseFloat(transaction.amount).toLocaleString()} {transaction.currency}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-slate-500"><TranslatedText text="via" /> {transaction.provider}</p>
                 </div>
