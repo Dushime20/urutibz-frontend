@@ -730,8 +730,8 @@ const ItemSearchPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
       {/* Enhanced Search Header */}
-      <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-40">
-        <div className="max-w-9xl mx-auto px-6 lg:px-20 py-6">
+      <div className="bg-white max-w-9xl mx-auto px-6 lg:px-20 dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-40">
+        <div className="max-w-8xl mx-auto px-6 lg:px-20 py-6">
           {/* Main Search Section */}
           <div className="flex flex-col gap-6">
             {/* Search Bar */}
@@ -973,7 +973,7 @@ const ItemSearchPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-9xl mx-auto px-6 lg:px-20 py-8">
+      <div className="max-w-[1536px] mx-auto px-10 lg:px-20 py-8">
         {/* Error Handling */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-400 px-6 py-4 rounded-2xl mb-8 animate-in fade-in duration-200">

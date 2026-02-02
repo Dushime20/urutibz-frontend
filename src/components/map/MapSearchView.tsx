@@ -548,30 +548,38 @@ const MapSearchView: React.FC<MapSearchViewProps> = ({
                           onMouseEnter={() => setHoveredProductId(product.id)}
                           onMouseLeave={() => setHoveredProductId(null)}
                         >
-                          <Link to={`/it/${product.id}`} className="block">
-                            <div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-800">
-                              {productImage ? (
-                                <img
-                                  src={productImage}
-                                  alt={product.title || product.name || 'Product'}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                  <MapPin className="w-8 h-8" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="p-2 bg-white dark:bg-gray-900">
-                              <h3 className="font-semibold text-xs text-gray-900 dark:text-white line-clamp-2 mb-1 min-h-[2.5rem]">
-                                {product.title || product.name || 'Product'}
-                              </h3>
-                              <p className="text-xs font-medium text-gray-900 dark:text-white">
-                                {currency} {Number(product.base_price_per_day || 0).toFixed(2)}
-                                <span className="text-gray-600 dark:text-gray-400 font-normal">/day</span>
-                              </p>
-                            </div>
-                          </Link>
+                          <div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-800">
+                            {productImage ? (
+                              <img
+                                src={productImage}
+                                alt={product.title || product.name || 'Product'}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                <MapPin className="w-8 h-8" />
+                              </div>
+                            )}
+                            {/* View Details Button - appears on hover */}
+                            <Link
+                              to={`/it/${product.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
+                            >
+                              <span className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-4 py-2 rounded-full font-semibold text-xs shadow-lg">
+                                View Details
+                              </span>
+                            </Link>
+                          </div>
+                          <div className="p-2 bg-white dark:bg-gray-900">
+                            <h3 className="font-semibold text-xs text-gray-900 dark:text-white line-clamp-2 mb-1 min-h-[2.5rem]">
+                              {product.title || product.name || 'Product'}
+                            </h3>
+                            <p className="text-xs font-medium text-gray-900 dark:text-white">
+                              {currency} {Number(product.base_price_per_day || 0).toFixed(2)}
+                              <span className="text-gray-600 dark:text-gray-400 font-normal">/day</span>
+                            </p>
+                          </div>
                         </div>
                       );
                     })}
@@ -721,26 +729,25 @@ const MapSearchView: React.FC<MapSearchViewProps> = ({
 
             const productImage = product.images?.[0];
             const currency = getCurrency(product);
+            
+            // Get address from product
+            const address = product.address_line || 
+                          product.district || 
+                          product.sector || 
+                          product.province || 
+                          'Location available';
 
             return (
               <div
                 className="absolute z-[1001] pointer-events-auto"
                 style={{
                   left: `${markerCardPosition.x}px`,
-                  top: `${markerCardPosition.y - 180}px`, // Position above marker
+                  top: `${markerCardPosition.y - 220}px`, // Increased height for address
                   transform: 'translateX(-50%)',
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Link
-                  to={`/it/${product.id}`}
-                  className="block w-64 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-3xl transition-all duration-200"
-                  onClick={() => {
-                    if (onProductClick) {
-                      onProductClick(product.id);
-                    }
-                  }}
-                >
+                <div className="w-64 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                   {/* Image */}
                   <div className="relative w-full h-40 bg-gray-100 dark:bg-gray-800">
                     {productImage ? (
@@ -774,12 +781,36 @@ const MapSearchView: React.FC<MapSearchViewProps> = ({
                     <h3 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">
                       {product.title || product.name || 'Product'}
                     </h3>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {currency} {Number(product.base_price_per_day || 0).toFixed(2)}
-                      <span className="text-gray-600 dark:text-gray-400 font-normal">/day</span>
-                    </p>
+                    
+                    {/* Address */}
+                    <div className="flex items-start gap-1 mb-2">
+                      <MapPin className="w-3 h-3 text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                        {address}
+                      </p>
+                    </div>
+                    
+                    {/* Price and View Button */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {currency} {Number(product.base_price_per_day || 0).toFixed(2)}
+                        <span className="text-gray-600 dark:text-gray-400 font-normal">/day</span>
+                      </p>
+                      <Link
+                        to={`/it/${product.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onProductClick) {
+                            onProductClick(product.id);
+                          }
+                        }}
+                        className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-medium"
+                      >
+                        View Details →
+                      </Link>
+                    </div>
                   </div>
-                </Link>
+                </div>
 
                 {/* Arrow pointing to marker */}
                 <div
@@ -868,36 +899,41 @@ const MapSearchView: React.FC<MapSearchViewProps> = ({
                       onMouseEnter={() => setHoveredProductId(product.id)}
                       onMouseLeave={() => setHoveredProductId(null)}
                     >
-                      <Link to={`/it/${product.id}`} className="block">
-                        <div className="flex gap-4">
-                          <div className="relative w-40 h-32 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-                            {productImage ? (
-                              <img
-                                src={productImage}
-                                alt={product.title || product.name || 'Product'}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                <MapPin className="w-8 h-8" />
-                              </div>
-                            )}
+                      <div className="flex gap-4">
+                        <div className="relative w-40 h-32 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                          {productImage ? (
+                            <img
+                              src={productImage}
+                              alt={product.title || product.name || 'Product'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <MapPin className="w-8 h-8" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 py-2 flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-semibold text-base text-gray-900 dark:text-white line-clamp-2 mb-2">
+                              {product.title || product.name || 'Product'}
+                            </h3>
                           </div>
-                          <div className="flex-1 py-2 flex flex-col justify-between">
-                            <div>
-                              <h3 className="font-semibold text-base text-gray-900 dark:text-white line-clamp-2 mb-2">
-                                {product.title || product.name || 'Product'}
-                              </h3>
-                            </div>
-                            <div>
-                              <p className="text-base font-semibold text-gray-900 dark:text-white">
-                                {getCurrency(product)} {Number(product.base_price_per_day || 0).toFixed(2)}
-                                <span className="text-gray-600 dark:text-gray-400 font-normal text-sm">/day</span>
-                              </p>
-                            </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-base font-semibold text-gray-900 dark:text-white">
+                              {getCurrency(product)} {Number(product.base_price_per_day || 0).toFixed(2)}
+                              <span className="text-gray-600 dark:text-gray-400 font-normal text-sm">/day</span>
+                            </p>
+                            <Link
+                              to={`/it/${product.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-medium"
+                            >
+                              View →
+                            </Link>
                           </div>
                         </div>
-                      </Link>
+                      </div>
                     </div>
                   );
                 })}
