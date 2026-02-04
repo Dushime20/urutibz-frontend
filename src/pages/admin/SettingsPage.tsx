@@ -21,7 +21,13 @@ import {
   Clock,
   Server,
   HardDrive,
-  Calendar
+  Calendar,
+  Eye,
+  Trash2,
+  Filter,
+  X,
+  FileDown,
+  Search
 } from 'lucide-react';
 import type { SettingsSection } from '../../types/adminSettings.types';
 import { DEFAULT_ANALYTICS_SETTINGS } from '../../types/adminSettings.types';
@@ -37,7 +43,7 @@ import BackupSettingsForm from '../../components/admin/SettingsForms/BackupSetti
 import AnalyticsSettingsForm from '../../components/admin/SettingsForms/AnalyticsSettingsForm';
 
 interface SettingsTab {
-  id: SettingsSection;
+  id: SettingsSection | 'bookings';
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   description: string;
@@ -78,9 +84,10 @@ const SettingsPage: React.FC = () => {
     optimisticUpdates: true,
   });
 
-  const [activeTab, setActiveTab] = useState<SettingsSection>('theme');
+  const [activeTab, setActiveTab] = useState<SettingsSection | 'bookings'>('theme');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [bookingSubTab, setBookingSubTab] = useState<'settings' | 'logs'>('settings');
 
   // Booking Expiration Settings State
   const [bookingExpirationSettings, setBookingExpirationSettings] = useState({
@@ -98,6 +105,21 @@ const SettingsPage: React.FC = () => {
 
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isTriggering, setIsTriggering] = useState(false);
+
+  // Booking Expiration Logs State
+  const [expirationLogs, setExpirationLogs] = useState<any[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsLimit, setLogsLimit] = useState(10);
+  const [logsTotalPages, setLogsTotalPages] = useState(1);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [showLogDetails, setShowLogDetails] = useState(false);
+  const [logsFilters, setLogsFilters] = useState({
+    startDate: '',
+    endDate: '',
+    search: '',
+  });
 
   // Load analytics config when analytics tab is active
   useEffect(() => {
@@ -195,6 +217,11 @@ const SettingsPage: React.FC = () => {
         // Reload stats and settings after cleanup
         loadExpirationStats();
         loadBookingExpirationSettings();
+        
+        // Reload logs if on logs tab
+        if (bookingSubTab === 'logs') {
+          loadExpirationLogs();
+        }
       } else {
         throw new Error('Failed to trigger cleanup');
       }
@@ -206,13 +233,174 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // Booking Expiration Logs Functions
+  const loadExpirationLogs = async (page = logsPage, limit = logsLimit) => {
+    try {
+      setIsLoadingLogs(true);
+      const token = localStorage.getItem('token');
+      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(logsFilters.startDate && { startDate: logsFilters.startDate }),
+        ...(logsFilters.endDate && { endDate: logsFilters.endDate }),
+        ...(logsFilters.search && { search: logsFilters.search }),
+      });
+
+      const response = await fetch(`/api/v1/booking-expiration/logs?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setExpirationLogs(data.data.logs);
+        setLogsTotalPages(data.data.pagination.totalPages);
+        setLogsTotal(data.data.pagination.total);
+        setLogsPage(page);
+      }
+    } catch (error) {
+      console.error('Error loading expiration logs:', error);
+      showToast('Failed to load expiration logs', 'error');
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
+  const viewLogDetails = (log: any) => {
+    setSelectedLog(log);
+    setShowLogDetails(true);
+  };
+
+  const closeLogDetails = () => {
+    setSelectedLog(null);
+    setShowLogDetails(false);
+  };
+
+  const deleteLog = async (logId: string) => {
+    if (!confirm('Are you sure you want to delete this log entry?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/v1/booking-expiration/logs/${logId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        showToast('Log deleted successfully', 'success');
+        
+        // Close modal if it's open
+        if (showLogDetails && selectedLog?.id === logId) {
+          closeLogDetails();
+        }
+        
+        loadExpirationLogs();
+      } else {
+        throw new Error('Failed to delete log');
+      }
+    } catch (error) {
+      console.error('Error deleting log:', error);
+      showToast('Failed to delete log', 'error');
+    }
+  };
+
+  const clearAllLogs = async () => {
+    if (!confirm('Are you sure you want to delete ALL expiration logs? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/booking-expiration/logs', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        showToast('All logs cleared successfully', 'success');
+        loadExpirationLogs();
+      } else {
+        throw new Error('Failed to clear logs');
+      }
+    } catch (error) {
+      console.error('Error clearing logs:', error);
+      showToast('Failed to clear logs', 'error');
+    }
+  };
+
+  const exportLogs = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      const params = new URLSearchParams({
+        ...(logsFilters.startDate && { startDate: logsFilters.startDate }),
+        ...(logsFilters.endDate && { endDate: logsFilters.endDate }),
+        ...(logsFilters.search && { search: logsFilters.search }),
+      });
+
+      const response = await fetch(`/api/v1/booking-expiration/logs/export?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `booking-expiration-logs-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Logs exported successfully', 'success');
+      } else {
+        throw new Error('Failed to export logs');
+      }
+    } catch (error) {
+      console.error('Error exporting logs:', error);
+      showToast('Failed to export logs', 'error');
+    }
+  };
+
+  const applyLogsFilters = () => {
+    setLogsPage(1);
+    loadExpirationLogs(1, logsLimit);
+  };
+
+  const resetLogsFilters = () => {
+    setLogsFilters({
+      startDate: '',
+      endDate: '',
+      search: '',
+    });
+    setLogsPage(1);
+    loadExpirationLogs(1, logsLimit);
+  };
+
   // Load booking expiration settings when bookings tab is active
   useEffect(() => {
     if (activeTab === 'bookings') {
       loadBookingExpirationSettings();
       loadExpirationStats();
+      
+      if (bookingSubTab === 'logs') {
+        loadExpirationLogs();
+      }
     }
-  }, [activeTab]);
+  }, [activeTab, bookingSubTab]);
 
   // Settings tabs configuration
   const settingsTabs: SettingsTab[] = [
@@ -691,14 +879,43 @@ const SettingsPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-                {/* Booking Expiration Settings */}
-                <div className="space-y-4 sm:space-y-6">
+              {/* Booking Subtabs */}
+              <div className="mb-6">
+                <nav className="flex gap-2 sm:gap-4 border-b border-gray-200 dark:border-gray-700 pb-2 sm:pb-3 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-2 sm:gap-4 min-w-max">
+                    <button
+                      onClick={() => setBookingSubTab('settings')}
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+                        bookingSubTab === 'settings'
+                          ? 'bg-my-primary text-white'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <TranslatedText text="Expiration Settings" />
+                    </button>
+                    <button
+                      onClick={() => setBookingSubTab('logs')}
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+                        bookingSubTab === 'logs'
+                          ? 'bg-my-primary text-white'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <TranslatedText text="Expiration Logs" />
+                    </button>
+                  </div>
+                </nav>
+              </div>
+
+              {/* Settings Subtab */}
+              {bookingSubTab === 'settings' && (
+                <><div className="space-y-4 sm:space-y-6">
+                  {/* Booking Expiration Settings */}
                   <div>
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
                       <TranslatedText text="Booking Expiration Settings" />
                     </h3>
-                    
+
                     <div className="space-y-3 sm:space-y-4">
                       {/* Enable/Disable Expiration */}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -714,11 +931,10 @@ const SettingsPage: React.FC = () => {
                           <input
                             type="checkbox"
                             checked={bookingExpirationSettings.booking_expiration_enabled}
-                            onChange={(e) => updateBookingExpirationSettings({ 
-                              booking_expiration_enabled: e.target.checked 
+                            onChange={(e) => updateBookingExpirationSettings({
+                              booking_expiration_enabled: e.target.checked
                             })}
-                            className="sr-only peer"
-                          />
+                            className="sr-only peer" />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-my-primary/20 dark:peer-focus:ring-my-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-my-primary"></div>
                         </label>
                       </div>
@@ -730,8 +946,8 @@ const SettingsPage: React.FC = () => {
                         </label>
                         <select
                           value={bookingExpirationSettings.booking_expiration_hours}
-                          onChange={(e) => updateBookingExpirationSettings({ 
-                            booking_expiration_hours: parseInt(e.target.value) 
+                          onChange={(e) => updateBookingExpirationSettings({
+                            booking_expiration_hours: parseInt(e.target.value)
                           })}
                           disabled={!bookingExpirationSettings.booking_expiration_enabled}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-my-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
@@ -785,86 +1001,83 @@ const SettingsPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div><div className="space-y-4 sm:space-y-6">
+                    <div>
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
+                        <TranslatedText text="Expiration Statistics" />
+                      </h3>
 
-                {/* Expiration Statistics */}
-                <div className="space-y-4 sm:space-y-6">
-                  <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
-                      <TranslatedText text="Expiration Statistics" />
-                    </h3>
-                    
-                    {isLoadingStats ? (
-                      <div className="flex items-center justify-center h-32">
-                        <RefreshCw className="w-6 h-6 animate-spin text-my-primary" />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-3 sm:gap-4">
-                        {/* Total Expired */}
-                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
-                                <TranslatedText text="Total Expired" />
-                              </p>
-                              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                                {expirationStats.total_expired}
-                              </p>
+                      {isLoadingStats ? (
+                        <div className="flex items-center justify-center h-32">
+                          <RefreshCw className="w-6 h-6 animate-spin text-my-primary" />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                          {/* Total Expired */}
+                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  <TranslatedText text="Total Expired" />
+                                </p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                  {expirationStats.total_expired}
+                                </p>
+                              </div>
+                              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400" />
+                              </div>
                             </div>
-                            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400" />
+                          </div>
+
+                          {/* Recent Expired */}
+                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  <TranslatedText text="Expired (24h)" />
+                                </p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                  {expirationStats.recent_expired}
+                                </p>
+                              </div>
+                              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Upcoming Expired */}
+                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  <TranslatedText text="Expiring Soon" />
+                                </p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                  {expirationStats.upcoming_expired}
+                                </p>
+                              </div>
+                              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 dark:text-yellow-400" />
+                              </div>
                             </div>
                           </div>
                         </div>
+                      )}
 
-                        {/* Recent Expired */}
-                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
-                                <TranslatedText text="Expired (24h)" />
-                              </p>
-                              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                                {expirationStats.recent_expired}
-                              </p>
-                            </div>
-                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                              <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Upcoming Expired */}
-                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
-                                <TranslatedText text="Expiring Soon" />
-                              </p>
-                              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                                {expirationStats.upcoming_expired}
-                              </p>
-                            </div>
-                            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 dark:text-yellow-400" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Refresh Stats Button */}
-                    <button
-                      onClick={loadExpirationStats}
-                      disabled={isLoadingStats}
-                      className="w-full mt-3 sm:mt-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base"
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingStats ? 'animate-spin' : ''}`} />
-                      <TranslatedText text="Refresh Statistics" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                      {/* Refresh Stats Button */}
+                      <button
+                        onClick={loadExpirationStats}
+                        disabled={isLoadingStats}
+                        className="w-full mt-3 sm:mt-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center text-sm sm:text-base"
+                      >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingStats ? 'animate-spin' : ''}`} />
+                        <TranslatedText text="Refresh Statistics" />
+                      </button>
+                    </div>
+                  </div></>
+              )}
 
               {/* Information Section */}
               <div className="mt-6 sm:mt-8 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -883,6 +1096,381 @@ const SettingsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Logs Subtab */}
+              {bookingSubTab === 'logs' && (
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Header with Actions */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                      <TranslatedText text="Booking Expiration Logs" />
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={exportLogs}
+                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center text-sm"
+                      >
+                        <FileDown className="w-4 h-4 mr-2" />
+                        <TranslatedText text="Export CSV" />
+                      </button>
+                      <button
+                        onClick={clearAllLogs}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center text-sm"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        <TranslatedText text="Clear All" />
+                      </button>
+                      <button
+                        onClick={() => loadExpirationLogs()}
+                        disabled={isLoadingLogs}
+                        className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg transition-colors flex items-center text-sm"
+                      >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingLogs ? 'animate-spin' : ''}`} />
+                        <TranslatedText text="Refresh" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Filter className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <TranslatedText text="Filters" />
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          <TranslatedText text="Start Date" />
+                        </label>
+                        <input
+                          type="date"
+                          value={logsFilters.startDate}
+                          onChange={(e) => setLogsFilters({ ...logsFilters, startDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          <TranslatedText text="End Date" />
+                        </label>
+                        <input
+                          type="date"
+                          value={logsFilters.endDate}
+                          onChange={(e) => setLogsFilters({ ...logsFilters, endDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          <TranslatedText text="Search" />
+                        </label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={logsFilters.search}
+                            onChange={(e) => setLogsFilters({ ...logsFilters, search: e.target.value })}
+                            placeholder="Booking number, user..."
+                            className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={applyLogsFilters}
+                        className="bg-my-primary hover:bg-my-primary/90 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                      >
+                        <TranslatedText text="Apply Filters" />
+                      </button>
+                      <button
+                        onClick={resetLogsFilters}
+                        className="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-colors text-sm"
+                      >
+                        <TranslatedText text="Reset" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Logs Table */}
+                  {isLoadingLogs ? (
+                    <div className="flex items-center justify-center h-64">
+                      <RefreshCw className="w-8 h-8 animate-spin text-my-primary" />
+                    </div>
+                  ) : expirationLogs.length === 0 ? (
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+                      <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 dark:text-gray-400">
+                        <TranslatedText text="No expiration logs found" />
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                <TranslatedText text="Booking" />
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                <TranslatedText text="Renter" />
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                <TranslatedText text="Owner" />
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                <TranslatedText text="Product" />
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                <TranslatedText text="Amount" />
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                <TranslatedText text="Expired At" />
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                <TranslatedText text="Actions" />
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {expirationLogs.map((log) => (
+                              <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                                  {log.booking_reference || 'N/A'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-white">{log.renter_name || 'N/A'}</div>
+                                    <div className="text-xs">{log.renter_email || ''}</div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-white">{log.owner_name || 'N/A'}</div>
+                                    <div className="text-xs">{log.owner_email || ''}</div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                  {log.product_title || 'N/A'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                                  ${parseFloat(log.booking_amount || 0).toFixed(2)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                  {new Date(log.expired_at).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      onClick={() => viewLogDetails(log)}
+                                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                      title="View Details"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteLog(log.id)}
+                                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                      title="Delete Log"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Pagination */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          <TranslatedText text="Showing" /> {((logsPage - 1) * logsLimit) + 1} - {Math.min(logsPage * logsLimit, logsTotal)} <TranslatedText text="of" /> {logsTotal} <TranslatedText text="logs" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => loadExpirationLogs(logsPage - 1, logsLimit)}
+                            disabled={logsPage === 1}
+                            className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                          >
+                            <TranslatedText text="Previous" />
+                          </button>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Page" /> {logsPage} <TranslatedText text="of" /> {logsTotalPages}
+                          </span>
+                          <button
+                            onClick={() => loadExpirationLogs(logsPage + 1, logsLimit)}
+                            disabled={logsPage === logsTotalPages}
+                            className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                          >
+                            <TranslatedText text="Next" />
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Log Details Modal */}
+              {showLogDetails && selectedLog && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        <TranslatedText text="Expiration Log Details" />
+                      </h3>
+                      <button
+                        onClick={closeLogDetails}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      {/* Renter and Owner Info */}
+                      <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Renter" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1 font-medium">
+                            {selectedLog.renter_name || 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            {selectedLog.renter_email || ''}
+                          </p>
+                          {selectedLog.renter_phone && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {selectedLog.renter_phone}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Owner" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1 font-medium">
+                            {selectedLog.owner_name || 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            {selectedLog.owner_email || ''}
+                          </p>
+                          {selectedLog.owner_phone && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {selectedLog.owner_phone}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Booking Details */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Booking Reference" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {selectedLog.booking_reference || 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Product" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {selectedLog.product_title || 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Booking Amount" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            ${parseFloat(selectedLog.booking_amount || 0).toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Booking Status" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {selectedLog.booking_status || 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Created At" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {selectedLog.booking_created_at ? new Date(selectedLog.booking_created_at).toLocaleString() : 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Expired At" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {new Date(selectedLog.expired_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Expiration Hours Used" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {selectedLog.expiration_hours_used || 'N/A'} hours
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Expired By" />
+                          </label>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {selectedLog.expired_by || 'system'}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                          <TranslatedText text="Deletion Reason" />
+                        </label>
+                        <p className="text-sm text-gray-900 dark:text-white mt-1">
+                          {selectedLog.deletion_reason || 'Automatic expiration'}
+                        </p>
+                      </div>
+                      {selectedLog.booking_data && (
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            <TranslatedText text="Booking Data" />
+                          </label>
+                          <pre className="text-xs text-gray-900 dark:text-white mt-1 bg-gray-50 dark:bg-gray-900 p-3 rounded-lg overflow-x-auto">
+                            {JSON.stringify(selectedLog.booking_data, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                    <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-end gap-2">
+                      <button
+                        onClick={() => deleteLog(selectedLog.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                      >
+                        <TranslatedText text="Delete Log" />
+                      </button>
+                      <button
+                        onClick={closeLogDetails}
+                        className="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-colors text-sm"
+                      >
+                        <TranslatedText text="Close" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

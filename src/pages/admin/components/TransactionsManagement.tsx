@@ -15,7 +15,10 @@ import {
   AlertCircle,
   Calendar,
   User,
-  Building
+  Building,
+  ChevronDown,
+  ChevronUp,
+  Info
 } from 'lucide-react';
 import { useAdminSettingsContext } from '../../../contexts/AdminSettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -35,6 +38,7 @@ const TransactionsManagement: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [dateRangeFilter, setDateRangeFilter] = useState('all');
   const [amountRangeFilter, setAmountRangeFilter] = useState('all');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Respect global theme; no forced dark mode here
   useEffect(() => {
@@ -98,6 +102,50 @@ const TransactionsManagement: React.FC = () => {
       default:
         return <AlertCircle className="w-4 h-4" />;
     }
+  };
+
+  // Toggle row expansion
+  const toggleRowExpansion = (transactionId: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(transactionId)) {
+      newExpanded.delete(transactionId);
+    } else {
+      newExpanded.add(transactionId);
+    }
+    setExpandedRows(newExpanded);
+  };
+
+  // Calculate fee breakdown from transaction metadata or estimate
+  const calculateFeeBreakdown = (txn: PaymentTransaction) => {
+    const totalAmount = typeof txn.amount === 'string' ? parseFloat(txn.amount) : txn.amount;
+    const providerFee = txn.provider_fee ? (typeof txn.provider_fee === 'string' ? parseFloat(txn.provider_fee) : txn.provider_fee) : 0;
+    
+    // Try to get breakdown from metadata first
+    if (txn.metadata && typeof txn.metadata === 'object') {
+      const metadata = txn.metadata as any;
+      if (metadata.subtotal || metadata.platformFee || metadata.taxAmount) {
+        return {
+          baseAmount: metadata.subtotal || (totalAmount * 0.82), // Reverse calculate if not available
+          platformFee: metadata.platformFee || (totalAmount * 0.10),
+          taxAmount: metadata.taxAmount || (totalAmount * 0.08),
+          insuranceFee: metadata.insuranceFee || 0,
+          providerFee: providerFee,
+          totalAmount: totalAmount
+        };
+      }
+    }
+    
+    // Fallback: estimate breakdown based on standard rates
+    // Assuming: Total = Base + Platform(10%) + Tax(8%) + Insurance + Provider
+    const estimatedBase = totalAmount / 1.18; // Reverse calculate base (total / 1.18 for 10% platform + 8% tax)
+    return {
+      baseAmount: estimatedBase,
+      platformFee: estimatedBase * 0.10,
+      taxAmount: estimatedBase * 0.08,
+      insuranceFee: 0, // Unknown without metadata
+      providerFee: providerFee,
+      totalAmount: totalAmount
+    };
   };
 
   // Calculate transaction statistics
@@ -294,7 +342,7 @@ const TransactionsManagement: React.FC = () => {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Type" /></th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Status" /></th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Amount" /></th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Amount Details" /></th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"><TranslatedText text="Provider" /></th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     <div className="flex items-center cursor-pointer hover:text-teal-600 dark:hover:text-teal-400">
@@ -306,43 +354,133 @@ const TransactionsManagement: React.FC = () => {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {transactions && transactions.length > 0 ? transactions.map((txn) => {
+                  const feeBreakdown = calculateFeeBreakdown(txn);
+                  const isExpanded = expandedRows.has(txn.id);
+                  
                   return (
-                  <tr key={txn.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg mr-3">
-                          <CreditCard className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                        </div>
-                        <span className="text-sm font-medium text-teal-600 dark:text-teal-400">{txn.id}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {txn.transaction_type ? txn.transaction_type.replace(/_/g, ' ') : '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(txn.status)}`}>
-                        {getStatusIcon(txn.status)}
-                        <span className="ml-1 capitalize">{txn.status}</span>
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(typeof txn.amount === 'string' ? parseFloat(txn.amount) : txn.amount, txn.currency)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{txn.provider || '-'}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {txn.created_at ? formatDate(txn.created_at) : '-'}
-                      </div>
-                    </td>
-                  </tr>
-                );
+                    <React.Fragment key={txn.id}>
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg mr-3">
+                              <CreditCard className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                            </div>
+                            <span className="text-sm font-medium text-teal-600 dark:text-teal-400">{txn.id}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            {txn.transaction_type ? txn.transaction_type.replace(/_/g, ' ') : '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(txn.status)}`}>
+                            {getStatusIcon(txn.status)}
+                            <span className="ml-1 capitalize">{txn.status}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {formatCurrency(feeBreakdown.totalAmount, txn.currency)}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Base: {formatCurrency(feeBreakdown.baseAmount, txn.currency)}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => toggleRowExpansion(txn.id)}
+                              className="ml-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+                              title="Show breakdown"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-gray-400" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">{txn.provider || '-'}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            {txn.created_at ? formatDate(txn.created_at) : '-'}
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {/* Expanded row with fee breakdown */}
+                      {isExpanded && (
+                        <tr className="bg-gray-50 dark:bg-gray-700/50">
+                          <td colSpan={6} className="px-6 py-4">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                                <Info className="w-4 h-4 mr-2 text-blue-500" />
+                                <TranslatedText text="Amount Breakdown" />
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                    <TranslatedText text="Base Amount" />
+                                  </div>
+                                  <div className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                                    {formatCurrency(feeBreakdown.baseAmount, txn.currency)}
+                                  </div>
+                                </div>
+                                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                                  <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                    <TranslatedText text="Platform Fee" />
+                                  </div>
+                                  <div className="text-sm font-semibold text-green-900 dark:text-green-100">
+                                    {formatCurrency(feeBreakdown.platformFee, txn.currency)}
+                                  </div>
+                                </div>
+                                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+                                  <div className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
+                                    <TranslatedText text="Tax Amount" />
+                                  </div>
+                                  <div className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
+                                    {formatCurrency(feeBreakdown.taxAmount, txn.currency)}
+                                  </div>
+                                </div>
+                                {feeBreakdown.insuranceFee > 0 && (
+                                  <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                                    <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                                      <TranslatedText text="Insurance Fee" />
+                                    </div>
+                                    <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                                      {formatCurrency(feeBreakdown.insuranceFee, txn.currency)}
+                                    </div>
+                                  </div>
+                                )}
+                                {feeBreakdown.providerFee > 0 && (
+                                  <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                                    <div className="text-xs text-red-600 dark:text-red-400 font-medium">
+                                      <TranslatedText text="Provider Fee" />
+                                    </div>
+                                    <div className="text-sm font-semibold text-red-900 dark:text-red-100">
+                                      {formatCurrency(feeBreakdown.providerFee, txn.currency)}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              {txn.booking_id && (
+                                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    <TranslatedText text="Booking ID" />: {txn.booking_id}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
                 }) : (
                   <tr>
                     <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">

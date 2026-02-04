@@ -343,7 +343,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ selectedLocation, setSelected
   }
 
   return (
-    <div className="ml-72 sticky top-0 z-[100] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 shadow-sm">
+    <div className="xl:ml-72 sticky top-0 z-[100] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 shadow-sm">
       {/* Mobile: Minimal compact header */}
       <div className="md:hidden px-3 py-2">
         <div className="flex items-center justify-between">

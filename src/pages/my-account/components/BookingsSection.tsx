@@ -62,10 +62,50 @@ const BookingsSection: React.FC<Props> = ({
         end_date: booking.end_date,
         created_at: booking.created_at,
         updated_at: booking.updated_at,
+        expires_at: booking.expires_at,
         fullBooking: booking // Full booking object for detailed inspection
       }))
     });
   }, [userBookings]);
+
+  // Helper function to check if booking is expired
+  const isBookingExpired = useCallback((booking: any): boolean => {
+    // Only check expiration for pending bookings with unpaid status
+    if (booking.status !== 'pending' || booking.payment_status === 'paid') {
+      return false;
+    }
+    
+    if (!booking.expires_at) return false;
+    
+    try {
+      const expirationDate = new Date(booking.expires_at);
+      const now = new Date();
+      return now > expirationDate;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Helper function to get time remaining until expiration
+  const getTimeRemaining = useCallback((expiresAt: string): string => {
+    try {
+      const expirationDate = new Date(expiresAt);
+      const now = new Date();
+      const diffMs = expirationDate.getTime() - now.getTime();
+      
+      if (diffMs <= 0) return 'Expired';
+      
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays > 0) return `${diffDays}d ${diffHours % 24}h remaining`;
+      if (diffHours > 0) return `${diffHours}h ${diffMins % 60}m remaining`;
+      return `${diffMins}m remaining`;
+    } catch {
+      return '';
+    }
+  }, []);
 
   const currentUserId = useMemo(() => {
     try {
@@ -402,6 +442,7 @@ const BookingsSection: React.FC<Props> = ({
                 completed: { bg: 'bg-green-50 dark:bg-green-900/10', text: 'text-green-700 dark:text-green-400', icon: CheckCircle, label: 'Completed' },
                 cancelled: { bg: 'bg-red-50 dark:bg-red-900/10', text: 'text-red-700 dark:text-red-400', icon: XCircle, label: 'Cancelled' },
                 disputed: { bg: 'bg-orange-50 dark:bg-orange-900/10', text: 'text-orange-700 dark:text-orange-400', icon: AlertCircle, label: 'Disputed' },
+                expired: { bg: 'bg-gray-50 dark:bg-gray-900/10', text: 'text-gray-700 dark:text-gray-400', icon: Clock, label: 'Expired' },
               };
               return configs[status] || { bg: 'bg-gray-50 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-400', icon: Calendar, label: status };
             };
@@ -429,18 +470,34 @@ const BookingsSection: React.FC<Props> = ({
                         <p className="text-sm font-bold text-gray-900 dark:text-slate-100 font-mono">{booking.booking_number || `#${booking.id.slice(0, 8).toUpperCase()}`}</p>
                       </div>
                     </div>
-                    <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl ${statusConfig.bg} ${statusConfig.text} border-2 shadow-sm ${
-                      booking.status === 'pending' ? 'border-yellow-300 dark:border-yellow-700' :
-                      booking.status === 'confirmed' ? 'border-blue-300 dark:border-blue-700' :
-                      booking.status === 'cancellation_requested' ? 'border-orange-300 dark:border-orange-700' :
-                      booking.status === 'in_progress' ? 'border-purple-300 dark:border-purple-700' :
-                      booking.status === 'completed' ? 'border-green-300 dark:border-green-700' :
-                      booking.status === 'cancelled' ? 'border-red-300 dark:border-red-700' :
-                      booking.status === 'disputed' ? 'border-orange-300 dark:border-orange-700' :
-                      'border-gray-300 dark:border-gray-600'
-                    }`}>
-                      <StatusIcon className={`w-4 h-4 ${booking.status === 'pending' ? 'animate-spin' : ''}`} />
-                      <span className="text-sm font-bold">{statusConfig.label}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl ${statusConfig.bg} ${statusConfig.text} border-2 shadow-sm ${
+                        booking.status === 'pending' ? 'border-yellow-300 dark:border-yellow-700' :
+                        booking.status === 'confirmed' ? 'border-blue-300 dark:border-blue-700' :
+                        booking.status === 'cancellation_requested' ? 'border-orange-300 dark:border-orange-700' :
+                        booking.status === 'in_progress' ? 'border-purple-300 dark:border-purple-700' :
+                        booking.status === 'completed' ? 'border-green-300 dark:border-green-700' :
+                        booking.status === 'cancelled' ? 'border-red-300 dark:border-red-700' :
+                        booking.status === 'disputed' ? 'border-orange-300 dark:border-orange-700' :
+                        'border-gray-300 dark:border-gray-600'
+                      }`}>
+                        <StatusIcon className={`w-4 h-4 ${booking.status === 'pending' ? 'animate-spin' : ''}`} />
+                        <span className="text-sm font-bold">{statusConfig.label}</span>
+                      </div>
+                      
+                      {/* Expiration Indicator */}
+                      {booking.status === 'pending' && booking.payment_status !== 'paid' && booking.expires_at && (
+                        <div className={`inline-flex items-center space-x-2 px-3 py-2 rounded-xl border-2 shadow-sm ${
+                          isBookingExpired(booking)
+                            ? 'bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700'
+                            : 'bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700'
+                        }`}>
+                          <Clock className="w-4 h-4" />
+                          <span className="text-xs font-bold">
+                            {isBookingExpired(booking) ? 'Expired' : getTimeRemaining(booking.expires_at)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -833,6 +890,7 @@ const BookingsSection: React.FC<Props> = ({
             completed: { bg: 'bg-green-50 dark:bg-green-900/10', text: 'text-green-700 dark:text-green-400', icon: CheckCircle, label: 'Completed' },
             cancelled: { bg: 'bg-red-50 dark:bg-red-900/10', text: 'text-red-700 dark:text-red-400', icon: XCircle, label: 'Cancelled' },
             disputed: { bg: 'bg-orange-50 dark:bg-orange-900/10', text: 'text-orange-700 dark:text-orange-400', icon: AlertCircle, label: 'Disputed' },
+            expired: { bg: 'bg-gray-50 dark:bg-gray-900/10', text: 'text-gray-700 dark:text-gray-400', icon: Clock, label: 'Expired' },
           };
           return configs[status] || { bg: 'bg-gray-50 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-400', icon: Calendar, label: status };
         };
@@ -862,17 +920,33 @@ const BookingsSection: React.FC<Props> = ({
                         {booking.booking_number || `#${booking.id.slice(0, 8).toUpperCase()}`}
                       </p>
                     </div>
-                    <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg ${statusConfig.bg} ${statusConfig.text} border ${
-                      booking.status === 'pending' ? 'border-yellow-200 dark:border-yellow-800' :
-                      booking.status === 'confirmed' ? 'border-blue-200 dark:border-blue-800' :
-                      booking.status === 'cancellation_requested' ? 'border-orange-200 dark:border-orange-800' :
-                      booking.status === 'in_progress' ? 'border-purple-200 dark:border-purple-800' :
-                      booking.status === 'completed' ? 'border-green-200 dark:border-green-800' :
-                      booking.status === 'cancelled' ? 'border-red-200 dark:border-red-800' :
-                      'border-gray-200 dark:border-gray-700'
-                    }`}>
-                      <StatusIcon className={`w-4 h-4 ${booking.status === 'pending' ? 'animate-spin' : ''}`} />
-                      <span className="font-semibold">{statusConfig.label}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg ${statusConfig.bg} ${statusConfig.text} border ${
+                        booking.status === 'pending' ? 'border-yellow-200 dark:border-yellow-800' :
+                        booking.status === 'confirmed' ? 'border-blue-200 dark:border-blue-800' :
+                        booking.status === 'cancellation_requested' ? 'border-orange-200 dark:border-orange-800' :
+                        booking.status === 'in_progress' ? 'border-purple-200 dark:border-purple-800' :
+                        booking.status === 'completed' ? 'border-green-200 dark:border-green-800' :
+                        booking.status === 'cancelled' ? 'border-red-200 dark:border-red-800' :
+                        'border-gray-200 dark:border-gray-700'
+                      }`}>
+                        <StatusIcon className={`w-4 h-4 ${booking.status === 'pending' ? 'animate-spin' : ''}`} />
+                        <span className="font-semibold">{statusConfig.label}</span>
+                      </div>
+                      
+                      {/* Expiration Indicator in Modal */}
+                      {booking.status === 'pending' && booking.payment_status !== 'paid' && booking.expires_at && (
+                        <div className={`inline-flex items-center space-x-2 px-3 py-2 rounded-lg border ${
+                          isBookingExpired(booking)
+                            ? 'bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+                            : 'bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                        }`}>
+                          <Clock className="w-4 h-4" />
+                          <span className="text-sm font-bold">
+                            {isBookingExpired(booking) ? 'Expired' : getTimeRemaining(booking.expires_at)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -978,6 +1052,173 @@ const BookingsSection: React.FC<Props> = ({
                         </p>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Booking Status Section */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <StatusIcon className={`w-5 h-5 ${statusConfig.text} ${booking.status === 'pending' ? 'animate-spin' : ''}`} />
+                    <span>Booking Status</span>
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {/* Current Status */}
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Current Status</p>
+                        <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg ${statusConfig.bg} ${statusConfig.text} border ${
+                          booking.status === 'pending' ? 'border-yellow-200 dark:border-yellow-800' :
+                          booking.status === 'confirmed' ? 'border-blue-200 dark:border-blue-800' :
+                          booking.status === 'cancellation_requested' ? 'border-orange-200 dark:border-orange-800' :
+                          booking.status === 'in_progress' ? 'border-purple-200 dark:border-purple-800' :
+                          booking.status === 'completed' ? 'border-green-200 dark:border-green-800' :
+                          booking.status === 'cancelled' ? 'border-red-200 dark:border-red-800' :
+                          'border-gray-200 dark:border-gray-700'
+                        }`}>
+                          <StatusIcon className={`w-4 h-4 ${booking.status === 'pending' ? 'animate-spin' : ''}`} />
+                          <span className="text-sm font-bold">{statusConfig.label}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Status Description */}
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
+                        {booking.status === 'pending' && 'Your booking is awaiting confirmation and payment.'}
+                        {booking.status === 'confirmed' && 'Your booking has been confirmed. Payment completed.'}
+                        {booking.status === 'in_progress' && 'Your rental is currently active.'}
+                        {booking.status === 'completed' && 'Your rental has been completed successfully.'}
+                        {booking.status === 'cancelled' && 'This booking has been cancelled.'}
+                        {booking.status === 'cancellation_requested' && 'A cancellation request is pending review.'}
+                        {booking.status === 'disputed' && 'This booking is under dispute resolution.'}
+                        {booking.status === 'expired' && 'This booking has expired due to non-payment within the required timeframe.'}
+                      </p>
+                    </div>
+
+                    {/* Payment Status Detail */}
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Payment Status</p>
+                          <p className={`text-base font-bold ${
+                            booking.payment_status === 'paid' ? 'text-green-600 dark:text-green-400' :
+                            booking.payment_status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' :
+                            'text-gray-900 dark:text-white'
+                          }`}>
+                            {booking.payment_status ? booking.payment_status.charAt(0).toUpperCase() + booking.payment_status.slice(1) : 'N/A'}
+                          </p>
+                        </div>
+                        {booking.payment_status === 'paid' && (
+                          <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                        )}
+                        {booking.payment_status === 'pending' && (
+                          <Clock className="w-8 h-8 text-yellow-600 dark:text-yellow-400 animate-pulse" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expiration Status - Only for pending unpaid bookings */}
+                    {booking.status === 'pending' && booking.payment_status !== 'paid' && booking.expires_at && (
+                      <div className={`rounded-lg p-4 border ${
+                        isBookingExpired(booking)
+                          ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                          : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2.5 rounded-lg flex-shrink-0 ${
+                            isBookingExpired(booking)
+                              ? 'bg-red-100 dark:bg-red-900/40'
+                              : 'bg-amber-100 dark:bg-amber-900/40'
+                          }`}>
+                            <Clock className={`w-5 h-5 ${
+                              isBookingExpired(booking)
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-amber-600 dark:text-amber-400'
+                            }`} />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className={`font-bold mb-1.5 ${
+                              isBookingExpired(booking)
+                                ? 'text-red-900 dark:text-red-100'
+                                : 'text-amber-900 dark:text-amber-100'
+                            }`}>
+                              {isBookingExpired(booking) ? '⚠️ Booking Expired' : '⏰ Payment Deadline'}
+                            </h4>
+                            <p className={`text-sm mb-3 ${
+                              isBookingExpired(booking)
+                                ? 'text-red-700 dark:text-red-300'
+                                : 'text-amber-700 dark:text-amber-300'
+                            }`}>
+                              {isBookingExpired(booking)
+                                ? 'This booking has expired due to non-payment. Please create a new booking if you still wish to rent this item.'
+                                : 'Complete your payment before the deadline to secure this booking. Unpaid bookings will be automatically cancelled.'}
+                            </p>
+                            <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
+                                    {isBookingExpired(booking) ? 'Expired At' : 'Expires At'}
+                                  </p>
+                                  <p className="text-sm font-bold text-gray-900 dark:text-slate-100">
+                                    {formatDate(booking.expires_at)}
+                                  </p>
+                                </div>
+                                {!isBookingExpired(booking) && (
+                                  <div className="text-right">
+                                    <p className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Time Remaining</p>
+                                    <p className={`text-sm font-black ${
+                                      getTimeRemaining(booking.expires_at).includes('m') && !getTimeRemaining(booking.expires_at).includes('h')
+                                        ? 'text-red-600 dark:text-red-400 animate-pulse'
+                                        : 'text-amber-600 dark:text-amber-400'
+                                    }`}>
+                                      {getTimeRemaining(booking.expires_at)}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {!isBookingExpired(booking) && booking.payment_status === 'pending' && (
+                              <div className="mt-3 flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+                                <AlertCircle className="w-4 h-4" />
+                                <span className="font-medium">Action Required: Complete payment to confirm your booking</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Owner Confirmation Status - For pending bookings */}
+                    {booking.status === 'pending' && (
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">Owner Confirmation</p>
+                            <p className={`text-base font-bold ${
+                              booking.owner_confirmed || booking.owner_confirmation_status === 'confirmed'
+                                ? 'text-green-600 dark:text-green-400'
+                                : booking.owner_confirmation_status === 'rejected'
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-yellow-600 dark:text-yellow-400'
+                            }`}>
+                              {booking.owner_confirmed || booking.owner_confirmation_status === 'confirmed'
+                                ? 'Confirmed'
+                                : booking.owner_confirmation_status === 'rejected'
+                                ? 'Rejected'
+                                : 'Pending'}
+                            </p>
+                          </div>
+                          {(booking.owner_confirmed || booking.owner_confirmation_status === 'confirmed') && (
+                            <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                          )}
+                          {booking.owner_confirmation_status === 'rejected' && (
+                            <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                          )}
+                          {(!booking.owner_confirmed && booking.owner_confirmation_status !== 'confirmed' && booking.owner_confirmation_status !== 'rejected') && (
+                            <Loader2 className="w-8 h-8 text-yellow-600 dark:text-yellow-400 animate-spin" />
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -109,14 +109,14 @@ const AuthReminderPopup: React.FC<AuthReminderPopupProps> = ({
             </button>
             
             {/* URUTIBUZ Logo */}
-            <div className="flex items-center gap-2 mb-3">
+            {/* <div className="flex items-center gap-2 mb-3">
               <img
                 src="/assets/img/urutibuz-logo.png"
                 alt="URUTIBUZ"
                 className="w-6 h-6 object-contain"
               />
               <span className="text-lg font-bold text-teal-600">URUTIBUZ</span>
-            </div>
+            </div> */}
           </div>
 
           {/* Content */}

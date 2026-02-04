@@ -195,22 +195,43 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     communication: false
   });
 
+  // Debug: Log when component mounts
+  useEffect(() => {
+    console.log('🚀 AdminSidebar mounted. Initial isCollapsed:', isCollapsed);
+    console.log('📱 Window width:', window.innerWidth);
+    console.log('💻 Is desktop (>= 1280px)?', window.innerWidth >= 1280);
+    console.log('🔍 Button should be visible:', window.innerWidth >= 1280);
+  }, []);
+
+  // Debug: Log when isCollapsed changes
+  useEffect(() => {
+    console.log('📊 isCollapsed state changed to:', isCollapsed);
+  }, [isCollapsed]);
+
   // Notify parent of collapse state change
   useEffect(() => {
     if (onCollapseChange) {
       onCollapseChange(isCollapsed);
     }
-  }, [isCollapsed, onCollapseChange]);
+  }, [isCollapsed]);
 
   const toggleGroup = (key: string) => {
     setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   // Don't allow collapse on mobile - always show full sidebar
-  const handleCollapseToggle = () => {
-    if (window.innerWidth >= 1280) { // xl breakpoint
-      setIsCollapsed(!isCollapsed);
-    }
+  const handleCollapseToggle = (e: React.MouseEvent) => {
+    console.log('🔴 BUTTON CLICKED! Event:', e.type);
+    console.log('Window width:', window.innerWidth);
+    console.log('Current isCollapsed:', isCollapsed);
+    
+    // Always allow toggle for debugging - remove window width check temporarily
+    console.log('✅ Toggling sidebar state...');
+    setIsCollapsed(prev => {
+      const newState = !prev;
+      console.log('🔄 Changing state from', prev, 'to', newState);
+      return newState;
+    });
   };
 
   return (
@@ -224,36 +245,51 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         />
       )}
       
-      {/* Sidebar */}
-      <div 
-        className={`
-          flex flex-col relative z-40 mt-0
-          ${isCollapsed && !isMobileMenuOpen ? 'w-16' : 'w-72'}
-          bg-white dark:bg-gray-900 
-          shadow-sm border-r border-gray-100 dark:border-gray-800 
-          overflow-y-auto scrollbar-hide
-          transition-all duration-300
-          h-full
-          top-0
-          xl:static
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
-        `}
+    
+      
+      {/* Toggle Button - OUTSIDE sidebar container */}
+      <button
+        onClick={(e) => {
+          
+          handleCollapseToggle(e);
+        }}
+     
+        className="hidden xl:flex fixed z-[200] w-6 h-6 bg-teal-600 hover:bg-teal-700 border-2 border-white rounded-md items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 ease-in-out hover:scale-110 cursor-pointer"
+        style={{
+          left: isCollapsed ? '60px' : '260px',
+          top: '70px'
+        }}
+        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
-        {/* Toggle Button - Hidden on mobile */}
-        <button
-          onClick={handleCollapseToggle}
-          className="hidden xl:flex absolute -right-3 top-6 z-10 w-6 h-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full items-center justify-center shadow-md hover:shadow-lg transition-shadow"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4 text-gray-600 dark:text-slate-300" />
-          ) : (
-            <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-slate-300" />
-          )}
-        </button>
+        {isCollapsed ? (
+          <ChevronRight className="w-6 h-6 text-white" />
+        ) : (
+          <ChevronLeft className="w-6 h-6 text-white" />
+        )}
+      </button>
+      
+      {/* Sidebar Container */}
+      <div className="relative h-full top-0">
 
-        {/* Header */}
-        <div className={`border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0 ${isCollapsed ? 'p-3' : 'p-6'}`}>
+        {/* Sidebar */}
+        <div 
+          className={`
+            flex flex-col relative z-40 mt-0
+            ${isCollapsed && !isMobileMenuOpen ? 'w-16' : 'w-72'}
+            bg-white dark:bg-gray-900 
+            shadow-sm border-r border-gray-100 dark:border-gray-800 
+            transition-all duration-300
+            h-full
+            top-0
+            xl:static
+            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
+          `}
+          style={{ position: 'relative' }}
+        >
+
+        {/* Header - Sticky */}
+        <div className={`sticky top-0 z-50 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0 ${isCollapsed ? 'p-3' : 'p-6'}`}>
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
             <div className={`rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`} style={{ backgroundColor: '#00aaa7' }}>
               {isCollapsed ? (
@@ -285,8 +321,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           )}
         </div>
         
-        {/* Navigation */}
-        <nav className={`space-y-1 pt-4 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+        {/* Scrollable Navigation Container */}
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
+          {/* Navigation */}
+          <nav className={`space-y-1 pt-4 ${isCollapsed ? 'px-2' : 'px-4'}`}>
         {groups.map(group => (
           <div key={group.key} className="mb-1">
             {!isCollapsed ? (
@@ -368,8 +406,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </div>
         ))}
       </nav>
+        </div>
 
-      {/* Bottom Section */}
+      {/* Bottom Section - Sticky at bottom */}
       <div className={`border-t border-gray-100 dark:border-gray-800 pt-4 mt-auto px-4 pb-4 flex-shrink-0 ${isCollapsed ? 'px-2' : ''}`}>
         {/* Dark Mode Toggle */}
         <button 
@@ -416,6 +455,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
           )}
         </button>
+      </div>
       </div>
     </div>
     </>
