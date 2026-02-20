@@ -11,7 +11,7 @@ services:
         VITE_NODE_ENV: ${VITE_NODE_ENV:-production}
     container_name: urutibiz-frontend
     ports:
-      - "8080:8080"
+      - "8080:80"
     restart: unless-stopped
     networks:
       - urutibiz-network
