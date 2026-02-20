@@ -12,7 +12,7 @@ services:
     image: urutibiz-frontend:latest
     container_name: urutibiz-frontend-prod
     ports:
-      - "8080:80"
+      - "8080:8080"
     restart: always
     networks:
       - urutibiz-network
