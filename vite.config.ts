@@ -30,15 +30,15 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📦</text></svg>',
+            src: '/assets/image/urutilogo2.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📦</text></svg>',
+            src: '/assets/image/urutilogo2.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ],
@@ -49,13 +49,15 @@ export default defineConfig({
             name: 'Browse Items',
             short_name: 'Browse',
             description: 'Browse available rental items',
-            url: '/items'
+            url: '/items',
+            icons: [{ src: '/assets/image/urutilogo2.png', sizes: '96x96' }]
           },
           {
             name: 'My Dashboard',
             short_name: 'Dashboard',
             description: 'View your dashboard',
-            url: '/dashboard'
+            url: '/dashboard',
+            icons: [{ src: '/assets/image/urutilogo2.png', sizes: '96x96' }]
           }
         ]
       },
