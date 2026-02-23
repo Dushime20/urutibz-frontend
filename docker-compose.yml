@@ -22,4 +22,4 @@ services:
 
 networks:
   urutibiz-network:
-    external: true
+    driver: bridge
