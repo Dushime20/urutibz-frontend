@@ -14,7 +14,7 @@ interface TopBarProps {
 const TopBar: React.FC<TopBarProps> = ({ isAuthenticated, user, logout, isDarkMode, toggleDarkMode }) => {
     return (
         <div className="bg-[#f2f3f7] dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 text-[12px] text-gray-600 dark:text-gray-400 py-1.5 px-4 hidden md:block">
-            <div className="max-w-[1400px] mx-auto flex justify-between items-center">
+            <div className="max-w-9xl mx-auto px-10 lg:px-20 flex justify-between items-center">
                 {/* Left Side */}
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-1 cursor-pointer hover:text-teal-600 transition-colors">
@@ -49,17 +49,7 @@ const TopBar: React.FC<TopBarProps> = ({ isAuthenticated, user, logout, isDarkMo
 
                         <div className="h-3 w-[1px] bg-gray-300 dark:bg-gray-700"></div>
 
-                        {!isAuthenticated ? (
-                            <div className="flex items-center gap-3">
-                                <Link to="/login" className="font-semibold text-gray-800 dark:text-gray-200 hover:text-teal-600">Sign In</Link>
-                                <Link to="/register" className="font-semibold text-gray-800 dark:text-gray-200 hover:text-teal-600 border border-gray-300 dark:border-gray-700 px-2 py-0.5 rounded-sm">Join Free</Link>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-3">
-                                <span className="font-medium text-gray-800 dark:text-gray-200">Hi, {user?.name || 'User'}</span>
-                                <button onClick={logout} className="hover:text-red-500 font-semibold">Sign Out</button>
-                            </div>
-                        )}
+
                     </div>
                 </div>
             </div>

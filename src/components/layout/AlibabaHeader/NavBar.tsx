@@ -12,7 +12,7 @@ interface NavBarProps {
 const NavBar: React.FC<NavBarProps> = ({ topCategories, allCategories, allProducts = [] }) => {
     return (
         <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 py-1 hidden md:block">
-            <div className="max-w-[1400px] mx-auto flex items-center gap-8 px-4">
+            <div className="max-w-9xl mx-auto px-10 lg:px-20 flex items-center gap-8">
 
                 {/* All Categories Trigger & Panel */}
                 <AlibabaCategoryMenu allCategories={allCategories} allProducts={allProducts} />

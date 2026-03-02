@@ -31,8 +31,8 @@ const MainHeader: React.FC<MainHeaderProps> = ({
     setIsImageSearchOpen, setIsCartOpen, topCategories, isAuthenticated, user, logout, onOpenMenu
 }) => {
     return (
-        <div className="bg-white dark:bg-gray-800 py-4 px-4 border-b border-gray-100 dark:border-gray-700">
-            <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-8">
+        <div className="bg-white dark:bg-gray-800 py-4 border-b border-gray-100 dark:border-gray-700">
+            <div className="max-w-9xl mx-auto px-10 lg:px-20 flex items-center justify-between gap-8">
 
                 {/* Logo - Always Visible */}
                 <Link to="/" className="flex items-center gap-3 flex-shrink-0">

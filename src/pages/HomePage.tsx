@@ -570,7 +570,7 @@ const HomePage: React.FC = () => {
   if (loading && products.length === 0) {
     return (
       <div className="space-y-8 sm:space-y-10">
-        <div className="max-w-9xl mx-auto px-6 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
+        <div className="max-w-9xl mx-auto px-10 lg:px-20 pt-6 sm:pt-10 lg:pt-12">
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#01aaa7] mx-auto mb-4"></div>
@@ -588,7 +588,7 @@ const HomePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
         <div className="space-y-8 sm:space-y-10">
-          <div className="max-w-9xl mx-auto px-6 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
+          <div className="max-w-9xl mx-auto px-10 lg:px-20 pt-6 sm:pt-10 lg:pt-12">
             <div className="flex items-center justify-center py-20">
               <div className="text-center max-w-md">
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
@@ -626,7 +626,7 @@ const HomePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
         <div className="space-y-8 sm:space-y-10">
-          <div className="max-w-9xl mx-auto px-6 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
+          <div className="max-w-9xl mx-auto px-10 lg:px-20 pt-6 sm:pt-10 lg:pt-12">
             <div className="flex items-center justify-center py-20">
               <div className="text-center max-w-md">
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
@@ -662,7 +662,7 @@ const HomePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-900">
         <div className="space-y-8 sm:space-y-10">
-          <div className="max-w-9xl mx-auto px-6 lg:px-10 pt-6 sm:pt-10 lg:pt-12">
+          <div className="max-w-9xl mx-auto px-10 lg:px-20 pt-6 sm:pt-10 lg:pt-12">
             <div className="flex items-center justify-center py-20">
               <div className="text-center max-w-md">
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 dark:bg-slate-700 mb-4">
@@ -697,11 +697,11 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <div className="space-y-8 sm:space-y-10 max-w-9xl mx-auto px-6 lg:px-20">
+      <div className="space-y-8 sm:space-y-10 max-w-9xl mx-auto px-10 lg:px-20">
         {/* Hero Section */}
 
          {/* Products Sections */}
-         <div className="max-w-9xl mx-auto px-10 lg:px-20 space-y-12 pt-4">
+         <div className="space-y-12 pt-4">
           {/* Search Results Header (only show if searching) */}
           {searchQuery && (
             <div className="mb-4 sm:mb-6 flex items-center justify-between">

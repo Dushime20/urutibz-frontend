@@ -327,7 +327,7 @@ const AlibabaProductDetail: React.FC = () => {
     <div className="min-h-screen bg-white dark:bg-slate-900">
       {/* Breadcrumb Navigation - Alibaba Style */}
       <div className="hidden lg:block bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+        <div className="max-w-9xl mx-auto px-10 lg:px-20 py-2">
           <nav className="flex items-center space-x-1 text-xs text-gray-600 dark:text-slate-300">
             <Link to="/" className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors">Home</Link>
             <span className="text-gray-400 dark:text-slate-500">&gt;</span>
@@ -340,7 +340,7 @@ const AlibabaProductDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
+      <div className="max-w-9xl mx-auto px-10 lg:px-20 py-4 lg:py-6">
         {/* Product Header Section - Alibaba Style */}
         <motion.div 
           className="mb-4 lg:mb-6"
@@ -675,7 +675,7 @@ const AlibabaProductDetail: React.FC = () => {
           transition={{ duration: 0.3, ease: "easeOut" }}
           className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 shadow-lg"
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="max-w-9xl mx-auto px-10 lg:px-20 py-3">
             <div className="flex items-center justify-between">
               {/* Product Info */}
               <div className="flex items-center space-x-3 flex-1">
