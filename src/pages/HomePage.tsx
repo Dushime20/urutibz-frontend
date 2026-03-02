@@ -25,11 +25,22 @@ function formatCurrency(amount: string, currency: string): string {
     'AUD': 'A$',
     'CHF': 'CHF',
     'CNY': '¥',
-    'INR': '₹'
+    'INR': '₹',
+    'RWF': 'RWF'
   };
   
+  const num = parseFloat(amount);
+  let formattedAmount = amount;
+  
+  // Format large numbers with k notation
+  if (num >= 1000) {
+    formattedAmount = (num / 1000).toFixed(num >= 10000 ? 0 : 1) + 'k';
+  } else {
+    formattedAmount = num.toFixed(2);
+  }
+  
   const symbol = currencySymbols[currency] || currency;
-  return symbol === currency ? `${currency} ${amount}` : `${symbol}${amount}`;
+  return symbol === currency ? `${currency} ${formattedAmount}` : `${symbol}${formattedAmount}`;
 }
 
 const heroBackgrounds = [

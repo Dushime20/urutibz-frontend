@@ -135,22 +135,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* Content */}
-          <div className="p-3 space-y-1 flex flex-col overflow-hidden">
+          <div className="p-3 flex flex-col flex-1">
             {/* Title and Rating */}
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 line-clamp-1">
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm leading-tight flex-1 line-clamp-2 min-h-[2.5rem]">
                 <TranslatedText text={product.title || product.name || 'Product'} />
               </h3>
               <div className="flex items-center space-x-1 flex-shrink-0">
                 <Star className="w-3 h-3 fill-current text-yellow-400" />
                 <span className="text-sm text-gray-900 dark:text-slate-100">
-                  {product.average_rating || '4.8'}
+                  {product.average_rating || '0.00'}
                 </span>
               </div>
             </div>
 
             {/* Location */}
-            <div className="text-gray-600 dark:text-slate-400 text-sm line-clamp-1">
+            <div className="text-gray-600 dark:text-slate-400 text-sm line-clamp-1 mb-2 min-h-[1.25rem]">
               {locationsLoading[product.id] ? (
                 <span className="flex items-center gap-1">
                   <span className="w-3 h-3 border border-gray-300 dark:border-slate-500 border-t-gray-600 dark:border-t-slate-300 rounded-full animate-spin inline-block"></span>
@@ -164,8 +164,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
               )}
             </div>
 
-            {/* Price */}
-            <div className="text-gray-900 dark:text-slate-100 pt-1">
+            {/* Price - Push to bottom */}
+            <div className="text-gray-900 dark:text-slate-100 mt-auto">
               {productPrices[product.id]?.price_per_day ? (
                 <>
                   <span className="font-semibold">
