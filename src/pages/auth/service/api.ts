@@ -1,6 +1,15 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
+// Log API configuration on module load
+console.log('🌐 [API Config] Backend URL:', {
+  VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
+  API_BASE_URL,
+  mode: import.meta.env.MODE,
+  dev: import.meta.env.DEV,
+  prod: import.meta.env.PROD
+});
 // Register user function
 export async function registerUser(formData: {
   firstName: string;
@@ -23,10 +32,46 @@ export async function registerUser(formData: {
 
 // Login user function
 export async function loginUser(email: string, password: string) {
+  console.log('🔐 [API] Login attempt:', {
+    email,
+    apiUrl: `${API_BASE_URL}/auth/login`,
+    fullUrl: `${API_BASE_URL}/auth/login`,
+    timestamp: new Date().toISOString()
+  });
+
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+    
+    console.log('✅ [API] Login response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      hasData: !!response.data,
+      hasToken: !!response.data?.token,
+      dataKeys: response.data ? Object.keys(response.data) : [],
+      data: response.data
+    });
+
     return response.data;
   } catch (error: any) {
+    console.error('❌ [API] Login error:', {
+      message: error.message,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      } : 'No response',
+      request: error.request ? {
+        url: error.request.responseURL,
+        method: error.request.method
+      } : 'No request',
+      config: error.config ? {
+        url: error.config.url,
+        method: error.config.method,
+        baseURL: error.config.baseURL
+      } : 'No config'
+    });
+
     const backendMsg =
       error?.response?.data?.message ||
       error?.response?.data?.error ||

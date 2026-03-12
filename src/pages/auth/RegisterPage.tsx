@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, Sparkles, ArrowLeft, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Sparkles, ArrowLeft, AlertCircle, Loader2, CheckCircle, Home } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { registerUser } from './service/api';
 import { useAdminSettingsContext } from '../../contexts/AdminSettingsContext';
@@ -227,7 +227,15 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 overflow-hidden relative">
+      <Link
+        to="/"
+        className="fixed top-6 left-6 z-50 flex items-center space-x-2 px-4 py-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-gray-200 dark:border-slate-700 rounded-full shadow-sm text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 group"
+      >
+        <Home className="w-4 h-4 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform" />
+        <span className="text-sm font-medium">Back to Home</span>
+      </Link>
+
       <div className="w-full max-w-xl md:max-w-xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-8">
