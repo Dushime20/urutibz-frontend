@@ -180,6 +180,7 @@ const ItemSearchPage: React.FC = () => {
   const [productImages, setProductImages] = useState<{ [productId: string]: string[] }>({});
   const [itemLocations, setItemLocations] = useState<{ [id: string]: { city: string | null, country: string | null } }>({});
   const [locationsLoading, setLocationsLoading] = useState<Record<string, boolean>>({});
+  const [availableLocations, setAvailableLocations] = useState<Array<{ value: string; label: string; country: string }>>([]);
   const [relatedCategories, setRelatedCategories] = useState<any[]>([]);
   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
@@ -498,6 +499,109 @@ const ItemSearchPage: React.FC = () => {
     return () => { isMounted = false; };
   }, [items]);
 
+  // Update available locations when itemLocations changes
+  useEffect(() => {
+    const locationSet = new Set<string>();
+    const locationData: Array<{ value: string; label: string; country: string }> = [];
+
+    // Collect unique cities and countries from resolved locations
+    Object.values(itemLocations).forEach(location => {
+      if (location.city && location.country) {
+        const cityKey = location.city;
+        const countryKey = location.country;
+        
+        // Add city if not already added
+        if (!locationSet.has(cityKey)) {
+          locationSet.add(cityKey);
+          locationData.push({
+            value: cityKey,
+            label: `${getCountryFlag(countryKey)} ${cityKey}`,
+            country: countryKey
+          });
+        }
+        
+        // Add country if not already added
+        if (!locationSet.has(countryKey)) {
+          locationSet.add(countryKey);
+          locationData.push({
+            value: countryKey,
+            label: `${getCountryFlag(countryKey)} ${countryKey}`,
+            country: countryKey
+          });
+        }
+      }
+    });
+
+    // Sort locations alphabetically
+    locationData.sort((a, b) => a.label.localeCompare(b.label));
+    
+    setAvailableLocations(locationData);
+  }, [itemLocations]);
+
+  // Helper function to get country flag emoji
+  const getCountryFlag = (country: string): string => {
+    const flagMap: { [key: string]: string } = {
+      'Rwanda': '🇷🇼',
+      'Uganda': '🇺🇬', 
+      'Kenya': '🇰🇪',
+      'Tanzania': '🇹🇿',
+      'Burundi': '🇧🇮',
+      'Democratic Republic of the Congo': '🇨🇩',
+      'Congo': '🇨🇩',
+      'DRC': '🇨🇩',
+      'South Sudan': '🇸🇸',
+      'Ethiopia': '🇪🇹',
+      'Somalia': '🇸🇴',
+      'Djibouti': '🇩🇯',
+      'Eritrea': '🇪🇷',
+      'Sudan': '🇸🇩',
+      'Chad': '🇹🇩',
+      'Central African Republic': '🇨🇫',
+      'Cameroon': '🇨🇲',
+      'Nigeria': '🇳🇬',
+      'Niger': '🇳🇪',
+      'Mali': '🇲🇱',
+      'Burkina Faso': '🇧🇫',
+      'Ghana': '🇬🇭',
+      'Togo': '🇹🇬',
+      'Benin': '🇧🇯',
+      'Ivory Coast': '🇨🇮',
+      'Liberia': '🇱🇷',
+      'Sierra Leone': '🇸🇱',
+      'Guinea': '🇬🇳',
+      'Guinea-Bissau': '🇬🇼',
+      'Senegal': '🇸🇳',
+      'Gambia': '🇬🇲',
+      'Mauritania': '🇲🇷',
+      'Morocco': '🇲🇦',
+      'Algeria': '🇩🇿',
+      'Tunisia': '🇹🇳',
+      'Libya': '🇱🇾',
+      'Egypt': '🇪🇬',
+      'South Africa': '🇿🇦',
+      'Botswana': '🇧🇼',
+      'Namibia': '🇳🇦',
+      'Zimbabwe': '🇿🇼',
+      'Zambia': '🇿🇲',
+      'Malawi': '🇲🇼',
+      'Mozambique': '🇲🇿',
+      'Madagascar': '🇲🇬',
+      'Mauritius': '🇲🇺',
+      'Seychelles': '🇸🇨',
+      'Comoros': '🇰🇲',
+      'Lesotho': '🇱🇸',
+      'Eswatini': '🇸🇿',
+      'Swaziland': '🇸🇿',
+      'Angola': '🇦🇴',
+      'Gabon': '🇬🇦',
+      'Equatorial Guinea': '🇬🇶',
+      'São Tomé and Príncipe': '🇸🇹',
+      'Cape Verde': '🇨🇻'
+    };
+    
+    return flagMap[country] || '🌍';
+  };
+
   // Fetch categories
   useEffect(() => {
     const fetchCategoriesData = async () => {
@@ -621,9 +725,21 @@ const ItemSearchPage: React.FC = () => {
           if (!catMatches) return false;
         }
 
-        // Location filter (simple exact match on city or country label)
+        // Location filter (improved matching for city or country)
         if (selectedLoc && selectedLoc !== 'all') {
-          const locMatches = city === selectedLoc || country === selectedLoc;
+          const selectedLocationLower = selectedLoc.toLowerCase();
+          const cityLower = city.toLowerCase();
+          const countryLower = country.toLowerCase();
+          
+          // Check for exact match or partial match
+          const locMatches = 
+            cityLower === selectedLocationLower || 
+            countryLower === selectedLocationLower ||
+            cityLower.includes(selectedLocationLower) ||
+            countryLower.includes(selectedLocationLower) ||
+            // Also check if the selected location is contained in the full location string
+            `${cityLower}, ${countryLower}`.includes(selectedLocationLower);
+            
           if (!locMatches) return false;
         }
 
@@ -773,6 +889,9 @@ const ItemSearchPage: React.FC = () => {
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-400 pointer-events-none" />
+                {selectedCategory !== 'all' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-my-primary rounded-full"></div>
+                )}
               </div>
 
               <div className="relative">
@@ -783,12 +902,26 @@ const ItemSearchPage: React.FC = () => {
                   aria-label="Select location"
                 >
                   <option value="all">All Locations</option>
-                  <option value="Kigali">🇷🇼 Kigali</option>
-                  <option value="Butare">🇷🇼 Butare</option>
-                  <option value="Kampala">🇺🇬 Kampala</option>
-                  <option value="Nairobi">🇰🇪 Nairobi</option>
+                  {availableLocations.length > 0 ? (
+                    availableLocations.map(location => (
+                      <option key={location.value} value={location.value}>
+                        {location.label}
+                      </option>
+                    ))
+                  ) : (
+                    // Fallback to static locations if dynamic ones aren't loaded yet
+                    <>
+                      <option value="Kigali">🇷🇼 Kigali</option>
+                      <option value="Butare">🇷🇼 Butare</option>
+                      <option value="Kampala">🇺🇬 Kampala</option>
+                      <option value="Nairobi">🇰🇪 Nairobi</option>
+                    </>
+                  )}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-400 pointer-events-none" />
+                {selectedLocation !== 'all' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-my-primary rounded-full"></div>
+                )}
               </div>
 
               <button
@@ -800,6 +933,18 @@ const ItemSearchPage: React.FC = () => {
                 <Filter className="w-4 h-4" />
                 <span className="hidden sm:inline"><TranslatedText text="More" /></span>
               </button>
+
+              {/* Clear Filters Button - only show when filters are active */}
+              {(selectedCategory !== 'all' || selectedLocation !== 'all' || priceRange.min > 0 || priceRange.max > 0 || mapLocation) && (
+                <button
+                  onClick={clearAllFilters}
+                  className="px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-600 text-gray-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 flex items-center gap-2 transition-all duration-200"
+                  aria-label="Clear all filters"
+                >
+                  <X className="w-4 h-4" />
+                  <span className="hidden sm:inline"><TranslatedText text="Clear" /></span>
+                </button>
+              )}
 
               {/* Search Near Me Button */}
               <button
@@ -1004,7 +1149,7 @@ const ItemSearchPage: React.FC = () => {
 
               <div className="text-gray-600 dark:text-slate-400 flex flex-wrap items-center gap-1.5 text-lg">
                 <span>{totalResults} <TranslatedText text="results" /></span>
-                {(searchQuery || selectedCategory !== 'all' || priceRange.min > 0 || priceRange.max > 0) && (
+                {(searchQuery || selectedCategory !== 'all' || selectedLocation !== 'all' || priceRange.min > 0 || priceRange.max > 0) && (
                   <>
                     <span className="mx-1">•</span>
                     <TranslatedText text="for" />
@@ -1016,6 +1161,14 @@ const ItemSearchPage: React.FC = () => {
                         <TranslatedText text="in" />
                         <span className="font-bold text-gray-900 dark:text-white mx-1">
                           {itemCategories.find(c => c.id === selectedCategory)?.name || selectedCategory}
+                        </span>
+                      </>
+                    )}
+                    {selectedLocation !== 'all' && (
+                      <>
+                        <TranslatedText text="near" />
+                        <span className="font-bold text-gray-900 dark:text-white mx-1">
+                          {availableLocations.find(l => l.value === selectedLocation)?.label || selectedLocation}
                         </span>
                       </>
                     )}
